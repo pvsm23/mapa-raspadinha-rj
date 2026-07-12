@@ -94,19 +94,24 @@ function marcarComoVisitado(id, nome) {
  * Abre o modal com a raspadinha (canvas) para o município escolhido.
  * Ao raspar o suficiente, marca como visitado automaticamente.
  *
- * Usa o selo real em assets/img/selos/<codigo-ibge>.png quando ele
- * existir; caso contrário, cai no placeholder gerado na hora. Assim,
- * basta colocar o PNG na pasta (sem mexer em código) para o selo
- * real passar a valer.
+ * Usa o selo real em assets/img/selos/<codigo-ibge>.png (colorido) e
+ * assets/img/selos/<codigo-ibge>fundo.png (capa preto-e-branco que
+ * sera raspada) quando existirem; caso contrário, cai no placeholder
+ * gerado na hora. Assim, basta colocar os PNGs na pasta (sem mexer
+ * em código) para os selos reais passarem a valer.
  */
 function abrirModalRaspadinha(id, nome) {
   document.getElementById("modal-municipio-nome").textContent = nome;
   document.getElementById("modal-raspadinha").classList.remove("oculto");
 
-  const iniciar = (imageUrl) => {
+  const caminhoColorido = `assets/img/selos/${id}.png`;
+  const caminhoCapa = `assets/img/selos/${id}fundo.png`;
+
+  const iniciar = (imageUrl, imageUrlCapa) => {
     initScratchCard({
       containerId: "scratch-modal-body",
       imageUrl,
+      imageUrlCapa,
       onComplete: () => {
         marcarComoVisitado(id, nome);
         setTimeout(fecharModalRaspadinha, 900);
@@ -114,11 +119,27 @@ function abrirModalRaspadinha(id, nome) {
     });
   };
 
-  const caminhoSeloReal = `assets/img/selos/${id}.png`;
-  const testeImagem = new Image();
-  testeImagem.onload = () => iniciar(caminhoSeloReal);
-  testeImagem.onerror = () => iniciar(gerarSeloPlaceholder(id, nome));
-  testeImagem.src = caminhoSeloReal;
+  carregarImagem(caminhoColorido).then((existeColorido) => {
+    if (!existeColorido) {
+      iniciar(gerarSeloPlaceholder(id, nome), null);
+      return;
+    }
+    carregarImagem(caminhoCapa).then((existeCapa) => {
+      iniciar(caminhoColorido, existeCapa ? caminhoCapa : null);
+    });
+  });
+}
+
+/**
+ * Testa se uma imagem existe/carrega, sem lançar erro se não existir.
+ */
+function carregarImagem(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
 }
 
 /**

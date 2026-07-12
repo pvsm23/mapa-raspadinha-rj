@@ -4,34 +4,40 @@
    Uso:
      initScratchCard({
        containerId: "scratch-modal-body",
-       imageUrl: "selos/3303302.png",
+       imageUrl: "assets/img/selos/3303302.png",
+       imageUrlCapa: "assets/img/selos/3303302fundo.png", // opcional
        onComplete: () => marcarComoVisitado("3303302")
      });
 
    Como funciona:
    1. Desenha a imagem colorida (selo) num <canvas> de fundo.
-   2. Desenha uma camada cinza por cima, num <canvas> de "raspagem".
-   3. Ao arrastar o dedo/mouse, apaga pixels da camada cinza
-      (destination-out), revelando a imagem de baixo.
-   4. A cada movimento, amostra os pixels da camada cinza para
-      calcular quanto já foi raspado. Ao passar do limiar
-      (ex: 55%), dispara onComplete() e revela tudo de vez.
+   2. Desenha a "capa" por cima, num <canvas> de "raspagem": se
+      imageUrlCapa for passada, usa essa imagem (ex: a mesma arte
+      em preto e branco); senão, cai numa camada cinza lisa.
+   3. Ao arrastar o dedo/mouse, apaga pixels da capa
+      (destination-out), revelando a imagem colorida de baixo.
+   4. A cada movimento, amostra os pixels da capa para calcular
+      quanto já foi raspado. Ao passar do limiar (perto de 100%,
+      já que o pincel redondo nunca cobre 100% exato), dispara
+      onComplete() e revela tudo de vez.
    ========================================================= */
 
 function initScratchCard({
   containerId,
   imageUrl,
+  imageUrlCapa,
   onComplete,
-  raioPincel = 22,
-  limiarConclusao = 0.55, // 55% raspado = considera concluído
+  tamanho = 300,
+  raioPincel = 24,
+  limiarConclusao = 0.92, // quase tudo raspado = considera concluído
 }) {
   const container = document.getElementById(containerId);
   container.innerHTML = ""; // limpa raspadinha anterior, se houver
 
   const wrapper = document.createElement("div");
   wrapper.style.position = "relative";
-  wrapper.style.width = "260px";
-  wrapper.style.height = "260px";
+  wrapper.style.width = `${tamanho}px`;
+  wrapper.style.height = `${tamanho}px`;
   wrapper.style.margin = "0 auto";
   wrapper.style.touchAction = "none"; // evita rolar a página ao raspar no celular
 
@@ -39,8 +45,8 @@ function initScratchCard({
   const canvasRaspagem = document.createElement("canvas");
 
   [canvasImagem, canvasRaspagem].forEach((c) => {
-    c.width = 260;
-    c.height = 260;
+    c.width = tamanho;
+    c.height = tamanho;
     c.style.position = "absolute";
     c.style.top = "0";
     c.style.left = "0";
@@ -57,18 +63,27 @@ function initScratchCard({
   // 1. Carrega e desenha o selo colorido
   const img = new Image();
   img.crossOrigin = "anonymous";
-  img.src = imageUrl;
   img.onload = () => {
-    ctxImagem.drawImage(img, 0, 0, 260, 260);
+    ctxImagem.drawImage(img, 0, 0, tamanho, tamanho);
   };
+  img.src = imageUrl;
 
-  // 2. Pinta a camada cinza (a "raspa" em si)
-  ctxRaspagem.fillStyle = "#9ca3af";
-  ctxRaspagem.fillRect(0, 0, 260, 260);
-  ctxRaspagem.fillStyle = "#6b7280";
-  ctxRaspagem.font = "14px sans-serif";
-  ctxRaspagem.textAlign = "center";
-  ctxRaspagem.fillText("raspe aqui", 130, 134);
+  // 2. Pinta a "capa" que sera raspada
+  if (imageUrlCapa) {
+    const imgCapa = new Image();
+    imgCapa.crossOrigin = "anonymous";
+    imgCapa.onload = () => {
+      ctxRaspagem.drawImage(imgCapa, 0, 0, tamanho, tamanho);
+    };
+    imgCapa.src = imageUrlCapa;
+  } else {
+    ctxRaspagem.fillStyle = "#9ca3af";
+    ctxRaspagem.fillRect(0, 0, tamanho, tamanho);
+    ctxRaspagem.fillStyle = "#6b7280";
+    ctxRaspagem.font = "14px sans-serif";
+    ctxRaspagem.textAlign = "center";
+    ctxRaspagem.fillText("raspe aqui", tamanho / 2, tamanho / 2 + 4);
+  }
 
   let raspando = false;
   let concluido = false;
@@ -76,9 +91,13 @@ function initScratchCard({
   function coordenadasEvento(evento) {
     const rect = canvasRaspagem.getBoundingClientRect();
     const ponto = evento.touches ? evento.touches[0] : evento;
+    // considera a escala entre o tamanho real do canvas e o
+    // tamanho exibido na tela (importante se o CSS redimensionar)
+    const escalaX = canvasRaspagem.width / rect.width;
+    const escalaY = canvasRaspagem.height / rect.height;
     return {
-      x: ponto.clientX - rect.left,
-      y: ponto.clientY - rect.top,
+      x: (ponto.clientX - rect.left) * escalaX,
+      y: (ponto.clientY - rect.top) * escalaY,
     };
   }
 
@@ -90,7 +109,7 @@ function initScratchCard({
   }
 
   function calcularPorcentagemRaspada() {
-    const dados = ctxRaspagem.getImageData(0, 0, 260, 260).data;
+    const dados = ctxRaspagem.getImageData(0, 0, tamanho, tamanho).data;
     let transparentes = 0;
     const totalPixels = dados.length / 4;
 
@@ -102,7 +121,7 @@ function initScratchCard({
   }
 
   function revelarTudo() {
-    ctxRaspagem.clearRect(0, 0, 260, 260);
+    ctxRaspagem.clearRect(0, 0, tamanho, tamanho);
   }
 
   function aoMover(evento) {
