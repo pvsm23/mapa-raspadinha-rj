@@ -12,15 +12,33 @@ Site estático onde o usuário "raspa" municípios do Rio de Janeiro no mapa con
 ├── js/
 │   ├── script.js         # lógica principal do mapa e estado
 │   └── scratch-card.js   # motor genérico de raspadinha (canvas)
-└── assets/
-    ├── svg/              # mapa SVG oficial (futuro)
-    └── img/selos/        # imagens dos "selos" revelados ao raspar
+├── assets/
+│   ├── svg/              # SVG dos 92 municípios (gerado, ver tools/)
+│   └── img/selos/        # imagens dos "selos" revelados ao raspar (futuro)
+├── data/
+│   └── rj-municipios.geojson  # fonte geográfica dos municípios do RJ
+└── tools/
+    └── geojson-to-svg.js # script que gera assets/svg/rj-municipios.svg
 ```
+
+## Dados do mapa
+
+O SVG dos 92 municípios é gerado a partir de `data/rj-municipios.geojson`
+([tbrugz/geodata-br](https://github.com/tbrugz/geodata-br), derivado de dados
+do IBGE) via `tools/geojson-to-svg.js`. Para regenerar depois de atualizar o
+GeoJSON:
+
+```
+node tools/geojson-to-svg.js
+```
+
+O resultado (`assets/svg/rj-municipios.svg`) precisa ser colado manualmente
+dentro da tag `<svg id="mapa-rj">` em `index.html`.
 
 ## Etapas do desenvolvimento
 
-- **Etapa 1** (atual): mapa de teste com 3 municípios como formas geométricas, clique alterna estado visitado/não visitado, progresso salvo no `localStorage`.
-- **Etapa 2**: substituir o SVG de teste pelo mapa oficial do IBGE com todos os municípios do RJ.
+- **Etapa 1**: mapa de teste com 3 municípios como formas geométricas, clique alterna estado visitado/não visitado, progresso salvo no `localStorage`.
+- **Etapa 2** (atual): mapa oficial do IBGE com os 92 municípios do RJ, cada um com seu código IBGE real.
 - **Etapa 3**: integrar o motor de raspadinha (`scratch-card.js`) ao clique nos municípios.
 - **Etapa 4**: publicação no GitHub Pages.
 
