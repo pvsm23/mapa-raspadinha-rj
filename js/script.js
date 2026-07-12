@@ -93,19 +93,32 @@ function marcarComoVisitado(id, nome) {
 /**
  * Abre o modal com a raspadinha (canvas) para o município escolhido.
  * Ao raspar o suficiente, marca como visitado automaticamente.
+ *
+ * Usa o selo real em assets/img/selos/<codigo-ibge>.png quando ele
+ * existir; caso contrário, cai no placeholder gerado na hora. Assim,
+ * basta colocar o PNG na pasta (sem mexer em código) para o selo
+ * real passar a valer.
  */
 function abrirModalRaspadinha(id, nome) {
   document.getElementById("modal-municipio-nome").textContent = nome;
   document.getElementById("modal-raspadinha").classList.remove("oculto");
 
-  initScratchCard({
-    containerId: "scratch-modal-body",
-    imageUrl: gerarSeloPlaceholder(id, nome),
-    onComplete: () => {
-      marcarComoVisitado(id, nome);
-      setTimeout(fecharModalRaspadinha, 900);
-    },
-  });
+  const iniciar = (imageUrl) => {
+    initScratchCard({
+      containerId: "scratch-modal-body",
+      imageUrl,
+      onComplete: () => {
+        marcarComoVisitado(id, nome);
+        setTimeout(fecharModalRaspadinha, 900);
+      },
+    });
+  };
+
+  const caminhoSeloReal = `assets/img/selos/${id}.png`;
+  const testeImagem = new Image();
+  testeImagem.onload = () => iniciar(caminhoSeloReal);
+  testeImagem.onerror = () => iniciar(gerarSeloPlaceholder(id, nome));
+  testeImagem.src = caminhoSeloReal;
 }
 
 /**
