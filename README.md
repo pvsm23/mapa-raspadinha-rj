@@ -38,8 +38,8 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 ## Etapas do desenvolvimento
 
 - **Etapa 1**: mapa de teste com 3 municípios como formas geométricas, clique alterna estado visitado/não visitado, progresso salvo no `localStorage`.
-- **Etapa 2** (atual): mapa oficial do IBGE com os 92 municípios do RJ, cada um com seu código IBGE real.
-- **Etapa 3**: integrar o motor de raspadinha (`scratch-card.js`) ao clique nos municípios.
+- **Etapa 2**: mapa oficial do IBGE com os 92 municípios do RJ, cada um com seu código IBGE real.
+- **Etapa 3** (atual): clique num município não visitado abre um modal com a raspadinha real (`scratch-card.js`); só marca como visitado depois de raspar o suficiente. Como os selos ilustrados ainda não existem, usa um placeholder gerado na hora (cor + nome do município num `<canvas>`) — trocar por arte real é um passo futuro.
 - **Etapa 4**: publicação no GitHub Pages.
 
 ## Rodando localmente

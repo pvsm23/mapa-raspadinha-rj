@@ -94,3 +94,57 @@ footer button:hover {
 footer {
   margin-top: 30px;
 }
+
+/* Modal de raspadinha */
+#modal-raspadinha {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+#modal-raspadinha.oculto {
+  display: none;
+}
+
+#modal-conteudo {
+  position: relative;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+}
+
+#modal-conteudo h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+#btn-fechar-modal {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-modal:hover {
+  color: #f1f5f9;
+}
+
+#modal-instrucao {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
