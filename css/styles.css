@@ -1,0 +1,96 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #f1f5f9;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+
+#progresso {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+main {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+svg#mapa-rj {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  background: #1e293b;
+  border-radius: 12px;
+}
+
+/* Estado "não raspado" -> aparência de raspadinha (cinza fosco) */
+.municipio {
+  fill: #9ca3af;
+  stroke: #0f172a;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: fill 0.35s ease, transform 0.15s ease;
+}
+
+.municipio:hover {
+  fill: #b3b9c4;
+}
+
+/* Estado "raspado/visitado" -> cor viva */
+.municipio.visitado {
+  fill: #22c55e; /* verde vivo */
+}
+
+.municipio.visitado:hover {
+  fill: #16a34a;
+}
+
+/* Pequeno feedback visual ao clicar */
+.municipio.clicando {
+  transform: scale(0.97);
+}
+
+#detalhes {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 16px;
+  max-width: 400px;
+  margin: 0 auto 20px auto;
+}
+
+#detalhes.oculto {
+  display: none;
+}
+
+#detalhes button,
+footer button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+#detalhes button:hover,
+footer button:hover {
+  background: #dc2626;
+}
+
+footer {
+  margin-top: 30px;
+}
