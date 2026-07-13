@@ -88,6 +88,13 @@ svg#mapa-rj {
   stroke: rgba(255, 255, 255, 0.55);
   stroke-width: 0.6px;
   user-select: none;
+  pointer-events: none;
+  /* só aparecem com o mapa suficientemente perto (ver script.js) */
+  display: none;
+}
+
+svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
+  display: block;
 }
 
 /* =========================================================
@@ -327,15 +334,61 @@ svg#mapa-rj {
 }
 
 #modal-destinos li {
-  font-size: 0.85rem;
   background: #0f172a;
   border-radius: 8px;
-  padding: 8px 10px;
+  overflow: hidden;
 }
 
-#modal-destinos li strong {
+.destino-item {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #f1f5f9;
+  text-align: left;
+  font-size: 0.85rem;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.destino-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.destino-item strong {
   display: block;
   margin-bottom: 2px;
+}
+
+.destino-detalhe {
+  padding: 0 10px 10px;
+  border-top: 1px solid #1e293b;
+}
+
+.destino-detalhe.oculto {
+  display: none;
+}
+
+.destino-texto-completo {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  margin: 8px 0;
+}
+
+.destino-btn-maps {
+  background: #22c55e;
+  color: #0f172a;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.destino-btn-maps:disabled {
+  background: #334155;
+  color: #64748b;
+  cursor: not-allowed;
 }
 
 /* Botões de ação dentro dos popups (resetar, desmarcar) */
@@ -474,12 +527,12 @@ svg#mapa-rj {
   margin: 0 0 8px;
 }
 
-/* Tela de login obrigatório: cobre tudo, acima de qualquer popup */
+/* Popup de login: aparece só quando uma ação exige estar logado */
 #tela-login {
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: #0f172a;
+  background: rgba(15, 23, 42, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -492,8 +545,29 @@ svg#mapa-rj {
 }
 
 #tela-login-conteudo {
+  position: relative;
   width: 100%;
   max-width: 320px;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+#btn-fechar-tela-login {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-tela-login:hover {
+  color: #f1f5f9;
 }
 
 #tela-login-conteudo h1 {
@@ -542,10 +616,49 @@ svg#mapa-rj {
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 #btn-entrar-email:hover {
   background: #16a34a;
+}
+
+#btn-entrar-email:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+/* Spinner de carregamento (verde, combina com o tema/logo) */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(15, 23, 42, 0.3);
+  border-top-color: #0f172a;
+  border-radius: 50%;
+  animation: girar 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.spinner.spinner-grande {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
+  border-color: rgba(34, 197, 94, 0.25);
+  border-top-color: #22c55e;
+  margin: 30px auto;
+}
+
+.spinner.oculto {
+  display: none;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 #btn-alternar-modo {
@@ -619,4 +732,101 @@ svg#mapa-rj {
 
 #btn-confirmar-apelido:hover {
   background: #16a34a;
+}
+
+/* Popup de região (mega-selo) */
+#modal-regiao {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#regiao-conteudo {
+  position: relative;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#regiao-conteudo h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+#btn-fechar-regiao {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-regiao:hover {
+  color: #f1f5f9;
+}
+
+#regiao-status {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 8px;
+}
+
+#regiao-barra {
+  height: 8px;
+  border-radius: 999px;
+  background: #334155;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+#regiao-barra-preenchida {
+  height: 100%;
+  width: 0%;
+  background: #22c55e;
+  transition: width 0.3s ease;
+}
+
+#regiao-instrucao {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+#regiao-resumo:not(:empty) {
+  text-align: left;
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.selo-bloqueado {
+  width: 200px;
+  height: 200px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  opacity: 0.6;
 }

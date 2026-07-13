@@ -20,11 +20,14 @@ App web (PWA) onde o usuário "raspa" os municípios do Rio de Janeiro no mapa c
 ├── assets/icons/desbrava-icone.png  # ícone do app (favicon, PWA, apple-touch-icon)
 ├── data/
 │   ├── rj-municipios.geojson  # fonte geográfica dos municípios do RJ
-│   └── destinos.json          # pontos turísticos por município (parcial)
+│   ├── destinos.json          # pontos turísticos por município
+│   ├── regioes.json           # 8 regiões de governo do RJ (CEPERJ) -> códigos IBGE
+│   └── regioes-resumo.json    # resumo em texto de cada região (reservado, vazio)
 ├── manifest.json          # manifesto do PWA (instalável)
 ├── sw.js                  # service worker (cache básico offline)
 └── tools/
-    └── geojson-to-svg.js # script que gera assets/svg/rj-municipios.svg
+    ├── geojson-to-svg.js # script que gera assets/svg/rj-municipios.svg
+    └── gerar-regioes.js  # script que gera data/regioes.json
 ```
 
 ## Dados do mapa
@@ -52,7 +55,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **PWA (instalável)**: `manifest.json` + `sw.js` deixam o site instalável como app no celular (Android/iOS, "Adicionar à tela inicial") e no PC (Chrome/Edge mostram um botão de instalar), usando o ícone real do "Desbrava" (`assets/icons/desbrava-icone.png`). O viewport trava o zoom nativo da página (`user-scalable=no`) para não conflitar com o zoom próprio do mapa. O service worker usa estratégia "network-first" (busca a versão mais nova sempre que online, só cai no cache offline) — se precisar forçar uma limpeza de cache antigo em algum dispositivo, é só desinstalar/reinstalar o app ou limpar dados do site.
 - **Nome/marca**: o app se chama **Desbrava**. O título "DESBRAVA" (barra de topo e tela de login) usa a fonte "Archivo Black" (Google Fonts), pra combinar com o logo.
 - **Layout tela cheia (estilo Google Maps)**: o mapa é o único "fundo" (`position: fixed`, ocupa a tela toda); toda a UI (barra de progresso, botões de biblioteca/configurações, popups) flutua por cima, fixa, sem se mover com o pan/zoom do mapa. Nomes dos municípios aparecem direto no mapa (`tools/geojson-to-svg.js` gera um `<text>` por município). O popup do selo virou o único lugar para ver detalhes/status/data/destinos turísticos e desmarcar (atrás do menu "⋮", com confirmação) — a antiga seção `#detalhes` foi removida. Novo botão de Configurações (⚙️) reúne o reset geral do mapa.
-- **Login com e-mail/senha obrigatório + Analytics**: `js/firebase-config.js` já tem as chaves reais do projeto Firebase `mapa-raspadinha-rj`. `#tela-login` cobre o app inteiro até o usuário logar ou criar conta (sem login, sem acesso). No primeiro login, um popup pede um apelido (salvo no Firestore, coleção `usuarios/{uid}`) — esse apelido é o que aparece no app dali em diante. Trocamos o login com Google (`signInWithPopup`/`signInWithRedirect`) por e-mail/senha porque o domínio do GitHub Pages provavelmente não estava nos "domínios autorizados" do Firebase — e-mail/senha não depende disso. Números de acesso aparecem em Firebase Console → Analytics (ou [analytics.google.com](https://analytics.google.com), propriedade `G-C5SBMCKN4H`).
+- **Login com e-mail/senha (opcional pra navegar, obrigatório pra interagir) + Analytics**: `js/firebase-config.js` já tem as chaves reais do projeto Firebase `mapa-raspadinha-rj`. Mexer no mapa (arrastar/zoom) não exige login; só pedir login (`exigirLogin()` em `script.js`) quando o usuário tenta abrir um município/região, a biblioteca ou as configurações. No primeiro login, um popup pede um apelido (salvo no Firestore, coleção `usuarios/{uid}`). Sessão dura 30 dias de **inatividade** (renova a cada acesso; só desloga de verdade depois de 30 dias sem abrir o app — ver `CHAVE_ULTIMA_ATIVIDADE` em `js/auth.js`). Login é por e-mail/senha (não Google) porque o domínio do GitHub Pages provavelmente não estava nos "domínios autorizados" do Firebase, exigência específica de provedores OAuth. Números de acesso aparecem em Firebase Console → Analytics (ou [analytics.google.com](https://analytics.google.com), propriedade `G-C5SBMCKN4H`).
   - **Passo pendente**: Console → Authentication → Sign-in method → **Email/senha → Enable** (sem isso, login e cadastro dão erro `auth/operation-not-allowed` — já testei e é exatamente esse o estado atual).
   - **Regra de segurança do Firestore** (Console → Firestore Database → Regras) — sem isso, salvar o apelido falha (modo produção bloqueia tudo por padrão):
     ```
@@ -65,6 +68,10 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
       }
     }
     ```
+- **8 regiões de governo (CEPERJ)**: com o mapa afastado (zoom < 1.8x), os 92 municípios aparecem coloridos pela sua REGIÃO — cinza até todos os municípios dela serem visitados, verde quando a região inteira estiver completa. Clicar num município nessa visão abre o popup da região (`data/regioes.json`, fonte CEPERJ + Lei Complementar 105/2002 pra Costa Verde), com contador, e um "mega-selo" (raspadinha bem maior, 400px) que só fica disponível pra raspar quando a região estiver 100% completa. Espaço reservado pro resumo em texto de cada região em `data/regioes-resumo.json` (vazio, a preencher depois). Zoom máximo foi de 4x pra 10x; nomes dos municípios só aparecem a partir de 3.5x (pra não lotar a tela quando dá pra ver vários de uma vez).
+- **Destinos clicáveis**: cada ponto turístico no popup do município agora é clicável, abrindo um texto reservado (`textoCompleto`, ainda não preenchido em nenhum destino) e um botão "▶️ Abrir no Maps" — fica desabilitado até o destino ter um `linkMaps` de verdade em `data/destinos.json`.
+- **Spinners de carregamento**: no botão de login (enquanto aguarda o Firebase) e no popup do selo/mega-selo (enquanto a imagem carrega) — evita a sensação de "não carregou" em conexões mais lentas. Selos de todos os municípios são pré-carregados em segundo plano assim que o app abre, pro clique de verdade já achar a imagem no cache do navegador.
+- **Botão de compartilhar**: troca o antigo botão de perfil (que só duplicava a função de Configurações) por um de compartilhar o link do app (Web Share API no celular, copia o link como alternativa no desktop).
 - **Placeholder do recurso PRO**: `ehUsuarioPro()` e `baixarDadosOffline()` em `js/script.js` são stubs — sempre retornam "não é PRO" / mostram um aviso "em construção". O botão "Baixar dados offline" já existe em Configurações, mas desabilitado, esperando alguma forma de marcar quem pagou (ex: campo no Firestore).
 
 ## Rodando localmente

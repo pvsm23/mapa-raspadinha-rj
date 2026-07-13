@@ -21,6 +21,7 @@
    ========================================================= */
 
 const STORAGE_KEY = "scratchMapRJ_v1";
+const STORAGE_KEY_REGIOES = "scratchMapRJ_regioes_v1";
 
 // Estrutura salva no localStorage:
 // {
@@ -29,8 +30,12 @@ const STORAGE_KEY = "scratchMapRJ_v1";
 // }
 
 let estadoMapa = {};
+// Estado do mega-selo de cada regiao (independente de estadoMapa):
+// { "serrana": { revelado: true, dataRevelado: "..." } }
+let estadoRegioes = {};
 let destinosPorMunicipio = {};
 let municipioSelecionadoId = null;
+let regiaoSelecionadaId = null;
 let mapaFoiArrastado = false;
 
 // Registra o service worker (PWA instalável no celular e no PC)
@@ -44,10 +49,15 @@ if ("serviceWorker" in navigator) {
 
 document.addEventListener("DOMContentLoaded", () => {
   estadoMapa = carregarEstado();
+  estadoRegioes = carregarEstadoRegioes();
+  construirMapaDeRegioes();
   aplicarEstadoNoSVG();
   atualizarContador();
   inicializarPanZoomDoMapa();
   carregarDestinos();
+  carregarRegioesInfo();
+  carregarResumosRegioes();
+  preCarregarSelos();
 
   const municipios = document.querySelectorAll(".municipio");
   municipios.forEach((path) => {
@@ -80,9 +90,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (evento.target.id === "modal-raspadinha") fecharModalRaspadinha();
     });
 
+  // os itens de destino sao criados dinamicamente; delegacao de evento
+  document
+    .getElementById("modal-destinos")
+    .addEventListener("click", aoClicarDestino);
+
   document
     .getElementById("btn-biblioteca")
-    .addEventListener("click", abrirBibliotecaSelos);
+    .addEventListener("click", () => exigirLogin(abrirBibliotecaSelos));
 
   document
     .getElementById("btn-fechar-biblioteca")
@@ -96,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document
     .getElementById("btn-configuracoes")
-    .addEventListener("click", abrirConfiguracoes);
+    .addEventListener("click", () => exigirLogin(abrirConfiguracoes));
 
   document
     .getElementById("btn-fechar-configuracoes")
@@ -108,12 +123,18 @@ document.addEventListener("DOMContentLoaded", () => {
       if (evento.target.id === "modal-configuracoes") fecharConfiguracoes();
     });
 
-  document.getElementById("btn-login").addEventListener("click", abrirConfiguracoes);
+  document.getElementById("btn-compartilhar").addEventListener("click", compartilharApp);
   document.getElementById("btn-logout").addEventListener("click", sairDaConta);
   document.getElementById("form-login").addEventListener("submit", aoEnviarFormLogin);
   document
     .getElementById("btn-alternar-modo")
     .addEventListener("click", alternarModoLogin);
+  document
+    .getElementById("btn-fechar-tela-login")
+    .addEventListener("click", fecharTelaLogin);
+  document.getElementById("tela-login").addEventListener("click", (evento) => {
+    if (evento.target.id === "tela-login") fecharTelaLogin();
+  });
 
   document
     .getElementById("btn-baixar-offline")
@@ -128,9 +149,61 @@ document.addEventListener("DOMContentLoaded", () => {
       if (evento.key === "Enter") confirmarApelido();
     });
 
+  document
+    .getElementById("btn-fechar-regiao")
+    .addEventListener("click", fecharPopupRegiao);
+  document.getElementById("modal-regiao").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-regiao") fecharPopupRegiao();
+  });
+
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
 });
+
+/**
+ * Só deixa executar `acao` se o usuário estiver logado; senão, abre
+ * o popup de login. Navegar/mexer no mapa (pan/zoom) não passa por
+ * aqui — só interações de verdade (abrir município/região,
+ * biblioteca, configurações).
+ */
+function exigirLogin(acao) {
+  if (window.raspadinhaAuth?.usuarioAtual) {
+    acao();
+  } else {
+    abrirTelaLogin();
+  }
+}
+
+function abrirTelaLogin() {
+  document.getElementById("tela-login").classList.remove("oculto");
+}
+
+function fecharTelaLogin() {
+  document.getElementById("tela-login").classList.add("oculto");
+}
+
+/**
+ * Compartilha o link do app (Web Share API no celular; copia o link
+ * como alternativa no desktop/navegadores sem suporte).
+ */
+function compartilharApp() {
+  const dados = {
+    title: "Desbrava",
+    text: "Desbrava — raspe o mapa do Rio de Janeiro conforme visita cada município!",
+    url: window.location.href,
+  };
+
+  if (navigator.share) {
+    navigator.share(dados).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(dados.url)
+      .then(() => alert("Link copiado! Cole onde quiser compartilhar."))
+      .catch(() => prompt("Copie o link para compartilhar:", dados.url));
+  } else {
+    prompt("Copie o link para compartilhar:", dados.url);
+  }
+}
 
 let modoCadastro = false;
 
@@ -139,7 +212,7 @@ let modoCadastro = false;
  */
 function alternarModoLogin() {
   modoCadastro = !modoCadastro;
-  document.getElementById("btn-entrar-email").textContent = modoCadastro
+  document.querySelector("#btn-entrar-email .btn-texto").textContent = modoCadastro
     ? "Criar conta"
     : "Entrar";
   document.getElementById("btn-alternar-modo").textContent = modoCadastro
@@ -149,9 +222,11 @@ function alternarModoLogin() {
 }
 
 /**
- * Login/cadastro com e-mail e senha (js/auth.js). Enquanto o
- * Firebase não estiver configurado (ver js/firebase-config.js), só
- * mostra um aviso — não quebra o resto do app.
+ * Login/cadastro com e-mail e senha (js/auth.js). Mostra um spinner
+ * enquanto aguarda o Firebase responder (pode demorar em conexões
+ * mais lentas). Enquanto o Firebase não estiver configurado (ver
+ * js/firebase-config.js), só mostra um aviso — não quebra o resto
+ * do app.
  */
 function aoEnviarFormLogin(evento) {
   evento.preventDefault();
@@ -163,7 +238,21 @@ function aoEnviarFormLogin(evento) {
     ? window.raspadinhaAuth?.criarContaComEmail(email, senha)
     : window.raspadinhaAuth?.entrarComEmail(email, senha);
 
-  acao?.catch((erro) => mostrarErroLogin(traduzirErroAuth(erro)));
+  alternarCarregandoLogin(true);
+  acao
+    ?.catch((erro) => mostrarErroLogin(traduzirErroAuth(erro)))
+    .finally(() => alternarCarregandoLogin(false));
+}
+
+/**
+ * Mostra/esconde o spinner de carregamento no botão de login,
+ * desabilitando o botão enquanto aguarda a resposta do Firebase.
+ */
+function alternarCarregandoLogin(carregando) {
+  const botao = document.getElementById("btn-entrar-email");
+  botao.disabled = carregando;
+  botao.querySelector(".spinner").classList.toggle("oculto", !carregando);
+  botao.querySelector(".btn-texto").classList.toggle("oculto", carregando);
 }
 
 function mostrarErroLogin(mensagem) {
@@ -201,29 +290,23 @@ function sairDaConta() {
 }
 
 /**
- * Atualiza a UI (tela de login obrigatória, botão de topo, seção
- * "Conta" nas configurações) de acordo com o login atual.
- * `detalhe` é null (deslogado) ou { usuario, apelido }.
+ * Atualiza a UI (popup de login, seção "Conta" nas configurações) de
+ * acordo com o login atual. `detalhe` é null (deslogado) ou
+ * { usuario, apelido }. Navegar no mapa não exige login — por isso,
+ * ao deslogar, NÃO reabre o popup de login sozinho; ele só aparece
+ * quando alguma ação realmente exigir (ver exigirLogin()).
  */
 function atualizarUiDeConta(detalhe) {
-  const btnLoginTopo = document.getElementById("btn-login");
   const status = document.getElementById("conta-status");
-  const telaLogin = document.getElementById("tela-login");
 
   if (detalhe) {
     const { usuario, apelido } = detalhe;
-    telaLogin.classList.add("oculto");
+    fecharTelaLogin();
     document.getElementById("modal-apelido").classList.add("oculto");
     document.getElementById("form-login").reset();
 
-    btnLoginTopo.textContent = "🟢";
-    btnLoginTopo.title = `Logado como ${apelido}`;
     status.textContent = `Conectado como ${apelido} (${usuario.email})`;
   } else {
-    telaLogin.classList.remove("oculto");
-
-    btnLoginTopo.textContent = "👤";
-    btnLoginTopo.title = "Minha conta";
     status.textContent = "Você não está conectado.";
   }
 }
@@ -293,6 +376,36 @@ function carregarDestinos() {
     });
 }
 
+// { "serrana": { nome: "Região Serrana", municipios: [...codigos IBGE] } }
+let regioesInfo = {};
+
+function carregarRegioesInfo() {
+  fetch("data/regioes.json")
+    .then((resposta) => (resposta.ok ? resposta.json() : {}))
+    .then((dados) => {
+      regioesInfo = dados;
+    })
+    .catch((erro) => {
+      console.error("Não foi possível carregar data/regioes.json:", erro);
+    });
+}
+
+// Resumo em texto de cada região (a preencher depois pelo usuário).
+// { "serrana": { resumo: "..." } }
+let resumosPorRegiao = {};
+
+function carregarResumosRegioes() {
+  fetch("data/regioes-resumo.json")
+    .then((resposta) => (resposta.ok ? resposta.json() : {}))
+    .then((dados) => {
+      resumosPorRegiao = dados;
+    })
+    .catch(() => {
+      // Arquivo ainda nao existe/preenchido -- sem problema, o
+      // popup de regiao so nao mostra resumo nenhum.
+    });
+}
+
 /**
  * Controla arrastar (mover) e zoom do mapa principal:
  * - Mouse: arrastar move o mapa; roda do mouse dá zoom.
@@ -305,8 +418,14 @@ function carregarDestinos() {
 function inicializarPanZoomDoMapa() {
   const viewport = document.getElementById("mapa-viewport");
   const svg = document.getElementById("mapa-rj");
-  const ESCALA_MAXIMA = 4;
+  const ESCALA_MAXIMA = 10;
   const LIMIAR_ARRASTO = 5;
+  // Bem afastado (perto da escala minima) mostra as 8 regioes; a
+  // partir daqui, mostra os 92 municipios individualmente.
+  const LIMIAR_MUNICIPIOS = 1.8;
+  // So a partir daqui os nomes dos municipios aparecem (senao
+  // lotam a tela quando da pra ver muitos de uma vez).
+  const LIMIAR_ROTULOS = 3.5;
 
   let escala = 1;
   let deslocX = 0;
@@ -314,6 +433,7 @@ function inicializarPanZoomDoMapa() {
 
   function aplicarTransform() {
     svg.style.transform = `translate(${deslocX}px, ${deslocY}px) scale(${escala})`;
+    atualizarModoDeVisualizacao(escala, LIMIAR_MUNICIPIOS, LIMIAR_ROTULOS);
   }
 
   function distanciaEMeio(touches) {
@@ -435,6 +555,29 @@ function inicializarPanZoomDoMapa() {
     deslocY = 0;
     aplicarTransform();
   });
+
+  aplicarTransform(); // define o modo inicial (regiões, com escala 1)
+}
+
+/**
+ * true quando o mapa está afastado o bastante pra mostrar as 8
+ * regiões em vez dos 92 municípios individualmente.
+ */
+let modoRegioes = true;
+
+/**
+ * Chamado a cada mudança de zoom: alterna entre visão de municípios
+ * e de regiões, e mostra/esconde os nomes no mapa.
+ */
+function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
+  const svg = document.getElementById("mapa-rj");
+  svg.classList.toggle("mostrar-rotulos", escala >= limiarRotulos);
+
+  const novoModoRegioes = escala < limiarMunicipios;
+  if (novoModoRegioes !== modoRegioes) {
+    modoRegioes = novoModoRegioes;
+    aplicarEstadoNoSVG();
+  }
 }
 
 /**
@@ -448,7 +591,11 @@ function aoClicarMunicipio(path) {
   path.classList.add("clicando");
   setTimeout(() => path.classList.remove("clicando"), 150);
 
-  abrirSeloPorId(path.dataset.municipio, path.dataset.nome);
+  if (modoRegioes) {
+    exigirLogin(() => abrirPopupRegiao(path.dataset.regiao));
+  } else {
+    exigirLogin(() => abrirSeloPorId(path.dataset.municipio, path.dataset.nome));
+  }
 }
 
 /**
@@ -510,8 +657,10 @@ function abrirModalRaspadinha(id, nome) {
 
   const caminhoColorido = `assets/img/selos/${id}.png`;
   const caminhoCapa = `assets/img/selos/${id}fundo.png`;
+  mostrarSpinnerGrande(document.getElementById("scratch-modal-body"), true);
 
   const iniciar = (imageUrl, imageUrlCapa) => {
+    document.getElementById("scratch-modal-body").innerHTML = "";
     initScratchCard({
       containerId: "scratch-modal-body",
       imageUrl,
@@ -552,10 +701,11 @@ function visualizarSeloRevelado(id, nome) {
   mostrarDestinos(id);
 
   const corpo = document.getElementById("scratch-modal-body");
-  corpo.innerHTML = "";
+  mostrarSpinnerGrande(corpo, true);
 
   const caminhoColorido = `assets/img/selos/${id}.png`;
   carregarImagem(caminhoColorido).then((existeColorido) => {
+    corpo.innerHTML = "";
     const img = document.createElement("img");
     img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
     img.alt = nome;
@@ -565,8 +715,12 @@ function visualizarSeloRevelado(id, nome) {
 }
 
 /**
- * Renderiza a lista de pontos turísticos do município (se existir
- * em data/destinos.json) dentro do popup.
+ * Renderiza a lista de pontos turísticos do município (se existir em
+ * data/destinos.json) dentro do popup. Cada item é clicável: abre um
+ * espaço reservado para um texto histórico/curiosidade (a preencher
+ * depois) e um botão "Abrir no Maps" — desabilitado até existir um
+ * link de verdade (campo `linkMaps`, reservado, ainda não existe em
+ * nenhum destino).
  */
 function mostrarDestinos(id) {
   const container = document.getElementById("modal-destinos");
@@ -578,13 +732,47 @@ function mostrarDestinos(id) {
   }
 
   const itens = destino.destinos
-    .map(
-      (d) =>
-        `<li><strong>${escaparHtml(d.nome)}</strong>${escaparHtml(d.descricao)}</li>`
-    )
+    .map((d, indice) => {
+      const temLink = !!d.linkMaps;
+      return `
+        <li>
+          <button type="button" class="destino-item" data-indice="${indice}" aria-expanded="false">
+            <strong>${escaparHtml(d.nome)}</strong>${escaparHtml(d.descricao)}
+          </button>
+          <div class="destino-detalhe oculto" data-indice="${indice}">
+            <p class="destino-texto-completo">${escaparHtml(d.textoCompleto || "Em breve: um pouco da história e curiosidades sobre este lugar.")}</p>
+            <button type="button" class="destino-btn-maps" data-link="${temLink ? escaparHtml(d.linkMaps) : ""}" ${temLink ? "" : "disabled"}>
+              ▶️ Abrir no Maps
+            </button>
+          </div>
+        </li>`;
+    })
     .join("");
 
   container.innerHTML = `<h3>Pontos turísticos</h3><ul>${itens}</ul>`;
+}
+
+/**
+ * Delegação de evento pros itens de destino (criados dinamicamente):
+ * clicar no nome abre/fecha o detalhe; clicar em "Abrir no Maps" (só
+ * quando tiver link) abre num navegador/app de mapas.
+ */
+function aoClicarDestino(evento) {
+  const botaoMaps = evento.target.closest(".destino-btn-maps");
+  if (botaoMaps) {
+    if (botaoMaps.dataset.link) window.open(botaoMaps.dataset.link, "_blank");
+    return;
+  }
+
+  const item = evento.target.closest(".destino-item");
+  if (!item) return;
+
+  const detalhe = document.querySelector(
+    `.destino-detalhe[data-indice="${item.dataset.indice}"]`
+  );
+  const abrindo = detalhe.classList.contains("oculto");
+  detalhe.classList.toggle("oculto");
+  item.setAttribute("aria-expanded", String(abrindo));
 }
 
 function escaparHtml(texto) {
@@ -614,6 +802,20 @@ function carregarImagem(src) {
       resolve(false);
     };
     img.src = src;
+  });
+}
+
+/**
+ * Pré-carrega em segundo plano (sem travar nada) os selos de todos
+ * os municípios, colorido + capa. Assim, quando o usuário abrir um
+ * município mais tarde, a imagem já está no cache do navegador — sem
+ * essa demora inicial que às vezes fazia parecer que não carregou.
+ */
+function preCarregarSelos() {
+  document.querySelectorAll(".municipio").forEach((path) => {
+    const id = path.dataset.municipio;
+    carregarImagem(`assets/img/selos/${id}.png`);
+    carregarImagem(`assets/img/selos/${id}fundo.png`);
   });
 }
 
@@ -691,33 +893,136 @@ function fecharConfiguracoes() {
 }
 
 /**
- * Gera um "selo" temporário (data URL de um canvas) com o nome do
- * município, enquanto os selos ilustrados de verdade não existem.
- * A cor é derivada do código IBGE para variar entre municípios.
+ * Abre o popup de uma região: mostra quantos dos seus municípios já
+ * foram visitados e, só quando TODOS estiverem completos, libera o
+ * mega-selo (raspadinha bem maior) daquela região. Sem os selos de
+ * região reais ainda (assets/img/regioes/<id>.png / <id>fundo.png),
+ * cai no mesmo placeholder gerado na hora que os municípios usam.
  */
-function gerarSeloPlaceholder(id, nome) {
+function abrirPopupRegiao(regiaoId) {
+  regiaoSelecionadaId = regiaoId;
+
+  const idsDaRegiao = municipiosPorRegiao[regiaoId] || [];
+  const nomeRegiao = regioesInfo[regiaoId]?.nome || regiaoId;
+  const visitados = idsDaRegiao.filter((id) => estadoMapa[id]?.visitado).length;
+  const completa = visitados === idsDaRegiao.length && idsDaRegiao.length > 0;
+
+  document.getElementById("regiao-nome").textContent = nomeRegiao;
+  document.getElementById("regiao-status").textContent =
+    `${visitados} / ${idsDaRegiao.length} municípios visitados`;
+  document.getElementById("regiao-barra-preenchida").style.width =
+    `${(visitados / idsDaRegiao.length) * 100}%`;
+  mostrarResumoRegiao(regiaoId);
+
+  const corpo = document.getElementById("regiao-selo-body");
+  corpo.innerHTML = "";
+  const instrucao = document.getElementById("regiao-instrucao");
+
+  if (!completa) {
+    const faltam = idsDaRegiao.length - visitados;
+    instrucao.textContent = `Complete os ${faltam} município${faltam === 1 ? "" : "s"} que falta${faltam === 1 ? "" : "m"} nessa região para desbloquear o selo especial.`;
+    mostrarSpinnerGrande(corpo, false);
+    corpo.innerHTML = `<div class="selo-bloqueado">🔒</div>`;
+    document.getElementById("modal-regiao").classList.remove("oculto");
+    return;
+  }
+
+  if (estadoRegioes[regiaoId]?.revelado) {
+    instrucao.textContent = "";
+    exibirMegaSeloRevelado(regiaoId, corpo);
+  } else {
+    instrucao.textContent = "Região completa! Raspe o selo especial.";
+    mostrarSpinnerGrande(corpo, true);
+    const caminhoColorido = `assets/img/regioes/${regiaoId}.png`;
+    const caminhoCapa = `assets/img/regioes/${regiaoId}fundo.png`;
+    carregarImagem(caminhoColorido).then((existeColorido) => {
+      const imageUrl = existeColorido ? caminhoColorido : gerarSeloPlaceholder(regiaoId, regioesInfo[regiaoId]?.nome || regiaoId, 400);
+      const usarCapa = existeColorido
+        ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
+        : Promise.resolve(null);
+      usarCapa.then((imageUrlCapa) => {
+        corpo.innerHTML = "";
+        initScratchCard({
+          containerId: "regiao-selo-body",
+          imageUrl,
+          imageUrlCapa,
+          tamanho: 400,
+          onComplete: () => marcarRegiaoComoRevelada(regiaoId),
+        });
+      });
+    });
+  }
+
+  document.getElementById("modal-regiao").classList.remove("oculto");
+}
+
+function exibirMegaSeloRevelado(regiaoId, corpo) {
+  const caminhoColorido = `assets/img/regioes/${regiaoId}.png`;
+  carregarImagem(caminhoColorido).then((existeColorido) => {
+    const img = document.createElement("img");
+    img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(regiaoId, regioesInfo[regiaoId]?.nome || regiaoId, 400);
+    img.alt = regioesInfo[regiaoId]?.nome || regiaoId;
+    img.className = "selo-revelado";
+    corpo.appendChild(img);
+  });
+}
+
+function mostrarSpinnerGrande(corpo, mostrar) {
+  corpo.innerHTML = mostrar ? '<div class="spinner spinner-grande"></div>' : "";
+}
+
+/**
+ * Espaço reservado para o resumo em texto de cada região (o usuário
+ * vai preencher depois em data/regioes-resumo.json). Sem esse
+ * arquivo ainda, simplesmente não mostra nada.
+ */
+function mostrarResumoRegiao(regiaoId) {
+  const container = document.getElementById("regiao-resumo");
+  const resumo = resumosPorRegiao[regiaoId]?.resumo;
+  container.textContent = resumo || "";
+}
+
+function marcarRegiaoComoRevelada(regiaoId) {
+  estadoRegioes[regiaoId] = { revelado: true, dataRevelado: new Date().toISOString() };
+  salvarEstadoRegioes();
+}
+
+function fecharPopupRegiao() {
+  document.getElementById("modal-regiao").classList.add("oculto");
+  document.getElementById("regiao-selo-body").innerHTML = "";
+  regiaoSelecionadaId = null;
+}
+
+/**
+ * Gera um "selo" temporário (data URL de um canvas) com o nome do
+ * município (ou região), enquanto os selos ilustrados de verdade
+ * não existem. A cor é derivada do id para variar entre eles.
+ * `tamanho` é maior para o mega-selo de região (ver abrirPopupRegiao).
+ */
+function gerarSeloPlaceholder(id, nome, tamanho = 260) {
   const canvas = document.createElement("canvas");
-  canvas.width = 260;
-  canvas.height = 260;
+  canvas.width = tamanho;
+  canvas.height = tamanho;
   const ctx = canvas.getContext("2d");
+  const centro = tamanho / 2;
 
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   const matiz = hash % 360;
 
   ctx.fillStyle = `hsl(${matiz}, 55%, 35%)`;
-  ctx.fillRect(0, 0, 260, 260);
+  ctx.fillRect(0, 0, tamanho, tamanho);
 
   ctx.fillStyle = `hsl(${matiz}, 55%, 55%)`;
   ctx.beginPath();
-  ctx.arc(130, 105, 55, 0, Math.PI * 2);
+  ctx.arc(centro, centro * 0.81, tamanho * 0.21, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = "#f1f5f9";
-  ctx.font = "bold 16px system-ui, sans-serif";
+  ctx.font = `bold ${Math.round(tamanho * 0.06)}px system-ui, sans-serif`;
   ctx.textAlign = "center";
-  quebrarTextoEmLinhas(ctx, nome, 190, 220, 20).forEach((linha) => {
-    ctx.fillText(linha.texto, 130, linha.y);
+  quebrarTextoEmLinhas(ctx, nome, centro * 1.46, tamanho * 0.85, tamanho * 0.077).forEach((linha) => {
+    ctx.fillText(linha.texto, centro, linha.y);
   });
 
   return canvas.toDataURL();
@@ -748,14 +1053,38 @@ function quebrarTextoEmLinhas(ctx, texto, yInicial, larguraMaxima, alturaLinha) 
 }
 
 /**
- * Pinta o SVG de acordo com o objeto estadoMapa atual.
+ * Pinta o SVG de acordo com o estado atual. Com o mapa afastado
+ * (modoRegioes), a cor de cada município reflete se a REGIÃO INTEIRA
+ * já foi visitada, não o município individualmente.
  */
 function aplicarEstadoNoSVG() {
   document.querySelectorAll(".municipio").forEach((path) => {
     const id = path.dataset.municipio;
-    const visitado = estadoMapa[id]?.visitado;
-    path.classList.toggle("visitado", !!visitado);
+    const visitado = modoRegioes
+      ? regiaoEstaCompleta(path.dataset.regiao)
+      : !!estadoMapa[id]?.visitado;
+    path.classList.toggle("visitado", visitado);
   });
+}
+
+/**
+ * Agrupa os códigos IBGE de município por id de região, lendo direto
+ * do atributo data-regiao de cada <path> (já vem do SVG gerado por
+ * tools/geojson-to-svg.js a partir de data/regioes.json).
+ */
+let municipiosPorRegiao = {};
+
+function construirMapaDeRegioes() {
+  municipiosPorRegiao = {};
+  document.querySelectorAll(".municipio").forEach((path) => {
+    const regiaoId = path.dataset.regiao;
+    (municipiosPorRegiao[regiaoId] ??= []).push(path.dataset.municipio);
+  });
+}
+
+function regiaoEstaCompleta(regiaoId) {
+  const idsDaRegiao = municipiosPorRegiao[regiaoId] || [];
+  return idsDaRegiao.length > 0 && idsDaRegiao.every((id) => estadoMapa[id]?.visitado);
 }
 
 /**
@@ -799,7 +1128,9 @@ function resetarTudo() {
   if (!confirmar) return;
 
   estadoMapa = {};
+  estadoRegioes = {};
   salvarEstado();
+  salvarEstadoRegioes();
   aplicarEstadoNoSVG();
   atualizarContador();
   fecharConfiguracoes();
@@ -817,6 +1148,20 @@ function carregarEstado() {
     return dados ? JSON.parse(dados) : {};
   } catch (erro) {
     console.error("Erro ao carregar estado do LocalStorage:", erro);
+    return {};
+  }
+}
+
+function salvarEstadoRegioes() {
+  localStorage.setItem(STORAGE_KEY_REGIOES, JSON.stringify(estadoRegioes));
+}
+
+function carregarEstadoRegioes() {
+  try {
+    const dados = localStorage.getItem(STORAGE_KEY_REGIOES);
+    return dados ? JSON.parse(dados) : {};
+  } catch (erro) {
+    console.error("Erro ao carregar estado das regiões do LocalStorage:", erro);
     return {};
   }
 }

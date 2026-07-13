@@ -1,12 +1,15 @@
 /**
  * Converte data/rj-municipios.geojson (GeoJSON, WGS84) em um <svg> com
  * um <path> por municipio, mantendo o codigo IBGE como id/data-municipio
- * (mesma convencao usada no mapa de teste da Etapa 1).
+ * (mesma convencao usada no mapa de teste da Etapa 1). Cada path tambem
+ * ganha data-regiao (ver data/regioes.json), usado para colorir por
+ * regiao quando o mapa esta com zoom bem afastado.
  *
  * Projecao: equiretangular simples com correcao de cos(latitude media),
  * suficiente para uma area pequena como o estado do RJ.
  *
- * Uso: node tools/geojson-to-svg.js
+ * Uso: node tools/gerar-regioes.js (antes, se data/regioes.json mudar)
+ *      node tools/geojson-to-svg.js
  * Gera: assets/svg/rj-municipios.svg
  */
 
@@ -14,12 +17,21 @@ const fs = require("fs");
 const path = require("path");
 
 const ENTRADA = path.join(__dirname, "..", "data", "rj-municipios.geojson");
+const REGIOES = path.join(__dirname, "..", "data", "regioes.json");
 const SAIDA = path.join(__dirname, "..", "assets", "svg", "rj-municipios.svg");
 
 const LARGURA_SVG = 800;
 const CASAS_DECIMAIS = 2;
 
 const geojson = JSON.parse(fs.readFileSync(ENTRADA, "utf8"));
+
+// Mapa codigo IBGE -> id da regiao (data/regioes.json), usado para
+// colorir por regiao quando o mapa esta com zoom bem afastado.
+const regioesJson = JSON.parse(fs.readFileSync(REGIOES, "utf8"));
+const idParaRegiao = {};
+for (const [regiaoId, dados] of Object.entries(regioesJson)) {
+  dados.municipios.forEach((codigoIbge) => { idParaRegiao[codigoIbge] = regiaoId; });
+}
 
 // 1. Bounding box em lon/lat
 let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -95,10 +107,12 @@ const paths = featuresOrdenadas
   .map((feature) => {
     const codigoIbge = feature.properties.id;
     const nome = feature.properties.name;
+    const regiaoId = idParaRegiao[codigoIbge];
+    if (!regiaoId) throw new Error(`Municipio sem regiao: ${nome} (${codigoIbge})`);
     const d = feature.geometry.coordinates.map(anelParaPathD).join(" ");
     return (
       `  <path id="mun-${codigoIbge}" data-municipio="${codigoIbge}" ` +
-      `data-nome="${escaparAtributo(nome)}" class="municipio" d="${d}" />`
+      `data-nome="${escaparAtributo(nome)}" data-regiao="${regiaoId}" class="municipio" d="${d}" />`
     );
   })
   .join("\n");

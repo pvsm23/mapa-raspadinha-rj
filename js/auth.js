@@ -38,6 +38,12 @@ import {
 
 const CONFIGURADO = firebaseConfig.apiKey !== "SUBSTITUA_AQUI";
 
+// Sessão dura 30 dias de INATIVIDADE (não 30 dias corridos): toda
+// vez que o app abre com uma sessão válida, o prazo é renovado. Só
+// desloga de verdade se passar 30 dias sem abrir o app nenhuma vez.
+const CHAVE_ULTIMA_ATIVIDADE = "raspadinha_ultima_atividade";
+const TRINTA_DIAS_MS = 30 * 24 * 60 * 60 * 1000;
+
 const AVISO_NAO_CONFIGURADO =
   "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase.";
 
@@ -88,6 +94,19 @@ if (CONFIGURADO) {
   };
 
   onAuthStateChanged(auth, async (usuario) => {
+    if (usuario) {
+      const ultimaAtividade = Number(localStorage.getItem(CHAVE_ULTIMA_ATIVIDADE) || 0);
+      if (ultimaAtividade && Date.now() - ultimaAtividade > TRINTA_DIAS_MS) {
+        // Mais de 30 dias sem abrir o app: desloga de verdade.
+        // onAuthStateChanged dispara de novo com usuario=null.
+        await signOut(auth);
+        return;
+      }
+      localStorage.setItem(CHAVE_ULTIMA_ATIVIDADE, String(Date.now()));
+    } else {
+      localStorage.removeItem(CHAVE_ULTIMA_ATIVIDADE);
+    }
+
     window.raspadinhaAuth.usuarioAtual = usuario;
 
     if (!usuario) {
