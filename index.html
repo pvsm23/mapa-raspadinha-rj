@@ -302,6 +302,11 @@
        selo como se tivesse clicado nele -->
   <button id="btn-buscar-local" aria-label="Buscar município ou ponto turístico" title="Buscar">🔍</button>
 
+  <!-- "Onde estou": pega a localizacao do navegador, descobre em que
+       municipio a pessoa esta e anima o mapa ate la, com um marcador
+       pulsante em cima do municipio -->
+  <button id="btn-onde-estou" aria-label="Mostrar onde estou no mapa" title="Onde estou?">🧭</button>
+
   <div id="modal-busca-local" class="oculto">
     <div id="busca-local-conteudo">
       <button id="btn-fechar-busca-local" aria-label="Fechar">✕</button>
@@ -493,6 +498,11 @@
        amigo) esperando pra ser usada na proxima raspagem -->
   <div id="aviso-brilhante-pendente" class="oculto">
     <span id="aviso-brilhante-texto"></span>
+  </div>
+
+  <!-- Aviso flutuante: mensagem do botao "Onde estou" (erro/sucesso) -->
+  <div id="toast-onde-estou" class="oculto">
+    <span id="toast-onde-estou-texto"></span>
   </div>
 
   <!-- Aviso flutuante: login rodando em segundo plano (nao trava a tela) -->

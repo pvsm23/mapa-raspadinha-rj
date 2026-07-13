@@ -327,6 +327,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("input-busca-local").addEventListener("input", filtrarBuscaLocal);
 
+  // ---- "Onde estou": localizar no mapa via GPS ----
+  document.getElementById("btn-onde-estou").addEventListener("click", mostrarOndeEstou);
+
   document.getElementById("btn-instalar-pwa").addEventListener("click", instalarPwa);
   document
     .getElementById("btn-como-instalar-pwa")
@@ -1235,16 +1238,16 @@ function pontoDentroDoAnel(x, y, anel) {
 }
 
 /**
- * Testa um ponto (lon, lat) contra um Polygon do GeoJSON (array de
- * anéis: o primeiro é o contorno externo, os demais são buracos).
+ * Testa um ponto (lon, lat) contra a geometria de um município. Os
+ * municípios costeiros do RJ têm partes desconectadas (ilhas +
+ * continente), gravadas como vários "anéis" dentro do mesmo Polygon
+ * em vez de um MultiPolygon de verdade -- então cada anel aqui é um
+ * pedaço separado do território (não um buraco): o ponto conta como
+ * dentro do município se cair em QUALQUER um dos anéis.
  */
 function pontoDentroDoPoligono(lon, lat, aneis) {
   if (!aneis?.length) return false;
-  let dentro = pontoDentroDoAnel(lon, lat, aneis[0]);
-  for (let i = 1; i < aneis.length; i++) {
-    if (pontoDentroDoAnel(lon, lat, aneis[i])) dentro = false; // dentro de um buraco
-  }
-  return dentro;
+  return aneis.some((anel) => pontoDentroDoAnel(lon, lat, anel));
 }
 
 /**
@@ -1286,6 +1289,112 @@ function atualizarVerificacaoMunicipio(id, verificado, motivo) {
   sincronizarProgressoOnline();
   sincronizarMunicipioOnline(id);
   atualizarProgressoConquistas();
+}
+
+/**
+ * Descobre em qual município (id IBGE) uma coordenada cai, testando
+ * contra o contorno geográfico real de cada um (mesmo dado usado na
+ * verificação por GPS). Retorna null se não cair em nenhum -- ex:
+ * fora do estado do Rio de Janeiro.
+ */
+function encontrarMunicipioPorCoordenada(lon, lat) {
+  for (const id in geojsonMunicipios) {
+    if (pontoDentroDoPoligono(lon, lat, geojsonMunicipios[id])) return id;
+  }
+  return null;
+}
+
+/**
+ * Botão "🧭 Onde estou": pega a localização do navegador, descobre o
+ * município correspondente, anima o mapa até lá (reaproveitando
+ * `window.controleMapa.focarEmMunicipio`, o mesmo usado pela busca) e
+ * marca o local com um ícone pulsante (ver `colocarMarcadorLocalAtual`).
+ * Não abre o selo nem conta como visita -- é só um "você está aqui".
+ */
+async function mostrarOndeEstou() {
+  const botao = document.getElementById("btn-onde-estou");
+  botao.disabled = true;
+  botao.classList.add("buscando");
+  esconderToastOndeEstou();
+
+  try {
+    const { lat, lon } = await obterLocalizacaoAtual();
+    const id = encontrarMunicipioPorCoordenada(lon, lat);
+
+    if (!id) {
+      colocarMarcadorLocalAtual(null);
+      mostrarToastOndeEstou("Você parece estar fora do Rio de Janeiro.");
+      return;
+    }
+
+    const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
+    window.controleMapa?.focarEmMunicipio(id);
+    setTimeout(() => colocarMarcadorLocalAtual(path), 650);
+    mostrarToastOndeEstou(`Você está em ${path?.dataset.nome || "um município do RJ"}.`);
+  } catch (erro) {
+    mostrarToastOndeEstou(erro.message);
+  } finally {
+    botao.disabled = false;
+    botao.classList.remove("buscando");
+  }
+}
+
+/**
+ * Desenha (ou reposiciona) o marcador "você está aqui" em cima do
+ * centro do município `path`, como um <g> dentro do próprio SVG do
+ * mapa -- assim ele acompanha o pan/zoom automaticamente, sem precisar
+ * converter coordenadas de tela. Remove qualquer marcador anterior.
+ */
+function colocarMarcadorLocalAtual(path) {
+  document.getElementById("marcador-local-atual")?.remove();
+  if (!path) return;
+
+  const svg = document.getElementById("mapa-rj");
+  const caixa = path.getBBox();
+  const cx = caixa.x + caixa.width / 2;
+  const cy = caixa.y + caixa.height / 2;
+  const ns = "http://www.w3.org/2000/svg";
+
+  const grupo = document.createElementNS(ns, "g");
+  grupo.id = "marcador-local-atual";
+
+  const anel = document.createElementNS(ns, "circle");
+  anel.setAttribute("class", "marcador-anel");
+  anel.setAttribute("cx", cx);
+  anel.setAttribute("cy", cy);
+  anel.setAttribute("r", 6);
+
+  const ponto = document.createElementNS(ns, "circle");
+  ponto.setAttribute("class", "marcador-ponto");
+  ponto.setAttribute("cx", cx);
+  ponto.setAttribute("cy", cy);
+  ponto.setAttribute("r", 5);
+
+  const emoji = document.createElementNS(ns, "text");
+  emoji.setAttribute("class", "marcador-emoji");
+  emoji.setAttribute("x", cx);
+  emoji.setAttribute("y", cy - 12);
+  emoji.textContent = "🧭";
+
+  grupo.append(anel, ponto, emoji);
+  svg.appendChild(grupo);
+}
+
+/**
+ * Aviso flutuante simples (sucesso/erro) pro botão "Onde estou".
+ * Some sozinho depois de alguns segundos.
+ */
+let temporizadorToastOndeEstou = null;
+function mostrarToastOndeEstou(mensagem) {
+  const toast = document.getElementById("toast-onde-estou");
+  document.getElementById("toast-onde-estou-texto").textContent = mensagem;
+  toast.classList.remove("oculto");
+  clearTimeout(temporizadorToastOndeEstou);
+  temporizadorToastOndeEstou = setTimeout(esconderToastOndeEstou, 4000);
+}
+
+function esconderToastOndeEstou() {
+  document.getElementById("toast-onde-estou").classList.add("oculto");
 }
 
 /**
