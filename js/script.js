@@ -135,6 +135,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("tela-login").addEventListener("click", (evento) => {
     if (evento.target.id === "tela-login") fecharTelaLogin();
   });
+  document.getElementById("toast-login").addEventListener("click", () => {
+    const toast = document.getElementById("toast-login");
+    if (!toast.classList.contains("toast-erro")) return;
+    esconderToastLogin();
+    abrirTelaLogin();
+  });
 
   document
     .getElementById("btn-baixar-offline")
@@ -226,11 +232,12 @@ function alternarModoLogin() {
 }
 
 /**
- * Login/cadastro com e-mail e senha (js/auth.js). Mostra um spinner
- * enquanto aguarda o Firebase responder (pode demorar em conexões
- * mais lentas). Enquanto o Firebase não estiver configurado (ver
- * js/firebase-config.js), só mostra um aviso — não quebra o resto
- * do app.
+ * Login/cadastro com e-mail e senha (js/auth.js). Em vez de travar a
+ * tela esperando o Firebase responder, fecha o popup de login na
+ * hora e deixa a requisição rolando em segundo plano — o andamento
+ * (carregando/sucesso/erro) aparece num aviso flutuante no canto
+ * inferior direito (ver mostrarToastLogin/atualizarToastLogin), pra
+ * não obrigar o usuário a ficar parado esperando.
  */
 function aoEnviarFormLogin(evento) {
   evento.preventDefault();
@@ -243,45 +250,49 @@ function aoEnviarFormLogin(evento) {
 
   const email = document.getElementById("input-email").value.trim();
   const senha = document.getElementById("input-senha").value;
-  const acao = modoCadastro
+  if (!email || !senha) {
+    mostrarErroLogin("Preencha e-mail e senha.");
+    return;
+  }
+
+  const eraCadastro = modoCadastro;
+  const acao = eraCadastro
     ? window.raspadinhaAuth.criarContaComEmail(email, senha)
     : window.raspadinhaAuth.entrarComEmail(email, senha);
 
-  alternarCarregandoLogin(true);
-
-  // Se demorar demais (conexão lenta, Firebase engasgado), avisa em
-  // vez de deixar o usuário sem nenhum feedback por muito tempo.
-  const avisoDemora = setTimeout(() => {
-    mostrarErroLogin("Isso está demorando mais que o esperado... verifique sua internet.");
-  }, 8000);
+  fecharTelaLogin();
+  mostrarToastLogin(eraCadastro ? "Criando sua conta..." : "Login sendo efetuado...");
 
   acao
-    .catch((erro) => mostrarErroLogin(traduzirErroAuth(erro)))
-    .finally(() => {
-      clearTimeout(avisoDemora);
-      alternarCarregandoLogin(false);
+    .then(() => {
+      atualizarToastLogin("sucesso", eraCadastro ? "Conta criada! ✅" : "Login realizado! ✅");
+      setTimeout(esconderToastLogin, 2500);
+    })
+    .catch((erro) => {
+      atualizarToastLogin("erro", traduzirErroAuth(erro));
     });
 }
 
 /**
- * Mostra/esconde o spinner de carregamento no botão de login,
- * desabilitando o botão e os campos enquanto aguarda a resposta do
- * Firebase — e troca o texto do botão pra deixar bem claro que algo
- * está acontecendo, mesmo que o spinner passe despercebido.
+ * Aviso flutuante (#toast-login) que acompanha o login/cadastro
+ * rodando em segundo plano. No estado de erro fica clicável: um
+ * clique reabre o popup de login pra tentar de novo.
  */
-function alternarCarregandoLogin(carregando) {
-  const botao = document.getElementById("btn-entrar-email");
-  botao.disabled = carregando;
-  document.getElementById("input-email").disabled = carregando;
-  document.getElementById("input-senha").disabled = carregando;
-  botao.querySelector(".spinner").classList.toggle("oculto", !carregando);
+function mostrarToastLogin(mensagem) {
+  const toast = document.getElementById("toast-login");
+  toast.classList.remove("oculto", "toast-sucesso", "toast-erro");
+  document.getElementById("toast-login-texto").textContent = mensagem;
+}
 
-  const textoEl = botao.querySelector(".btn-texto");
-  if (carregando) {
-    textoEl.textContent = modoCadastro ? "Criando conta..." : "Entrando...";
-  } else {
-    textoEl.textContent = modoCadastro ? "Criar conta" : "Entrar";
-  }
+function atualizarToastLogin(tipo, mensagem) {
+  const toast = document.getElementById("toast-login");
+  toast.classList.remove("toast-sucesso", "toast-erro");
+  toast.classList.add(`toast-${tipo}`);
+  document.getElementById("toast-login-texto").textContent = mensagem;
+}
+
+function esconderToastLogin() {
+  document.getElementById("toast-login").classList.add("oculto");
 }
 
 function mostrarErroLogin(mensagem) {

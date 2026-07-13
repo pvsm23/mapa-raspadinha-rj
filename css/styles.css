@@ -919,3 +919,56 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
     opacity: 0;
   }
 }
+
+/* Aviso flutuante de login em segundo plano (nao trava a tela) */
+#toast-login {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 16px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(6px);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  font-size: 0.85rem;
+  max-width: 260px;
+  cursor: default;
+  animation: entrar-toast 0.25s ease;
+}
+
+#toast-login.oculto {
+  display: none;
+}
+
+#toast-login.toast-sucesso {
+  border: 1px solid #22c55e;
+}
+
+#toast-login.toast-erro {
+  border: 1px solid #ef4444;
+  cursor: pointer;
+}
+
+#toast-login .spinner {
+  flex-shrink: 0;
+}
+
+#toast-login.toast-sucesso .spinner,
+#toast-login.toast-erro .spinner {
+  display: none;
+}
+
+@keyframes entrar-toast {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
