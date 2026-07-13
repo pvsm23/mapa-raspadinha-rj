@@ -104,7 +104,79 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", (evento) => {
       if (evento.target.id === "modal-configuracoes") fecharConfiguracoes();
     });
+
+  document.getElementById("btn-login").addEventListener("click", entrarComGoogle);
+  document.getElementById("btn-login-config").addEventListener("click", entrarComGoogle);
+  document.getElementById("btn-logout").addEventListener("click", sairDaConta);
+
+  document
+    .getElementById("btn-baixar-offline")
+    .addEventListener("click", baixarDadosOffline);
+
+  document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
 });
+
+/**
+ * Login/logout com Google (js/auth.js). Enquanto o Firebase não
+ * estiver configurado (ver js/firebase-config.js), entrar() só
+ * mostra um aviso — não quebra o resto do app.
+ */
+function entrarComGoogle() {
+  window.raspadinhaAuth?.entrar();
+}
+
+function sairDaConta() {
+  window.raspadinhaAuth?.sair();
+}
+
+/**
+ * Atualiza a UI (botão de topo + seção "Conta" nas configurações)
+ * de acordo com o usuário logado (ou null, se deslogado).
+ */
+function atualizarUiDeConta(usuario) {
+  const btnLoginTopo = document.getElementById("btn-login");
+  const status = document.getElementById("conta-status");
+  const btnLoginConfig = document.getElementById("btn-login-config");
+  const btnLogout = document.getElementById("btn-logout");
+
+  if (usuario) {
+    btnLoginTopo.textContent = "🟢";
+    btnLoginTopo.title = `Logado como ${usuario.displayName}`;
+    status.textContent = `Conectado como ${usuario.displayName} (${usuario.email})`;
+    btnLoginConfig.classList.add("oculto");
+    btnLogout.classList.remove("oculto");
+  } else {
+    btnLoginTopo.textContent = "👤";
+    btnLoginTopo.title = "Entrar com Google";
+    status.textContent = "Você não está conectado.";
+    btnLoginConfig.classList.remove("oculto");
+    btnLogout.classList.add("oculto");
+  }
+}
+
+/**
+ * TODO(PRO): stub do futuro recurso de baixar os dados (selos e
+ * destinos) para uso offline, restrito a assinantes PRO. O botão já
+ * fica desabilitado no HTML (ver #btn-baixar-offline) até isso
+ * existir de verdade — esta função é só para não precisar mexer em
+ * vários lugares do código quando a hora chegar.
+ */
+function baixarDadosOffline() {
+  if (!ehUsuarioPro()) {
+    alert("Recurso em construção — em breve disponível para assinantes PRO.");
+    return;
+  }
+  // TODO(PRO): implementar o download de verdade (ex: empacotar
+  // assets/img/selos + data/destinos.json num arquivo só).
+}
+
+/**
+ * TODO(PRO): trocar por uma verificação real de assinatura (ex:
+ * campo no Firestore ligado ao usuário logado) quando existir.
+ */
+function ehUsuarioPro() {
+  return window.raspadinhaAuth?.ehPro() ?? false;
+}
 
 /**
  * Carrega data/destinos.json (pontos turísticos por município).

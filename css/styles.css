@@ -425,3 +425,45 @@ svg#mapa-rj {
 #configuracoes-conteudo h2 {
   text-align: center;
 }
+
+#configuracoes-conteudo h3 {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 20px 0 8px;
+}
+
+#configuracoes-conteudo button {
+  display: block;
+  width: 100%;
+  background: #334155;
+  color: #f1f5f9;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 6px;
+}
+
+#configuracoes-conteudo button:hover {
+  background: #475569;
+}
+
+#configuracoes-conteudo button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+#configuracoes-conteudo #btn-reset-tudo {
+  background: #ef4444;
+}
+
+#configuracoes-conteudo #btn-reset-tudo:hover {
+  background: #dc2626;
+}
+
+#conta-status {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 8px;
+}

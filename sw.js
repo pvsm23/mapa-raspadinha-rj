@@ -10,13 +10,15 @@
  * atualizaria se o CACHE_NAME mudasse a cada vez, o que é fácil de
  * esquecer de fazer.
  */
-const CACHE_NAME = "mapa-raspadinha-v2";
+const CACHE_NAME = "mapa-raspadinha-v3";
 const ARQUIVOS_BASICOS = [
   "./",
   "./index.html",
   "./css/styles.css",
   "./js/script.js",
   "./js/scratch-card.js",
+  "./js/auth.js",
+  "./js/firebase-config.js",
   "./manifest.json",
 ];
 

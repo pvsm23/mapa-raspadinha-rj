@@ -10,8 +10,10 @@ Site estático onde o usuário "raspa" municípios do Rio de Janeiro no mapa con
 ├── css/
 │   └── styles.css
 ├── js/
-│   ├── script.js         # lógica principal do mapa e estado
-│   └── scratch-card.js   # motor genérico de raspadinha (canvas)
+│   ├── script.js           # lógica principal do mapa e estado
+│   ├── scratch-card.js     # motor genérico de raspadinha (canvas)
+│   ├── auth.js             # login com Google (Firebase Authentication)
+│   └── firebase-config.js  # chaves do projeto Firebase (SUBSTITUA_AQUI)
 ├── assets/
 │   ├── svg/              # SVG dos 92 municípios (gerado, ver tools/)
 │   └── img/selos/        # imagens dos "selos" revelados ao raspar (futuro)
@@ -50,6 +52,8 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **Etapa 4**: publicação no GitHub Pages.
 - **PWA (instalável)**: `manifest.json` + `sw.js` deixam o site instalável como app no celular (Android/iOS, "Adicionar à tela inicial") e no PC (Chrome/Edge mostram um botão de instalar). O viewport trava o zoom nativo da página (`user-scalable=no`) para não conflitar com o zoom próprio do mapa. Ícones em `assets/icons/` são um placeholder simples — trocar por uma arte de verdade quando tiver. O service worker usa estratégia "network-first" (busca a versão mais nova sempre que online, só cai no cache offline) — se precisar forçar uma limpeza de cache antigo em algum dispositivo, é só desinstalar/reinstalar o app ou limpar dados do site.
 - **Layout tela cheia (estilo Google Maps)**: o mapa é o único "fundo" (`position: fixed`, ocupa a tela toda); toda a UI (barra de progresso, botões de biblioteca/configurações, popups) flutua por cima, fixa, sem se mover com o pan/zoom do mapa. Nomes dos municípios aparecem direto no mapa (`tools/geojson-to-svg.js` gera um `<text>` por município). O popup do selo virou o único lugar para ver detalhes/status/data/destinos turísticos e desmarcar (atrás do menu "⋮", com confirmação) — a antiga seção `#detalhes` foi removida. Novo botão de Configurações (⚙️) reúne o reset geral do mapa.
+- **Login com Google (em progresso)**: `js/auth.js` já implementa o login via Firebase Authentication, mas fica desativado até `js/firebase-config.js` ter as chaves reais de um projeto Firebase (hoje só tem `"SUBSTITUA_AQUI"`). Passo a passo pra gerar essas chaves: [console.firebase.google.com](https://console.firebase.google.com) → criar projeto → adicionar app Web (ícone `</>`) → copiar o `firebaseConfig` → colar em `js/firebase-config.js` → ativar Authentication → Sign-in method → Google. Sem isso, o botão de login (👤 no topo, ou dentro de Configurações) só mostra um aviso — não quebra o resto do app.
+- **Placeholder do recurso PRO**: `ehUsuarioPro()` e `baixarDadosOffline()` em `js/script.js` são stubs — sempre retornam "não é PRO" / mostram um aviso "em construção". O botão "Baixar dados offline" já existe em Configurações, mas desabilitado, esperando: 1) login funcionando e 2) alguma forma de marcar quem pagou (ex: campo no Firestore).
 
 ## Rodando localmente
 

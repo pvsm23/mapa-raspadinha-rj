@@ -223,6 +223,7 @@
       <p id="progresso">Visitados: <span id="contador">0</span> / <span id="total">3</span></p>
     </div>
     <div id="botoes-topo">
+      <button id="btn-login" aria-label="Entrar com Google" title="Entrar com Google">👤</button>
       <button id="btn-biblioteca" aria-label="Biblioteca de selos" title="Biblioteca de selos">📖</button>
       <button id="btn-configuracoes" aria-label="Configurações" title="Configurações">⚙️</button>
     </div>
@@ -264,9 +265,31 @@
       <button id="btn-fechar-configuracoes" aria-label="Fechar">✕</button>
       <h2>Configurações</h2>
       <button id="btn-reset-tudo">🗑️ Resetar mapa inteiro</button>
+
+      <div id="secao-conta">
+        <h3>Conta</h3>
+        <p id="conta-status">Você não está conectado.</p>
+        <button id="btn-login-config">Entrar com Google</button>
+        <button id="btn-logout" class="oculto">Sair da conta</button>
+      </div>
+
+      <div id="secao-pro">
+        <h3>Recursos PRO</h3>
+        <!--
+          TODO(PRO): esta secao e um placeholder. A funcao de baixar
+          os dados (selos/destinos) para uso offline soh deve ficar
+          disponivel para quem for PRO. Falta: login funcionando +
+          alguma forma de saber quem pagou (ex: campo no Firestore).
+          Ver ehUsuarioPro() e baixarDadosOffline() em js/script.js.
+        -->
+        <button id="btn-baixar-offline" disabled title="Em breve, para assinantes PRO">
+          ⬇️ Baixar dados offline (em breve)
+        </button>
+      </div>
     </div>
   </div>
 
+  <script type="module" src="js/auth.js"></script>
   <script src="js/scratch-card.js"></script>
   <script src="js/script.js"></script>
 </body>
