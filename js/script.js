@@ -129,10 +129,17 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarPanZoomDoMapa();
   carregarDestinos();
   carregarCuriosidades();
-  carregarGeoJsonMunicipios();
+  carregarGeoJsonMunicipios().then(() => verificarLocalizacaoAoAbrirApp());
   carregarRegioesInfo();
   carregarResumosRegioes();
   preCarregarSelos();
+
+  // Confere de novo sempre que o app volta a ficar visível (ex: usuário
+  // minimizou/trocou de app e voltou) -- ver verificarLocalizacaoAoAbrirApp
+  // pra entender o que isso detecta (e o que NÃO detecta).
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") verificarLocalizacaoAoAbrirApp();
+  });
 
   const municipios = document.querySelectorAll("#mapa-rj .municipio");
   municipios.forEach((path) => {
@@ -813,7 +820,7 @@ function carregarCuriosidades() {
  * verificarPresencaNoMunicipio).
  */
 function carregarGeoJsonMunicipios() {
-  fetch("data/rj-municipios.geojson")
+  return fetch("data/rj-municipios.geojson")
     .then((resposta) => (resposta.ok ? resposta.json() : null))
     .then((geo) => {
       if (!geo?.features) return;
@@ -1404,6 +1411,95 @@ function mostrarToastOndeEstou(mensagem) {
 
 function esconderToastOndeEstou() {
   document.getElementById("toast-onde-estou").classList.add("oculto");
+}
+
+const CHAVE_ULTIMA_VERIFICACAO_LOCAL = "scratchMapRJ_ultima_verificacao_local_v1";
+
+/**
+ * Confere, silenciosamente, se a pessoa está dentro de algum município
+ * agora -- chamada ao abrir o app e sempre que ele volta a ficar
+ * visível (ex: usuário minimizou/trocou de app no celular e voltou).
+ *
+ * IMPORTANTE (limitação real da plataforma web, não só deste app): não
+ * existe geofencing em segundo plano pra PWA -- nenhum navegador
+ * executa JS com o app totalmente fechado. Isso aqui NÃO detecta um
+ * município por onde a pessoa passou horas atrás enquanto o app
+ * estava fechado; só confere a localização atual no exato momento em
+ * que o app é aberto/reaberto. Também só verifica SE a permissão de
+ * localização já tinha sido concedida antes (por isso não pede
+ * permissão sozinho, sem contexto, toda vez que o app abre).
+ */
+async function verificarLocalizacaoAoAbrirApp() {
+  if (!navigator.permissions?.query) return;
+
+  const agora = Date.now();
+  const ultima = Number(localStorage.getItem(CHAVE_ULTIMA_VERIFICACAO_LOCAL) || 0);
+  if (agora - ultima < 2 * 60 * 1000) return; // no máximo 1x a cada 2 minutos
+  localStorage.setItem(CHAVE_ULTIMA_VERIFICACAO_LOCAL, String(agora));
+
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    if (status.state !== "granted") return;
+
+    const { lat, lon } = await obterLocalizacaoAtual();
+    const id = encontrarMunicipioPorCoordenada(lon, lat);
+    if (!id) return;
+
+    const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
+    const nome = path?.dataset.nome;
+    if (!nome) return;
+
+    const dados = estadoMapa[id];
+    if (dados?.visitado && dados?.verificado) return; // já tudo certo
+
+    if (dados?.visitado && !dados?.verificado) {
+      // já tinha raspado, só faltava confirmar o local -- confirma sozinho
+      atualizarVerificacaoMunicipio(id, true, "");
+      mostrarAvisoMunicipioDetectado(nome, null);
+      return;
+    }
+
+    mostrarAvisoMunicipioDetectado(nome, () => {
+      exigirLogin(() => {
+        window.controleMapa?.focarEmMunicipio(id);
+        setTimeout(() => abrirSeloPorId(id, nome), 650);
+      });
+    });
+  } catch {
+    // sem permissão/sinal/tempo esgotado -- silencioso, não interrompe o uso do app
+  }
+}
+
+let temporizadorAvisoMunicipioDetectado = null;
+
+/**
+ * Aviso flutuante do "detectamos que você está em X" -- se `aoClicar`
+ * for passado, mostra um botão de ação (ex: "Raspar selo"); se for
+ * null, é só um aviso informativo (ex: visita que já tava pendente de
+ * confirmação e acabou de ser confirmada sozinha).
+ */
+function mostrarAvisoMunicipioDetectado(nome, aoClicar) {
+  const aviso = document.getElementById("aviso-municipio-detectado");
+  const botao = document.getElementById("btn-aviso-municipio-detectado-acao");
+
+  document.getElementById("aviso-municipio-detectado-texto").textContent = aoClicar
+    ? `📍 Detectamos que você está em ${nome}!`
+    : `📍 Confirmamos sua visita a ${nome}!`;
+
+  if (aoClicar) {
+    botao.classList.remove("oculto");
+    botao.onclick = () => {
+      aviso.classList.add("oculto");
+      aoClicar();
+    };
+  } else {
+    botao.classList.add("oculto");
+    botao.onclick = null;
+  }
+
+  aviso.classList.remove("oculto");
+  clearTimeout(temporizadorAvisoMunicipioDetectado);
+  temporizadorAvisoMunicipioDetectado = setTimeout(() => aviso.classList.add("oculto"), 10000);
 }
 
 /**
