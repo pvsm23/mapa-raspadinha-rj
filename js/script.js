@@ -334,6 +334,11 @@ document.addEventListener("DOMContentLoaded", () => {
     window.raspadinhaAuth?.definirPerfilPublico(evento.target.checked);
   });
 
+  // ---- Notificações locais ----
+  document.getElementById("check-notificacoes").addEventListener("change", (evento) => {
+    alternarNotificacoes(evento.target.checked);
+  });
+
   // ---- Busca de município/ponto turístico ----
   document.getElementById("btn-buscar-local").addEventListener("click", abrirBuscaLocal);
   document.getElementById("btn-fechar-busca-local").addEventListener("click", fecharBuscaLocal);
@@ -1413,6 +1418,111 @@ function esconderToastOndeEstou() {
   document.getElementById("toast-onde-estou").classList.add("oculto");
 }
 
+/* ============================================================
+   Notificações locais: disparadas pelo próprio app enquanto ele
+   está aberto (mesmo minimizado/em outra aba) -- via
+   Notification API + Service Worker (sw.js), pra funcionar melhor
+   no Android (Chrome no Android exige showNotification() por um
+   Service Worker; `new Notification()` direto costuma falhar lá).
+   NÃO é push de verdade: não chega com o app 100% fechado, porque
+   isso exigiria um servidor disparando via Firebase Cloud Messaging.
+   Ativado/desativado em Configurações → Notificações
+   (#check-notificacoes), preferência puramente local (dispositivo).
+   ============================================================ */
+
+const CHAVE_NOTIFICACOES_ATIVADAS = "scratchMapRJ_notificacoes_ativadas_v1";
+
+/**
+ * true só quando o navegador concedeu a permissão E o usuário não
+ * desativou manualmente o toggle em Configurações (o navegador não
+ * deixa "revogar" a permissão via JS -- então a desativação local é
+ * só uma preferência nossa que soma à checagem).
+ */
+function notificacoesPermitidas() {
+  return (
+    typeof Notification !== "undefined" &&
+    Notification.permission === "granted" &&
+    localStorage.getItem(CHAVE_NOTIFICACOES_ATIVADAS) !== "false"
+  );
+}
+
+/**
+ * Mostra uma notificação do sistema (fora da aba/app), se permitido.
+ * Silenciosa se não tiver permissão -- nunca interrompe o uso normal
+ * do app por causa disso.
+ */
+async function dispararNotificacaoLocal(titulo, opcoes = {}) {
+  if (!notificacoesPermitidas()) return;
+  try {
+    if (navigator.serviceWorker) {
+      const registro = await navigator.serviceWorker.ready;
+      await registro.showNotification(titulo, {
+        icon: "assets/icons/desbrava-icone.png",
+        badge: "assets/icons/desbrava-icone.png",
+        ...opcoes,
+      });
+    } else {
+      new Notification(titulo, opcoes);
+    }
+  } catch (erro) {
+    console.error("Falha ao mostrar notificação:", erro);
+  }
+}
+
+/**
+ * Reflete no checkbox de Configurações o estado real da permissão do
+ * navegador -- chamada ao carregar a página e sempre que o modal de
+ * Configurações é aberto (a permissão pode ter mudado nas
+ * configurações do próprio navegador/site a qualquer momento).
+ */
+function sincronizarCheckboxNotificacoes() {
+  const checkbox = document.getElementById("check-notificacoes");
+  const status = document.getElementById("notificacoes-status");
+
+  if (typeof Notification === "undefined") {
+    checkbox.checked = false;
+    checkbox.disabled = true;
+    status.textContent = "Seu navegador não suporta notificações.";
+    status.classList.remove("oculto");
+    return;
+  }
+
+  if (Notification.permission === "denied") {
+    checkbox.checked = false;
+    checkbox.disabled = true;
+    status.textContent = "Notificações bloqueadas nas configurações do navegador/site.";
+    status.classList.remove("oculto");
+    return;
+  }
+
+  checkbox.disabled = false;
+  status.classList.add("oculto");
+  checkbox.checked = notificacoesPermitidas();
+}
+
+/**
+ * Clique no checkbox de Configurações: pede permissão na hora (se
+ * ainda não foi decidida) ou só ativa/desativa a preferência local
+ * (se a permissão já tinha sido concedida antes).
+ */
+async function alternarNotificacoes(ativar) {
+  if (!ativar) {
+    localStorage.setItem(CHAVE_NOTIFICACOES_ATIVADAS, "false");
+    return;
+  }
+
+  if (Notification.permission === "default") {
+    const resultado = await Notification.requestPermission();
+    if (resultado !== "granted") {
+      sincronizarCheckboxNotificacoes();
+      return;
+    }
+  }
+
+  localStorage.setItem(CHAVE_NOTIFICACOES_ATIVADAS, "true");
+  sincronizarCheckboxNotificacoes();
+}
+
 const CHAVE_ULTIMA_VERIFICACAO_LOCAL = "scratchMapRJ_ultima_verificacao_local_v1";
 
 /**
@@ -1482,9 +1592,10 @@ function mostrarAvisoMunicipioDetectado(nome, aoClicar) {
   const aviso = document.getElementById("aviso-municipio-detectado");
   const botao = document.getElementById("btn-aviso-municipio-detectado-acao");
 
-  document.getElementById("aviso-municipio-detectado-texto").textContent = aoClicar
+  const mensagem = aoClicar
     ? `📍 Detectamos que você está em ${nome}!`
     : `📍 Confirmamos sua visita a ${nome}!`;
+  document.getElementById("aviso-municipio-detectado-texto").textContent = mensagem;
 
   if (aoClicar) {
     botao.classList.remove("oculto");
@@ -1500,6 +1611,15 @@ function mostrarAvisoMunicipioDetectado(nome, aoClicar) {
   aviso.classList.remove("oculto");
   clearTimeout(temporizadorAvisoMunicipioDetectado);
   temporizadorAvisoMunicipioDetectado = setTimeout(() => aviso.classList.add("oculto"), 10000);
+
+  // Também dispara uma notificação do sistema, pra avisar mesmo se a
+  // aba/app não estiver em primeiro plano no momento (ver seção de
+  // notificações locais acima -- só funciona com o app ainda aberto,
+  // não com ele fechado de verdade).
+  dispararNotificacaoLocal(mensagem, {
+    body: aoClicar ? "Toque pra raspar o selo." : "",
+    tag: "municipio-detectado",
+  });
 }
 
 /**
@@ -2164,6 +2284,7 @@ function fecharBibliotecaSelos() {
 }
 
 function abrirConfiguracoes() {
+  sincronizarCheckboxNotificacoes();
   document.getElementById("modal-configuracoes").classList.remove("oculto");
 }
 
@@ -2393,12 +2514,44 @@ function marcarConquistaComoRevelada(chave) {
 /**
  * Chamada sempre que o progresso muda (marcarComoVisitado). Se o
  * modal de conquistas estiver aberto, re-renderiza pra barra de
- * progresso e o desbloqueio aparecerem na hora.
+ * progresso e o desbloqueio aparecerem na hora. Independente disso,
+ * também confere se alguma conquista acabou de ser desbloqueada (ver
+ * verificarNovasConquistasDesbloqueadas), pra poder notificar mesmo
+ * com o modal fechado.
  */
 function atualizarProgressoConquistas() {
+  verificarNovasConquistasDesbloqueadas();
   if (!document.getElementById("modal-conquistas").classList.contains("oculto")) {
     abrirConquistas();
   }
+}
+
+const CHAVE_CONQUISTAS_NOTIFICADAS = "scratchMapRJ_conquistas_notificadas_v1";
+
+/**
+ * Compara o progresso atual de cada conquista contra a meta e
+ * notifica (uma única vez por conquista, controlado por uma lista no
+ * localStorage) as que acabaram de ser desbloqueadas -- mesmo que o
+ * modal de Conquistas nunca tenha sido aberto pra "ver" a mudança.
+ */
+function verificarNovasConquistasDesbloqueadas() {
+  const ctx = calcularContextoConquistas();
+  const jaNotificadas = new Set(JSON.parse(localStorage.getItem(CHAVE_CONQUISTAS_NOTIFICADAS) || "[]"));
+  let mudou = false;
+
+  DEFINICOES_CONQUISTAS.forEach((def) => {
+    const { atual, meta } = progressoConquista(def, ctx);
+    if (atual >= meta && !jaNotificadas.has(def.chave)) {
+      jaNotificadas.add(def.chave);
+      mudou = true;
+      dispararNotificacaoLocal("🏆 Conquista desbloqueada!", {
+        body: `${def.titulo} — raspe o selo pra revelar.`,
+        tag: `conquista-${def.chave}`,
+      });
+    }
+  });
+
+  if (mudou) localStorage.setItem(CHAVE_CONQUISTAS_NOTIFICADAS, JSON.stringify([...jaNotificadas]));
 }
 
 function fecharConquistas() {

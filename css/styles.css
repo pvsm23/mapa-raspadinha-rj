@@ -1576,6 +1576,24 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   margin-bottom: 0;
 }
 
+/* ---- Notificações ---- */
+
+#label-notificacoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+#notificacoes-status {
+  font-size: 0.78rem;
+  color: #f87171;
+  margin: -4px 0 10px;
+}
+
 /* ---- Perfil público ---- */
 
 #label-perfil-publico {

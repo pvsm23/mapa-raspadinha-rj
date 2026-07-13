@@ -10,7 +10,7 @@
  * atualizaria se o CACHE_NAME mudasse a cada vez, o que é fácil de
  * esquecer de fazer.
  */
-const CACHE_NAME = "mapa-raspadinha-v4";
+const CACHE_NAME = "mapa-raspadinha-v5";
 const ARQUIVOS_BASICOS = [
   "./",
   "./index.html",
@@ -40,6 +40,20 @@ self.addEventListener("activate", (evento) => {
     )
   );
   self.clients.claim();
+});
+
+// Notificações locais (ver dispararNotificacaoLocal em js/script.js):
+// ao tocar na notificação, foca uma aba já aberta do app ou abre uma
+// nova, em vez de só fechar a notificação sem fazer nada.
+self.addEventListener("notificationclick", (evento) => {
+  evento.notification.close();
+  evento.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientes) => {
+      const existente = clientes.find((cliente) => "focus" in cliente);
+      if (existente) return existente.focus();
+      return self.clients.openWindow("./");
+    })
+  );
 });
 
 self.addEventListener("fetch", (evento) => {
