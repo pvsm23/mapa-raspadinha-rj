@@ -31,13 +31,24 @@ tem espaço reservado no código/dados, só falta o conteúdo em si.
 - **Selos dos municípios** — `assets/img/selos/<código-ibge>.png`
   (colorido) e `assets/img/selos/<código-ibge>fundo.png` (preto e
   branco, capa raspável). Sem eles, cai no placeholder gerado na hora.
+- **Versão dourada dos selos de município** (raspadinha brilhante) —
+  `assets/img/selos/<código-ibge>dourado.png`. Opcional: sem ela, o
+  selo brilhante usa a arte normal mesmo (só perde a arte dourada,
+  mas continua com o efeito de partículas).
 - **Mega-selos das 8 regiões** — `assets/img/regioes/<id>.png` /
   `<id>fundo.png` (ids: costa-verde, metropolitana, serrana,
   baixadas-litoraneas, norte-fluminense, noroeste-fluminense,
   centro-sul-fluminense, medio-paraiba).
-- **Selos das 5 conquistas** — `assets/img/conquistas/<chave>.png` /
-  `<chave>fundo.png` (chaves: `10pct`, `25pct`, `50pct`, `75pct`,
-  `100pct`).
+- **Versão dourada dos mega-selos de região** —
+  `assets/img/regioes/<id>dourado.png` (mesma ideia dos municípios).
+- **Selos das 24 conquistas** — `assets/img/conquistas/<chave>.png` /
+  `<chave>fundo.png`. Chaves atuais: `primeiros-passos`, `25pct`,
+  `50pct`, `75pct`, `100pct`, `streak-7`, `dia-3`, `dia-5`, `dia-8`,
+  `regiao-1`, `regiao-25pct`, `regiao-50pct`, `regiao-100pct`,
+  `brilhante-1`, `brilhante-3`, `brilhante-5`, `brilhante-10`,
+  `brilhante-25`, `brilhante-50`, `brilhante-100pct`,
+  `regiao-brilhante-1`, `regiao-brilhante-25pct`,
+  `regiao-brilhante-50pct`, `regiao-brilhante-100pct`.
 
 ## Configuração no Firebase Console (fora do código)
 
@@ -53,3 +64,10 @@ tem espaço reservado no código/dados, só falta o conteúdo em si.
 - **Recurso PRO**: alguma forma de marcar quem pagou (ex: campo no
   Firestore) para liberar `baixarDadosOffline()` de verdade — hoje é
   só um placeholder desabilitado.
+- **Contorno exato das regiões**: hoje o contorno de cada região no
+  modo afastado é uma aproximação (fecho convexo dos municípios dela,
+  ver `construirContornosDeRegiao` em `js/script.js`), não o contorno
+  real/côncavo. Pra ficar exato precisaria unir de verdade os
+  polígonos dos municípios (union de polígonos), o que exige uma
+  biblioteca de geometria (ex: turf.js) — não incluída no projeto por
+  enquanto.

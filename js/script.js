@@ -23,6 +23,7 @@
 const STORAGE_KEY = "scratchMapRJ_v1";
 const STORAGE_KEY_REGIOES = "scratchMapRJ_regioes_v1";
 const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
+const STORAGE_KEY_STREAK = "scratchMapRJ_streak_v1";
 
 // Estrutura salva no localStorage:
 // {
@@ -57,6 +58,10 @@ let estadoRegioes = {};
 // Estado das raspadinhas de conquista (10/25/50/75/100% do mapa):
 // { "10pct": { revelado: true, dataRevelado: "..." } }
 let estadoConquistas = {};
+// Sequencia de dias seguidos abrindo o app (streak), pra conquista
+// "7 dias seguidos" -- local, nao depende do check-in (semanal) no
+// Firestore pra nao precisar de leitura assincrona so pra isso.
+let estadoStreak = { ultimoDia: null, contagem: 0 };
 let destinosPorMunicipio = {};
 let curiosidadesPorMunicipio = {};
 // Limites geograficos reais dos municipios (data/rj-municipios.geojson),
@@ -115,7 +120,10 @@ document.addEventListener("DOMContentLoaded", () => {
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
   estadoConquistas = carregarEstadoConquistas();
+  estadoStreak = carregarEstadoStreak();
+  registrarAcessoDeHoje();
   construirMapaDeRegioes();
+  construirContornosDeRegiao();
   aplicarEstadoNoSVG();
   atualizarContador();
   inicializarPanZoomDoMapa();
@@ -263,6 +271,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-ranking").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-ranking") fecharRanking();
   });
+  document.getElementById("btn-ranking-global").addEventListener("click", () => alternarAbaRanking("global"));
+  document.getElementById("btn-ranking-amigos").addEventListener("click", () => alternarAbaRanking("amigos"));
 
   // ---- Conquistas ----
   document
@@ -303,6 +313,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("check-perfil-publico").addEventListener("change", (evento) => {
     window.raspadinhaAuth?.definirPerfilPublico(evento.target.checked);
   });
+
+  // ---- Busca de município/ponto turístico ----
+  document.getElementById("btn-buscar-local").addEventListener("click", abrirBuscaLocal);
+  document.getElementById("btn-fechar-busca-local").addEventListener("click", fecharBuscaLocal);
+  document.getElementById("modal-busca-local").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-busca-local") fecharBuscaLocal();
+  });
+  document.getElementById("input-busca-local").addEventListener("input", filtrarBuscaLocal);
 
   document.getElementById("btn-instalar-pwa").addEventListener("click", instalarPwa);
   document
@@ -1018,6 +1036,37 @@ function inicializarPanZoomDoMapa() {
   });
 
   aplicarTransform(); // define o modo inicial (regiões, com escala 1)
+
+  /**
+   * Interface exposta pra fora do fechamento (usada pela busca de
+   * município/ponto turístico): anima o mapa até centralizar um
+   * município na tela com o zoom aplicado. Ancora o zoom exatamente
+   * no centro atual do município na tela (mesma matemática do zoom
+   * por roda do mouse) e só depois desloca (pan) esse ponto fixo até
+   * o centro do viewport -- assim não precisa converter unidades do
+   * viewBox do SVG pra pixels de tela.
+   */
+  window.controleMapa = {
+    focarEmMunicipio(id, escalaAlvo = 4) {
+      const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
+      if (!path) return;
+
+      const rectMunicipio = path.getBoundingClientRect();
+      const rectViewport = viewport.getBoundingClientRect();
+      const ancoraX = rectMunicipio.left + rectMunicipio.width / 2 - rectViewport.left;
+      const ancoraY = rectMunicipio.top + rectMunicipio.height / 2 - rectViewport.top;
+
+      svg.style.transition = "transform 0.6s ease";
+      aplicarZoomAncorado(escalaAlvo, ancoraX, ancoraY);
+      deslocX += rectViewport.width / 2 - ancoraX;
+      deslocY += rectViewport.height / 2 - ancoraY;
+      aplicarTransform();
+
+      setTimeout(() => {
+        svg.style.transition = "";
+      }, 650);
+    },
+  };
 }
 
 /**
@@ -1035,6 +1084,10 @@ function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
   svg.classList.toggle("mostrar-rotulos", escala >= limiarRotulos);
 
   const novoModoRegioes = escala < limiarMunicipios;
+  // Sempre sincroniza a classe (nao so quando muda) pra garantir que
+  // o estado visual inicial (contornos de regiao, bordas de
+  // municipio escondidas) fique certo mesmo antes de qualquer zoom.
+  svg.classList.toggle("modo-regioes", novoModoRegioes);
   if (novoModoRegioes !== modoRegioes) {
     modoRegioes = novoModoRegioes;
     aplicarEstadoNoSVG();
@@ -1278,6 +1331,7 @@ function abrirModalRaspadinha(id, nome) {
   document.getElementById("modal-status").textContent = "";
   document.getElementById("modal-instrucao").textContent =
     "Raspe com o dedo ou o mouse para revelar!";
+  document.getElementById("modal-selo-estatistica").textContent = "";
   mostrarDestinos(id);
 
   // Decide a sorte JÁ na abertura (não na conclusão): assim dá pra
@@ -1340,7 +1394,13 @@ function abrirModalRaspadinha(id, nome) {
  * diz se achou algum PNG de verdade (pra saber se vale a pena tentar
  * carregar uma capa raspável combinando com a arte).
  */
-async function resolverImagemColorida(prefixo, brilhante, idParaPlaceholder, nomeParaPlaceholder) {
+async function resolverImagemColorida(
+  prefixo,
+  brilhante,
+  idParaPlaceholder,
+  nomeParaPlaceholder,
+  tamanhoPlaceholder
+) {
   if (brilhante) {
     const caminhoDourado = `${prefixo}dourado.png`;
     if (await carregarImagem(caminhoDourado)) return { url: caminhoDourado, arteReal: true };
@@ -1348,7 +1408,7 @@ async function resolverImagemColorida(prefixo, brilhante, idParaPlaceholder, nom
   const caminhoNormal = `${prefixo}.png`;
   if (await carregarImagem(caminhoNormal)) return { url: caminhoNormal, arteReal: true };
   return {
-    url: gerarSeloPlaceholder(idParaPlaceholder, nomeParaPlaceholder),
+    url: gerarSeloPlaceholder(idParaPlaceholder, nomeParaPlaceholder, tamanhoPlaceholder),
     arteReal: false,
   };
 }
@@ -1379,6 +1439,7 @@ function visualizarSeloRevelado(id, nome) {
   document.getElementById("modal-instrucao").textContent = "";
   mostrarDestinos(id);
   mostrarCuriosidade(id);
+  mostrarEstatisticaSeloMunicipio(id);
 
   const corpo = document.getElementById("scratch-modal-body");
   mostrarSpinnerGrande(corpo, true);
@@ -1415,6 +1476,55 @@ function mostrarCuriosidade(id) {
 }
 
 /**
+ * Mostra quantas contas têm o selo de um município (e a % em relação
+ * ao total de contas criadas) -- calculado na hora via
+ * getCountFromServer, sem travar o resto do popup.
+ */
+async function mostrarEstatisticaSeloMunicipio(id) {
+  const el = document.getElementById("modal-selo-estatistica");
+  el.textContent = "Calculando quantas contas têm esse selo...";
+  try {
+    const [qtd, total] = await Promise.all([
+      window.raspadinhaAuth.contarPessoasComMunicipioVerificado(id),
+      window.raspadinhaAuth.contarTotalContas(),
+    ]);
+    if (!total) {
+      el.textContent = "";
+      return;
+    }
+    const pct = (qtd / total) * 100;
+    el.textContent = `👥 ${qtd} conta${qtd === 1 ? "" : "s"} tem esse selo (${pct.toFixed(1)}% de ${total})`;
+  } catch (erro) {
+    console.error("Falha ao carregar estatística do selo:", erro);
+    el.textContent = "";
+  }
+}
+
+/**
+ * Mesma ideia, pro mega-selo de região.
+ */
+async function mostrarEstatisticaSeloRegiao(regiaoId) {
+  const el = document.getElementById("regiao-selo-estatistica");
+  if (!el) return;
+  el.textContent = "Calculando quantas contas têm esse selo...";
+  try {
+    const [qtd, total] = await Promise.all([
+      window.raspadinhaAuth.contarPessoasComRegiao(regiaoId),
+      window.raspadinhaAuth.contarTotalContas(),
+    ]);
+    if (!total) {
+      el.textContent = "";
+      return;
+    }
+    const pct = (qtd / total) * 100;
+    el.textContent = `👥 ${qtd} conta${qtd === 1 ? "" : "s"} tem esse mega-selo (${pct.toFixed(1)}% de ${total})`;
+  } catch (erro) {
+    console.error("Falha ao carregar estatística do mega-selo:", erro);
+    el.textContent = "";
+  }
+}
+
+/**
  * Renderiza a lista de pontos turísticos do município (se existir em
  * data/destinos.json) dentro do popup. Cada item é clicável: abre um
  * espaço reservado para um texto histórico/curiosidade (a preencher
@@ -1422,6 +1532,89 @@ function mostrarCuriosidade(id) {
  * link de verdade (campo `linkMaps`, reservado, ainda não existe em
  * nenhum destino).
  */
+/* ============================================================
+   Busca de município/ponto turístico (canto inferior direito): ao
+   escolher um resultado, anima o zoom até o local (ver
+   window.controleMapa.focarEmMunicipio em inicializarPanZoomDoMapa)
+   e abre o selo, como se tivesse clicado nele no mapa.
+   ============================================================ */
+
+function construirIndiceBusca() {
+  const itens = [];
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
+    const id = path.dataset.municipio;
+    const nome = path.dataset.nome;
+    itens.push({ tipo: "municipio", id, nomeMunicipio: nome, texto: nome });
+
+    destinosPorMunicipio[id]?.destinos?.forEach((d) => {
+      itens.push({
+        tipo: "destino",
+        id,
+        nomeMunicipio: nome,
+        nomeDestino: d.nome,
+        texto: `${d.nome} ${nome}`,
+      });
+    });
+  });
+  return itens;
+}
+
+function abrirBuscaLocal() {
+  document.getElementById("input-busca-local").value = "";
+  document.getElementById("busca-local-resultados").innerHTML = "";
+  document.getElementById("modal-busca-local").classList.remove("oculto");
+  document.getElementById("input-busca-local").focus();
+}
+
+function fecharBuscaLocal() {
+  document.getElementById("modal-busca-local").classList.add("oculto");
+}
+
+function filtrarBuscaLocal() {
+  const termo = document.getElementById("input-busca-local").value.trim().toLowerCase();
+  const container = document.getElementById("busca-local-resultados");
+
+  if (!termo) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const resultados = construirIndiceBusca()
+    .filter((item) => item.texto.toLowerCase().includes(termo))
+    .slice(0, 30);
+
+  if (!resultados.length) {
+    container.innerHTML = "<p>Nada encontrado.</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+  resultados.forEach((item) => {
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "busca-local-item";
+    botao.innerHTML =
+      item.tipo === "municipio"
+        ? `📍 ${escaparHtml(item.nomeMunicipio)}`
+        : `🎯 ${escaparHtml(item.nomeDestino)} <span class="busca-local-sub">${escaparHtml(item.nomeMunicipio)}</span>`;
+    botao.addEventListener("click", () => selecionarResultadoBusca(item));
+    container.appendChild(botao);
+  });
+}
+
+/**
+ * Fecha a busca, anima o mapa até o município (zoom + centralização)
+ * e, quando a animação termina, abre o selo -- igual a clicar nele
+ * direto no mapa.
+ */
+function selecionarResultadoBusca(item) {
+  fecharBuscaLocal();
+  exigirLogin(() => {
+    window.controleMapa?.focarEmMunicipio(item.id);
+    setTimeout(() => abrirSeloPorId(item.id, item.nomeMunicipio), 650);
+  });
+}
+
 function mostrarDestinos(id) {
   const container = document.getElementById("modal-destinos");
   const destino = destinosPorMunicipio[id];
@@ -1637,10 +1830,9 @@ function renderizarGradeRegioesNaBiblioteca() {
     img.alt = nome;
     img.className = revelado ? "selo-colorido" : "selo-cinza";
 
-    const caminhoColorido = `assets/img/regioes/${id}.png`;
     if (revelado) {
-      carregarImagem(caminhoColorido).then((existeColorido) => {
-        img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
+      resolverImagemColorida(`assets/img/regioes/${id}`, brilhante, id, nome).then((resultado) => {
+        img.src = resultado.url;
       });
     } else {
       img.src = gerarSeloPlaceholder(id, nome);
@@ -1669,17 +1861,18 @@ function renderizarGradeConquistasNaBiblioteca() {
   const grade = document.getElementById("biblioteca-grade-conquistas");
   grade.innerHTML = "";
 
-  const totalMunicipios = document.querySelectorAll("#mapa-rj .municipio").length;
-  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
-  const desbloqueadas = DEFINICOES_CONQUISTAS.filter(
-    (c) => visitados >= Math.ceil(totalMunicipios * c.pct)
-  ).length;
+  const ctx = calcularContextoConquistas();
+  const desbloqueadas = DEFINICOES_CONQUISTAS.filter((def) => {
+    const { atual, meta } = progressoConquista(def, ctx);
+    return atual >= meta;
+  }).length;
   document.getElementById("biblioteca-titulo-conquistas").textContent =
     `Conquistas (${desbloqueadas} / ${DEFINICOES_CONQUISTAS.length})`;
 
-  DEFINICOES_CONQUISTAS.forEach(({ chave, titulo, pct }) => {
-    const limiar = Math.ceil(totalMunicipios * pct);
-    const desbloqueada = visitados >= limiar;
+  DEFINICOES_CONQUISTAS.forEach((def) => {
+    const { chave, titulo } = def;
+    const { atual, meta } = progressoConquista(def, ctx);
+    const desbloqueada = atual >= meta;
     const revelado = desbloqueada && !!estadoConquistas[chave]?.revelado;
 
     const item = document.createElement("button");
@@ -1726,46 +1919,188 @@ function fecharConfiguracoes() {
 }
 
 /* ============================================================
-   Conquistas: raspadinha própria pra cada marco (10/25/50/75/100%
-   dos municípios do RJ). Cada limiar é arredondado pra CIMA
-   (Math.ceil) -- ex: 10% de 92 = 9.2, vira 10.
+   Conquistas: raspadinha própria pra cada marco. Vários TIPOS de
+   meta (não só "X% dos municípios") -- ver progressoConquista().
+   Percentuais são sempre arredondados pra CIMA (Math.ceil).
    ============================================================ */
 
 const DEFINICOES_CONQUISTAS = [
-  { chave: "10pct", titulo: "Primeiros Passos", pct: 0.1 },
-  { chave: "25pct", titulo: "Explorador Iniciante", pct: 0.25 },
-  { chave: "50pct", titulo: "Meio Caminho Andado", pct: 0.5 },
-  { chave: "75pct", titulo: "Quase Lá", pct: 0.75 },
-  { chave: "100pct", titulo: "Desbravador Completo", pct: 1 },
+  { chave: "primeiros-passos", titulo: "Primeiros Passos", tipo: "municipios", meta: 3 },
+  { chave: "25pct", titulo: "Explorador Iniciante", tipo: "municipios-pct", meta: 0.25 },
+  { chave: "50pct", titulo: "Meio Caminho Andado", tipo: "municipios-pct", meta: 0.5 },
+  { chave: "75pct", titulo: "Quase Lá", tipo: "municipios-pct", meta: 0.75 },
+  { chave: "100pct", titulo: "Desbravador", tipo: "municipios-pct", meta: 1 },
+
+  { chave: "streak-7", titulo: "Semana Cheia", tipo: "streak", meta: 7 },
+
+  { chave: "dia-3", titulo: "Dia Corrido", tipo: "municipios-no-dia", meta: 3 },
+  { chave: "dia-5", titulo: "Maratona do Dia", tipo: "municipios-no-dia", meta: 5 },
+  { chave: "dia-8", titulo: "Turbo Turista", tipo: "municipios-no-dia", meta: 8 },
+
+  { chave: "regiao-1", titulo: "Primeira Região", tipo: "regioes", meta: 1 },
+  { chave: "regiao-25pct", titulo: "Regiões em Dobro", tipo: "regioes-pct", meta: 0.25 },
+  { chave: "regiao-50pct", titulo: "Metade do Estado", tipo: "regioes-pct", meta: 0.5 },
+  { chave: "regiao-100pct", titulo: "Senhor das Regiões", tipo: "regioes-pct", meta: 1 },
+
+  { chave: "brilhante-1", titulo: "Primeira Fagulha", tipo: "brilhantes", meta: 1 },
+  { chave: "brilhante-3", titulo: "Coleção Dourada", tipo: "brilhantes", meta: 3 },
+  { chave: "brilhante-5", titulo: "Mão de Ouro", tipo: "brilhantes", meta: 5 },
+  { chave: "brilhante-10", titulo: "Sortudo", tipo: "brilhantes", meta: 10 },
+  { chave: "brilhante-25", titulo: "Ímã de Sorte", tipo: "brilhantes", meta: 25 },
+  { chave: "brilhante-50", titulo: "Rei do Brilho", tipo: "brilhantes", meta: 50 },
+  { chave: "brilhante-100pct", titulo: "Tudo Reluz", tipo: "brilhantes-pct", meta: 1 },
+
+  { chave: "regiao-brilhante-1", titulo: "Região Radiante", tipo: "regioes-brilhantes", meta: 1 },
+  { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25 },
+  { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5 },
+  { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1 },
 ];
+
+/**
+ * Maior quantidade de municípios verificados no MESMO dia de
+ * calendário (agrupando por `dataVisita`) -- alimenta as conquistas
+ * "municipios-no-dia" (visitar 3/5/8 num único dia).
+ */
+function maiorQuantidadeMunicipiosNoMesmoDia() {
+  const contagemPorDia = {};
+  Object.keys(estadoMapa).forEach((id) => {
+    if (!estaVerificado(id)) return;
+    const data = estadoMapa[id].dataVisita;
+    if (!data) return;
+    const diaChave = new Date(data).toDateString();
+    contagemPorDia[diaChave] = (contagemPorDia[diaChave] || 0) + 1;
+  });
+  const valores = Object.values(contagemPorDia);
+  return valores.length ? Math.max(...valores) : 0;
+}
+
+/**
+ * Junta todos os números que as conquistas precisam, calculados uma
+ * vez por abertura/atualização (evita recalcular tudo pra cada
+ * conquista da lista).
+ */
+function calcularContextoConquistas() {
+  const totalMunicipios = document.querySelectorAll("#mapa-rj .municipio").length;
+  const totalRegioes = Object.keys(municipiosPorRegiao).length;
+  return {
+    totalMunicipios,
+    totalRegioes,
+    municipiosVerificados: Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length,
+    regioesCompletas: Object.keys(municipiosPorRegiao).filter((id) => regiaoEstaCompleta(id)).length,
+    municipiosBrilhantes: Object.keys(estadoMapa).filter(
+      (id) => estadoMapa[id]?.visitado && estadoMapa[id]?.brilhante
+    ).length,
+    regioesBrilhantes: Object.keys(estadoRegioes).filter(
+      (id) => estadoRegioes[id]?.revelado && estadoRegioes[id]?.brilhante
+    ).length,
+    maiorNoDia: maiorQuantidadeMunicipiosNoMesmoDia(),
+    streakAtual: estadoStreak.contagem,
+  };
+}
+
+/**
+ * Progresso atual/meta de UMA conquista, de acordo com o `tipo`
+ * dela, usando o contexto já calculado (ver calcularContextoConquistas).
+ */
+function progressoConquista(def, ctx) {
+  switch (def.tipo) {
+    case "municipios":
+      return { atual: Math.min(ctx.municipiosVerificados, def.meta), meta: def.meta };
+    case "municipios-pct": {
+      const meta = Math.ceil(ctx.totalMunicipios * def.meta);
+      return { atual: Math.min(ctx.municipiosVerificados, meta), meta };
+    }
+    case "streak":
+      return { atual: Math.min(ctx.streakAtual, def.meta), meta: def.meta };
+    case "municipios-no-dia":
+      return { atual: Math.min(ctx.maiorNoDia, def.meta), meta: def.meta };
+    case "regioes":
+      return { atual: Math.min(ctx.regioesCompletas, def.meta), meta: def.meta };
+    case "regioes-pct": {
+      const meta = Math.max(1, Math.ceil(ctx.totalRegioes * def.meta));
+      return { atual: Math.min(ctx.regioesCompletas, meta), meta };
+    }
+    case "brilhantes":
+      return { atual: Math.min(ctx.municipiosBrilhantes, def.meta), meta: def.meta };
+    case "brilhantes-pct":
+      return { atual: Math.min(ctx.municipiosBrilhantes, ctx.totalMunicipios), meta: ctx.totalMunicipios };
+    case "regioes-brilhantes":
+      return { atual: Math.min(ctx.regioesBrilhantes, def.meta), meta: def.meta };
+    case "regioes-brilhantes-pct": {
+      const meta = Math.max(1, Math.ceil(ctx.totalRegioes * def.meta));
+      return { atual: Math.min(ctx.regioesBrilhantes, meta), meta };
+    }
+    default:
+      return { atual: 0, meta: def.meta || 1 };
+  }
+}
 
 function abrirConquistas() {
   const container = document.getElementById("conquistas-lista");
   container.innerHTML = "";
 
-  const totalMunicipios = document.querySelectorAll("#mapa-rj .municipio").length;
-  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
+  const ctx = calcularContextoConquistas();
 
-  DEFINICOES_CONQUISTAS.forEach(({ chave, titulo, pct }) => {
-    const limiar = Math.ceil(totalMunicipios * pct);
-    const atual = Math.min(visitados, limiar);
-    const desbloqueada = visitados >= limiar;
+  DEFINICOES_CONQUISTAS.forEach((def) => {
+    const { atual, meta } = progressoConquista(def, ctx);
+    const desbloqueada = atual >= meta;
 
     const item = document.createElement("div");
     item.className = "conquista-item";
     item.innerHTML = `
-      <h3>${escaparHtml(titulo)} <span class="conquista-pct">${Math.round(pct * 100)}%</span></h3>
-      <p class="conquista-progresso-texto">${atual} / ${limiar} municípios</p>
-      <div class="conquista-barra"><div class="conquista-barra-preenchida" style="width:${(atual / limiar) * 100}%"></div></div>
-      <div class="conquista-selo-body" id="conquista-selo-${chave}"></div>
-      <p class="conquista-instrucao" id="conquista-instrucao-${chave}"></p>
+      <h3>${escaparHtml(def.titulo)}</h3>
+      <span class="conquista-raridade" id="conquista-raridade-${def.chave}">Calculando raridade...</span>
+      <p class="conquista-progresso-texto">${atual} / ${meta}</p>
+      <div class="conquista-barra"><div class="conquista-barra-preenchida" style="width:${(atual / meta) * 100}%"></div></div>
+      <div class="conquista-selo-body" id="conquista-selo-${def.chave}"></div>
+      <p class="conquista-instrucao" id="conquista-instrucao-${def.chave}"></p>
     `;
     container.appendChild(item);
 
-    renderizarSeloConquista(chave, titulo, desbloqueada);
+    renderizarSeloConquista(def.chave, def.titulo, desbloqueada);
   });
 
   document.getElementById("modal-conquistas").classList.remove("oculto");
+  carregarRaridadesConquistas();
+}
+
+/**
+ * Nível de raridade de uma conquista, baseado em % de contas que já
+ * a desbloquearam: comum (mais da metade) até "farmador de aura"
+ * (menos de 0.5%, praticamente ninguém tem).
+ */
+function calcularRaridade(percentual) {
+  if (percentual >= 50) return { nivel: "Comum", classe: "raridade-comum" };
+  if (percentual >= 25) return { nivel: "Incomum", classe: "raridade-incomum" };
+  if (percentual >= 10) return { nivel: "Raro", classe: "raridade-raro" };
+  if (percentual >= 3) return { nivel: "Muito raro", classe: "raridade-muito-raro" };
+  if (percentual >= 0.5) return { nivel: "Lendário", classe: "raridade-lendario" };
+  return { nivel: "Farmador de Aura", classe: "raridade-farmador" };
+}
+
+/**
+ * Busca (em segundo plano, sem travar a abertura do modal) quantas
+ * contas têm cada conquista, pra calcular a raridade. Cada item
+ * atualiza seu próprio texto assim que a consulta responder --
+ * checa se o elemento ainda existe, caso o modal já tenha fechado.
+ */
+async function carregarRaridadesConquistas() {
+  const total = await window.raspadinhaAuth.contarTotalContas();
+  if (!total) {
+    document.querySelectorAll(".conquista-raridade").forEach((el) => (el.textContent = ""));
+    return;
+  }
+
+  DEFINICOES_CONQUISTAS.forEach((def) => {
+    window.raspadinhaAuth.contarPessoasComConquista(def.chave).then((qtd) => {
+      const el = document.getElementById(`conquista-raridade-${def.chave}`);
+      if (!el) return;
+      const percentual = (qtd / total) * 100;
+      const { nivel, classe } = calcularRaridade(percentual);
+      el.textContent = `${nivel} · ${qtd} pessoa${qtd === 1 ? "" : "s"} (${percentual.toFixed(1)}%)`;
+      el.className = `conquista-raridade ${classe}`;
+    });
+  });
 }
 
 function renderizarSeloConquista(chave, titulo, desbloqueada) {
@@ -1773,7 +2108,7 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
   const instrucao = document.getElementById(`conquista-instrucao-${chave}`);
 
   if (!desbloqueada) {
-    instrucao.textContent = "Visite mais municípios para desbloquear.";
+    instrucao.textContent = "Continue jogando para desbloquear.";
     corpo.innerHTML = `<div class="selo-bloqueado">🔒</div>`;
     return;
   }
@@ -1845,17 +2180,61 @@ function fecharConquistas() {
    Ranking online: quem visitou mais municípios, por apelido.
    ============================================================ */
 
-async function abrirRanking() {
-  const modal = document.getElementById("modal-ranking");
+let abaRankingAtual = "global";
+
+function abrirRanking() {
+  document.getElementById("modal-ranking").classList.remove("oculto");
+  carregarRanking();
+}
+
+function alternarAbaRanking(aba) {
+  abaRankingAtual = aba;
+  document.getElementById("btn-ranking-global").classList.toggle("ranking-aba-ativa", aba === "global");
+  document.getElementById("btn-ranking-amigos").classList.toggle("ranking-aba-ativa", aba === "amigos");
+  carregarRanking();
+}
+
+function renderizarLinhaRanking(lista, item, indice, meuUid) {
+  const linha = document.createElement("div");
+  linha.className = "ranking-linha" + (item.uid === meuUid ? " ranking-linha-atual" : "");
+  linha.innerHTML = `
+    <span class="ranking-posicao">#${indice + 1}</span>
+    <span class="ranking-apelido">${escaparHtml(item.apelido)}</span>
+    <span class="ranking-count">${item.count}</span>
+  `;
+  linha.style.cursor = "pointer";
+  linha.addEventListener("click", () => {
+    fecharRanking();
+    abrirPerfil(item.uid);
+  });
+  lista.appendChild(linha);
+}
+
+async function carregarRanking() {
   const lista = document.getElementById("ranking-lista");
   const minhaPosicaoEl = document.getElementById("ranking-minha-posicao");
   lista.innerHTML = '<div class="spinner spinner-grande"></div>';
   minhaPosicaoEl.textContent = "";
-  modal.classList.remove("oculto");
 
   try {
     const meuUid = window.raspadinhaAuth.usuarioAtual.uid;
     const meuCount = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
+
+    if (abaRankingAtual === "amigos") {
+      const amigos = await window.raspadinhaAuth.listarAmigos();
+      const ranking = [...amigos, { uid: meuUid, apelido: window.raspadinhaAuth.apelido, count: meuCount }]
+        .sort((a, b) => b.count - a.count);
+
+      lista.innerHTML = "";
+      if (ranking.length <= 1) {
+        lista.innerHTML = "<p>Adicione amigos pra ver o ranking entre vocês.</p>";
+      } else {
+        ranking.forEach((item, indice) => renderizarLinhaRanking(lista, item, indice, meuUid));
+      }
+      minhaPosicaoEl.textContent = "";
+      return;
+    }
+
     const [ranking, minhaPosicao] = await Promise.all([
       window.raspadinhaAuth.buscarRanking(50),
       window.raspadinhaAuth.buscarMinhaPosicao(meuCount),
@@ -1865,22 +2244,7 @@ async function abrirRanking() {
     if (!ranking.length) {
       lista.innerHTML = "<p>Ninguém no ranking ainda. Seja o primeiro a raspar!</p>";
     } else {
-      ranking.forEach((item, indice) => {
-        const linha = document.createElement("div");
-        linha.className =
-          "ranking-linha" + (item.uid === meuUid ? " ranking-linha-atual" : "");
-        linha.innerHTML = `
-          <span class="ranking-posicao">#${indice + 1}</span>
-          <span class="ranking-apelido">${escaparHtml(item.apelido)}</span>
-          <span class="ranking-count">${item.count}</span>
-        `;
-        linha.style.cursor = "pointer";
-        linha.addEventListener("click", () => {
-          fecharRanking();
-          abrirPerfil(item.uid);
-        });
-        lista.appendChild(linha);
-      });
+      ranking.forEach((item, indice) => renderizarLinhaRanking(lista, item, indice, meuUid));
     }
 
     minhaPosicaoEl.textContent = `Sua posição: #${minhaPosicao} (${meuCount} municípios)`;
@@ -2244,6 +2608,7 @@ function abrirPopupRegiao(regiaoId) {
     instrucao.textContent = `Complete os ${faltam} município${faltam === 1 ? "" : "s"} que falta${faltam === 1 ? "" : "m"} nessa região para desbloquear o selo especial.`;
     mostrarSpinnerGrande(corpo, false);
     corpo.innerHTML = `<div class="selo-bloqueado">🔒</div>`;
+    document.getElementById("regiao-selo-estatistica").textContent = "";
     document.getElementById("modal-regiao").classList.remove("oculto");
     return;
   }
@@ -2253,39 +2618,69 @@ function abrirPopupRegiao(regiaoId) {
     exibirMegaSeloRevelado(regiaoId, corpo);
   } else {
     instrucao.textContent = "Região completa! Raspe o selo especial.";
+    document.getElementById("regiao-selo-estatistica").textContent = "";
     mostrarSpinnerGrande(corpo, true);
-    const caminhoColorido = `assets/img/regioes/${regiaoId}.png`;
+    const nomeRegiaoSelo = regioesInfo[regiaoId]?.nome || regiaoId;
+    // Selo de região brilhante: 10% de chance (o dobro do de
+    // município), decidida na abertura -- mesma ideia de
+    // decidirBrilhante, mas com sorteio próprio (ver
+    // decidirBrilhanteRegiao).
+    const brilhante = decidirBrilhanteRegiao(regiaoId);
     const caminhoCapa = `assets/img/regioes/${regiaoId}fundo.png`;
-    carregarImagem(caminhoColorido).then((existeColorido) => {
-      const imageUrl = existeColorido ? caminhoColorido : gerarSeloPlaceholder(regiaoId, regioesInfo[regiaoId]?.nome || regiaoId, 400);
-      const usarCapa = existeColorido
-        ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
-        : Promise.resolve(null);
-      usarCapa.then((imageUrlCapa) => {
-        corpo.innerHTML = "";
-        initScratchCard({
-          containerId: "regiao-selo-body",
-          imageUrl,
-          imageUrlCapa,
-          tamanho: 400,
-          onComplete: () => marcarRegiaoComoRevelada(regiaoId),
+    resolverImagemColorida(`assets/img/regioes/${regiaoId}`, brilhante, regiaoId, nomeRegiaoSelo, 400).then(
+      (resultado) => {
+        const usarCapa = resultado.arteReal
+          ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
+          : Promise.resolve(null);
+        usarCapa.then((imageUrlCapa) => {
+          corpo.innerHTML = "";
+          initScratchCard({
+            containerId: "regiao-selo-body",
+            imageUrl: resultado.url,
+            imageUrlCapa,
+            tamanho: 400,
+            onComplete: () => {
+              marcarRegiaoComoRevelada(regiaoId, brilhante);
+              return brilhante;
+            },
+          });
         });
-      });
-    });
+      }
+    );
   }
 
   document.getElementById("modal-regiao").classList.remove("oculto");
 }
 
 function exibirMegaSeloRevelado(regiaoId, corpo) {
-  const caminhoColorido = `assets/img/regioes/${regiaoId}.png`;
-  carregarImagem(caminhoColorido).then((existeColorido) => {
-    const img = document.createElement("img");
-    img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(regiaoId, regioesInfo[regiaoId]?.nome || regiaoId, 400);
-    img.alt = regioesInfo[regiaoId]?.nome || regiaoId;
-    img.className = "selo-revelado";
-    corpo.appendChild(img);
-  });
+  const nomeRegiao = regioesInfo[regiaoId]?.nome || regiaoId;
+  const brilhante = !!estadoRegioes[regiaoId]?.brilhante;
+  resolverImagemColorida(`assets/img/regioes/${regiaoId}`, brilhante, regiaoId, nomeRegiao, 400).then(
+    (resultado) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "selo-revelado-wrapper";
+      const img = document.createElement("img");
+      img.src = resultado.url;
+      img.alt = nomeRegiao;
+      img.className = "selo-revelado selo-revelado-grande";
+      wrapper.appendChild(img);
+      if (brilhante) adicionarBrilho(wrapper);
+      corpo.appendChild(wrapper);
+    }
+  );
+  mostrarEstatisticaSeloRegiao(regiaoId);
+}
+
+/**
+ * Decide se o mega-selo de uma região é "brilhante" -- mesma lógica
+ * de decidirBrilhante, mas com 10% de chance (o dobro do de
+ * município) e sem consumir o boost de convite (esse só vale pra
+ * selos de município).
+ */
+function decidirBrilhanteRegiao(regiaoId) {
+  const anterior = estadoRegioes[regiaoId];
+  if (anterior?.chanceDecidida) return !!anterior.brilhante;
+  return Math.random() < 0.1;
 }
 
 function mostrarSpinnerGrande(corpo, mostrar) {
@@ -2418,6 +2813,91 @@ function construirMapaDeRegioes() {
   });
 }
 
+/**
+ * Amostra pontos ao longo do contorno de um <path> em coordenadas do
+ * próprio SVG (já no espaço certo, sem precisar reimplementar a
+ * projeção geográfica usada por tools/geojson-to-svg.js).
+ */
+function amostrarPontosDoPath(path, quantidade = 24) {
+  const total = path.getTotalLength();
+  const pontos = [];
+  for (let i = 0; i < quantidade; i++) {
+    const ponto = path.getPointAtLength((total * i) / quantidade);
+    pontos.push([ponto.x, ponto.y]);
+  }
+  return pontos;
+}
+
+/**
+ * Fecho convexo (Andrew's monotone chain) de uma lista de pontos
+ * [x, y]. Algoritmo padrão, O(n log n).
+ */
+function fechoConvexo(pontos) {
+  const pts = [...new Set(pontos.map((p) => p.join(",")))]
+    .map((s) => s.split(",").map(Number))
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (pts.length < 3) return pts;
+
+  const cruz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+
+  const inferior = [];
+  for (const p of pts) {
+    while (inferior.length >= 2 && cruz(inferior[inferior.length - 2], inferior[inferior.length - 1], p) <= 0) {
+      inferior.pop();
+    }
+    inferior.push(p);
+  }
+
+  const superior = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (superior.length >= 2 && cruz(superior[superior.length - 2], superior[superior.length - 1], p) <= 0) {
+      superior.pop();
+    }
+    superior.push(p);
+  }
+
+  inferior.pop();
+  superior.pop();
+  return inferior.concat(superior);
+}
+
+/**
+ * Desenha, por cima dos municípios, o contorno de cada uma das 8
+ * regiões (fecho convexo dos municípios que a compõem) -- só fica
+ * visível no modo "regiões" (zoom afastado, ver CSS
+ * `svg.modo-regioes`), quando as bordas individuais de cada
+ * município ficam escondidas. Aproximação (fecho convexo, não o
+ * contorno exato/côncavo da região) -- suficiente pra dar a
+ * sensação de "8 blocos" sem precisar de uma biblioteca de geometria
+ * pra unir os polígonos de verdade.
+ */
+function construirContornosDeRegiao() {
+  const svg = document.getElementById("mapa-rj");
+  document.getElementById("contornos-regioes")?.remove();
+
+  const grupo = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  grupo.id = "contornos-regioes";
+
+  Object.entries(municipiosPorRegiao).forEach(([regiaoId, ids]) => {
+    let pontos = [];
+    ids.forEach((id) => {
+      const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
+      if (path) pontos = pontos.concat(amostrarPontosDoPath(path));
+    });
+    if (pontos.length < 3) return;
+
+    const hull = fechoConvexo(pontos);
+    const poligono = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    poligono.setAttribute("points", hull.map(([x, y]) => `${x},${y}`).join(" "));
+    poligono.setAttribute("class", "contorno-regiao");
+    poligono.dataset.regiao = regiaoId;
+    grupo.appendChild(poligono);
+  });
+
+  svg.appendChild(grupo);
+}
+
 function regiaoEstaCompleta(regiaoId) {
   const idsDaRegiao = municipiosPorRegiao[regiaoId] || [];
   return idsDaRegiao.length > 0 && idsDaRegiao.every((id) => estaVerificado(id));
@@ -2527,4 +3007,36 @@ function carregarEstadoConquistas() {
     console.error("Erro ao carregar estado das conquistas do LocalStorage:", erro);
     return {};
   }
+}
+
+function carregarEstadoStreak() {
+  try {
+    const dados = localStorage.getItem(STORAGE_KEY_STREAK);
+    return dados ? JSON.parse(dados) : { ultimoDia: null, contagem: 0 };
+  } catch (erro) {
+    console.error("Erro ao carregar streak do LocalStorage:", erro);
+    return { ultimoDia: null, contagem: 0 };
+  }
+}
+
+function salvarEstadoStreak() {
+  localStorage.setItem(STORAGE_KEY_STREAK, JSON.stringify(estadoStreak));
+}
+
+/**
+ * Conta 1 dia de streak por dia de calendário em que o app é aberto
+ * (uma vez por dia, não importa quantas vezes abre no mesmo dia). Se
+ * pular um dia, a sequência reseta pra 1.
+ */
+function registrarAcessoDeHoje() {
+  const hojeChave = new Date().toDateString();
+  if (estadoStreak.ultimoDia === hojeChave) return;
+
+  const ontem = new Date();
+  ontem.setDate(ontem.getDate() - 1);
+  const ontemChave = ontem.toDateString();
+
+  estadoStreak.contagem = estadoStreak.ultimoDia === ontemChave ? estadoStreak.contagem + 1 : 1;
+  estadoStreak.ultimoDia = hojeChave;
+  salvarEstadoStreak();
 }

@@ -296,6 +296,20 @@
 
   <p id="dica-mapa">Arraste para mover · pinça ou roda do mouse para zoom</p>
 
+  <!-- Busca de municipio/ponto turistico, canto inferior direito --
+       ao escolher um resultado, anima o zoom ate o local e abre o
+       selo como se tivesse clicado nele -->
+  <button id="btn-buscar-local" aria-label="Buscar município ou ponto turístico" title="Buscar">🔍</button>
+
+  <div id="modal-busca-local" class="oculto">
+    <div id="busca-local-conteudo">
+      <button id="btn-fechar-busca-local" aria-label="Fechar">✕</button>
+      <h2>🔍 Buscar</h2>
+      <input type="text" id="input-busca-local" placeholder="Nome do município ou ponto turístico...">
+      <div id="busca-local-resultados"></div>
+    </div>
+  </div>
+
   <!-- Popup do selo: raspar (nao visitado) ou visualizar (ja visitado,
        com status, destinos turisticos e opcao de desmarcar) -->
   <div id="modal-raspadinha" class="oculto">
@@ -313,6 +327,9 @@
       <p id="modal-instrucao">Raspe com o dedo ou o mouse para revelar!</p>
       <!-- So aparece depois de raspar (ver mostrarCuriosidade) -->
       <div id="modal-curiosidade"></div>
+      <!-- So aparece na visualizacao de um selo ja raspado (numero
+           de contas que tem esse selo) -->
+      <p id="modal-selo-estatistica"></p>
       <div id="modal-destinos"></div>
     </div>
   </div>
@@ -332,6 +349,8 @@
       <p id="regiao-instrucao"></p>
       <!-- Reservado: resumo em texto da regiao (a preencher depois) -->
       <div id="regiao-resumo"></div>
+      <!-- So aparece quando o mega-selo ja foi revelado -->
+      <p id="regiao-selo-estatistica"></p>
     </div>
   </div>
 
@@ -402,6 +421,10 @@
     <div id="ranking-conteudo">
       <button id="btn-fechar-ranking" aria-label="Fechar">✕</button>
       <h2>🏆 Ranking</h2>
+      <div id="ranking-abas">
+        <button type="button" id="btn-ranking-global" class="ranking-aba ranking-aba-ativa">Global</button>
+        <button type="button" id="btn-ranking-amigos" class="ranking-aba">Amigos</button>
+      </div>
       <p id="ranking-minha-posicao"></p>
       <div id="ranking-lista"></div>
     </div>
