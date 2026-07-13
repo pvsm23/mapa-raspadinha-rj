@@ -180,9 +180,8 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
    cabecalho, mas continuam sempre visiveis e de facil acesso. */
 #botoes-lateral-esquerda {
   position: fixed;
-  top: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 96px);
   left: calc(env(safe-area-inset-left, 0px) + 12px);
-  transform: translateY(-50%);
   z-index: 50;
   display: flex;
   flex-direction: column;
@@ -475,11 +474,21 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
   transition: width 0.3s ease;
 }
 
-#biblioteca-grade {
+#biblioteca-grade,
+#biblioteca-grade-regioes,
+#biblioteca-grade-conquistas {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 16px;
   margin-top: 16px;
+}
+
+#biblioteca-titulo-regioes,
+#biblioteca-titulo-conquistas {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 24px 0 0;
+  text-align: left;
 }
 
 .selo-item {
@@ -1194,7 +1203,9 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 #modal-ranking,
 #modal-conquistas,
 #modal-amigos,
-#modal-checkin {
+#modal-checkin,
+#modal-compartilhar,
+#modal-perfil {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -1208,7 +1219,9 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 #ranking-conteudo,
 #conquistas-conteudo,
 #amigos-conteudo,
-#checkin-conteudo {
+#checkin-conteudo,
+#compartilhar-conteudo,
+#perfil-conteudo {
   position: relative;
   background: #1e293b;
   border-radius: 12px;
@@ -1223,7 +1236,9 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 #ranking-conteudo h2,
 #conquistas-conteudo h2,
 #amigos-conteudo h2,
-#checkin-conteudo h2 {
+#checkin-conteudo h2,
+#compartilhar-conteudo h2,
+#perfil-conteudo h2 {
   margin-top: 0;
   font-size: 1.15rem;
 }
@@ -1231,7 +1246,9 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 #btn-fechar-ranking,
 #btn-fechar-conquistas,
 #btn-fechar-amigos,
-#btn-fechar-checkin {
+#btn-fechar-checkin,
+#btn-fechar-compartilhar,
+#btn-fechar-perfil {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -1247,8 +1264,75 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 #btn-fechar-ranking:hover,
 #btn-fechar-conquistas:hover,
 #btn-fechar-amigos:hover,
-#btn-fechar-checkin:hover {
+#btn-fechar-checkin:hover,
+#btn-fechar-compartilhar:hover,
+#btn-fechar-perfil:hover {
   color: #f1f5f9;
+}
+
+/* ---- Perfil público ---- */
+
+#label-perfil-publico {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+#perfil-contador {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+#perfil-mapa-mini {
+  margin: 0 0 16px;
+}
+
+#perfil-mapa-mini .mini-mapa-svg {
+  width: 100%;
+  max-height: 220px;
+}
+
+#perfil-selos-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 10px;
+}
+
+#perfil-selos-grade .selo-item {
+  pointer-events: none;
+}
+
+#perfil-selos-grade .selo-item img {
+  width: 56px;
+  height: 56px;
+}
+
+#compartilhar-conteudo p {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 8px 0 18px;
+}
+
+#btn-compartilhar-de-fato {
+  width: 100%;
+  background: #22c55e;
+  color: #0f172a;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#btn-compartilhar-de-fato:hover {
+  background: #16a34a;
 }
 
 /* ---- Ranking ---- */
@@ -1542,19 +1626,17 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 
 #aviso-brilhante-pendente {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  top: calc(env(safe-area-inset-top, 0px) + 96px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 390;
   background: rgba(30, 41, 59, 0.95);
   border: 1px solid #facc15;
-  border-radius: 999px;
+  border-radius: 16px;
   padding: 8px 16px;
   font-size: 0.8rem;
-  max-width: 90vw;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: min(90vw, 320px);
+  text-align: center;
   box-shadow: 0 0 14px 2px rgba(250, 204, 21, 0.4);
   animation: pulsar-brilho 1.8s ease-in-out infinite, entrar-toast 0.25s ease;
 }

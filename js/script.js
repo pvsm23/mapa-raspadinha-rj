@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarResumosRegioes();
   preCarregarSelos();
 
-  const municipios = document.querySelectorAll(".municipio");
+  const municipios = document.querySelectorAll("#mapa-rj .municipio");
   municipios.forEach((path) => {
     path.addEventListener("click", () => aoClicarMunicipio(path));
   });
@@ -194,7 +194,18 @@ document.addEventListener("DOMContentLoaded", () => {
       if (evento.target.id === "modal-configuracoes") fecharConfiguracoes();
     });
 
-  document.getElementById("btn-compartilhar").addEventListener("click", compartilharApp);
+  document
+    .getElementById("btn-compartilhar")
+    .addEventListener("click", () => document.getElementById("modal-compartilhar").classList.remove("oculto"));
+  document
+    .getElementById("btn-fechar-compartilhar")
+    .addEventListener("click", () => document.getElementById("modal-compartilhar").classList.add("oculto"));
+  document.getElementById("modal-compartilhar").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-compartilhar") {
+      document.getElementById("modal-compartilhar").classList.add("oculto");
+    }
+  });
+  document.getElementById("btn-compartilhar-de-fato").addEventListener("click", compartilharApp);
   document.getElementById("btn-logout").addEventListener("click", sairDaConta);
   document.getElementById("form-login").addEventListener("submit", aoEnviarFormLogin);
   document
@@ -282,6 +293,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-fechar-checkin").addEventListener("click", fecharCheckin);
   document.getElementById("modal-checkin").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-checkin") fecharCheckin();
+  });
+
+  // ---- Perfil público ----
+  document.getElementById("btn-fechar-perfil").addEventListener("click", fecharPerfil);
+  document.getElementById("modal-perfil").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-perfil") fecharPerfil();
+  });
+  document.getElementById("check-perfil-publico").addEventListener("change", (evento) => {
+    window.raspadinhaAuth?.definirPerfilPublico(evento.target.checked);
   });
 
   document.getElementById("btn-instalar-pwa").addEventListener("click", instalarPwa);
@@ -563,6 +583,9 @@ function atualizarUiDeConta(detalhe) {
 
     sincronizarProgressoOnline();
     window.raspadinhaAuth.registrarCheckinHoje();
+    window.raspadinhaAuth.buscarPerfilPublico(usuario.uid).then((perfil) => {
+      document.getElementById("check-perfil-publico").checked = perfil?.perfilPublico !== false;
+    });
   } else {
     status.textContent = "Você não está conectado.";
     document.getElementById("dados-email").textContent = "";
@@ -581,6 +604,28 @@ function sincronizarProgressoOnline() {
   if (!window.raspadinhaAuth?.usuarioAtual) return;
   const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
   window.raspadinhaAuth.sincronizarProgresso(visitados);
+}
+
+/**
+ * Estado "público" de um município (o que aparece no perfil de quem
+ * abrir e nas contagens globais de raridade) -- reflete só o que
+ * está ATIVO agora: verificado conta só se ainda estiver marcado
+ * (some se desmarcar), brilhante só conta enquanto o município
+ * estiver visitado (a decisão em si é permanente localmente, mas o
+ * selo só "aparece" publicamente enquanto coletado).
+ */
+function estadoPublicoMunicipio(id) {
+  const dados = estadoMapa[id];
+  return {
+    visitado: !!dados?.visitado,
+    verificado: estaVerificado(id),
+    brilhante: !!(dados?.visitado && dados?.brilhante),
+  };
+}
+
+function sincronizarMunicipioOnline(id) {
+  if (!window.raspadinhaAuth?.usuarioAtual) return;
+  window.raspadinhaAuth.sincronizarMunicipio(id, estadoPublicoMunicipio(id));
 }
 
 /**
@@ -1049,6 +1094,7 @@ function marcarComoVisitado(id, nome, brilhante, verificado) {
   aplicarEstadoNoSVG();
   atualizarContador();
   sincronizarProgressoOnline();
+  sincronizarMunicipioOnline(id);
   atualizarProgressoConquistas();
 }
 
@@ -1180,6 +1226,7 @@ function atualizarVerificacaoMunicipio(id, verificado, motivo) {
   aplicarEstadoNoSVG();
   atualizarContador();
   sincronizarProgressoOnline();
+  sincronizarMunicipioOnline(id);
   atualizarProgressoConquistas();
 }
 
@@ -1233,7 +1280,10 @@ function abrirModalRaspadinha(id, nome) {
     "Raspe com o dedo ou o mouse para revelar!";
   mostrarDestinos(id);
 
-  const caminhoColorido = `assets/img/selos/${id}.png`;
+  // Decide a sorte JÁ na abertura (não na conclusão): assim dá pra
+  // carregar a arte dourada certa desde o início da raspagem, em vez
+  // de trocar a imagem depois de já ter raspado a normal.
+  const brilhante = decidirBrilhante(id);
   const caminhoCapa = `assets/img/selos/${id}fundo.png`;
   mostrarSpinnerGrande(document.getElementById("scratch-modal-body"), true);
 
@@ -1244,10 +1294,10 @@ function abrirModalRaspadinha(id, nome) {
       imageUrl,
       imageUrlCapa,
       onComplete: () => {
-        const brilhante = decidirBrilhante(id);
-        // Marca como raspado na hora (selo revelado, sorte decidida),
-        // mas ainda "nao verificado" -- so conta de verdade depois
-        // que a localizacao confirmar que a pessoa esta no municipio.
+        // Marca como raspado na hora (selo revelado, sorte já
+        // decidida), mas ainda "nao verificado" -- so conta de
+        // verdade depois que a localizacao confirmar que a pessoa
+        // esta no municipio.
         marcarComoVisitado(id, nome, brilhante, false);
         document.getElementById("modal-status").textContent = brilhante
           ? "✨ Raspadinha BRILHANTE! Confirmando sua localização..."
@@ -1271,15 +1321,36 @@ function abrirModalRaspadinha(id, nome) {
     });
   };
 
-  carregarImagem(caminhoColorido).then((existeColorido) => {
-    if (!existeColorido) {
-      iniciar(gerarSeloPlaceholder(id, nome), null);
+  resolverImagemColorida(`assets/img/selos/${id}`, brilhante, id, nome).then((caminhoColorido) => {
+    if (!caminhoColorido.arteReal) {
+      iniciar(caminhoColorido.url, null);
       return;
     }
     carregarImagem(caminhoCapa).then((existeCapa) => {
-      iniciar(caminhoColorido, existeCapa ? caminhoCapa : null);
+      iniciar(caminhoColorido.url, existeCapa ? caminhoCapa : null);
     });
   });
+}
+
+/**
+ * Resolve qual imagem colorida usar pra um selo (município, região ou
+ * conquista): a versão "dourada" (`<prefixo>dourado.png`) quando
+ * `brilhante` for true e ela existir, senão a normal
+ * (`<prefixo>.png`), senão o placeholder gerado na hora. `arteReal`
+ * diz se achou algum PNG de verdade (pra saber se vale a pena tentar
+ * carregar uma capa raspável combinando com a arte).
+ */
+async function resolverImagemColorida(prefixo, brilhante, idParaPlaceholder, nomeParaPlaceholder) {
+  if (brilhante) {
+    const caminhoDourado = `${prefixo}dourado.png`;
+    if (await carregarImagem(caminhoDourado)) return { url: caminhoDourado, arteReal: true };
+  }
+  const caminhoNormal = `${prefixo}.png`;
+  if (await carregarImagem(caminhoNormal)) return { url: caminhoNormal, arteReal: true };
+  return {
+    url: gerarSeloPlaceholder(idParaPlaceholder, nomeParaPlaceholder),
+    arteReal: false,
+  };
 }
 
 /**
@@ -1312,18 +1383,18 @@ function visualizarSeloRevelado(id, nome) {
   const corpo = document.getElementById("scratch-modal-body");
   mostrarSpinnerGrande(corpo, true);
 
-  const caminhoColorido = `assets/img/selos/${id}.png`;
-  carregarImagem(caminhoColorido).then((existeColorido) => {
+  const brilhante = !!dados?.brilhante;
+  resolverImagemColorida(`assets/img/selos/${id}`, brilhante, id, nome).then((resultado) => {
     corpo.innerHTML = "";
     const wrapper = document.createElement("div");
     wrapper.className =
       "selo-revelado-wrapper" + (verificado ? "" : " selo-nao-verificado-wrapper");
     const img = document.createElement("img");
-    img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
+    img.src = resultado.url;
     img.alt = nome;
     img.className = "selo-revelado";
     wrapper.appendChild(img);
-    if (dados?.brilhante) adicionarBrilho(wrapper);
+    if (brilhante) adicionarBrilho(wrapper);
     corpo.appendChild(wrapper);
   });
 }
@@ -1441,7 +1512,7 @@ function carregarImagem(src) {
  * essa demora inicial que às vezes fazia parecer que não carregou.
  */
 function preCarregarSelos() {
-  document.querySelectorAll(".municipio").forEach((path) => {
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
     const id = path.dataset.municipio;
     carregarImagem(`assets/img/selos/${id}.png`);
     carregarImagem(`assets/img/selos/${id}fundo.png`);
@@ -1467,7 +1538,7 @@ function abrirBibliotecaSelos() {
   const grade = document.getElementById("biblioteca-grade");
   grade.innerHTML = "";
 
-  const municipios = Array.from(document.querySelectorAll(".municipio"))
+  const municipios = Array.from(document.querySelectorAll("#mapa-rj .municipio"))
     .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
@@ -1502,9 +1573,8 @@ function abrirBibliotecaSelos() {
     img.alt = nome;
     img.className = verificado ? "selo-colorido" : visitado ? "selo-nao-verificado" : "selo-cinza";
 
-    const caminhoColorido = `assets/img/selos/${id}.png`;
-    carregarImagem(caminhoColorido).then((existeColorido) => {
-      img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
+    resolverImagemColorida(`assets/img/selos/${id}`, brilhante, id, nome).then((resultado) => {
+      img.src = resultado.url;
     });
 
     const legenda = document.createElement("span");
@@ -1526,7 +1596,121 @@ function abrirBibliotecaSelos() {
     grade.appendChild(item);
   });
 
+  renderizarGradeRegioesNaBiblioteca();
+  renderizarGradeConquistasNaBiblioteca();
+
   document.getElementById("biblioteca-selos").classList.remove("oculto");
+}
+
+/**
+ * Mega-selos de região dentro da biblioteca (mesma grade visual dos
+ * municípios) — só clicáveis (abrem o popup da região) quando a
+ * região já está completa, senão mostram cadeado.
+ */
+function renderizarGradeRegioesNaBiblioteca() {
+  const grade = document.getElementById("biblioteca-grade-regioes");
+  grade.innerHTML = "";
+
+  const idsRegioes = Object.keys(municipiosPorRegiao).sort((a, b) =>
+    (regioesInfo[a]?.nome || a).localeCompare(regioesInfo[b]?.nome || b, "pt-BR")
+  );
+  const completas = idsRegioes.filter((id) => regiaoEstaCompleta(id)).length;
+  document.getElementById("biblioteca-titulo-regioes").textContent =
+    `Selos de região (${completas} / ${idsRegioes.length})`;
+
+  idsRegioes.forEach((id) => {
+    const nome = regioesInfo[id]?.nome || id;
+    const completa = regiaoEstaCompleta(id);
+    const revelado = completa && !!estadoRegioes[id]?.revelado;
+    const brilhante = revelado && !!estadoRegioes[id]?.brilhante;
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
+    item.title = brilhante ? `${nome} ✨ (mega-selo brilhante!)` : nome;
+    item.addEventListener("click", () => {
+      fecharBibliotecaSelos();
+      abrirPopupRegiao(id);
+    });
+
+    const img = document.createElement("img");
+    img.alt = nome;
+    img.className = revelado ? "selo-colorido" : "selo-cinza";
+
+    const caminhoColorido = `assets/img/regioes/${id}.png`;
+    if (revelado) {
+      carregarImagem(caminhoColorido).then((existeColorido) => {
+        img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
+      });
+    } else {
+      img.src = gerarSeloPlaceholder(id, nome);
+    }
+
+    const legenda = document.createElement("span");
+    legenda.textContent = completa ? nome : `🔒 ${nome}`;
+
+    item.appendChild(img);
+    if (brilhante) {
+      const marca = document.createElement("span");
+      marca.className = "selo-marca-brilhante";
+      marca.textContent = "✨";
+      item.appendChild(marca);
+    }
+    item.appendChild(legenda);
+    grade.appendChild(item);
+  });
+}
+
+/**
+ * Selos de conquista dentro da biblioteca -- mesma ideia dos selos
+ * de região: cadeado até desbloquear.
+ */
+function renderizarGradeConquistasNaBiblioteca() {
+  const grade = document.getElementById("biblioteca-grade-conquistas");
+  grade.innerHTML = "";
+
+  const totalMunicipios = document.querySelectorAll("#mapa-rj .municipio").length;
+  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
+  const desbloqueadas = DEFINICOES_CONQUISTAS.filter(
+    (c) => visitados >= Math.ceil(totalMunicipios * c.pct)
+  ).length;
+  document.getElementById("biblioteca-titulo-conquistas").textContent =
+    `Conquistas (${desbloqueadas} / ${DEFINICOES_CONQUISTAS.length})`;
+
+  DEFINICOES_CONQUISTAS.forEach(({ chave, titulo, pct }) => {
+    const limiar = Math.ceil(totalMunicipios * pct);
+    const desbloqueada = visitados >= limiar;
+    const revelado = desbloqueada && !!estadoConquistas[chave]?.revelado;
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "selo-item";
+    item.title = titulo;
+    item.addEventListener("click", () => {
+      fecharBibliotecaSelos();
+      exigirLogin(abrirConquistas);
+    });
+
+    const img = document.createElement("img");
+    img.alt = titulo;
+    img.className = revelado ? "selo-colorido" : "selo-cinza";
+
+    const caminhoColorido = `assets/img/conquistas/${chave}.png`;
+    if (revelado) {
+      carregarImagem(caminhoColorido).then((existeColorido) => {
+        img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo);
+      });
+    } else {
+      img.src = gerarSeloPlaceholder(chave, titulo);
+    }
+
+    const legenda = document.createElement("span");
+    legenda.textContent = desbloqueada ? titulo : `🔒 ${titulo}`;
+
+    item.appendChild(img);
+    item.appendChild(legenda);
+    grade.appendChild(item);
+  });
 }
 
 function fecharBibliotecaSelos() {
@@ -1559,7 +1743,7 @@ function abrirConquistas() {
   const container = document.getElementById("conquistas-lista");
   container.innerHTML = "";
 
-  const totalMunicipios = document.querySelectorAll(".municipio").length;
+  const totalMunicipios = document.querySelectorAll("#mapa-rj .municipio").length;
   const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
 
   DEFINICOES_CONQUISTAS.forEach(({ chave, titulo, pct }) => {
@@ -1639,6 +1823,7 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
 function marcarConquistaComoRevelada(chave) {
   estadoConquistas[chave] = { revelado: true, dataRevelado: new Date().toISOString() };
   salvarEstadoConquistas();
+  window.raspadinhaAuth?.usuarioAtual && window.raspadinhaAuth.sincronizarConquista(chave, true);
 }
 
 /**
@@ -1689,6 +1874,11 @@ async function abrirRanking() {
           <span class="ranking-apelido">${escaparHtml(item.apelido)}</span>
           <span class="ranking-count">${item.count}</span>
         `;
+        linha.style.cursor = "pointer";
+        linha.addEventListener("click", () => {
+          fecharRanking();
+          abrirPerfil(item.uid);
+        });
         lista.appendChild(linha);
       });
     }
@@ -1814,6 +2004,11 @@ async function carregarListaAmigos() {
           <span class="amigo-count">${amigo.count} municípios</span>
           <button type="button" class="btn-remover-amigo">Remover</button>
         `;
+        item.querySelector(".amigo-apelido").style.cursor = "pointer";
+        item.querySelector(".amigo-apelido").addEventListener("click", () => {
+          fecharAmigos();
+          abrirPerfil(amigo.uid);
+        });
         item.querySelector(".btn-remover-amigo").addEventListener("click", async () => {
           if (!confirm(`Remover ${amigo.apelido} da sua lista de amigos?`)) return;
           await window.raspadinhaAuth.removerAmigo(amigo.uid);
@@ -1879,6 +2074,123 @@ function fecharCheckin() {
 }
 
 /* ============================================================
+   Perfil público: outras pessoas podem abrir (via Ranking/Amigos) e
+   ver os selos e um mini-mapa, se a pessoa não tiver marcado
+   "privado" em Configurações.
+
+   IMPORTANTE (limitação conhecida): a privacidade aqui é só de
+   EXIBIÇÃO no app -- o documento do usuário já é legível por
+   qualquer autenticado (regra do Firestore, necessária pro
+   ranking/busca de amigos), então sem um Cloud Function não dá pra
+   esconder o campo no nível do servidor. Suficiente pra um app
+   hobby, mas vale saber.
+   ============================================================ */
+
+async function abrirPerfil(uid) {
+  const modal = document.getElementById("modal-perfil");
+  const corpo = document.getElementById("perfil-corpo");
+  document.getElementById("perfil-apelido").textContent = "Carregando...";
+  corpo.innerHTML = '<div class="spinner spinner-grande"></div>';
+  modal.classList.remove("oculto");
+
+  try {
+    const perfil = await window.raspadinhaAuth.buscarPerfilPublico(uid);
+    if (!perfil) {
+      document.getElementById("perfil-apelido").textContent = "Perfil não encontrado";
+      corpo.innerHTML = "";
+      return;
+    }
+
+    document.getElementById("perfil-apelido").textContent = perfil.apelido;
+
+    const ehOProprioPerfil = uid === window.raspadinhaAuth?.usuarioAtual?.uid;
+    if (!perfil.perfilPublico && !ehOProprioPerfil) {
+      corpo.innerHTML = "<p>🔒 Esse perfil é privado.</p>";
+      return;
+    }
+
+    corpo.innerHTML = `
+      <p id="perfil-contador">${perfil.municipiosVisitadosCount} municípios visitados</p>
+      <div id="perfil-mapa-mini"></div>
+      <div id="perfil-selos-grade"></div>
+    `;
+    renderizarMiniMapaPerfil(perfil.estadoMunicipios);
+    renderizarSelosPerfil(perfil.estadoMunicipios);
+  } catch (erro) {
+    console.error("Falha ao carregar perfil:", erro);
+    corpo.innerHTML = "<p>Não foi possível carregar esse perfil agora.</p>";
+  }
+}
+
+function fecharPerfil() {
+  document.getElementById("modal-perfil").classList.add("oculto");
+}
+
+/**
+ * Mini-mapa colorido do perfil: clona o SVG principal (sem os
+ * rótulos e sem os cliques de verdade) e pinta cada município pelo
+ * estado PÚBLICO de quem está sendo visto -- verde (verificado),
+ * vermelho (raspado mas não verificado) ou cinza (nada).
+ */
+function renderizarMiniMapaPerfil(estadoMunicipios) {
+  const container = document.getElementById("perfil-mapa-mini");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const original = document.getElementById("mapa-rj");
+  const clone = original.cloneNode(true);
+  clone.removeAttribute("id");
+  clone.classList.add("mini-mapa-svg");
+  clone.querySelectorAll(".rotulo-municipio").forEach((el) => el.remove());
+  clone.querySelectorAll(".municipio").forEach((path) => {
+    const id = path.dataset.municipio;
+    const estado = estadoMunicipios[id];
+    path.classList.remove("visitado", "nao-verificado", "clicando");
+    path.onclick = null;
+    if (estado?.verificado) path.classList.add("visitado");
+    else if (estado?.visitado) path.classList.add("nao-verificado");
+  });
+
+  container.appendChild(clone);
+}
+
+/**
+ * Grade (só leitura) dos selos de município de quem está sendo
+ * visto, com a arte dourada quando o selo brilhante daquele
+ * município estiver ativo.
+ */
+function renderizarSelosPerfil(estadoMunicipios) {
+  const grade = document.getElementById("perfil-selos-grade");
+  if (!grade) return;
+  grade.innerHTML = "";
+
+  const municipios = Array.from(document.querySelectorAll("#mapa-rj .municipio"))
+    .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  municipios.forEach(({ id, nome }) => {
+    const estado = estadoMunicipios[id] || {};
+    const item = document.createElement("div");
+    item.className = "selo-item" + (estado.brilhante ? " selo-item-brilhante" : "");
+    item.title = nome;
+
+    const img = document.createElement("img");
+    img.alt = nome;
+    img.className = estado.verificado ? "selo-colorido" : "selo-cinza";
+    resolverImagemColorida(`assets/img/selos/${id}`, !!estado.brilhante, id, nome).then((resultado) => {
+      img.src = resultado.url;
+    });
+
+    const legenda = document.createElement("span");
+    legenda.textContent = nome;
+
+    item.appendChild(img);
+    item.appendChild(legenda);
+    grade.appendChild(item);
+  });
+}
+
+/* ============================================================
    Aviso flutuante: raspadinha brilhante garantida (por convite de
    amigo) esperando pra ser usada na próxima raspagem.
    ============================================================ */
@@ -1910,12 +2222,15 @@ function abrirPopupRegiao(regiaoId) {
 
   const idsDaRegiao = municipiosPorRegiao[regiaoId] || [];
   const nomeRegiao = regioesInfo[regiaoId]?.nome || regiaoId;
-  const visitados = idsDaRegiao.filter((id) => estadoMapa[id]?.visitado).length;
+  // So conta municipio VERIFICADO (confirmado por localizacao) --
+  // raspar sem estar no local nao libera o mega-selo da regiao (ver
+  // estaVerificado/regiaoEstaCompleta).
+  const visitados = idsDaRegiao.filter((id) => estaVerificado(id)).length;
   const completa = visitados === idsDaRegiao.length && idsDaRegiao.length > 0;
 
   document.getElementById("regiao-nome").textContent = nomeRegiao;
   document.getElementById("regiao-status").textContent =
-    `${visitados} / ${idsDaRegiao.length} municípios visitados`;
+    `${visitados} / ${idsDaRegiao.length} municípios verificados`;
   document.getElementById("regiao-barra-preenchida").style.width =
     `${(visitados / idsDaRegiao.length) * 100}%`;
   mostrarResumoRegiao(regiaoId);
@@ -1988,9 +2303,17 @@ function mostrarResumoRegiao(regiaoId) {
   container.textContent = resumo || "";
 }
 
-function marcarRegiaoComoRevelada(regiaoId) {
-  estadoRegioes[regiaoId] = { revelado: true, dataRevelado: new Date().toISOString() };
+function marcarRegiaoComoRevelada(regiaoId, brilhante) {
+  estadoRegioes[regiaoId] = {
+    revelado: true,
+    dataRevelado: new Date().toISOString(),
+    brilhante: !!brilhante,
+    chanceDecidida: true,
+  };
   salvarEstadoRegioes();
+  if (window.raspadinhaAuth?.usuarioAtual) {
+    window.raspadinhaAuth.sincronizarRegiao(regiaoId, { revelado: true, brilhante: !!brilhante });
+  }
 }
 
 function fecharPopupRegiao() {
@@ -2064,7 +2387,7 @@ function quebrarTextoEmLinhas(ctx, texto, yInicial, larguraMaxima, alturaLinha) 
  * já foi visitada, não o município individualmente.
  */
 function aplicarEstadoNoSVG() {
-  document.querySelectorAll(".municipio").forEach((path) => {
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
     const id = path.dataset.municipio;
     if (modoRegioes) {
       // Na visao de regioes, cor por regiao completa (todos os
@@ -2089,7 +2412,7 @@ let municipiosPorRegiao = {};
 
 function construirMapaDeRegioes() {
   municipiosPorRegiao = {};
-  document.querySelectorAll(".municipio").forEach((path) => {
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
     const regiaoId = path.dataset.regiao;
     (municipiosPorRegiao[regiaoId] ??= []).push(path.dataset.municipio);
   });
@@ -2105,7 +2428,7 @@ function regiaoEstaCompleta(regiaoId) {
  * verificado por localização (ver estaVerificado).
  */
 function atualizarContador() {
-  const total = document.querySelectorAll(".municipio").length;
+  const total = document.querySelectorAll("#mapa-rj .municipio").length;
   const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
 
   document.getElementById("contador").textContent = visitados;
@@ -2135,6 +2458,7 @@ function desmarcarMunicipioAtual() {
   aplicarEstadoNoSVG();
   atualizarContador();
   sincronizarProgressoOnline();
+  sincronizarMunicipioOnline(municipioSelecionadoId);
   municipioSelecionadoId = null;
   fecharModalRaspadinha();
 }
@@ -2157,6 +2481,7 @@ function resetarTudo() {
   aplicarEstadoNoSVG();
   atualizarContador();
   sincronizarProgressoOnline();
+  window.raspadinhaAuth?.resetarEstadoPublico?.();
   fecharConfiguracoes();
 }
 

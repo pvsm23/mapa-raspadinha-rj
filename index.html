@@ -270,6 +270,21 @@
     </div>
   </header>
 
+  <!-- Popup do botao compartilhar: explica o bonus de convite antes
+       de compartilhar de fato -->
+  <div id="modal-compartilhar" class="oculto">
+    <div id="compartilhar-conteudo">
+      <button id="btn-fechar-compartilhar" aria-label="Fechar">✕</button>
+      <h2>🔗 Convide um amigo</h2>
+      <p>
+        Compartilhe o Desbrava com um amigo! Se ele criar uma conta pelo
+        seu link, você ganha uma <strong>raspadinha brilhante garantida</strong>
+        ✨ na próxima vez que raspar um selo.
+      </p>
+      <button id="btn-compartilhar-de-fato">🔗 Compartilhar link</button>
+    </div>
+  </div>
+
   <!-- Botoes flutuantes na lateral esquerda: ranking, amigos,
        conquistas e check-in semanal -->
   <div id="botoes-lateral-esquerda">
@@ -329,6 +344,12 @@
         <div id="biblioteca-barra-preenchida"></div>
       </div>
       <div id="biblioteca-grade"></div>
+
+      <h3 id="biblioteca-titulo-regioes">Selos de região</h3>
+      <div id="biblioteca-grade-regioes"></div>
+
+      <h3 id="biblioteca-titulo-conquistas">Conquistas</h3>
+      <div id="biblioteca-grade-conquistas"></div>
     </div>
   </div>
 
@@ -341,6 +362,10 @@
       <div id="secao-conta">
         <h3>Conta</h3>
         <p id="conta-status">Você não está conectado.</p>
+        <label id="label-perfil-publico">
+          <input type="checkbox" id="check-perfil-publico" checked>
+          Perfil público (outras pessoas podem ver seus selos e mapa)
+        </label>
         <button id="btn-logout">Sair da conta</button>
       </div>
 
@@ -423,6 +448,20 @@
       <h2>📅 Check-in semanal</h2>
       <p id="checkin-semana-label"></p>
       <div id="checkin-calendario"></div>
+    </div>
+  </div>
+
+  <!-- Perfil público: outras pessoas podem abrir (via ranking/amigos)
+       e ver os selos e o mini-mapa, se não estiver marcado privado -->
+  <div id="modal-perfil" class="oculto">
+    <div id="perfil-conteudo">
+      <button id="btn-fechar-perfil" aria-label="Fechar">✕</button>
+      <h2 id="perfil-apelido"></h2>
+      <div id="perfil-corpo">
+        <p id="perfil-contador"></p>
+        <div id="perfil-mapa-mini"></div>
+        <div id="perfil-selos-grade"></div>
+      </div>
     </div>
   </div>
 

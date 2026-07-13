@@ -101,6 +101,17 @@ window.raspadinhaAuth = {
   registrarCheckinHoje: async () => {},
   buscarCheckinsDaSemana: async () => [],
   consumirBoostBrilhante: () => false,
+  sincronizarMunicipio: async () => {},
+  sincronizarRegiao: async () => {},
+  sincronizarConquista: async () => {},
+  definirPerfilPublico: async () => {},
+  buscarPerfilPublico: async () => null,
+  contarPessoasComMunicipioVerificado: async () => 0,
+  contarPessoasComMunicipioBrilhante: async () => 0,
+  contarPessoasComRegiao: async () => 0,
+  contarPessoasComConquista: async () => 0,
+  contarTotalContas: async () => 0,
+  resetarEstadoPublico: async () => {},
   // TODO(PRO): trocar por uma verificação real (ex: campo no
   // Firestore ligado ao usuário logado) quando o controle de
   // assinatura PRO existir.
@@ -179,6 +190,140 @@ if (CONFIGURADO) {
       { municipiosVisitadosCount: count, atualizadoEm: serverTimestamp() },
       { merge: true }
     ).catch((erro) => console.error("Falha ao sincronizar progresso:", erro));
+  };
+
+  /**
+   * Sincroniza o estado detalhado de UM município/região/conquista no
+   * perfil do usuário (merge recursivo -- só toca essa chave, o resto
+   * do mapa fica intacto). É esse estado detalhado que alimenta o
+   * perfil público (ver buscarPerfilPublico) e as contagens de "quantas
+   * pessoas têm esse selo" (ver contarPessoasCom*).
+   */
+  window.raspadinhaAuth.sincronizarMunicipio = (id, dados) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { estadoMunicipios: { [id]: dados } },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao sincronizar município (perfil):", erro));
+  };
+
+  window.raspadinhaAuth.sincronizarRegiao = (id, dados) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { estadoRegioes: { [id]: dados } },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao sincronizar região (perfil):", erro));
+  };
+
+  window.raspadinhaAuth.sincronizarConquista = (chave, revelado) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { estadoConquistas: { [chave]: revelado } },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao sincronizar conquista (perfil):", erro));
+  };
+
+  /**
+   * Liga/desliga a visibilidade do perfil público (padrão: público,
+   * já que é opt-out, não opt-in -- ver README).
+   */
+  window.raspadinhaAuth.definirPerfilPublico = (publico) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { perfilPublico: !!publico },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao salvar privacidade do perfil:", erro));
+  };
+
+  /**
+   * Busca o perfil público de OUTRO usuário (ranking, amigos). O
+   * documento inteiro já é legível por qualquer autenticado (regra do
+   * Firestore), então a privacidade aqui é só de EXIBIÇÃO -- ver nota
+   * no README sobre essa limitação (sem Cloud Functions, não dá pra
+   * esconder o campo no nível do servidor).
+   */
+  window.raspadinhaAuth.buscarPerfilPublico = async (uidAlvo) => {
+    const snap = await getDoc(doc(db, "usuarios", uidAlvo));
+    if (!snap.exists()) return null;
+    const dados = snap.data();
+    return {
+      apelido: dados.apelido || "?",
+      perfilPublico: dados.perfilPublico !== false,
+      municipiosVisitadosCount: dados.municipiosVisitadosCount || 0,
+      estadoMunicipios: dados.estadoMunicipios || {},
+      estadoRegioes: dados.estadoRegioes || {},
+    };
+  };
+
+  /**
+   * Contagens agregadas ("quantas contas têm esse selo") calculadas
+   * na hora via consulta ao Firestore (getCountFromServer), sem
+   * manter contadores separados -- mais simples e sem risco de ficar
+   * dessincronizado. Usadas com moderação (uma consulta por selo
+   * aberto, não pra grade inteira de uma vez).
+   */
+  window.raspadinhaAuth.contarPessoasComMunicipioVerificado = async (id) => {
+    const consulta = query(
+      collection(db, "usuarios"),
+      where(`estadoMunicipios.${id}.verificado`, "==", true)
+    );
+    const agregada = await getCountFromServer(consulta);
+    return agregada.data().count;
+  };
+
+  window.raspadinhaAuth.contarPessoasComMunicipioBrilhante = async (id) => {
+    const consulta = query(
+      collection(db, "usuarios"),
+      where(`estadoMunicipios.${id}.brilhante`, "==", true)
+    );
+    const agregada = await getCountFromServer(consulta);
+    return agregada.data().count;
+  };
+
+  window.raspadinhaAuth.contarPessoasComRegiao = async (id) => {
+    const consulta = query(
+      collection(db, "usuarios"),
+      where(`estadoRegioes.${id}.revelado`, "==", true)
+    );
+    const agregada = await getCountFromServer(consulta);
+    return agregada.data().count;
+  };
+
+  window.raspadinhaAuth.contarPessoasComConquista = async (chave) => {
+    const consulta = query(
+      collection(db, "usuarios"),
+      where(`estadoConquistas.${chave}`, "==", true)
+    );
+    const agregada = await getCountFromServer(consulta);
+    return agregada.data().count;
+  };
+
+  window.raspadinhaAuth.contarTotalContas = async () => {
+    const agregada = await getCountFromServer(collection(db, "usuarios"));
+    return agregada.data().count;
+  };
+
+  /**
+   * Zera o estado público (perfil) inteiro -- chamado junto do
+   * "resetar mapa" local, senão o perfil público continuaria
+   * mostrando o progresso antigo.
+   */
+  window.raspadinhaAuth.resetarEstadoPublico = () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { estadoMunicipios: {}, estadoRegioes: {}, estadoConquistas: {}, municipiosVisitadosCount: 0 },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao resetar estado público:", erro));
   };
 
   /**
