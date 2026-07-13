@@ -1,7 +1,7 @@
 /**
- * Login com Google via Firebase Authentication + Google Analytics
- * (medir quantos acessos o site tem) + Firestore (apelido escolhido
- * no primeiro login).
+ * Login com e-mail e senha via Firebase Authentication + Google
+ * Analytics (medir acessos) + Firestore (apelido escolhido no
+ * primeiro login).
  *
  * Este arquivo é um módulo ES (por isso o <script type="module"> no
  * index.html) porque o SDK do Firebase é distribuído assim. Como
@@ -9,11 +9,10 @@
  * é o objeto global `window.raspadinhaAuth` e os eventos
  * "auth-mudou" / "precisa-apelido".
  *
- * Usa signInWithRedirect (não signInWithPopup): popups não
- * funcionam de forma confiável em navegadores mobile nem dentro de
- * um PWA instalado (a janela abre e fecha sozinha sem completar o
- * login) — redirect é o método recomendado pelo próprio Firebase
- * nesses casos.
+ * Login com e-mail/senha (em vez de Google): não depende da lista
+ * de "domínios autorizados" do Firebase, que é o que provavelmente
+ * travava o login com Google no site publicado no GitHub Pages
+ * (esse domínio provavelmente não estava naquela lista).
  *
  * Enquanto js/firebase-config.js não tiver as chaves reais (ver
  * SUBSTITUA_AQUI nesse arquivo), o login fica desativado sem quebrar
@@ -24,9 +23,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/fireba
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-analytics.js";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -40,14 +38,18 @@ import {
 
 const CONFIGURADO = firebaseConfig.apiKey !== "SUBSTITUA_AQUI";
 
+const AVISO_NAO_CONFIGURADO =
+  "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase.";
+
 window.raspadinhaAuth = {
   configurado: CONFIGURADO,
   usuarioAtual: null,
   apelido: null,
-  entrar: () => {
-    alert(
-      "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase."
-    );
+  entrarComEmail: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
+  criarContaComEmail: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
   },
   sair: () => {},
   salvarApelido: async () => {},
@@ -62,13 +64,12 @@ if (CONFIGURADO) {
   getAnalytics(app); // conta acessos automaticamente (ver Firebase Console > Analytics)
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
 
-  window.raspadinhaAuth.entrar = () => {
-    signInWithRedirect(auth, provider).catch((erro) => {
-      console.error("Falha ao iniciar login com Google:", erro);
-    });
-  };
+  window.raspadinhaAuth.entrarComEmail = (email, senha) =>
+    signInWithEmailAndPassword(auth, email, senha);
+
+  window.raspadinhaAuth.criarContaComEmail = (email, senha) =>
+    createUserWithEmailAndPassword(auth, email, senha);
 
   window.raspadinhaAuth.sair = () => signOut(auth);
 
@@ -85,12 +86,6 @@ if (CONFIGURADO) {
       new CustomEvent("auth-mudou", { detail: { usuario, apelido } })
     );
   };
-
-  // Captura erros de configuração (ex: dominio nao autorizado,
-  // provedor Google nao habilitado) ao voltar do redirect do Google.
-  getRedirectResult(auth).catch((erro) => {
-    console.error("Falha no login com Google (redirect):", erro);
-  });
 
   onAuthStateChanged(auth, async (usuario) => {
     window.raspadinhaAuth.usuarioAtual = usuario;
@@ -115,15 +110,15 @@ if (CONFIGURADO) {
       }
     } catch (erro) {
       console.error("Falha ao ler o perfil no Firestore:", erro);
-      // Sem Firestore acessivel, segue com o nome do Google mesmo
-      // (nao trava o usuario fora do app por causa disso).
+      // Sem Firestore acessivel, segue com o e-mail mesmo (nao
+      // trava o usuario fora do app por causa disso).
       document.dispatchEvent(
-        new CustomEvent("auth-mudou", { detail: { usuario, apelido: usuario.displayName } })
+        new CustomEvent("auth-mudou", { detail: { usuario, apelido: usuario.email } })
       );
     }
   });
 } else {
   console.warn(
-    "Firebase ainda não configurado (js/firebase-config.js). Login com Google desativado por enquanto."
+    "Firebase ainda não configurado (js/firebase-config.js). Login desativado por enquanto."
   );
 }

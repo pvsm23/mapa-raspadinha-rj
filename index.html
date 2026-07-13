@@ -28,8 +28,14 @@
   <div id="tela-login">
     <div id="tela-login-conteudo">
       <h1 class="logo-desbrava">DESBRAVA</h1>
-      <p>Entre com sua conta Google para começar a raspar o mapa.</p>
-      <button id="btn-login-obrigatorio">Entrar com Google</button>
+      <p>Entre com e-mail e senha para começar a raspar o mapa.</p>
+      <form id="form-login">
+        <input type="email" id="input-email" placeholder="E-mail" autocomplete="email" required>
+        <input type="password" id="input-senha" placeholder="Senha" autocomplete="current-password" required>
+        <p id="erro-login" class="oculto"></p>
+        <button type="submit" id="btn-entrar-email">Entrar</button>
+      </form>
+      <button type="button" id="btn-alternar-modo">Não tem conta? Criar conta</button>
     </div>
   </div>
 
@@ -249,7 +255,7 @@
       <p id="progresso">Visitados: <span id="contador">0</span> / <span id="total">3</span></p>
     </div>
     <div id="botoes-topo">
-      <button id="btn-login" aria-label="Entrar com Google" title="Entrar com Google">👤</button>
+      <button id="btn-login" aria-label="Minha conta" title="Minha conta">👤</button>
       <button id="btn-biblioteca" aria-label="Biblioteca de selos" title="Biblioteca de selos">📖</button>
       <button id="btn-configuracoes" aria-label="Configurações" title="Configurações">⚙️</button>
     </div>
@@ -295,8 +301,7 @@
       <div id="secao-conta">
         <h3>Conta</h3>
         <p id="conta-status">Você não está conectado.</p>
-        <button id="btn-login-config">Entrar com Google</button>
-        <button id="btn-logout" class="oculto">Sair da conta</button>
+        <button id="btn-logout">Sair da conta</button>
       </div>
 
       <div id="secao-pro">

@@ -11,9 +11,9 @@
      não visitados e coloridos os já raspados, com contador e barra
      de progresso; clicar num item abre o mesmo fluxo de sempre.
    - Configurações: popup com o botão de resetar o mapa inteiro.
-   - Login com Google é obrigatório (js/auth.js): #tela-login cobre
-     tudo até logar. No primeiro login, escolhe um apelido (salvo no
-     Firestore) antes de liberar o app.
+   - Login com e-mail/senha é obrigatório (js/auth.js): #tela-login
+     cobre tudo até logar. No primeiro login, escolhe um apelido
+     (salvo no Firestore) antes de liberar o app.
    - Estado salvo no LocalStorage (chave por código IBGE)
    - Estrutura já pensada para, mais adiante, virar:
        * localStorage -> Firestore (por usuário logado)
@@ -108,12 +108,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (evento.target.id === "modal-configuracoes") fecharConfiguracoes();
     });
 
-  document.getElementById("btn-login").addEventListener("click", entrarComGoogle);
-  document.getElementById("btn-login-config").addEventListener("click", entrarComGoogle);
+  document.getElementById("btn-login").addEventListener("click", abrirConfiguracoes);
   document.getElementById("btn-logout").addEventListener("click", sairDaConta);
+  document.getElementById("form-login").addEventListener("submit", aoEnviarFormLogin);
   document
-    .getElementById("btn-login-obrigatorio")
-    .addEventListener("click", entrarComGoogle);
+    .getElementById("btn-alternar-modo")
+    .addEventListener("click", alternarModoLogin);
 
   document
     .getElementById("btn-baixar-offline")
@@ -132,13 +132,68 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
 });
 
+let modoCadastro = false;
+
 /**
- * Login/logout com Google (js/auth.js). Enquanto o Firebase não
- * estiver configurado (ver js/firebase-config.js), entrar() só
+ * Alterna entre "Entrar" e "Criar conta" no formulário de login.
+ */
+function alternarModoLogin() {
+  modoCadastro = !modoCadastro;
+  document.getElementById("btn-entrar-email").textContent = modoCadastro
+    ? "Criar conta"
+    : "Entrar";
+  document.getElementById("btn-alternar-modo").textContent = modoCadastro
+    ? "Já tem conta? Entrar"
+    : "Não tem conta? Criar conta";
+  esconderErroLogin();
+}
+
+/**
+ * Login/cadastro com e-mail e senha (js/auth.js). Enquanto o
+ * Firebase não estiver configurado (ver js/firebase-config.js), só
  * mostra um aviso — não quebra o resto do app.
  */
-function entrarComGoogle() {
-  window.raspadinhaAuth?.entrar();
+function aoEnviarFormLogin(evento) {
+  evento.preventDefault();
+  esconderErroLogin();
+
+  const email = document.getElementById("input-email").value.trim();
+  const senha = document.getElementById("input-senha").value;
+  const acao = modoCadastro
+    ? window.raspadinhaAuth?.criarContaComEmail(email, senha)
+    : window.raspadinhaAuth?.entrarComEmail(email, senha);
+
+  acao?.catch((erro) => mostrarErroLogin(traduzirErroAuth(erro)));
+}
+
+function mostrarErroLogin(mensagem) {
+  const el = document.getElementById("erro-login");
+  el.textContent = mensagem;
+  el.classList.remove("oculto");
+}
+
+function esconderErroLogin() {
+  document.getElementById("erro-login").classList.add("oculto");
+}
+
+/**
+ * Traduz os códigos de erro mais comuns do Firebase Auth pra
+ * mensagens em português que fazem sentido pro usuário.
+ */
+function traduzirErroAuth(erro) {
+  const mensagens = {
+    "auth/invalid-email": "E-mail inválido.",
+    "auth/missing-password": "Digite uma senha.",
+    "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
+    "auth/email-already-in-use": "Já existe uma conta com esse e-mail. Tente entrar.",
+    "auth/invalid-credential": "E-mail ou senha incorretos.",
+    "auth/wrong-password": "E-mail ou senha incorretos.",
+    "auth/user-not-found": "Não existe conta com esse e-mail. Crie uma conta.",
+    "auth/too-many-requests": "Muitas tentativas. Aguarde um pouco e tente de novo.",
+    "auth/operation-not-allowed":
+      "Login por e-mail/senha ainda não foi ativado no Firebase (Console > Authentication > Sign-in method).",
+  };
+  return mensagens[erro?.code] || erro?.message || "Não foi possível continuar. Tente de novo.";
 }
 
 function sairDaConta() {
@@ -153,38 +208,34 @@ function sairDaConta() {
 function atualizarUiDeConta(detalhe) {
   const btnLoginTopo = document.getElementById("btn-login");
   const status = document.getElementById("conta-status");
-  const btnLoginConfig = document.getElementById("btn-login-config");
-  const btnLogout = document.getElementById("btn-logout");
   const telaLogin = document.getElementById("tela-login");
 
   if (detalhe) {
     const { usuario, apelido } = detalhe;
     telaLogin.classList.add("oculto");
     document.getElementById("modal-apelido").classList.add("oculto");
+    document.getElementById("form-login").reset();
 
     btnLoginTopo.textContent = "🟢";
     btnLoginTopo.title = `Logado como ${apelido}`;
     status.textContent = `Conectado como ${apelido} (${usuario.email})`;
-    btnLoginConfig.classList.add("oculto");
-    btnLogout.classList.remove("oculto");
   } else {
     telaLogin.classList.remove("oculto");
 
     btnLoginTopo.textContent = "👤";
-    btnLoginTopo.title = "Entrar com Google";
+    btnLoginTopo.title = "Minha conta";
     status.textContent = "Você não está conectado.";
-    btnLoginConfig.classList.remove("oculto");
-    btnLogout.classList.add("oculto");
   }
 }
 
 /**
- * Abre o popup de escolher apelido (primeiro login). Sugere o nome
- * do Google como ponto de partida, mas o usuário pode trocar.
+ * Abre o popup de escolher apelido (primeiro login). Sugere a parte
+ * do e-mail antes do "@" como ponto de partida, mas o usuário pode
+ * trocar livremente.
  */
 function abrirModalApelido(usuario) {
   const input = document.getElementById("input-apelido");
-  input.value = usuario?.displayName ?? "";
+  input.value = usuario?.email?.split("@")[0] ?? "";
   document.getElementById("modal-apelido").classList.remove("oculto");
   input.focus();
 }

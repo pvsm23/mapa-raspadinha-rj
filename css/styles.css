@@ -491,6 +491,11 @@ svg#mapa-rj {
   display: none !important;
 }
 
+#tela-login-conteudo {
+  width: 100%;
+  max-width: 320px;
+}
+
 #tela-login-conteudo h1 {
   font-size: 1.6rem;
   margin-bottom: 8px;
@@ -501,7 +506,34 @@ svg#mapa-rj {
   margin-bottom: 20px;
 }
 
-#btn-login-obrigatorio {
+#form-login {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#form-login input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 0.95rem;
+}
+
+#erro-login {
+  color: #f87171;
+  font-size: 0.82rem;
+  margin: 0;
+  text-align: left;
+}
+
+#erro-login.oculto {
+  display: none;
+}
+
+#btn-entrar-email {
   background: #22c55e;
   color: #0f172a;
   border: none;
@@ -512,8 +544,22 @@ svg#mapa-rj {
   font-weight: 600;
 }
 
-#btn-login-obrigatorio:hover {
+#btn-entrar-email:hover {
   background: #16a34a;
+}
+
+#btn-alternar-modo {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 16px;
+  text-decoration: underline;
+}
+
+#btn-alternar-modo:hover {
+  color: #f1f5f9;
 }
 
 /* Popup de escolher apelido no primeiro login */
