@@ -263,6 +263,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
   document.addEventListener("boosts-brilhantes-mudou", atualizarAvisoBrilhantePendente);
 
+  // ---- Meu perfil ----
+  document
+    .getElementById("btn-meu-perfil")
+    .addEventListener("click", () => exigirLogin(() => abrirPerfil(window.raspadinhaAuth.usuarioAtual.uid)));
+
   // ---- Ranking ----
   document
     .getElementById("btn-abrir-ranking")

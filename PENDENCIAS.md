@@ -11,12 +11,9 @@ tem espaço reservado no código/dados, só falta o conteúdo em si.
 - **História/curiosidade de cada ponto turístico** — campo
   `textoCompleto` em `data/destinos.json` (nenhum preenchido ainda).
   Aparece ao clicar no ponto turístico dentro do popup do município.
-- **Descrição curta dos pontos turísticos que faltam** — campo
-  `descricao` em `data/destinos.json`. Só 19 municípios têm (Magé,
-  Mangaratiba, Maricá, Mendes, Mesquita, Miguel Pereira, Miracema,
-  Natividade, Nilópolis, Niterói, Nova Friburgo, Nova Iguaçu,
-  Paracambi, Paraíba do Sul, Paraty, Paty do Alferes, Petrópolis,
-  Pinheiral, Piraí) — faltam os outros 73.
+- ~~Descrição curta dos pontos turísticos~~ — **concluído**: os 92
+  municípios (460 pontos turísticos) já têm `descricao` preenchida em
+  `data/destinos.json`.
 - **Resumo em texto de cada região** — `data/regioes-resumo.json`
   (reservado, vazio). Aparece no popup de cada uma das 8 regiões.
 
