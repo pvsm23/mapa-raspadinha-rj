@@ -107,9 +107,7 @@ window.raspadinhaAuth = {
   definirPerfilPublico: async () => {},
   buscarPerfilPublico: async () => null,
   contarPessoasComMunicipioVerificado: async () => 0,
-  contarPessoasComMunicipioBrilhante: async () => 0,
   contarPessoasComRegiao: async () => 0,
-  contarPessoasComConquista: async () => 0,
   contarTotalContas: async () => 0,
   resetarEstadoPublico: async () => {},
   // TODO(PRO): trocar por uma verificação real (ex: campo no
@@ -279,28 +277,10 @@ if (CONFIGURADO) {
     return agregada.data().count;
   };
 
-  window.raspadinhaAuth.contarPessoasComMunicipioBrilhante = async (id) => {
-    const consulta = query(
-      collection(db, "usuarios"),
-      where(`estadoMunicipios.${id}.brilhante`, "==", true)
-    );
-    const agregada = await getCountFromServer(consulta);
-    return agregada.data().count;
-  };
-
   window.raspadinhaAuth.contarPessoasComRegiao = async (id) => {
     const consulta = query(
       collection(db, "usuarios"),
       where(`estadoRegioes.${id}.revelado`, "==", true)
-    );
-    const agregada = await getCountFromServer(consulta);
-    return agregada.data().count;
-  };
-
-  window.raspadinhaAuth.contarPessoasComConquista = async (chave) => {
-    const consulta = query(
-      collection(db, "usuarios"),
-      where(`estadoConquistas.${chave}`, "==", true)
     );
     const agregada = await getCountFromServer(consulta);
     return agregada.data().count;

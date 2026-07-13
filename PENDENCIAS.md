@@ -64,10 +64,3 @@ tem espaço reservado no código/dados, só falta o conteúdo em si.
 - **Recurso PRO**: alguma forma de marcar quem pagou (ex: campo no
   Firestore) para liberar `baixarDadosOffline()` de verdade — hoje é
   só um placeholder desabilitado.
-- **Contorno exato das regiões**: hoje o contorno de cada região no
-  modo afastado é uma aproximação (fecho convexo dos municípios dela,
-  ver `construirContornosDeRegiao` em `js/script.js`), não o contorno
-  real/côncavo. Pra ficar exato precisaria unir de verdade os
-  polígonos dos municípios (union de polígonos), o que exige uma
-  biblioteca de geometria (ex: turf.js) — não incluída no projeto por
-  enquanto.

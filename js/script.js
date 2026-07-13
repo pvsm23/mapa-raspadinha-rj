@@ -1924,36 +1924,39 @@ function fecharConfiguracoes() {
    Percentuais são sempre arredondados pra CIMA (Math.ceil).
    ============================================================ */
 
+// `raridade` é fixa/curada por dificuldade (não calculada por % de
+// contas) -- da mais fácil (comum) pra mais difícil (farmador de
+// aura), na ordem que faz sentido pra cada tipo de meta.
 const DEFINICOES_CONQUISTAS = [
-  { chave: "primeiros-passos", titulo: "Primeiros Passos", tipo: "municipios", meta: 3 },
-  { chave: "25pct", titulo: "Explorador Iniciante", tipo: "municipios-pct", meta: 0.25 },
-  { chave: "50pct", titulo: "Meio Caminho Andado", tipo: "municipios-pct", meta: 0.5 },
-  { chave: "75pct", titulo: "Quase Lá", tipo: "municipios-pct", meta: 0.75 },
-  { chave: "100pct", titulo: "Desbravador", tipo: "municipios-pct", meta: 1 },
+  { chave: "primeiros-passos", titulo: "Primeiros Passos", tipo: "municipios", meta: 3, raridade: "comum" },
+  { chave: "25pct", titulo: "Explorador Iniciante", tipo: "municipios-pct", meta: 0.25, raridade: "incomum" },
+  { chave: "50pct", titulo: "Meio Caminho Andado", tipo: "municipios-pct", meta: 0.5, raridade: "raro" },
+  { chave: "75pct", titulo: "Quase Lá", tipo: "municipios-pct", meta: 0.75, raridade: "muito-raro" },
+  { chave: "100pct", titulo: "Desbravador", tipo: "municipios-pct", meta: 1, raridade: "lendario" },
 
-  { chave: "streak-7", titulo: "Semana Cheia", tipo: "streak", meta: 7 },
+  { chave: "streak-7", titulo: "Semana Cheia", tipo: "streak", meta: 7, raridade: "incomum" },
 
-  { chave: "dia-3", titulo: "Dia Corrido", tipo: "municipios-no-dia", meta: 3 },
-  { chave: "dia-5", titulo: "Maratona do Dia", tipo: "municipios-no-dia", meta: 5 },
-  { chave: "dia-8", titulo: "Turbo Turista", tipo: "municipios-no-dia", meta: 8 },
+  { chave: "dia-3", titulo: "Dia Corrido", tipo: "municipios-no-dia", meta: 3, raridade: "incomum" },
+  { chave: "dia-5", titulo: "Maratona do Dia", tipo: "municipios-no-dia", meta: 5, raridade: "raro" },
+  { chave: "dia-8", titulo: "Turbo Turista", tipo: "municipios-no-dia", meta: 8, raridade: "muito-raro" },
 
-  { chave: "regiao-1", titulo: "Primeira Região", tipo: "regioes", meta: 1 },
-  { chave: "regiao-25pct", titulo: "Regiões em Dobro", tipo: "regioes-pct", meta: 0.25 },
-  { chave: "regiao-50pct", titulo: "Metade do Estado", tipo: "regioes-pct", meta: 0.5 },
-  { chave: "regiao-100pct", titulo: "Senhor das Regiões", tipo: "regioes-pct", meta: 1 },
+  { chave: "regiao-1", titulo: "Primeira Região", tipo: "regioes", meta: 1, raridade: "incomum" },
+  { chave: "regiao-25pct", titulo: "Regiões em Dobro", tipo: "regioes-pct", meta: 0.25, raridade: "raro" },
+  { chave: "regiao-50pct", titulo: "Metade do Estado", tipo: "regioes-pct", meta: 0.5, raridade: "muito-raro" },
+  { chave: "regiao-100pct", titulo: "Senhor das Regiões", tipo: "regioes-pct", meta: 1, raridade: "lendario" },
 
-  { chave: "brilhante-1", titulo: "Primeira Fagulha", tipo: "brilhantes", meta: 1 },
-  { chave: "brilhante-3", titulo: "Coleção Dourada", tipo: "brilhantes", meta: 3 },
-  { chave: "brilhante-5", titulo: "Mão de Ouro", tipo: "brilhantes", meta: 5 },
-  { chave: "brilhante-10", titulo: "Sortudo", tipo: "brilhantes", meta: 10 },
-  { chave: "brilhante-25", titulo: "Ímã de Sorte", tipo: "brilhantes", meta: 25 },
-  { chave: "brilhante-50", titulo: "Rei do Brilho", tipo: "brilhantes", meta: 50 },
-  { chave: "brilhante-100pct", titulo: "Tudo Reluz", tipo: "brilhantes-pct", meta: 1 },
+  { chave: "brilhante-1", titulo: "Primeira Fagulha", tipo: "brilhantes", meta: 1, raridade: "raro" },
+  { chave: "brilhante-3", titulo: "Coleção Dourada", tipo: "brilhantes", meta: 3, raridade: "muito-raro" },
+  { chave: "brilhante-5", titulo: "Mão de Ouro", tipo: "brilhantes", meta: 5, raridade: "muito-raro" },
+  { chave: "brilhante-10", titulo: "Sortudo", tipo: "brilhantes", meta: 10, raridade: "lendario" },
+  { chave: "brilhante-25", titulo: "Ímã de Sorte", tipo: "brilhantes", meta: 25, raridade: "lendario" },
+  { chave: "brilhante-50", titulo: "Rei do Brilho", tipo: "brilhantes", meta: 50, raridade: "farmador" },
+  { chave: "brilhante-100pct", titulo: "Tudo Reluz", tipo: "brilhantes-pct", meta: 1, raridade: "farmador" },
 
-  { chave: "regiao-brilhante-1", titulo: "Região Radiante", tipo: "regioes-brilhantes", meta: 1 },
-  { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25 },
-  { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5 },
-  { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1 },
+  { chave: "regiao-brilhante-1", titulo: "Região Radiante", tipo: "regioes-brilhantes", meta: 1, raridade: "muito-raro" },
+  { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25, raridade: "lendario" },
+  { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5, raridade: "farmador" },
+  { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1, raridade: "farmador" },
 ];
 
 /**
@@ -2035,6 +2038,18 @@ function progressoConquista(def, ctx) {
   }
 }
 
+// Rótulo exibido pra cada nível de raridade (a raridade em si é fixa
+// por conquista, ver campo `raridade` em DEFINICOES_CONQUISTAS --
+// classificada por dificuldade, não por quantas contas já têm).
+const NOMES_RARIDADE = {
+  comum: "Comum",
+  incomum: "Incomum",
+  raro: "Raro",
+  "muito-raro": "Muito raro",
+  lendario: "Lendário",
+  farmador: "Farmador de Aura",
+};
+
 function abrirConquistas() {
   const container = document.getElementById("conquistas-lista");
   container.innerHTML = "";
@@ -2049,7 +2064,7 @@ function abrirConquistas() {
     item.className = "conquista-item";
     item.innerHTML = `
       <h3>${escaparHtml(def.titulo)}</h3>
-      <span class="conquista-raridade" id="conquista-raridade-${def.chave}">Calculando raridade...</span>
+      <span class="conquista-raridade raridade-${def.raridade}">${NOMES_RARIDADE[def.raridade]}</span>
       <p class="conquista-progresso-texto">${atual} / ${meta}</p>
       <div class="conquista-barra"><div class="conquista-barra-preenchida" style="width:${(atual / meta) * 100}%"></div></div>
       <div class="conquista-selo-body" id="conquista-selo-${def.chave}"></div>
@@ -2061,46 +2076,6 @@ function abrirConquistas() {
   });
 
   document.getElementById("modal-conquistas").classList.remove("oculto");
-  carregarRaridadesConquistas();
-}
-
-/**
- * Nível de raridade de uma conquista, baseado em % de contas que já
- * a desbloquearam: comum (mais da metade) até "farmador de aura"
- * (menos de 0.5%, praticamente ninguém tem).
- */
-function calcularRaridade(percentual) {
-  if (percentual >= 50) return { nivel: "Comum", classe: "raridade-comum" };
-  if (percentual >= 25) return { nivel: "Incomum", classe: "raridade-incomum" };
-  if (percentual >= 10) return { nivel: "Raro", classe: "raridade-raro" };
-  if (percentual >= 3) return { nivel: "Muito raro", classe: "raridade-muito-raro" };
-  if (percentual >= 0.5) return { nivel: "Lendário", classe: "raridade-lendario" };
-  return { nivel: "Farmador de Aura", classe: "raridade-farmador" };
-}
-
-/**
- * Busca (em segundo plano, sem travar a abertura do modal) quantas
- * contas têm cada conquista, pra calcular a raridade. Cada item
- * atualiza seu próprio texto assim que a consulta responder --
- * checa se o elemento ainda existe, caso o modal já tenha fechado.
- */
-async function carregarRaridadesConquistas() {
-  const total = await window.raspadinhaAuth.contarTotalContas();
-  if (!total) {
-    document.querySelectorAll(".conquista-raridade").forEach((el) => (el.textContent = ""));
-    return;
-  }
-
-  DEFINICOES_CONQUISTAS.forEach((def) => {
-    window.raspadinhaAuth.contarPessoasComConquista(def.chave).then((qtd) => {
-      const el = document.getElementById(`conquista-raridade-${def.chave}`);
-      if (!el) return;
-      const percentual = (qtd / total) * 100;
-      const { nivel, classe } = calcularRaridade(percentual);
-      el.textContent = `${nivel} · ${qtd} pessoa${qtd === 1 ? "" : "s"} (${percentual.toFixed(1)}%)`;
-      el.className = `conquista-raridade ${classe}`;
-    });
-  });
 }
 
 function renderizarSeloConquista(chave, titulo, desbloqueada) {
@@ -2814,85 +2789,124 @@ function construirMapaDeRegioes() {
 }
 
 /**
- * Amostra pontos ao longo do contorno de um <path> em coordenadas do
- * próprio SVG (já no espaço certo, sem precisar reimplementar a
- * projeção geográfica usada por tools/geojson-to-svg.js).
+ * Extrai os vértices de cada anel (subpath) de um `d` de path gerado
+ * por tools/geojson-to-svg.js -- formato sempre "M x y L x y L x y
+ * ... Z" (só retas, sem curvas), então basta ler os números na
+ * ordem. Um município pode ter mais de um anel (ex: ilhas), daí o
+ * split em "M".
  */
-function amostrarPontosDoPath(path, quantidade = 24) {
-  const total = path.getTotalLength();
-  const pontos = [];
-  for (let i = 0; i < quantidade; i++) {
-    const ponto = path.getPointAtLength((total * i) / quantidade);
-    pontos.push([ponto.x, ponto.y]);
-  }
-  return pontos;
+function extrairAneisDoPath(d) {
+  const subpaths = d.trim().split(/(?=M)/).filter(Boolean);
+  return subpaths.map((sub) => {
+    const numeros = (sub.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+    const pontos = [];
+    for (let i = 0; i + 1 < numeros.length; i += 2) {
+      pontos.push([numeros[i], numeros[i + 1]]);
+    }
+    return pontos;
+  });
+}
+
+// Distância máxima (em unidades do viewBox, que tem 800 de largura)
+// pra considerar dois vértices "o mesmo ponto" -- os municípios
+// vizinhos nem sempre têm vértices EXATAMENTE coincidentes na
+// fronteira comum (a base tbrugz/geodata-br não é perfeitamente
+// topológica), então usa uma tolerância pequena em vez de igualdade
+// exata.
+const TOLERANCIA_VERTICE = 0.35;
+const TAMANHO_CELULA_GRADE = TOLERANCIA_VERTICE * 2;
+
+function chaveCelulaGrade(x, y) {
+  return `${Math.round(x / TAMANHO_CELULA_GRADE)},${Math.round(y / TAMANHO_CELULA_GRADE)}`;
 }
 
 /**
- * Fecho convexo (Andrew's monotone chain) de uma lista de pontos
- * [x, y]. Algoritmo padrão, O(n log n).
- */
-function fechoConvexo(pontos) {
-  const pts = [...new Set(pontos.map((p) => p.join(",")))]
-    .map((s) => s.split(",").map(Number))
-    .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  if (pts.length < 3) return pts;
-
-  const cruz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-
-  const inferior = [];
-  for (const p of pts) {
-    while (inferior.length >= 2 && cruz(inferior[inferior.length - 2], inferior[inferior.length - 1], p) <= 0) {
-      inferior.pop();
-    }
-    inferior.push(p);
-  }
-
-  const superior = [];
-  for (let i = pts.length - 1; i >= 0; i--) {
-    const p = pts[i];
-    while (superior.length >= 2 && cruz(superior[superior.length - 2], superior[superior.length - 1], p) <= 0) {
-      superior.pop();
-    }
-    superior.push(p);
-  }
-
-  inferior.pop();
-  superior.pop();
-  return inferior.concat(superior);
-}
-
-/**
- * Desenha, por cima dos municípios, o contorno de cada uma das 8
- * regiões (fecho convexo dos municípios que a compõem) -- só fica
- * visível no modo "regiões" (zoom afastado, ver CSS
- * `svg.modo-regioes`), quando as bordas individuais de cada
- * município ficam escondidas. Aproximação (fecho convexo, não o
- * contorno exato/côncavo da região) -- suficiente pra dar a
- * sensação de "8 blocos" sem precisar de uma biblioteca de geometria
- * pra unir os polígonos de verdade.
+ * Desenha, por cima dos municípios, o contorno real de cada uma das
+ * 8 regiões -- só fica visível no modo "regiões" (zoom afastado, ver
+ * CSS `svg.modo-regioes`), quando as bordas individuais de cada
+ * município ficam escondidas.
+ *
+ * Em vez de um fecho convexo (que "estourava" pra fora da forma real
+ * da região em formatos côncavos/alongados, cruzando o mapa todo),
+ * detecta as arestas de fronteira de verdade: uma aresta (par de
+ * vértices consecutivos de um município) fica ESCONDIDA só se outro
+ * município da MESMA região tiver vértices bem próximos dos dois
+ * extremos dela (ou seja, ele também "passa" por ali -- fronteira
+ * interna compartilhada). Usa um índice espacial (grade) pra achar
+ * vértices próximos rapidamente, em vez de comparar todos com todos.
  */
 function construirContornosDeRegiao() {
   const svg = document.getElementById("mapa-rj");
   document.getElementById("contornos-regioes")?.remove();
 
+  const paths = Array.from(document.querySelectorAll("#mapa-rj .municipio"));
+  const municipios = paths.map((path) => ({
+    regiao: path.dataset.regiao,
+    aneis: extrairAneisDoPath(path.getAttribute("d")),
+  }));
+
+  // Indice espacial de vertices: celula -> [{x, y, indiceMunicipio}]
+  const grade = new Map();
+  municipios.forEach((municipio, indiceMunicipio) => {
+    municipio.aneis.forEach((anel) => {
+      anel.forEach(([x, y]) => {
+        const chave = chaveCelulaGrade(x, y);
+        if (!grade.has(chave)) grade.set(chave, []);
+        grade.get(chave).push({ x, y, indiceMunicipio });
+      });
+    });
+  });
+
+  function municipiosPertoDoPonto(x, y, ignorarIndice) {
+    const cx = Math.round(x / TAMANHO_CELULA_GRADE);
+    const cy = Math.round(y / TAMANHO_CELULA_GRADE);
+    const encontrados = new Set();
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const lista = grade.get(`${cx + dx},${cy + dy}`);
+        if (!lista) continue;
+        for (const v of lista) {
+          if (v.indiceMunicipio === ignorarIndice) continue;
+          if (Math.hypot(v.x - x, v.y - y) <= TOLERANCIA_VERTICE) encontrados.add(v.indiceMunicipio);
+        }
+      }
+    }
+    return encontrados;
+  }
+
   const grupo = document.createElementNS("http://www.w3.org/2000/svg", "g");
   grupo.id = "contornos-regioes";
 
-  Object.entries(municipiosPorRegiao).forEach(([regiaoId, ids]) => {
-    let pontos = [];
-    ids.forEach((id) => {
-      const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
-      if (path) pontos = pontos.concat(amostrarPontosDoPath(path));
-    });
-    if (pontos.length < 3) return;
+  municipios.forEach((municipio, indiceMunicipio) => {
+    municipio.aneis.forEach((anel) => {
+      for (let i = 0; i < anel.length; i++) {
+        const p1 = anel[i];
+        const p2 = anel[(i + 1) % anel.length];
 
-    const hull = fechoConvexo(pontos);
-    const poligono = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-    poligono.setAttribute("points", hull.map(([x, y]) => `${x},${y}`).join(" "));
-    poligono.setAttribute("class", "contorno-regiao");
-    poligono.dataset.regiao = regiaoId;
-    grupo.appendChild(poligono);
+        const vizinhosP1 = municipiosPertoDoPonto(p1[0], p1[1], indiceMunicipio);
+        const vizinhosP2 = municipiosPertoDoPonto(p2[0], p2[1], indiceMunicipio);
+
+        // "Interna" se algum OUTRO municipio da MESMA regiao tem
+        // vertices perto dos DOIS extremos dessa aresta -- ele
+        // tambem faz essa fronteira, entao e uma divisa interna.
+        let interna = false;
+        for (const j of vizinhosP1) {
+          if (vizinhosP2.has(j) && municipios[j].regiao === municipio.regiao) {
+            interna = true;
+            break;
+          }
+        }
+        if (interna) continue;
+
+        const linha = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        linha.setAttribute("x1", p1[0]);
+        linha.setAttribute("y1", p1[1]);
+        linha.setAttribute("x2", p2[0]);
+        linha.setAttribute("y2", p2[1]);
+        linha.setAttribute("class", "contorno-regiao-segmento");
+        grupo.appendChild(linha);
+      }
+    });
   });
 
   svg.appendChild(grupo);
