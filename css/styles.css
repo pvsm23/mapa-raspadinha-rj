@@ -201,6 +201,11 @@ svg#mapa-rj {
   max-width: 380px;
 }
 
+#modal-conteudo {
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
 #modal-conteudo h2,
 #biblioteca-conteudo h2,
 #configuracoes-conteudo h2 {
