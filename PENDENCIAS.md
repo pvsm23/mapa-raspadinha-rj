@@ -99,17 +99,44 @@ dourada — não existe "conquista brilhante"). As 24 chaves atuais:
 `brilhante-100pct`, `regiao-brilhante-1`, `regiao-brilhante-25pct`,
 `regiao-brilhante-50pct`, `regiao-brilhante-100pct`.
 
+## Plano PRO
+
+Fase 1 (feita): só o distintivo "PRO" amarelo do lado do apelido no
+Ranking, sem cobrança nenhuma ainda. Campo `usuarios/{uid}.ehPro`
+(boolean). Arquitetura:
+
+- **Regra do Firestore** (bloco em `README.md`, seção do
+  Firebase Console): uma escrita normal (apelido, progresso, estado de
+  municípios etc.) nunca consegue alterar `ehPro` — a regra só permite
+  a escrita se `ehPro` sair igual a como entrou, **ou** se estiver
+  virando `true` pela primeira vez numa escrita que também mande um
+  campo `codigoAtivacaoPro` com o valor secreto certo. Depois de
+  `true`, a regra bloqueia qualquer tentativa de reverter — fica pra
+  sempre.
+- **O código secreto em si NÃO fica em nenhum arquivo do repositório**
+  (nem aqui, nem no README, nem em nenhum `.js`) — o texto do
+  `README.md` só tem um placeholder (`SUBSTITUA_POR_UM_CODIGO_SECRETO_SEU`)
+  que precisa ser trocado pelo código de verdade só na hora de colar a
+  regra no Firebase Console. Isso é proposital: como o repositório é
+  público, qualquer segredo escrito num arquivo ficaria visível pra
+  qualquer pessoa no GitHub.
+- **Como ativar numa conta**: só via console do navegador (DevTools),
+  logado na conta que vai virar PRO — não existe (e não deve existir)
+  nenhum botão/campo visível no app pra isso. O comando exato foi
+  passado separadamente, fora deste repositório.
+- **Futuro/sem prazo definido**: cobrança de verdade (checkout,
+  webhook confirmando pagamento) e o recurso PRO de baixar dados
+  offline (`ehUsuarioPro()`/`baixarDadosOffline()` em `js/script.js`
+  ainda são stubs que sempre dizem "não é PRO"/mostram "em
+  construção").
+
 ## Configuração no Firebase Console (fora do código)
 
 - **Ativar login por e-mail/senha**: Console → Authentication →
   Sign-in method → Email/senha → Enable.
 - **Colar as regras de segurança do Firestore**: Console → Firestore
   Database → Regras — o texto completo e atualizado (com as
-  subcoleções de convites, pedidos de amizade, amigos e check-in) está
-  no `README.md`.
-
-## Futuro / sem prazo definido
-
-- **Recurso PRO**: alguma forma de marcar quem pagou (ex: campo no
-  Firestore) para liberar `baixarDadosOffline()` de verdade — hoje é
-  só um placeholder desabilitado.
+  subcoleções de convites, pedidos de amizade, amigos e check-in, e a
+  proteção do campo `ehPro`) está no `README.md`. **Antes de colar**,
+  troque o placeholder `SUBSTITUA_POR_UM_CODIGO_SECRETO_SEU` pelo seu
+  código secreto de verdade (ver seção "Plano PRO" acima).

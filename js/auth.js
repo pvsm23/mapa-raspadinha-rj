@@ -79,6 +79,8 @@ window.raspadinhaAuth = {
   configurado: CONFIGURADO,
   usuarioAtual: null,
   apelido: null,
+  ehPro: false,
+  db: null,
   boostsBrilhantesPendentes: 0,
   entrarComEmail: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
@@ -122,6 +124,7 @@ if (CONFIGURADO) {
   getAnalytics(app); // conta acessos automaticamente (ver Firebase Console > Analytics)
   const auth = getAuth(app);
   const db = getFirestore(app);
+  window.raspadinhaAuth.db = db;
 
   window.raspadinhaAuth.entrarComEmail = (email, senha) =>
     signInWithEmailAndPassword(auth, email, senha);
@@ -343,6 +346,7 @@ if (CONFIGURADO) {
       uid: d.id,
       apelido: d.data().apelido || "?",
       count: d.data().municipiosVisitadosCount || 0,
+      ehPro: !!d.data().ehPro,
     }));
   };
 
@@ -428,6 +432,7 @@ if (CONFIGURADO) {
           uid: d.id,
           apelido: perfil.data()?.apelido || "?",
           count: perfil.data()?.municipiosVisitadosCount || 0,
+          ehPro: !!perfil.data()?.ehPro,
         };
       })
     );
@@ -569,6 +574,7 @@ if (CONFIGURADO) {
 
     if (!usuario) {
       window.raspadinhaAuth.apelido = null;
+      window.raspadinhaAuth.ehPro = false;
       document.dispatchEvent(new CustomEvent("auth-mudou", { detail: null }));
       return;
     }
@@ -577,6 +583,7 @@ if (CONFIGURADO) {
       const snap = await getDoc(doc(db, "usuarios", usuario.uid));
       const apelido = snap.exists() ? snap.data().apelido : null;
       window.raspadinhaAuth.apelido = apelido || null;
+      window.raspadinhaAuth.ehPro = !!snap.data()?.ehPro;
 
       if (apelido) {
         document.dispatchEvent(

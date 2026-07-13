@@ -465,12 +465,6 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   stroke-width: 1.5;
 }
 
-#marcador-local-atual .marcador-emoji {
-  font-size: 14px;
-  text-anchor: middle;
-  dominant-baseline: middle;
-}
-
 @keyframes pulsar-marcador-local {
   0% {
     transform: scale(0.6);
@@ -1739,6 +1733,19 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 .ranking-count {
   color: #22c55e;
   font-weight: 600;
+}
+
+.badge-pro {
+  display: inline-block;
+  margin-left: 6px;
+  background: #facc15;
+  color: #422006;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border-radius: 5px;
+  padding: 1px 5px;
+  vertical-align: middle;
 }
 
 /* ---- Conquistas ---- */

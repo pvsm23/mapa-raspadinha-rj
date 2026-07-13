@@ -1391,13 +1391,7 @@ function colocarMarcadorLocalAtual(path) {
   ponto.setAttribute("cy", cy);
   ponto.setAttribute("r", 5);
 
-  const emoji = document.createElementNS(ns, "text");
-  emoji.setAttribute("class", "marcador-emoji");
-  emoji.setAttribute("x", cx);
-  emoji.setAttribute("y", cy - 12);
-  emoji.textContent = "🧭";
-
-  grupo.append(anel, ponto, emoji);
+  grupo.append(anel, ponto);
   svg.appendChild(grupo);
 }
 
@@ -2581,7 +2575,7 @@ function renderizarLinhaRanking(lista, item, indice, meuUid) {
   linha.className = "ranking-linha" + (item.uid === meuUid ? " ranking-linha-atual" : "");
   linha.innerHTML = `
     <span class="ranking-posicao">#${indice + 1}</span>
-    <span class="ranking-apelido">${escaparHtml(item.apelido)}</span>
+    <span class="ranking-apelido">${escaparHtml(item.apelido)}${item.ehPro ? '<span class="badge-pro" title="Conta PRO">PRO</span>' : ""}</span>
     <span class="ranking-count">${item.count}</span>
   `;
   linha.style.cursor = "pointer";
@@ -2604,8 +2598,15 @@ async function carregarRanking() {
 
     if (abaRankingAtual === "amigos") {
       const amigos = await window.raspadinhaAuth.listarAmigos();
-      const ranking = [...amigos, { uid: meuUid, apelido: window.raspadinhaAuth.apelido, count: meuCount }]
-        .sort((a, b) => b.count - a.count);
+      const ranking = [
+        ...amigos,
+        {
+          uid: meuUid,
+          apelido: window.raspadinhaAuth.apelido,
+          count: meuCount,
+          ehPro: window.raspadinhaAuth.ehPro,
+        },
+      ].sort((a, b) => b.count - a.count);
 
       lista.innerHTML = "";
       if (ranking.length <= 1) {
