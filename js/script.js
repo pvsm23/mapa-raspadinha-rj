@@ -11,6 +11,9 @@
      não visitados e coloridos os já raspados, com contador e barra
      de progresso; clicar num item abre o mesmo fluxo de sempre.
    - Configurações: popup com o botão de resetar o mapa inteiro.
+   - Login com Google é obrigatório (js/auth.js): #tela-login cobre
+     tudo até logar. No primeiro login, escolhe um apelido (salvo no
+     Firestore) antes de liberar o app.
    - Estado salvo no LocalStorage (chave por código IBGE)
    - Estrutura já pensada para, mais adiante, virar:
        * localStorage -> Firestore (por usuário logado)
@@ -108,12 +111,25 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-login").addEventListener("click", entrarComGoogle);
   document.getElementById("btn-login-config").addEventListener("click", entrarComGoogle);
   document.getElementById("btn-logout").addEventListener("click", sairDaConta);
+  document
+    .getElementById("btn-login-obrigatorio")
+    .addEventListener("click", entrarComGoogle);
 
   document
     .getElementById("btn-baixar-offline")
     .addEventListener("click", baixarDadosOffline);
 
+  document
+    .getElementById("btn-confirmar-apelido")
+    .addEventListener("click", confirmarApelido);
+  document
+    .getElementById("input-apelido")
+    .addEventListener("keydown", (evento) => {
+      if (evento.key === "Enter") confirmarApelido();
+    });
+
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
+  document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
 });
 
 /**
@@ -130,28 +146,60 @@ function sairDaConta() {
 }
 
 /**
- * Atualiza a UI (botão de topo + seção "Conta" nas configurações)
- * de acordo com o usuário logado (ou null, se deslogado).
+ * Atualiza a UI (tela de login obrigatória, botão de topo, seção
+ * "Conta" nas configurações) de acordo com o login atual.
+ * `detalhe` é null (deslogado) ou { usuario, apelido }.
  */
-function atualizarUiDeConta(usuario) {
+function atualizarUiDeConta(detalhe) {
   const btnLoginTopo = document.getElementById("btn-login");
   const status = document.getElementById("conta-status");
   const btnLoginConfig = document.getElementById("btn-login-config");
   const btnLogout = document.getElementById("btn-logout");
+  const telaLogin = document.getElementById("tela-login");
 
-  if (usuario) {
+  if (detalhe) {
+    const { usuario, apelido } = detalhe;
+    telaLogin.classList.add("oculto");
+    document.getElementById("modal-apelido").classList.add("oculto");
+
     btnLoginTopo.textContent = "🟢";
-    btnLoginTopo.title = `Logado como ${usuario.displayName}`;
-    status.textContent = `Conectado como ${usuario.displayName} (${usuario.email})`;
+    btnLoginTopo.title = `Logado como ${apelido}`;
+    status.textContent = `Conectado como ${apelido} (${usuario.email})`;
     btnLoginConfig.classList.add("oculto");
     btnLogout.classList.remove("oculto");
   } else {
+    telaLogin.classList.remove("oculto");
+
     btnLoginTopo.textContent = "👤";
     btnLoginTopo.title = "Entrar com Google";
     status.textContent = "Você não está conectado.";
     btnLoginConfig.classList.remove("oculto");
     btnLogout.classList.add("oculto");
   }
+}
+
+/**
+ * Abre o popup de escolher apelido (primeiro login). Sugere o nome
+ * do Google como ponto de partida, mas o usuário pode trocar.
+ */
+function abrirModalApelido(usuario) {
+  const input = document.getElementById("input-apelido");
+  input.value = usuario?.displayName ?? "";
+  document.getElementById("modal-apelido").classList.remove("oculto");
+  input.focus();
+}
+
+function confirmarApelido() {
+  const input = document.getElementById("input-apelido");
+  const apelido = input.value.trim();
+  if (!apelido) {
+    alert("Digite um nome de usuário para continuar.");
+    return;
+  }
+  window.raspadinhaAuth?.salvarApelido(apelido).catch((erro) => {
+    console.error("Falha ao salvar o apelido:", erro);
+    alert("Não foi possível salvar seu nome agora. Tente de novo em instantes.");
+  });
 }
 
 /**

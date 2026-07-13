@@ -467,3 +467,104 @@ svg#mapa-rj {
   font-size: 0.85rem;
   margin: 0 0 8px;
 }
+
+/* Tela de login obrigatório: cobre tudo, acima de qualquer popup */
+#tela-login {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+#tela-login.oculto {
+  display: none !important;
+}
+
+#tela-login-conteudo h1 {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+}
+
+#tela-login-conteudo p {
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+
+#btn-login-obrigatorio {
+  background: #22c55e;
+  color: #0f172a;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+#btn-login-obrigatorio:hover {
+  background: #16a34a;
+}
+
+/* Popup de escolher apelido no primeiro login */
+#modal-apelido {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#apelido-conteudo {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+}
+
+#apelido-conteudo h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+#apelido-conteudo p {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+#input-apelido {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+
+#btn-confirmar-apelido {
+  width: 100%;
+  background: #22c55e;
+  color: #0f172a;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#btn-confirmar-apelido:hover {
+  background: #16a34a;
+}

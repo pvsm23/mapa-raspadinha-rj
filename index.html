@@ -18,6 +18,29 @@
 <body>
 
   <!--
+    Login obrigatorio: enquanto nao estiver autenticado, esta tela
+    cobre tudo (z-index acima de qualquer outra coisa) e bloqueia o
+    uso do app. Some assim que o login funcionar.
+  -->
+  <div id="tela-login">
+    <div id="tela-login-conteudo">
+      <h1>🗺️ Raspadinha RJ</h1>
+      <p>Entre com sua conta Google para começar a raspar o mapa.</p>
+      <button id="btn-login-obrigatorio">Entrar com Google</button>
+    </div>
+  </div>
+
+  <!-- Primeiro login: usuario escolhe um apelido antes de continuar -->
+  <div id="modal-apelido" class="oculto">
+    <div id="apelido-conteudo">
+      <h2>Escolha seu nome de usuário</h2>
+      <p>Esse nome vai aparecer no seu perfil dentro do app.</p>
+      <input type="text" id="input-apelido" maxlength="30" placeholder="Como quer ser chamado?">
+      <button id="btn-confirmar-apelido">Confirmar</button>
+    </div>
+  </div>
+
+  <!--
     Layout estilo Google Maps: o mapa e o unico "fundo", ocupando a
     tela toda (fixed inset:0). Todo o resto (barra de topo, botoes,
     popups) flutua por cima, fixo na tela, sem se mexer quando o
