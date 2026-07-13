@@ -2485,6 +2485,14 @@ function renderizarMiniMapaPerfil(estadoMunicipios) {
   const clone = original.cloneNode(true);
   clone.removeAttribute("id");
   clone.classList.add("mini-mapa-svg");
+  // O mapa principal tem um transform (pan/zoom) e às vezes uma
+  // transition aplicados via JS como estilo inline -- cloneNode
+  // copia isso junto, o que deixava a miniatura deslocada/com zoom
+  // igual ao que o mapa grande estava no momento. Reseta pra ficar
+  // sempre centralizada, do jeito que o viewBox desenha por padrão.
+  clone.style.transform = "";
+  clone.style.transition = "";
+  clone.classList.remove("modo-regioes", "mostrar-rotulos");
   clone.querySelectorAll(".rotulo-municipio").forEach((el) => el.remove());
   clone.querySelectorAll(".municipio").forEach((path) => {
     const id = path.dataset.municipio;
