@@ -37,6 +37,15 @@ const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
 //     // novo (ver desmarcarMunicipioAtual).
 //     brilhante: false,
 //     chanceDecidida: true,
+//     // "verificado" -- so vira true quando a geolocalizacao confirma
+//     // que a pessoa esta MESMO dentro do municipio (ver
+//     // verificarPresencaNoMunicipio). Raspar sempre e permitido, mas
+//     // so conta pro contador/ranking/conquistas/regiao-completa
+//     // quando verificado (ver estaVerificado()). Enquanto nao
+//     // verificado, o municipio fica VERMELHO no mapa (nao verde) e
+//     // marcado com aviso na biblioteca de selos.
+//     verificado: false,
+//     motivoNaoVerificado: "",
 //   },
 //   "3304557": { visitado: false }
 // }
@@ -50,6 +59,10 @@ let estadoRegioes = {};
 let estadoConquistas = {};
 let destinosPorMunicipio = {};
 let curiosidadesPorMunicipio = {};
+// Limites geograficos reais dos municipios (data/rj-municipios.geojson),
+// usados so pra conferir se a pessoa esta mesmo dentro do municipio na
+// hora de verificar a visita: { "3300100": [[ [lon,lat], ... ]] }
+let geojsonMunicipios = {};
 let municipioSelecionadoId = null;
 let regiaoSelecionadaId = null;
 let mapaFoiArrastado = false;
@@ -108,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarPanZoomDoMapa();
   carregarDestinos();
   carregarCuriosidades();
+  carregarGeoJsonMunicipios();
   carregarRegioesInfo();
   carregarResumosRegioes();
   preCarregarSelos();
@@ -124,6 +138,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-reset-um")
     .addEventListener("click", desmarcarMunicipioAtual);
+
+  document
+    .getElementById("btn-verificar-local")
+    .addEventListener("click", tentarVerificarLocalAgora);
 
   document
     .getElementById("btn-menu-modal")
@@ -561,7 +579,7 @@ function atualizarUiDeConta(detalhe) {
  */
 function sincronizarProgressoOnline() {
   if (!window.raspadinhaAuth?.usuarioAtual) return;
-  const visitados = Object.values(estadoMapa).filter((m) => m.visitado).length;
+  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
   window.raspadinhaAuth.sincronizarProgresso(visitados);
 }
 
@@ -704,6 +722,27 @@ function carregarCuriosidades() {
     .catch(() => {
       // Arquivo ainda nao existe/preenchido -- sem problema, so nao
       // mostra curiosidade nenhuma.
+    });
+}
+
+/**
+ * Carrega os limites geográficos reais dos 92 municípios
+ * (data/rj-municipios.geojson, o mesmo arquivo usado pra gerar o
+ * SVG) — usado só pra verificar se a pessoa está mesmo dentro do
+ * município na hora de confirmar uma visita (ver
+ * verificarPresencaNoMunicipio).
+ */
+function carregarGeoJsonMunicipios() {
+  fetch("data/rj-municipios.geojson")
+    .then((resposta) => (resposta.ok ? resposta.json() : null))
+    .then((geo) => {
+      if (!geo?.features) return;
+      geo.features.forEach((feature) => {
+        geojsonMunicipios[feature.properties.id] = feature.geometry.coordinates;
+      });
+    })
+    .catch((erro) => {
+      console.error("Não foi possível carregar data/rj-municipios.geojson:", erro);
     });
 }
 
@@ -995,13 +1034,15 @@ function abrirSeloPorId(id, nome) {
  * `brilhante` já vem decidido por decidirBrilhante() — essa função só
  * persiste o resultado, nunca sorteia nada sozinha.
  */
-function marcarComoVisitado(id, nome, brilhante) {
+function marcarComoVisitado(id, nome, brilhante, verificado) {
   estadoMapa[id] = {
     ...estadoMapa[id],
     visitado: true,
     dataVisita: new Date().toISOString(),
     brilhante: !!brilhante,
     chanceDecidida: true,
+    verificado: !!verificado,
+    motivoNaoVerificado: verificado ? "" : "Verificando sua localização...",
   };
 
   salvarEstado();
@@ -1030,6 +1071,138 @@ function decidirBrilhante(id) {
   if (anterior?.chanceDecidida) return !!anterior.brilhante;
   if (window.raspadinhaAuth?.consumirBoostBrilhante()) return true;
   return Math.random() < 0.05;
+}
+
+/**
+ * Verdadeiro só quando o município foi raspado E a geolocalização já
+ * confirmou que a pessoa estava mesmo lá. É essa checagem (não só
+ * "visitado") que conta pro contador, ranking, conquistas e pra uma
+ * região ser considerada completa -- raspar sem estar no local marca
+ * o município de vermelho, não de verde.
+ */
+function estaVerificado(id) {
+  const dados = estadoMapa[id];
+  return !!dados?.visitado && !!dados?.verificado;
+}
+
+/**
+ * Pega a localização atual do navegador (uma vez, não fica
+ * observando). Rejeita com uma mensagem em português pronta pra
+ * mostrar ao usuário se a permissão for negada, o navegador não
+ * suportar, ou demorar demais.
+ */
+function obterLocalizacaoAtual() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Seu navegador não tem suporte a localização."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (posicao) => resolve({ lat: posicao.coords.latitude, lon: posicao.coords.longitude }),
+      (erro) => {
+        const mensagens = {
+          1: "Permissão de localização negada.",
+          2: "Não foi possível obter sua localização agora.",
+          3: "A localização demorou demais para responder.",
+        };
+        reject(new Error(mensagens[erro.code] || "Não foi possível obter sua localização."));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  });
+}
+
+/**
+ * Ray casting (par-ímpar) clássico: conta quantas vezes uma linha
+ * horizontal partindo do ponto cruza as arestas do anel. Ímpar =
+ * dentro, par = fora. Funciona pra qualquer polígono simples.
+ */
+function pontoDentroDoAnel(x, y, anel) {
+  let dentro = false;
+  for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) {
+    const xi = anel[i][0];
+    const yi = anel[i][1];
+    const xj = anel[j][0];
+    const yj = anel[j][1];
+    const cruza = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (cruza) dentro = !dentro;
+  }
+  return dentro;
+}
+
+/**
+ * Testa um ponto (lon, lat) contra um Polygon do GeoJSON (array de
+ * anéis: o primeiro é o contorno externo, os demais são buracos).
+ */
+function pontoDentroDoPoligono(lon, lat, aneis) {
+  if (!aneis?.length) return false;
+  let dentro = pontoDentroDoAnel(lon, lat, aneis[0]);
+  for (let i = 1; i < aneis.length; i++) {
+    if (pontoDentroDoAnel(lon, lat, aneis[i])) dentro = false; // dentro de um buraco
+  }
+  return dentro;
+}
+
+/**
+ * Confirma (ou não) que a pessoa está fisicamente dentro do
+ * município `id` agora, usando a localização do navegador contra o
+ * contorno geográfico real (data/rj-municipios.geojson). Nunca
+ * lança erro -- sempre resolve com { verificado, motivo }, pronto
+ * pra mostrar na tela quando verificado for false.
+ */
+async function verificarPresencaNoMunicipio(id) {
+  try {
+    const { lat, lon } = await obterLocalizacaoAtual();
+    const poligono = geojsonMunicipios[id];
+    if (!poligono) {
+      return {
+        verificado: false,
+        motivo: "Não foi possível confirmar o limite geográfico deste município.",
+      };
+    }
+    return pontoDentroDoPoligono(lon, lat, poligono)
+      ? { verificado: true, motivo: "" }
+      : { verificado: false, motivo: "Parece que você não está dentro deste município agora." };
+  } catch (erro) {
+    return { verificado: false, motivo: erro.message };
+  }
+}
+
+/**
+ * Grava o resultado da verificação de localização e atualiza tudo
+ * que depende dela (cor no mapa, contador, ranking, conquistas).
+ */
+function atualizarVerificacaoMunicipio(id, verificado, motivo) {
+  if (!estadoMapa[id]) return;
+  estadoMapa[id].verificado = verificado;
+  estadoMapa[id].motivoNaoVerificado = verificado ? "" : motivo || "";
+  salvarEstado();
+  aplicarEstadoNoSVG();
+  atualizarContador();
+  sincronizarProgressoOnline();
+  atualizarProgressoConquistas();
+}
+
+/**
+ * Botão "Verificar agora" na tela de um selo já raspado, mas ainda
+ * não confirmado -- tenta de novo sem precisar raspar de novo.
+ */
+async function tentarVerificarLocalAgora() {
+  if (!municipioSelecionadoId) return;
+  const id = municipioSelecionadoId;
+  const nome = document.getElementById("modal-municipio-nome").textContent;
+  const botao = document.getElementById("btn-verificar-local");
+
+  botao.disabled = true;
+  botao.textContent = "Verificando...";
+
+  const { verificado, motivo } = await verificarPresencaNoMunicipio(id);
+  atualizarVerificacaoMunicipio(id, verificado, motivo);
+
+  botao.disabled = false;
+  botao.textContent = "📍 Verificar agora que estou aqui";
+
+  if (municipioSelecionadoId === id) visualizarSeloRevelado(id, nome);
 }
 
 /**
@@ -1072,11 +1245,27 @@ function abrirModalRaspadinha(id, nome) {
       imageUrlCapa,
       onComplete: () => {
         const brilhante = decidirBrilhante(id);
-        marcarComoVisitado(id, nome, brilhante);
+        // Marca como raspado na hora (selo revelado, sorte decidida),
+        // mas ainda "nao verificado" -- so conta de verdade depois
+        // que a localizacao confirmar que a pessoa esta no municipio.
+        marcarComoVisitado(id, nome, brilhante, false);
         document.getElementById("modal-status").textContent = brilhante
-          ? `✨ Raspadinha BRILHANTE! Visitado em: ${new Date().toLocaleString("pt-BR")}`
-          : `Visitado em: ${new Date().toLocaleString("pt-BR")}`;
-        setTimeout(fecharModalRaspadinha, brilhante ? 1800 : 900);
+          ? "✨ Raspadinha BRILHANTE! Confirmando sua localização..."
+          : "📍 Confirmando sua localização...";
+
+        verificarPresencaNoMunicipio(id).then(({ verificado, motivo }) => {
+          atualizarVerificacaoMunicipio(id, verificado, motivo);
+          const aindaAberto =
+            municipioSelecionadoId === id &&
+            !document.getElementById("modal-raspadinha").classList.contains("oculto");
+          if (!aindaAberto) return;
+
+          document.getElementById("modal-status").textContent = verificado
+            ? `${brilhante ? "✨ Raspadinha BRILHANTE! " : ""}Visitado em: ${new Date().toLocaleString("pt-BR")} ✅`
+            : `⚠️ Raspado, mas não verificado: ${motivo}`;
+          setTimeout(fecharModalRaspadinha, verificado ? 1400 : 3200);
+        });
+
         return brilhante;
       },
     });
@@ -1102,9 +1291,20 @@ function visualizarSeloRevelado(id, nome) {
   prepararModal(nome);
 
   const dados = estadoMapa[id];
-  document.getElementById("modal-status").textContent = dados?.dataVisita
-    ? `✅ Visitado em: ${new Date(dados.dataVisita).toLocaleString("pt-BR")}`
-    : "✅ Visitado";
+  const verificado = estaVerificado(id);
+  const botaoVerificar = document.getElementById("btn-verificar-local");
+
+  if (verificado) {
+    document.getElementById("modal-status").textContent = dados?.dataVisita
+      ? `✅ Visitado em: ${new Date(dados.dataVisita).toLocaleString("pt-BR")}`
+      : "✅ Visitado";
+    botaoVerificar.classList.add("oculto");
+  } else {
+    document.getElementById("modal-status").textContent =
+      `⚠️ Raspado, mas ainda não verificado. ${dados?.motivoNaoVerificado || "Você precisa estar no município para confirmar."}`;
+    botaoVerificar.classList.remove("oculto");
+  }
+
   document.getElementById("modal-instrucao").textContent = "";
   mostrarDestinos(id);
   mostrarCuriosidade(id);
@@ -1116,7 +1316,8 @@ function visualizarSeloRevelado(id, nome) {
   carregarImagem(caminhoColorido).then((existeColorido) => {
     corpo.innerHTML = "";
     const wrapper = document.createElement("div");
-    wrapper.className = "selo-revelado-wrapper";
+    wrapper.className =
+      "selo-revelado-wrapper" + (verificado ? "" : " selo-nao-verificado-wrapper");
     const img = document.createElement("img");
     img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
     img.alt = nome;
@@ -1270,7 +1471,7 @@ function abrirBibliotecaSelos() {
     .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const totalVisitados = municipios.filter((m) => estadoMapa[m.id]?.visitado).length;
+  const totalVisitados = municipios.filter((m) => estaVerificado(m.id)).length;
   document.getElementById("biblioteca-contador").textContent =
     `${totalVisitados} / ${municipios.length} selos coletados`;
   document.getElementById("biblioteca-barra-preenchida").style.width =
@@ -1278,12 +1479,20 @@ function abrirBibliotecaSelos() {
 
   municipios.forEach(({ id, nome }) => {
     const visitado = !!estadoMapa[id]?.visitado;
+    const verificado = estaVerificado(id);
     const brilhante = visitado && !!estadoMapa[id]?.brilhante;
 
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
-    item.title = brilhante ? `${nome} ✨ (raspadinha brilhante!)` : nome;
+    item.className =
+      "selo-item" +
+      (brilhante ? " selo-item-brilhante" : "") +
+      (visitado && !verificado ? " selo-item-nao-verificado" : "");
+    item.title = !verificado && visitado
+      ? `${nome} ⚠️ (raspado, mas não verificado)`
+      : brilhante
+      ? `${nome} ✨ (raspadinha brilhante!)`
+      : nome;
     item.addEventListener("click", () => {
       fecharBibliotecaSelos();
       abrirSeloPorId(id, nome);
@@ -1291,7 +1500,7 @@ function abrirBibliotecaSelos() {
 
     const img = document.createElement("img");
     img.alt = nome;
-    img.className = visitado ? "selo-colorido" : "selo-cinza";
+    img.className = verificado ? "selo-colorido" : visitado ? "selo-nao-verificado" : "selo-cinza";
 
     const caminhoColorido = `assets/img/selos/${id}.png`;
     carregarImagem(caminhoColorido).then((existeColorido) => {
@@ -1302,7 +1511,12 @@ function abrirBibliotecaSelos() {
     legenda.textContent = nome;
 
     item.appendChild(img);
-    if (brilhante) {
+    if (visitado && !verificado) {
+      const alerta = document.createElement("span");
+      alerta.className = "selo-marca-alerta";
+      alerta.textContent = "⚠️";
+      item.appendChild(alerta);
+    } else if (brilhante) {
       const marca = document.createElement("span");
       marca.className = "selo-marca-brilhante";
       marca.textContent = "✨";
@@ -1346,7 +1560,7 @@ function abrirConquistas() {
   container.innerHTML = "";
 
   const totalMunicipios = document.querySelectorAll(".municipio").length;
-  const visitados = Object.values(estadoMapa).filter((m) => m.visitado).length;
+  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
 
   DEFINICOES_CONQUISTAS.forEach(({ chave, titulo, pct }) => {
     const limiar = Math.ceil(totalMunicipios * pct);
@@ -1456,7 +1670,7 @@ async function abrirRanking() {
 
   try {
     const meuUid = window.raspadinhaAuth.usuarioAtual.uid;
-    const meuCount = Object.values(estadoMapa).filter((m) => m.visitado).length;
+    const meuCount = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
     const [ranking, minhaPosicao] = await Promise.all([
       window.raspadinhaAuth.buscarRanking(50),
       window.raspadinhaAuth.buscarMinhaPosicao(meuCount),
@@ -1844,10 +2058,17 @@ function quebrarTextoEmLinhas(ctx, texto, yInicial, larguraMaxima, alturaLinha) 
 function aplicarEstadoNoSVG() {
   document.querySelectorAll(".municipio").forEach((path) => {
     const id = path.dataset.municipio;
-    const visitado = modoRegioes
-      ? regiaoEstaCompleta(path.dataset.regiao)
-      : !!estadoMapa[id]?.visitado;
-    path.classList.toggle("visitado", visitado);
+    if (modoRegioes) {
+      // Na visao de regioes, cor por regiao completa (todos os
+      // municipios dela verificados) -- nao tem estado "vermelho"
+      // aqui, so cinza ou verde.
+      path.classList.toggle("visitado", regiaoEstaCompleta(path.dataset.regiao));
+      path.classList.remove("nao-verificado");
+    } else {
+      const dados = estadoMapa[id];
+      path.classList.toggle("visitado", estaVerificado(id));
+      path.classList.toggle("nao-verificado", !!dados?.visitado && !dados?.verificado);
+    }
   });
 }
 
@@ -1868,17 +2089,16 @@ function construirMapaDeRegioes() {
 
 function regiaoEstaCompleta(regiaoId) {
   const idsDaRegiao = municipiosPorRegiao[regiaoId] || [];
-  return idsDaRegiao.length > 0 && idsDaRegiao.every((id) => estadoMapa[id]?.visitado);
+  return idsDaRegiao.length > 0 && idsDaRegiao.every((id) => estaVerificado(id));
 }
 
 /**
- * Atualiza o contador "Visitados: X / Y"
+ * Atualiza o contador "Visitados: X / Y" -- só conta município
+ * verificado por localização (ver estaVerificado).
  */
 function atualizarContador() {
   const total = document.querySelectorAll(".municipio").length;
-  const visitados = Object.values(estadoMapa).filter(
-    (m) => m.visitado
-  ).length;
+  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
 
   document.getElementById("contador").textContent = visitados;
   document.getElementById("total").textContent = total;

@@ -74,6 +74,16 @@ svg#mapa-rj {
   fill: #16a34a;
 }
 
+/* Raspado, mas a geolocalizacao ainda nao confirmou a visita --
+   vermelho em vez de verde (ver estaVerificado em js/script.js) */
+.municipio.nao-verificado {
+  fill: #ef4444;
+}
+
+.municipio.nao-verificado:hover {
+  fill: #dc2626;
+}
+
 /* Pequeno feedback visual ao clicar */
 .municipio.clicando {
   transform: scale(0.97);
@@ -1534,4 +1544,58 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 
 #aviso-brilhante-pendente.oculto {
   display: none;
+}
+
+/* ---- Verificação por localização (GPS) ---- */
+
+#btn-verificar-local {
+  display: block;
+  width: 100%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+#btn-verificar-local:hover {
+  background: #dc2626;
+}
+
+#btn-verificar-local:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#btn-verificar-local.oculto {
+  display: none;
+}
+
+.selo-revelado-wrapper.selo-nao-verificado-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 3px solid #ef4444;
+  pointer-events: none;
+}
+
+.selo-item img.selo-nao-verificado {
+  border-color: #ef4444;
+  opacity: 0.85;
+}
+
+.selo-item-nao-verificado img {
+  box-shadow: 0 0 10px 1px rgba(239, 68, 68, 0.6);
+}
+
+.selo-marca-alerta {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  font-size: 0.9rem;
 }
