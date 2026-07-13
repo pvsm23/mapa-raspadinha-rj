@@ -527,6 +527,54 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
   margin: 0 0 8px;
 }
 
+#dados-email {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 10px;
+}
+
+#secao-dados-pessoais label {
+  display: block;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+#configuracoes-conteudo #input-apelido-config {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 0.9rem;
+}
+
+#erro-apelido-config {
+  color: #f87171;
+  font-size: 0.8rem;
+  margin: 6px 0 0;
+}
+
+#configuracoes-conteudo #btn-salvar-apelido-config {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #22c55e;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+#configuracoes-conteudo #btn-salvar-apelido-config:hover {
+  background: #16a34a;
+}
+
+#configuracoes-conteudo #btn-salvar-apelido-config .spinner {
+  border-color: rgba(15, 23, 42, 0.3);
+  border-top-color: #0f172a;
+}
+
 /* Popup de login: aparece só quando uma ação exige estar logado */
 #tela-login {
   position: fixed;
@@ -829,4 +877,45 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
   justify-content: center;
   font-size: 3rem;
   opacity: 0.6;
+}
+
+/* Comemoração ao terminar de raspar: o selo "pula" pra frente e
+   volta, e sai confete (ver celebrarConclusao/dispararConfete em
+   js/scratch-card.js). */
+@keyframes pulo-selo {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.18);
+  }
+  75% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.selo-completo {
+  animation: pulo-selo 0.55s ease;
+}
+
+.confete {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+  z-index: 500;
+  opacity: 1;
+  animation: cair-confete 1.1s ease-out forwards;
+}
+
+@keyframes cair-confete {
+  to {
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+    opacity: 0;
+  }
 }

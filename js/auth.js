@@ -34,6 +34,10 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const CONFIGURADO = firebaseConfig.apiKey !== "SUBSTITUA_AQUI";
@@ -82,6 +86,14 @@ if (CONFIGURADO) {
   window.raspadinhaAuth.salvarApelido = async (apelido) => {
     const usuario = auth.currentUser;
     if (!usuario) return;
+
+    const disponivel = await apelidoEstaDisponivel(apelido, usuario.uid);
+    if (!disponivel) {
+      throw Object.assign(new Error("Esse nome de usuário já está em uso."), {
+        code: "apelido/em-uso",
+      });
+    }
+
     await setDoc(
       doc(db, "usuarios", usuario.uid),
       { apelido, email: usuario.email, atualizadoEm: serverTimestamp() },
@@ -92,6 +104,19 @@ if (CONFIGURADO) {
       new CustomEvent("auth-mudou", { detail: { usuario, apelido } })
     );
   };
+
+  /**
+   * Verdadeiro se nenhum OUTRO usuário já estiver usando esse
+   * apelido (o próprio usuário pode "reescolher" o mesmo apelido que
+   * já tinha, sem problema). Exige a regra de segurança do Firestore
+   * permitir leitura da coleção "usuarios" pra qualquer autenticado
+   * (ver README) — só assim dá pra checar apelidos de outros perfis.
+   */
+  async function apelidoEstaDisponivel(apelido, uidAtual) {
+    const consulta = query(collection(db, "usuarios"), where("apelido", "==", apelido));
+    const resultado = await getDocs(consulta);
+    return resultado.docs.every((documento) => documento.id === uidAtual);
+  }
 
   onAuthStateChanged(auth, async (usuario) => {
     if (usuario) {

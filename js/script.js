@@ -150,6 +150,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
   document
+    .getElementById("btn-salvar-apelido-config")
+    .addEventListener("click", salvarApelidoConfig);
+
+  document
     .getElementById("btn-fechar-regiao")
     .addEventListener("click", fecharPopupRegiao);
   document.getElementById("modal-regiao").addEventListener("click", (evento) => {
@@ -306,9 +310,48 @@ function atualizarUiDeConta(detalhe) {
     document.getElementById("form-login").reset();
 
     status.textContent = `Conectado como ${apelido} (${usuario.email})`;
+    document.getElementById("dados-email").textContent = `E-mail: ${usuario.email}`;
+    document.getElementById("input-apelido-config").value = apelido;
   } else {
     status.textContent = "Você não está conectado.";
+    document.getElementById("dados-email").textContent = "";
+    document.getElementById("input-apelido-config").value = "";
   }
+}
+
+/**
+ * Salva o novo apelido digitado em "Dados pessoais" (Configurações).
+ * Mesma função de bastidor do apelido do primeiro login
+ * (salvarApelido), que já rejeita apelidos repetidos.
+ */
+function salvarApelidoConfig() {
+  const input = document.getElementById("input-apelido-config");
+  const apelido = input.value.trim();
+  const erro = document.getElementById("erro-apelido-config");
+  erro.classList.add("oculto");
+
+  if (!apelido) {
+    erro.textContent = "Digite um apelido.";
+    erro.classList.remove("oculto");
+    return;
+  }
+
+  const botao = document.getElementById("btn-salvar-apelido-config");
+  botao.disabled = true;
+  botao.querySelector(".spinner").classList.remove("oculto");
+  botao.querySelector(".btn-texto").classList.add("oculto");
+
+  window.raspadinhaAuth
+    ?.salvarApelido(apelido)
+    .catch((e) => {
+      erro.textContent = e?.message || "Não foi possível salvar agora. Tente de novo.";
+      erro.classList.remove("oculto");
+    })
+    .finally(() => {
+      botao.disabled = false;
+      botao.querySelector(".spinner").classList.add("oculto");
+      botao.querySelector(".btn-texto").classList.remove("oculto");
+    });
 }
 
 /**
@@ -332,7 +375,7 @@ function confirmarApelido() {
   }
   window.raspadinhaAuth?.salvarApelido(apelido).catch((erro) => {
     console.error("Falha ao salvar o apelido:", erro);
-    alert("Não foi possível salvar seu nome agora. Tente de novo em instantes.");
+    alert(erro?.message || "Não foi possível salvar seu nome agora. Tente de novo em instantes.");
   });
 }
 

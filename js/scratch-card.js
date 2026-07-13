@@ -19,7 +19,8 @@
    4. A cada movimento, amostra os pixels da capa para calcular
       quanto já foi raspado. Ao passar do limiar (perto de 100%,
       já que o pincel redondo nunca cobre 100% exato), dispara
-      onComplete() e revela tudo de vez.
+      onComplete() e revela tudo de vez, com um pulo do selo (CSS)
+      e confete (celebrarConclusao/dispararConfete).
    ========================================================= */
 
 function initScratchCard({
@@ -134,6 +135,7 @@ function initScratchCard({
     if (porcentagem >= limiarConclusao) {
       concluido = true;
       revelarTudo();
+      celebrarConclusao(wrapper);
       if (typeof onComplete === "function") onComplete();
     }
   }
@@ -153,4 +155,47 @@ function initScratchCard({
   });
   canvasRaspagem.addEventListener("touchmove", aoMover);
   window.addEventListener("touchend", () => (raspando = false));
+}
+
+/**
+ * Efeito de "recompensa" ao completar a raspadinha: o selo dá um
+ * pulo pra frente e volta (CSS), e uma chuva de confete sai de trás
+ * dele. Usado tanto pro selo de município quanto pro mega-selo de
+ * região (initScratchCard não sabe qual é — só celebra).
+ */
+function celebrarConclusao(wrapper) {
+  wrapper.classList.remove("selo-completo");
+  // força o navegador a "esquecer" a classe antes de reaplicar, pra
+  // animação rodar de novo mesmo raspando o mesmo elemento 2x seguidas
+  void wrapper.offsetWidth;
+  wrapper.classList.add("selo-completo");
+
+  const rect = wrapper.getBoundingClientRect();
+  dispararConfete(rect.left + rect.width / 2, rect.top + rect.height / 2);
+}
+
+function dispararConfete(origemX, origemY) {
+  const cores = ["#22c55e", "#facc15", "#3b82f6", "#ef4444", "#a855f7", "#f97316"];
+  const quantidade = 32;
+
+  for (let i = 0; i < quantidade; i++) {
+    const particula = document.createElement("div");
+    particula.className = "confete";
+
+    const angulo = Math.random() * Math.PI * 2;
+    const distancia = 90 + Math.random() * 130;
+    const dx = Math.cos(angulo) * distancia;
+    const dy = Math.sin(angulo) * distancia - 60; // puxa um pouco pra cima
+
+    particula.style.left = `${origemX}px`;
+    particula.style.top = `${origemY}px`;
+    particula.style.background = cores[Math.floor(Math.random() * cores.length)];
+    particula.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+    particula.style.setProperty("--dx", `${dx}px`);
+    particula.style.setProperty("--dy", `${dy}px`);
+    particula.style.setProperty("--rot", `${Math.random() * 720 - 360}deg`);
+
+    document.body.appendChild(particula);
+    setTimeout(() => particula.remove(), 1200);
+  }
 }
