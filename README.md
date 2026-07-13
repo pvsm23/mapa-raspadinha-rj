@@ -123,6 +123,20 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
             allow read, write: if request.auth != null && request.auth.uid == uid;
           }
         }
+
+        // Fila de e-mails pro Firebase Extension "Trigger Email"
+        // (firestore-send-email) processar -- ver enviarEmailProprio
+        // em js/auth.js. Só pode criar um documento mandando e-mail
+        // pro PRÓPRIO endereço do usuário logado (nunca pra
+        // terceiros, senão qualquer conta virava um jeito de mandar
+        // spam usando o projeto); ninguém além da extensão (que roda
+        // com privilégio de admin, fora destas regras) lê ou altera
+        // depois de criado.
+        match /mail/{id} {
+          allow create: if request.auth != null
+            && request.resource.data.to == [request.auth.token.email];
+          allow read, update, delete: if false;
+        }
       }
     }
     ```
@@ -137,6 +151,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **Botão de compartilhar**: troca o antigo botão de perfil (que só duplicava a função de Configurações) por um de compartilhar o link do app (Web Share API no celular, copia o link como alternativa no desktop).
 - **Plano PRO (fase 1 — só o distintivo)**: campo `ehPro` em `usuarios/{uid}`; quem tiver `ehPro: true` ganha um selinho "PRO" amarelo do lado do apelido no Ranking (`renderizarLinhaRanking` em `js/script.js`, classe `.badge-pro`). Ainda não existe cobrança nem checkout — é só o distintivo por enquanto. A regra do Firestore acima protege o campo: uma escrita normal nunca consegue mudar `ehPro` (ela sempre entra e sai igual), e a única forma de virar `true` é numa escrita que também mande o código secreto certo — e depois de `true`, fica assim pra sempre (a regra bloqueia qualquer tentativa de reverter). Ver PENDENCIAS.md pra mais detalhes de arquitetura (sem o código em si, que não fica em nenhum arquivo do repositório).
 - **Placeholder do recurso PRO (download offline)**: `ehUsuarioPro()` e `baixarDadosOffline()` em `js/script.js` são stubs — sempre retornam "não é PRO" / mostram um aviso "em construção". O botão "Baixar dados offline" já existe em Configurações, mas desabilitado, esperando alguma forma de marcar quem pagou (ex: campo no Firestore).
+- **E-mail de boas-vindas** (`enviarEmailProprio` em `js/auth.js`, chamado dentro de `criarContaComEmail`): ao criar conta, enfileira um e-mail de boas-vindas na coleção `mail` do Firestore, pro Firebase Extension **"Trigger Email"** (`firestore-send-email`) processar e enviar de verdade. **Passo pendente**: a extensão em si ainda não está instalada — exige migrar o projeto pro plano Blaze (pay-as-you-go, tem cota gratuita) e configurar um provedor de SMTP (ex: Brevo, plano grátis de 300 e-mails/dia) na hora de instalar (Console → Extensions → buscar "Trigger Email"). Até isso estar configurado, o documento só fica parado na coleção sem nenhum efeito — não quebra o cadastro. A regra do Firestore (acima) só deixa mandar e-mail pro **próprio** endereço do usuário logado, pra essa fila não virar um jeito de mandar spam pra terceiros.
 - **Notificações locais** (`dispararNotificacaoLocal`/`sincronizarCheckboxNotificacoes`/`alternarNotificacoes` em `js/script.js`, handler em `sw.js`): toggle em Configurações → Notificações (`#check-notificacoes`) que pede a permissão do navegador e, quando concedida, dispara notificações do sistema pra dois eventos — detectar um município pra raspar (junto com o aviso flutuante de `verificarLocalizacaoAoAbrirApp`) e desbloquear uma conquista (`verificarNovasConquistasDesbloqueadas`, roda a cada mudança de progresso, independente do modal de Conquistas estar aberto). Usa `ServiceWorkerRegistration.showNotification()` (não `new Notification()` direto) porque o Android exige isso; o `sw.js` trata o clique na notificação focando uma aba já aberta ou abrindo uma nova. **Limitação real, não só deste app**: isso é notificação **local**, disparada pelo próprio app enquanto ele está aberto (mesmo minimizado/em outra aba) — não chega com o app 100% fechado. Notificação "de verdade" nesse caso exigiria push de servidor (Firebase Cloud Messaging + Cloud Functions, o que precisa do plano pago Blaze do Firebase) — não implementado.
 - **Aviso de instalar o app**: toda vez que o site abre num navegador (não dentro do app já instalado), um aviso flutuante no canto inferior esquerdo sugere instalar o Desbrava (`#aviso-instalar-pwa`). No Chrome/Edge/Android, que suportam instalar com um clique, aparece um botão "⬇️ Instalar" que já dispara o prompt nativo do navegador (evento `beforeinstallprompt`, capturado em `js/script.js`). Nos demais casos (ex: iOS Safari, que não expõe esse evento), aparece um botão "Como instalar" com instruções manuais — específicas pro iOS ("Compartilhar → Adicionar à Tela de Início") ou genéricas pro Chrome (ícone de instalar na barra de endereço, ou menu "⋮" → "Instalar Desbrava"). O aviso não aparece se: o app já estiver rodando instalado (`pwaJaInstalado()`, checa `display-mode: standalone`/`navigator.standalone`); já tiver sido instalado antes por esse navegador (flag `desbrava_pwa_instalado` no localStorage, gravada no evento `appinstalled`); ou o navegador conseguir confirmar sozinho que já está instalado mesmo numa aba comum (`navigator.getInstalledRelatedApps()`, via `related_applications` no `manifest.json` — só existe no Chrome/Edge/Android). **Limitação conhecida**: no Safari/iOS não existe nenhuma API pra saber pela web se o site já foi "Adicionado à Tela de Início" antes — lá o aviso pode reaparecer mesmo já instalado, até a pessoa instalar de fato (o que muda o `display-mode` para `standalone` e passa a contar).
 

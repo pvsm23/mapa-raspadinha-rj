@@ -136,7 +136,19 @@ Ranking, sem cobrança nenhuma ainda. Campo `usuarios/{uid}.ehPro`
   Sign-in method → Email/senha → Enable.
 - **Colar as regras de segurança do Firestore**: Console → Firestore
   Database → Regras — o texto completo e atualizado (com as
-  subcoleções de convites, pedidos de amizade, amigos e check-in, e a
-  proteção do campo `ehPro`) está no `README.md`. **Antes de colar**,
-  troque o placeholder `SUBSTITUA_POR_UM_CODIGO_SECRETO_SEU` pelo seu
-  código secreto de verdade (ver seção "Plano PRO" acima).
+  subcoleções de convites, pedidos de amizade, amigos e check-in, a
+  proteção do campo `ehPro` e a fila de e-mails) está no `README.md`.
+  **Antes de colar**, troque o placeholder
+  `SUBSTITUA_POR_UM_CODIGO_SECRETO_SEU` pelo seu código secreto de
+  verdade (ver seção "Plano PRO" acima).
+- **Instalar a extensão "Trigger Email"** (pro e-mail de boas-vindas
+  funcionar de verdade): 1) mudar o projeto pro plano **Blaze**
+  (Console → ⚙️ → Uso e faturamento → Modificar plano — tem cota
+  gratuita, só exige cartão cadastrado); 2) criar conta num provedor
+  de SMTP (ex: [Brevo](https://www.brevo.com), plano grátis de 300
+  e-mails/dia) e pegar a "SMTP connection URI"; 3) Console →
+  Extensions → buscar **"Trigger Email"** (`firestore-send-email`) →
+  Install, colando essa URI e deixando o nome da coleção como `mail`
+  (o padrão, já é o que `enviarEmailProprio` em `js/auth.js` usa).
+  Até isso estar feito, os e-mails de boas-vindas ficam só
+  enfileirados no Firestore, sem serem enviados de verdade.

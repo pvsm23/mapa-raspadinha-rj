@@ -39,6 +39,7 @@ import {
   serverTimestamp,
   arrayUnion,
   collection,
+  addDoc,
   query,
   where,
   orderBy,
@@ -88,6 +89,7 @@ window.raspadinhaAuth = {
   criarContaComEmail: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
+  enviarEmailProprio: async () => {},
   sair: () => {},
   salvarApelido: async () => {},
   sincronizarProgresso: async () => {},
@@ -132,7 +134,33 @@ if (CONFIGURADO) {
   window.raspadinhaAuth.criarContaComEmail = async (email, senha) => {
     const resultado = await createUserWithEmailAndPassword(auth, email, senha);
     await creditarConviteSeExistir(resultado.user.uid);
+    window.raspadinhaAuth.enviarEmailProprio(
+      "Bem-vindo(a) ao Desbrava! 🗺️",
+      "<p>Oi! Sua conta no Desbrava foi criada com sucesso.</p>" +
+        "<p>Agora é só explorar o mapa do Rio de Janeiro e raspar os municípios conforme for visitando cada um.</p>"
+    );
     return resultado;
+  };
+
+  /**
+   * Enfileira um e-mail pro Firebase Extension "Trigger Email"
+   * (firestore-send-email) processar e enviar de verdade -- exige a
+   * extensão instalada + projeto no plano Blaze (ver README.md).
+   * Enquanto isso não estiver configurado, o documento só fica
+   * parado na coleção "mail" sem efeito nenhum (não quebra o app).
+   *
+   * Só manda pro PRÓPRIO e-mail do usuário logado -- a regra do
+   * Firestore exige isso (compara com `request.auth.token.email`),
+   * pra essa coleção não virar um jeito de mandar spam pra terceiros
+   * usando a conta de qualquer um.
+   */
+  window.raspadinhaAuth.enviarEmailProprio = (assunto, corpoHtml) => {
+    const usuario = auth.currentUser;
+    if (!usuario?.email) return Promise.resolve();
+    return addDoc(collection(db, "mail"), {
+      to: [usuario.email],
+      message: { subject: assunto, html: corpoHtml },
+    }).catch((erro) => console.error("Falha ao enfileirar e-mail:", erro));
   };
 
   window.raspadinhaAuth.sair = () => signOut(auth);
