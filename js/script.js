@@ -47,6 +47,24 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// Guarda o evento do navegador (Chrome/Edge/Android) que permite
+// instalar o PWA com um clique, em vez de só instruções manuais.
+// Precisa ser capturado assim que disparar (pode ser antes do
+// DOMContentLoaded), por isso fica fora do bloco de inicialização.
+let promptInstalacaoPwa = null;
+
+window.addEventListener("beforeinstallprompt", (evento) => {
+  evento.preventDefault();
+  promptInstalacaoPwa = evento;
+  document.getElementById("btn-instalar-pwa")?.classList.remove("oculto");
+  document.getElementById("btn-como-instalar-pwa")?.classList.add("oculto");
+});
+
+window.addEventListener("appinstalled", () => {
+  promptInstalacaoPwa = null;
+  fecharAvisoInstalarPwa();
+});
+
 document.addEventListener("DOMContentLoaded", () => {
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
@@ -168,6 +186,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
+
+  document.getElementById("btn-instalar-pwa").addEventListener("click", instalarPwa);
+  document
+    .getElementById("btn-como-instalar-pwa")
+    .addEventListener("click", alternarInstrucoesInstalarPwa);
+  document
+    .getElementById("btn-fechar-aviso-pwa")
+    .addEventListener("click", fecharAvisoInstalarPwa);
+
+  // Pequeno atraso pra não competir com o resto da tela carregando.
+  setTimeout(mostrarAvisoInstalarPwa, 1200);
 });
 
 /**
@@ -213,6 +242,64 @@ function compartilharApp() {
   } else {
     prompt("Copie o link para compartilhar:", dados.url);
   }
+}
+
+/**
+ * Verdadeiro se o app já está rodando instalado (janela "standalone"
+ * no Android/desktop, ou "adicionado à tela de início" no iOS) — daí
+ * não faz sentido sugerir instalar de novo.
+ */
+function pwaJaInstalado() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function ehIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+/**
+ * Mostra o aviso sugerindo instalar o app, com um botão de instalar
+ * direto (se o navegador oferecer, ex: Chrome/Edge/Android) ou um
+ * botão "Como instalar" com instruções manuais caso contrário.
+ */
+function mostrarAvisoInstalarPwa() {
+  if (pwaJaInstalado()) return;
+  document.getElementById("aviso-instalar-pwa").classList.remove("oculto");
+}
+
+function fecharAvisoInstalarPwa() {
+  document.getElementById("aviso-instalar-pwa").classList.add("oculto");
+}
+
+async function instalarPwa() {
+  if (!promptInstalacaoPwa) return;
+  promptInstalacaoPwa.prompt();
+  const resultado = await promptInstalacaoPwa.userChoice;
+  promptInstalacaoPwa = null;
+  if (resultado.outcome === "accepted") {
+    fecharAvisoInstalarPwa();
+  }
+}
+
+/**
+ * Instruções manuais pra quando o navegador não oferece um botão de
+ * instalação direto (ex: iOS Safari, ou Chrome antes do evento
+ * "beforeinstallprompt" disparar).
+ */
+function alternarInstrucoesInstalarPwa() {
+  const instrucoes = document.getElementById("aviso-instalar-instrucoes");
+  if (!instrucoes.classList.contains("oculto")) {
+    instrucoes.classList.add("oculto");
+    return;
+  }
+
+  instrucoes.textContent = ehIOS()
+    ? 'No Safari, toque no ícone de compartilhar (□ com uma seta ↑) e depois em "Adicionar à Tela de Início".'
+    : 'No Chrome, clique no ícone de instalar (⊕) na barra de endereço, ou abra o menu "⋮" e escolha "Instalar Desbrava" (ou "Instalar app").';
+  instrucoes.classList.remove("oculto");
 }
 
 let modoCadastro = false;
