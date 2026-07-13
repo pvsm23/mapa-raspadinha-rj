@@ -106,6 +106,7 @@ window.raspadinhaAuth = {
   sincronizarConquista: async () => {},
   definirPerfilPublico: async () => {},
   buscarPerfilPublico: async () => null,
+  salvarSnapshotMapa: async () => {},
   contarPessoasComMunicipioVerificado: async () => 0,
   contarPessoasComRegiao: async () => 0,
   contarTotalContas: async () => 0,
@@ -258,7 +259,26 @@ if (CONFIGURADO) {
       municipiosVisitadosCount: dados.municipiosVisitadosCount || 0,
       estadoMunicipios: dados.estadoMunicipios || {},
       estadoRegioes: dados.estadoRegioes || {},
+      mapaSnapshot: dados.mapaSnapshot || null,
+      mapaSnapshotData: dados.mapaSnapshotData || null,
     };
+  };
+
+  /**
+   * Grava o snapshot estático (imagem, gerada 1x por dia em
+   * js/script.js: gerarSnapshotMapaSeNecessario) que alimenta o
+   * mini-mapa do perfil público -- em vez de clonar o SVG ao vivo, que
+   * ficava com zoom/posição errados dependendo de como o mapa grande
+   * estava no momento (ver renderizarMiniMapaPerfil).
+   */
+  window.raspadinhaAuth.salvarSnapshotMapa = (dataUrl, dataDoSnapshot) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { mapaSnapshot: dataUrl, mapaSnapshotData: dataDoSnapshot },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao salvar snapshot do mapa:", erro));
   };
 
   /**

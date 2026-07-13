@@ -609,6 +609,7 @@ function atualizarUiDeConta(detalhe) {
 
     sincronizarProgressoOnline();
     window.raspadinhaAuth.registrarCheckinHoje();
+    gerarSnapshotMapaSeNecessario();
     window.raspadinhaAuth.buscarPerfilPublico(usuario.uid).then((perfil) => {
       document.getElementById("check-perfil-publico").checked = perfil?.perfilPublico !== false;
     });
@@ -2568,7 +2569,7 @@ async function abrirPerfil(uid) {
       <div id="perfil-mapa-mini"></div>
       <div id="perfil-selos-grade"></div>
     `;
-    renderizarMiniMapaPerfil(perfil.estadoMunicipios);
+    renderizarMiniMapaPerfil(perfil.mapaSnapshot);
     renderizarSelosPerfil(perfil.estadoMunicipios);
   } catch (erro) {
     console.error("Falha ao carregar perfil:", erro);
@@ -2580,40 +2581,103 @@ function fecharPerfil() {
   document.getElementById("modal-perfil").classList.add("oculto");
 }
 
+const CHAVE_DATA_SNAPSHOT_MAPA = "scratchMapRJ_snapshot_mapa_data_v1";
+
 /**
- * Mini-mapa colorido do perfil: clona o SVG principal (sem os
- * rótulos e sem os cliques de verdade) e pinta cada município pelo
- * estado PÚBLICO de quem está sendo visto -- verde (verificado),
- * vermelho (raspado mas não verificado) ou cinza (nada).
+ * Gera e grava no Firestore, no máximo 1x por dia, um snapshot
+ * estático (imagem) do mapa do usuário logado -- é essa imagem que
+ * alimenta o mini-mapa do perfil público (ver renderizarMiniMapaPerfil
+ * e salvarSnapshotMapa em js/auth.js). Guarda a última data gerada no
+ * localStorage pra não regravar no Firestore toda vez que a conta loga.
  */
-function renderizarMiniMapaPerfil(estadoMunicipios) {
+function gerarSnapshotMapaSeNecessario() {
+  const hoje = new Date().toDateString();
+  if (localStorage.getItem(CHAVE_DATA_SNAPSHOT_MAPA) === hoje) return;
+
+  gerarSnapshotMapaComoDataUrl()
+    .then((dataUrl) => {
+      if (!dataUrl) return;
+      localStorage.setItem(CHAVE_DATA_SNAPSHOT_MAPA, hoje);
+      window.raspadinhaAuth?.salvarSnapshotMapa(dataUrl, hoje);
+    })
+    .catch((erro) => console.error("Falha ao gerar snapshot do mapa:", erro));
+}
+
+/**
+ * Monta uma cópia standalone do SVG do mapa com as cores do estado
+ * ATUAL do usuário logado gravadas como atributos `fill`/`stroke` (não
+ * como classes CSS -- uma vez serializado fora do documento, o SVG
+ * perde acesso à folha de estilo da página) e converte pra PNG via
+ * <canvas>, devolvendo uma Promise com o data URL resultante.
+ */
+function gerarSnapshotMapaComoDataUrl() {
+  return new Promise((resolve) => {
+    const original = document.getElementById("mapa-rj");
+    const clone = original.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.removeAttribute("style");
+    clone.querySelectorAll(".rotulo-municipio").forEach((el) => el.remove());
+    clone.querySelector("#contornos-regioes")?.remove();
+    clone.querySelector("#marcador-local-atual")?.remove();
+
+    clone.querySelectorAll(".municipio").forEach((path) => {
+      const id = path.dataset.municipio;
+      const cor = estaVerificado(id) ? "#22c55e" : estadoMapa[id]?.visitado ? "#ef4444" : "#9ca3af";
+      path.setAttribute("fill", cor);
+      path.setAttribute("stroke", "#0f172a");
+      path.setAttribute("stroke-width", "2");
+      path.removeAttribute("class");
+      path.onclick = null;
+    });
+
+    const largura = 400;
+    const altura = 286; // mantém a proporção do viewBox (800 x 571.70)
+    clone.setAttribute("width", largura);
+    clone.setAttribute("height", altura);
+
+    const svgTexto = new XMLSerializer().serializeToString(clone);
+    const svgDataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgTexto)))}`;
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = largura;
+      canvas.height = altura;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(0, 0, largura, altura);
+      ctx.drawImage(img, 0, 0, largura, altura);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(null);
+    img.src = svgDataUrl;
+  });
+}
+
+/**
+ * Mini-mapa do perfil: mostra o snapshot estático (gerado 1x por dia,
+ * ver gerarSnapshotMapaSeNecessario) em vez de clonar o SVG ao vivo --
+ * evita ficar deslocado/com zoom errado dependendo de como o mapa
+ * grande estava no momento e não recalcula nada ao abrir o perfil.
+ */
+function renderizarMiniMapaPerfil(snapshotUrl) {
   const container = document.getElementById("perfil-mapa-mini");
   if (!container) return;
   container.innerHTML = "";
 
-  const original = document.getElementById("mapa-rj");
-  const clone = original.cloneNode(true);
-  clone.removeAttribute("id");
-  clone.classList.add("mini-mapa-svg");
-  // O mapa principal tem um transform (pan/zoom) e às vezes uma
-  // transition aplicados via JS como estilo inline -- cloneNode
-  // copia isso junto, o que deixava a miniatura deslocada/com zoom
-  // igual ao que o mapa grande estava no momento. Reseta pra ficar
-  // sempre centralizada, do jeito que o viewBox desenha por padrão.
-  clone.style.transform = "";
-  clone.style.transition = "";
-  clone.classList.remove("modo-regioes", "mostrar-rotulos");
-  clone.querySelectorAll(".rotulo-municipio").forEach((el) => el.remove());
-  clone.querySelectorAll(".municipio").forEach((path) => {
-    const id = path.dataset.municipio;
-    const estado = estadoMunicipios[id];
-    path.classList.remove("visitado", "nao-verificado", "clicando");
-    path.onclick = null;
-    if (estado?.verificado) path.classList.add("visitado");
-    else if (estado?.visitado) path.classList.add("nao-verificado");
-  });
+  if (!snapshotUrl) {
+    const aviso = document.createElement("p");
+    aviso.className = "mini-mapa-vazio";
+    aviso.textContent = "Mapa ainda não disponível.";
+    container.appendChild(aviso);
+    return;
+  }
 
-  container.appendChild(clone);
+  const img = document.createElement("img");
+  img.className = "mini-mapa-imagem";
+  img.alt = "Mini-mapa de progresso";
+  img.src = snapshotUrl;
+  container.appendChild(img);
 }
 
 /**
