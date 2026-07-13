@@ -315,6 +315,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-perfil").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-perfil") fecharPerfil();
   });
+
+  // ---- História completa do município ----
+  document
+    .getElementById("btn-fechar-historia-municipio")
+    .addEventListener("click", fecharHistoriaMunicipio);
+  document.getElementById("modal-historia-municipio").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-historia-municipio") fecharHistoriaMunicipio();
+  });
   document.getElementById("check-perfil-publico").addEventListener("change", (evento) => {
     window.raspadinhaAuth?.definirPerfilPublico(evento.target.checked);
   });
@@ -1553,7 +1561,7 @@ function visualizarSeloRevelado(id, nome) {
 
   document.getElementById("modal-instrucao").textContent = "";
   mostrarDestinos(id);
-  mostrarCuriosidade(id);
+  mostrarCuriosidade(id, nome);
   mostrarEstatisticaSeloMunicipio(id);
 
   const corpo = document.getElementById("scratch-modal-body");
@@ -1580,14 +1588,48 @@ function visualizarSeloRevelado(id, nome) {
  * -- só existe pra ver DEPOIS de raspar o selo (por isso só é chamada
  * daqui, na visualização de um município já visitado). Enquanto o
  * usuário não tiver enviado o texto de um município, mostra um
- * espaço reservado.
+ * espaço reservado. Quando o município tem história mais longa
+ * (`historiaCompleta`, uma lista de parágrafos), mostra também um
+ * botão "📖 Saiba mais" que abre uma janela separada (ver
+ * abrirHistoriaMunicipio) -- o resumo aqui é só o gancho rápido.
  */
-function mostrarCuriosidade(id) {
+function mostrarCuriosidade(id, nome) {
   const container = document.getElementById("modal-curiosidade");
-  const texto = curiosidadesPorMunicipio[id];
-  container.innerHTML = texto
-    ? `<h3>Curiosidade</h3><p>${escaparHtml(texto)}</p>`
+  const dados = curiosidadesPorMunicipio[id];
+  const resumo = dados?.resumo;
+  const temHistoriaCompleta = !!dados?.historiaCompleta?.length;
+
+  container.innerHTML = resumo
+    ? `<h3>Curiosidade</h3><p>${escaparHtml(resumo)}</p>`
     : `<h3>Curiosidade</h3><p class="curiosidade-vazia">Em breve, uma curiosidade sobre este município.</p>`;
+
+  if (temHistoriaCompleta) {
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "btn-saiba-mais-municipio";
+    botao.textContent = "📖 Saiba mais";
+    botao.addEventListener("click", () => abrirHistoriaMunicipio(id, nome));
+    container.appendChild(botao);
+  }
+}
+
+/**
+ * Janela separada (não a mesma do popup do selo) com a história
+ * completa do município -- linha do tempo, curiosidades adicionais,
+ * etc. -- em parágrafos, pra comportar texto bem mais longo que o
+ * resumo curto de `mostrarCuriosidade`.
+ */
+function abrirHistoriaMunicipio(id, nome) {
+  const paragrafos = curiosidadesPorMunicipio[id]?.historiaCompleta || [];
+  document.getElementById("historia-municipio-titulo").textContent = `📖 ${nome}`;
+  document.getElementById("historia-municipio-corpo").innerHTML = paragrafos
+    .map((paragrafo) => `<p>${escaparHtml(paragrafo)}</p>`)
+    .join("");
+  document.getElementById("modal-historia-municipio").classList.remove("oculto");
+}
+
+function fecharHistoriaMunicipio() {
+  document.getElementById("modal-historia-municipio").classList.add("oculto");
 }
 
 /**

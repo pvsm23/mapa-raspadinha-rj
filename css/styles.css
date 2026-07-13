@@ -1448,7 +1448,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #modal-amigos,
 #modal-checkin,
 #modal-compartilhar,
-#modal-perfil {
+#modal-perfil,
+#modal-historia-municipio {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -1464,7 +1465,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #amigos-conteudo,
 #checkin-conteudo,
 #compartilhar-conteudo,
-#perfil-conteudo {
+#perfil-conteudo,
+#historia-municipio-conteudo {
   position: relative;
   background: #1e293b;
   border-radius: 12px;
@@ -1481,7 +1483,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #amigos-conteudo h2,
 #checkin-conteudo h2,
 #compartilhar-conteudo h2,
-#perfil-conteudo h2 {
+#perfil-conteudo h2,
+#historia-municipio-conteudo h2 {
   margin-top: 0;
   font-size: 1.15rem;
 }
@@ -1491,7 +1494,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-amigos,
 #btn-fechar-checkin,
 #btn-fechar-compartilhar,
-#btn-fechar-perfil {
+#btn-fechar-perfil,
+#btn-fechar-historia-municipio {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -1509,8 +1513,27 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-amigos:hover,
 #btn-fechar-checkin:hover,
 #btn-fechar-compartilhar:hover,
-#btn-fechar-perfil:hover {
+#btn-fechar-perfil:hover,
+#btn-fechar-historia-municipio:hover {
   color: #f1f5f9;
+}
+
+/* Corpo da historia completa do municipio: paragrafos alinhados a
+   esquerda pra ficar legivel (o container comum acima e centralizado,
+   bom pro titulo mas ruim pra texto corrido) */
+#historia-municipio-corpo {
+  text-align: left;
+}
+
+#historia-municipio-corpo p {
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+#historia-municipio-corpo p:last-child {
+  margin-bottom: 0;
 }
 
 /* ---- Perfil público ---- */
@@ -1959,6 +1982,23 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #modal-curiosidade .curiosidade-vazia {
   color: #64748b;
   font-style: italic;
+}
+
+.btn-saiba-mais-municipio {
+  display: block;
+  margin: 10px 0 0;
+  background: transparent;
+  border: 1px solid #334155;
+  color: #93c5fd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn-saiba-mais-municipio:hover {
+  background: #1e293b;
+  border-color: #475569;
 }
 
 /* ---- Aviso flutuante: raspadinha brilhante garantida pendente ---- */
