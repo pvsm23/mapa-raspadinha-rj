@@ -236,27 +236,52 @@ function aoEnviarFormLogin(evento) {
   evento.preventDefault();
   esconderErroLogin();
 
+  if (!window.raspadinhaAuth) {
+    mostrarErroLogin("O login ainda não carregou. Espere alguns segundos e tente de novo.");
+    return;
+  }
+
   const email = document.getElementById("input-email").value.trim();
   const senha = document.getElementById("input-senha").value;
   const acao = modoCadastro
-    ? window.raspadinhaAuth?.criarContaComEmail(email, senha)
-    : window.raspadinhaAuth?.entrarComEmail(email, senha);
+    ? window.raspadinhaAuth.criarContaComEmail(email, senha)
+    : window.raspadinhaAuth.entrarComEmail(email, senha);
 
   alternarCarregandoLogin(true);
+
+  // Se demorar demais (conexão lenta, Firebase engasgado), avisa em
+  // vez de deixar o usuário sem nenhum feedback por muito tempo.
+  const avisoDemora = setTimeout(() => {
+    mostrarErroLogin("Isso está demorando mais que o esperado... verifique sua internet.");
+  }, 8000);
+
   acao
-    ?.catch((erro) => mostrarErroLogin(traduzirErroAuth(erro)))
-    .finally(() => alternarCarregandoLogin(false));
+    .catch((erro) => mostrarErroLogin(traduzirErroAuth(erro)))
+    .finally(() => {
+      clearTimeout(avisoDemora);
+      alternarCarregandoLogin(false);
+    });
 }
 
 /**
  * Mostra/esconde o spinner de carregamento no botão de login,
- * desabilitando o botão enquanto aguarda a resposta do Firebase.
+ * desabilitando o botão e os campos enquanto aguarda a resposta do
+ * Firebase — e troca o texto do botão pra deixar bem claro que algo
+ * está acontecendo, mesmo que o spinner passe despercebido.
  */
 function alternarCarregandoLogin(carregando) {
   const botao = document.getElementById("btn-entrar-email");
   botao.disabled = carregando;
+  document.getElementById("input-email").disabled = carregando;
+  document.getElementById("input-senha").disabled = carregando;
   botao.querySelector(".spinner").classList.toggle("oculto", !carregando);
-  botao.querySelector(".btn-texto").classList.toggle("oculto", carregando);
+
+  const textoEl = botao.querySelector(".btn-texto");
+  if (carregando) {
+    textoEl.textContent = modoCadastro ? "Criando conta..." : "Entrando...";
+  } else {
+    textoEl.textContent = modoCadastro ? "Criar conta" : "Entrar";
+  }
 }
 
 function mostrarErroLogin(mensagem) {
@@ -463,6 +488,10 @@ function inicializarPanZoomDoMapa() {
   const svg = document.getElementById("mapa-rj");
   const ESCALA_MAXIMA = 10;
   const LIMIAR_ARRASTO = 5;
+  // Fracao minima do mapa que precisa continuar visivel na tela,
+  // mesmo arrastando para o canto mais longe possivel (nao pode
+  // "se perder" num vazio sem mapa nenhum).
+  const FRACAO_MINIMA_VISIVEL = 0.1;
   // Bem afastado (perto da escala minima) mostra as 8 regioes; a
   // partir daqui, mostra os 92 municipios individualmente.
   const LIMIAR_MUNICIPIOS = 1.8;
@@ -474,9 +503,44 @@ function inicializarPanZoomDoMapa() {
   let deslocX = 0;
   let deslocY = 0;
 
+  /**
+   * Limita deslocX/deslocY para que pelo menos FRACAO_MINIMA_VISIVEL
+   * do mapa (largura E altura) continue dentro da tela, em qualquer
+   * zoom. Sem isso, dava pra arrastar o mapa inteiro pra fora da
+   * tela e ficar olhando pro vazio sem noção de como voltar.
+   */
+  function limitarDesloc() {
+    const rect = viewport.getBoundingClientRect();
+    const mapaLargura = rect.width * escala;
+    const mapaAltura = rect.height * escala;
+    const limiteX = rect.width / 2 + mapaLargura * (0.5 - FRACAO_MINIMA_VISIVEL);
+    const limiteY = rect.height / 2 + mapaAltura * (0.5 - FRACAO_MINIMA_VISIVEL);
+    deslocX = Math.max(-limiteX, Math.min(limiteX, deslocX));
+    deslocY = Math.max(-limiteY, Math.min(limiteY, deslocY));
+  }
+
   function aplicarTransform() {
+    limitarDesloc();
     svg.style.transform = `translate(${deslocX}px, ${deslocY}px) scale(${escala})`;
     atualizarModoDeVisualizacao(escala, LIMIAR_MUNICIPIOS, LIMIAR_ROTULOS);
+  }
+
+  /**
+   * Muda a escala mantendo fixo, na tela, o ponto (ancoraX, ancoraY)
+   * em coordenadas de viewport (ex: centro da tela na roda do mouse,
+   * ponto médio dos dois dedos na pinça). Sem isso, o zoom sempre
+   * "puxa" o mapa de volta pro centro dele mesmo quando a visão já
+   * estava deslocada pra um dos lados.
+   */
+  function aplicarZoomAncorado(novaEscala, ancoraX, ancoraY) {
+    const rect = viewport.getBoundingClientRect();
+    const origemX = rect.width / 2;
+    const origemY = rect.height / 2;
+    const fator = novaEscala / escala;
+
+    deslocX = ancoraX - origemX - fator * (ancoraX - deslocX - origemX);
+    deslocY = ancoraY - origemY - fator * (ancoraY - deslocY - origemY);
+    escala = novaEscala;
   }
 
   function distanciaEMeio(touches) {
@@ -527,7 +591,12 @@ function inicializarPanZoomDoMapa() {
     (evento) => {
       evento.preventDefault();
       const fator = evento.deltaY < 0 ? 1.15 : 1 / 1.15;
-      escala = Math.min(ESCALA_MAXIMA, Math.max(1, escala * fator));
+      const novaEscala = Math.min(ESCALA_MAXIMA, Math.max(1, escala * fator));
+      const rect = viewport.getBoundingClientRect();
+      // ancora no cursor do mouse (relativo ao viewport), nao no
+      // centro fixo, entao o zoom sempre "puxa" pra onde o mouse
+      // esta, nao pro meio do mapa
+      aplicarZoomAncorado(novaEscala, evento.clientX - rect.left, evento.clientY - rect.top);
       if (escala === 1) {
         deslocX = 0;
         deslocY = 0;
@@ -550,7 +619,7 @@ function inicializarPanZoomDoMapa() {
         toqueUnico = { x: t.clientX, y: t.clientY, deslocXInicial: deslocX, deslocYInicial: deslocY };
         pinca = null;
       } else if (evento.touches.length === 2) {
-        pinca = { ...distanciaEMeio(evento.touches), escalaInicial: escala, deslocXInicial: deslocX, deslocYInicial: deslocY };
+        pinca = { ...distanciaEMeio(evento.touches), escalaInicial: escala };
         toqueUnico = null;
       }
     },
@@ -576,9 +645,11 @@ function inicializarPanZoomDoMapa() {
         mapaFoiArrastado = true;
         const atual = distanciaEMeio(evento.touches);
         const fatorEscala = atual.distancia / pinca.distancia;
-        escala = Math.min(ESCALA_MAXIMA, Math.max(1, pinca.escalaInicial * fatorEscala));
-        deslocX = pinca.deslocXInicial + (atual.meioX - pinca.meioX);
-        deslocY = pinca.deslocYInicial + (atual.meioY - pinca.meioY);
+        const novaEscala = Math.min(ESCALA_MAXIMA, Math.max(1, pinca.escalaInicial * fatorEscala));
+        const rect = viewport.getBoundingClientRect();
+        // ancora no ponto medio entre os dois dedos, que tambem e
+        // quem "arrasta" o mapa quando os dedos se movem juntos
+        aplicarZoomAncorado(novaEscala, atual.meioX - rect.left, atual.meioY - rect.top);
         aplicarTransform();
       }
     },
