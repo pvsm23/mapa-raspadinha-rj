@@ -124,6 +124,12 @@ svg#mapa-rj {
   margin: 0;
 }
 
+.logo-desbrava {
+  font-family: "Archivo Black", "Arial Black", Impact, sans-serif;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 #progresso {
   color: #94a3b8;
   font-size: 0.85rem;
