@@ -3,8 +3,11 @@
    - Clique num município não visitado -> abre modal de raspadinha
      (motor em scratch-card.js); ao raspar o suficiente, marca
      como "visitado".
-   - Clique num município já visitado -> só mostra o painel de
-     detalhes (não precisa raspar de novo).
+   - Clique num município já visitado -> mostra de novo o selo já
+     revelado (sem precisar raspar), no mesmo modal.
+   - Biblioteca de selos: grade com todos os municípios, cinza os
+     não visitados e coloridos os já raspados; clicar num item abre
+     o mesmo fluxo de sempre (raspar ou visualizar).
    - Estado salvo no LocalStorage (chave por código IBGE)
    - Estrutura já pensada para, mais adiante, virar:
        * localStorage -> Firestore (por usuário logado)
@@ -50,6 +53,20 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("modal-raspadinha")
     .addEventListener("click", (evento) => {
       if (evento.target.id === "modal-raspadinha") fecharModalRaspadinha();
+    });
+
+  document
+    .getElementById("btn-biblioteca")
+    .addEventListener("click", abrirBibliotecaSelos);
+
+  document
+    .getElementById("btn-fechar-biblioteca")
+    .addEventListener("click", fecharBibliotecaSelos);
+
+  document
+    .getElementById("biblioteca-selos")
+    .addEventListener("click", (evento) => {
+      if (evento.target.id === "biblioteca-selos") fecharBibliotecaSelos();
     });
 });
 
@@ -202,22 +219,27 @@ function inicializarPanZoomDoMapa() {
 
 /**
  * Decide o que fazer ao clicar num município:
- * se já visitado, só mostra os detalhes; se não, abre a raspadinha.
+ * se já visitado, mostra o selo revelado; se não, abre a raspadinha.
  */
 function aoClicarMunicipio(path) {
   if (mapaFoiArrastado) return;
-
-  const id = path.dataset.municipio;
-  const nome = path.dataset.nome;
 
   // pequeno efeito visual de "clique"
   path.classList.add("clicando");
   setTimeout(() => path.classList.remove("clicando"), 150);
 
+  abrirSeloPorId(path.dataset.municipio, path.dataset.nome);
+}
+
+/**
+ * Ponto de entrada único para abrir o selo de um município, usado
+ * tanto pelo clique no mapa quanto pela biblioteca de selos.
+ */
+function abrirSeloPorId(id, nome) {
   const jaVisitado = estadoMapa[id]?.visitado;
 
   if (jaVisitado) {
-    mostrarDetalhes(id, nome);
+    visualizarSeloRevelado(id, nome);
   } else {
     abrirModalRaspadinha(id, nome);
   }
@@ -250,6 +272,8 @@ function marcarComoVisitado(id, nome) {
  */
 function abrirModalRaspadinha(id, nome) {
   document.getElementById("modal-municipio-nome").textContent = nome;
+  document.getElementById("modal-instrucao").textContent =
+    "Raspe com o dedo ou o mouse para revelar!";
   document.getElementById("modal-raspadinha").classList.remove("oculto");
 
   const caminhoColorido = `assets/img/selos/${id}.png`;
@@ -279,13 +303,49 @@ function abrirModalRaspadinha(id, nome) {
 }
 
 /**
+ * Mostra de novo, dentro do mesmo modal, o selo de um município já
+ * visitado — sem precisar raspar de novo, já revelado por completo.
+ */
+function visualizarSeloRevelado(id, nome) {
+  mostrarDetalhes(id, nome);
+
+  document.getElementById("modal-municipio-nome").textContent = nome;
+  document.getElementById("modal-instrucao").textContent = "Selo já coletado ✅";
+  document.getElementById("modal-raspadinha").classList.remove("oculto");
+
+  const corpo = document.getElementById("scratch-modal-body");
+  corpo.innerHTML = "";
+
+  const caminhoColorido = `assets/img/selos/${id}.png`;
+  carregarImagem(caminhoColorido).then((existeColorido) => {
+    const img = document.createElement("img");
+    img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
+    img.alt = nome;
+    img.className = "selo-revelado";
+    corpo.appendChild(img);
+  });
+}
+
+const cacheExisteImagem = {};
+
+/**
  * Testa se uma imagem existe/carrega, sem lançar erro se não existir.
+ * O resultado fica em cache (mesma URL não é testada de novo).
  */
 function carregarImagem(src) {
+  if (src in cacheExisteImagem) {
+    return Promise.resolve(cacheExisteImagem[src]);
+  }
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
+    img.onload = () => {
+      cacheExisteImagem[src] = true;
+      resolve(true);
+    };
+    img.onerror = () => {
+      cacheExisteImagem[src] = false;
+      resolve(false);
+    };
     img.src = src;
   });
 }
@@ -296,6 +356,55 @@ function carregarImagem(src) {
 function fecharModalRaspadinha() {
   document.getElementById("modal-raspadinha").classList.add("oculto");
   document.getElementById("scratch-modal-body").innerHTML = "";
+}
+
+/**
+ * Abre a biblioteca de selos: uma grade com todos os municípios,
+ * em cinza os ainda não visitados e coloridos os já raspados.
+ * Clicar num item reaproveita a mesma lógica de abrir o selo.
+ */
+function abrirBibliotecaSelos() {
+  const grade = document.getElementById("biblioteca-grade");
+  grade.innerHTML = "";
+
+  const municipios = Array.from(document.querySelectorAll(".municipio"))
+    .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  municipios.forEach(({ id, nome }) => {
+    const visitado = !!estadoMapa[id]?.visitado;
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "selo-item";
+    item.title = nome;
+    item.addEventListener("click", () => {
+      fecharBibliotecaSelos();
+      abrirSeloPorId(id, nome);
+    });
+
+    const img = document.createElement("img");
+    img.alt = nome;
+    img.className = visitado ? "selo-colorido" : "selo-cinza";
+
+    const caminhoColorido = `assets/img/selos/${id}.png`;
+    carregarImagem(caminhoColorido).then((existeColorido) => {
+      img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
+    });
+
+    const legenda = document.createElement("span");
+    legenda.textContent = nome;
+
+    item.appendChild(img);
+    item.appendChild(legenda);
+    grade.appendChild(item);
+  });
+
+  document.getElementById("biblioteca-selos").classList.remove("oculto");
+}
+
+function fecharBibliotecaSelos() {
+  document.getElementById("biblioteca-selos").classList.add("oculto");
 }
 
 /**

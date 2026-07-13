@@ -1,0 +1,192 @@
+{
+  "3302502": {
+    "nome": "Magé",
+    "destinos": [
+      { "nome": "Cachoeira Véu da Noiva", "descricao": "Queda d'água de cerca de 110 metros, muito procurada para rapel." },
+      { "nome": "Cachoeira do Monjolo", "descricao": "Conjunto de três quedas d'água com piscinas naturais na mata." },
+      { "nome": "1ª Estrada de Ferro do Brasil", "descricao": "Antiga estação e trecho de trilhos históricos inaugurados em 1854." },
+      { "nome": "Caminho de Ouro", "descricao": "Trilha de pedras construída em 1724, ligando Magé a Petrópolis." },
+      { "nome": "Santuário de Nossa Senhora da Piedade", "descricao": "Santuário no Morro da Piedade, destino de romarias e milagres." }
+    ]
+  },
+  "3302601": {
+    "nome": "Mangaratiba",
+    "destinos": [
+      { "nome": "Praia de Itacuruçá", "descricao": "Praia com vista para ilhas e ponto de partida para passeios de barco." },
+      { "nome": "Praia do Saco", "descricao": "Praia de águas claras e tranquilas na Costa Verde." },
+      { "nome": "Praia de Conceição de Jacareí", "descricao": "Praia calma e popular entre famílias, quase sem ondas." },
+      { "nome": "Praia Grande", "descricao": "Uma das maiores praias do município, procurada por surfistas." },
+      { "nome": "Ilha de Itacuruçá", "descricao": "Ilha paradisíaca com trilhas e praias acessível por barco." }
+    ]
+  },
+  "3302700": {
+    "nome": "Maricá",
+    "destinos": [
+      { "nome": "Praia de Itaipuaçu", "descricao": "Praia de 15 km de extensão com areia branca e águas calmas." },
+      { "nome": "Praia de Ponta Negra", "descricao": "Uma das praias mais visitadas, com ondas fortes e areia fina." },
+      { "nome": "Lagoa de Araçatiba", "descricao": "Cartão-postal da cidade, com área de lazer e quiosques." },
+      { "nome": "Farol de Ponta Negra", "descricao": "Farol histórico inaugurado em 1909, patrimônio turístico local." },
+      { "nome": "Igreja Matriz de Nossa Senhora do Amparo", "descricao": "Igreja histórica construída em 1788 no centro da cidade." }
+    ]
+  },
+  "3302809": {
+    "nome": "Mendes",
+    "destinos": [
+      { "nome": "Estação Ferroviária Nery Ferreira", "descricao": "Estação histórica inaugurada em 1911, símbolo do ciclo ferroviário." },
+      { "nome": "Igreja Matriz de Santa Cruz", "descricao": "Templo histórico que representa a fé e tradição local." },
+      { "nome": "Túneis 12 e 12 Bis", "descricao": "Obras de engenharia ferroviária usadas no transporte do café." },
+      { "nome": "Jequitibá Milenar", "descricao": "Árvore centenária que impressiona pela imponência e história." },
+      { "nome": "Mirante do Cruzeiro", "descricao": "Trilha com vista panorâmica para morros e vales de Mendes." }
+    ]
+  },
+  "3302858": {
+    "nome": "Mesquita",
+    "destinos": [
+      { "nome": "Paróquia de Nossa Senhora das Graças", "descricao": "Igreja de 1940 com vitrais e vista privilegiada da cidade." },
+      { "nome": "Praça Elizabeth Paixão", "descricao": "Coração da cidade, palco de eventos culturais e shows ao ar livre." },
+      { "nome": "Vila Olímpica de Mesquita", "descricao": "Complexo esportivo público de entrada gratuita." },
+      { "nome": "Mural Revitalizart", "descricao": "Grafite artístico ao longo do muro da linha férrea." },
+      { "nome": "Cachoeira do Gericinó", "descricao": "Queda d'água natural em meio a trilhas de Mata Atlântica." }
+    ]
+  },
+  "3302908": {
+    "nome": "Miguel Pereira",
+    "destinos": [
+      { "nome": "Cachoeira Sete Quedas", "descricao": "Conjunto de quedas d'água muito procurado por visitantes." },
+      { "nome": "Lago de Javary", "descricao": "Lago para caminhadas, pedalinho e lazer em família." },
+      { "nome": "Viaduto Paulo de Frontin", "descricao": "Único viaduto de ferro em curva do mundo, usado para rapel." },
+      { "nome": "Rua Coberta", "descricao": "Complexo turístico e gastronômico com lojas e restaurantes." },
+      { "nome": "Museu Ferroviário", "descricao": "Acervo sobre a história ferroviária na antiga estação do município." }
+    ]
+  },
+  "3303005": {
+    "nome": "Miracema",
+    "destinos": [
+      { "nome": "Parque Natural Municipal Dr. Walquer Oliveira", "descricao": "Parque com mirante que revela vista panorâmica da cidade." },
+      { "nome": "Pontão do Sinal", "descricao": "Ponto mais alto do município, com 930 m de altitude." },
+      { "nome": "Serra de Santo Antônio", "descricao": "Rampa de voo livre com vista para a região, na Ventania de Cima." },
+      { "nome": "Igreja Matriz de Santo Antônio", "descricao": "Igreja histórica inaugurada em 1900 no centro tombado." },
+      { "nome": "Lago de Miracema", "descricao": "Lago ideal para stand-up paddle, caiaque e jet ski." }
+    ]
+  },
+  "3303104": {
+    "nome": "Natividade",
+    "destinos": [
+      { "nome": "Sítio dos Milagres", "descricao": "Réplica do santuário de Éfeso, local de aparições marianas em 1967." },
+      { "nome": "Santuário Diocesano Nossa Senhora da Natividade", "descricao": "Santuário histórico datado de 1845." },
+      { "nome": "Fazenda São José", "descricao": "Uma das primeiras construções da região, erguida por volta de 1820." },
+      { "nome": "Fazenda Mutuca", "descricao": "Antiga fazenda histórica com cachoeiras e culinária local." },
+      { "nome": "Fazenda Taboca", "descricao": "Fazenda histórica que atrai visitantes para o turismo rural." }
+    ]
+  },
+  "3303203": {
+    "nome": "Nilópolis",
+    "destinos": [
+      { "nome": "Parque Natural de Gericinó", "descricao": "Área verde com trilhas, ciclismo e atividades esportivas." },
+      { "nome": "Quadra da Beija-Flor de Nilópolis", "descricao": "Sede da tradicional escola de samba, berço do samba local." },
+      { "nome": "Capela de São Matheus", "descricao": "Capela barroca construída por escravos e índios em 1637." },
+      { "nome": "Igreja Nossa Senhora da Conceição", "descricao": "Templo símbolo da cidade, dedicado à padroeira local." },
+      { "nome": "Praça do Trabalhador", "descricao": "Praça central onde ocorrem feiras e eventos ao ar livre." }
+    ]
+  },
+  "3303302": {
+    "nome": "Niterói",
+    "destinos": [
+      { "nome": "Museu de Arte Contemporânea (MAC)", "descricao": "Obra de Oscar Niemeyer em formato de disco, cartão-postal da cidade." },
+      { "nome": "Caminho Niemeyer", "descricao": "Conjunto de sete edifícios projetados por Oscar Niemeyer." },
+      { "nome": "Parque da Cidade", "descricao": "Mirante a mais de 270 metros de altura com vista da Baía de Guanabara." },
+      { "nome": "Praia de Itacoatiara", "descricao": "Praia de mar forte, considerada uma das mais bonitas do estado." },
+      { "nome": "Fortaleza de Santa Cruz da Barra", "descricao": "Fortificação de 1555 na entrada da Baía de Guanabara." }
+    ]
+  },
+  "3303401": {
+    "nome": "Nova Friburgo",
+    "destinos": [
+      { "nome": "Pico da Caledônia", "descricao": "Montanha com trilhas e vista panorâmica da região serrana." },
+      { "nome": "Pedra do Cão Sentado", "descricao": "Formação rochosa em forma de cão sentado, símbolo da cidade." },
+      { "nome": "Praça Getúlio Vargas", "descricao": "Praça histórica central com coreto e arquitetura eclética." },
+      { "nome": "Catedral de São Pedro de Alcântara", "descricao": "Igreja histórica marcante no centro da cidade." },
+      { "nome": "Polo de Moda Íntima do Cônego", "descricao": "Bairro famoso pelo comércio de lingerie e moda íntima." }
+    ]
+  },
+  "3303500": {
+    "nome": "Nova Iguaçu",
+    "destinos": [
+      { "nome": "Parque Municipal de Nova Iguaçu", "descricao": "Área verde com cachoeiras e trilhas na Serra do Tinguá." },
+      { "nome": "Reserva Biológica do Tinguá", "descricao": "Unidade de conservação de Mata Atlântica preservada." },
+      { "nome": "Catedral Diocesana de Nossa Senhora da Piedade", "descricao": "Marco religioso no centro histórico da cidade." },
+      { "nome": "Museu Municipal de Nova Iguaçu", "descricao": "Acervo dedicado à memória e história do município." },
+      { "nome": "Praça da Matriz", "descricao": "Praça central que reúne o comércio e a história local." }
+    ]
+  },
+  "3303609": {
+    "nome": "Paracambi",
+    "destinos": [
+      { "nome": "Vila Operária da Fábrica de Tecidos Paracambi", "descricao": "Conjunto industrial histórico do século XIX, hoje patrimônio local." },
+      { "nome": "Estação Ferroviária de Paracambi", "descricao": "Antiga estação da Estrada de Ferro Central do Brasil." },
+      { "nome": "Balneário do Rio Guandu", "descricao": "Área de lazer e banho às margens do rio Guandu." },
+      { "nome": "Centro Histórico de Paracambi", "descricao": "Conjunto de construções antigas ligadas ao ciclo têxtil." },
+      { "nome": "Represa de Ribeirão das Lajes", "descricao": "Grande reservatório com paisagens naturais na região." }
+    ]
+  },
+  "3303708": {
+    "nome": "Paraíba do Sul",
+    "destinos": [
+      { "nome": "Ponte Metálica sobre o Rio Paraíba do Sul", "descricao": "Marco histórico de engenharia sobre o rio que dá nome à cidade." },
+      { "nome": "Estação Ferroviária de Paraíba do Sul", "descricao": "Antiga estação da Estrada de Ferro Central do Brasil." },
+      { "nome": "Igreja Matriz de Nossa Senhora da Conceição", "descricao": "Templo histórico no centro da cidade." },
+      { "nome": "Fazendas históricas do Vale do Café", "descricao": "Antigas fazendas de café do século XIX abertas à visitação." },
+      { "nome": "Balneário Municipal do Rio Paraíba do Sul", "descricao": "Área de lazer e banho às margens do rio." }
+    ]
+  },
+  "3303807": {
+    "nome": "Paraty",
+    "destinos": [
+      { "nome": "Centro Histórico de Paraty", "descricao": "Conjunto colonial tombado, reconhecido como Patrimônio Mundial da UNESCO." },
+      { "nome": "Igreja de Nossa Senhora do Rosário e São Benedito", "descricao": "Igreja histórica do século XVIII construída por escravos." },
+      { "nome": "Praia do Sono", "descricao": "Praia preservada cercada por Mata Atlântica." },
+      { "nome": "Ilha do Araújo", "descricao": "Destino de passeios de barco pela baía de Paraty." },
+      { "nome": "Trilha do Ouro", "descricao": "Antigo caminho colonial de pedras usado no ciclo do ouro." }
+    ]
+  },
+  "3303856": {
+    "nome": "Paty do Alferes",
+    "destinos": [
+      { "nome": "Vale do Café", "descricao": "Roteiro de fazendas históricas de café do século XIX." },
+      { "nome": "Festa do Tomate", "descricao": "Festa agrícola tradicional, já que o município é grande produtor de tomate." },
+      { "nome": "Igreja Matriz de Paty do Alferes", "descricao": "Templo histórico no centro da cidade." },
+      { "nome": "Distrito de Avelar", "descricao": "Região conhecida por fazendas históricas e turismo rural." },
+      { "nome": "Serra do Mar", "descricao": "Paisagens naturais e trilhas na região serrana do município." }
+    ]
+  },
+  "3303906": {
+    "nome": "Petrópolis",
+    "destinos": [
+      { "nome": "Museu Imperial", "descricao": "Antigo palácio de verão de Dom Pedro II, com joias e mobiliário imperial." },
+      { "nome": "Palácio de Cristal", "descricao": "Estrutura de ferro e vidro do século XIX usada para eventos." },
+      { "nome": "Catedral São Pedro de Alcântara", "descricao": "Catedral neogótica que abriga o mausoléu da família imperial." },
+      { "nome": "Casa de Santos Dumont (A Encantada)", "descricao": "Residência do inventor, com projeto arquitetônico peculiar." },
+      { "nome": "Rua Teresa", "descricao": "Rua famosa pelo comércio de moda e semijoias no centro histórico." }
+    ]
+  },
+  "3303955": {
+    "nome": "Pinheiral",
+    "destinos": [
+      { "nome": "Colégio Agrícola Nilo Peçanha", "descricao": "Antigo casarão de fazenda de café que hoje sedia instituição de ensino." },
+      { "nome": "Orla do Rio Paraíba do Sul", "descricao": "Área de lazer às margens do rio que corta o município." },
+      { "nome": "Estação Ferroviária de Pinheiral", "descricao": "Antiga estação histórica da região do Vale do Café." },
+      { "nome": "Igreja Matriz de Pinheiral", "descricao": "Templo histórico no centro da cidade." },
+      { "nome": "Fazendas históricas do Vale do Café", "descricao": "Antigas fazendas de café que marcam a paisagem rural do município." }
+    ]
+  },
+  "3304003": {
+    "nome": "Piraí",
+    "destinos": [
+      { "nome": "Lago de Piraí (Represa de Ribeirão das Lajes)", "descricao": "Grande reservatório usado para esportes aquáticos e lazer." },
+      { "nome": "Estação Ferroviária de Piraí", "descricao": "Antiga estação histórica da Estrada de Ferro Central do Brasil." },
+      { "nome": "Igreja Matriz de Nossa Senhora do Pilar", "descricao": "Templo histórico dedicado à padroeira do município." },
+      { "nome": "Distrito de Arrozal", "descricao": "Região conhecida por passeios rurais e produção agrícola." },
+      { "nome": "Cachoeiras da zona rural de Piraí", "descricao": "Quedas d'água naturais em meio à Mata Atlântica do município." }
+    ]
+  }
+}
