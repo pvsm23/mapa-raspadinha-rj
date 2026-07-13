@@ -15,11 +15,15 @@ Site estático onde o usuário "raspa" municípios do Rio de Janeiro no mapa con
 ├── assets/
 │   ├── svg/              # SVG dos 92 municípios (gerado, ver tools/)
 │   └── img/selos/        # imagens dos "selos" revelados ao raspar (futuro)
+├── assets/icons/          # ícones do PWA (gerados, ver tools/)
 ├── data/
 │   ├── rj-municipios.geojson  # fonte geográfica dos municípios do RJ
 │   └── destinos.json          # pontos turísticos por município (parcial)
+├── manifest.json          # manifesto do PWA (instalável)
+├── sw.js                  # service worker (cache básico offline)
 └── tools/
-    └── geojson-to-svg.js # script que gera assets/svg/rj-municipios.svg
+    ├── geojson-to-svg.js # script que gera assets/svg/rj-municipios.svg
+    └── gerar-icones.js   # script que gera assets/icons/*.png
 ```
 
 ## Dados do mapa
@@ -44,6 +48,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **Selos reais**: colocar `assets/img/selos/<código-ibge>.png` (colorido) e `assets/img/selos/<código-ibge>fundo.png` (preto e branco, capa raspável) — sem precisar mexer em código.
 - **Item 4 (em andamento)**: `data/destinos.json` com pontos turísticos por município — hoje cobre só 19 municípios (Magé, Mangaratiba, Maricá, Mendes, Mesquita, Miguel Pereira, Miracema, Natividade, Nilópolis, Niterói, Nova Friburgo, Nova Iguaçu, Paracambi, Paraíba do Sul, Paraty, Paty do Alferes, Petrópolis, Pinheiral, Piraí); os demais 73 ficam para completar depois.
 - **Etapa 4**: publicação no GitHub Pages.
+- **PWA (instalável)**: `manifest.json` + `sw.js` deixam o site instalável como app no celular (Android/iOS, "Adicionar à tela inicial") e no PC (Chrome/Edge mostram um botão de instalar). O viewport trava o zoom nativo da página (`user-scalable=no`) para não conflitar com o zoom próprio do mapa. Ícones em `assets/icons/` são um placeholder simples — trocar por uma arte de verdade quando tiver.
 
 ## Rodando localmente
 

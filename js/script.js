@@ -25,6 +25,15 @@ const STORAGE_KEY = "scratchMapRJ_v1";
 
 let estadoMapa = {};
 
+// Registra o service worker (PWA instalável no celular e no PC)
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((erro) => {
+      console.error("Falha ao registrar o service worker:", erro);
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   estadoMapa = carregarEstado();
   aplicarEstadoNoSVG();
