@@ -22,17 +22,39 @@ header h1 {
 }
 
 main {
-  display: flex;
-  justify-content: center;
   margin: 24px 0;
 }
 
-svg#mapa-rj {
+#dica-mapa {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 8px;
+}
+
+#mapa-viewport {
+  position: relative;
   width: 100%;
-  max-width: 500px;
-  height: auto;
-  background: #1e293b;
+  height: 70vh;
+  min-height: 320px;
+  max-height: 640px;
+  overflow: hidden;
   border-radius: 12px;
+  background: #1e293b;
+  touch-action: none;
+  cursor: grab;
+}
+
+#mapa-viewport.arrastando {
+  cursor: grabbing;
+}
+
+svg#mapa-rj {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
 }
 
 /* Estado "não raspado" -> aparência de raspadinha (cinza fosco) */

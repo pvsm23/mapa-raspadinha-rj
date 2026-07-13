@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   estadoMapa = carregarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
+  inicializarPanZoomDoMapa();
 
   const municipios = document.querySelectorAll(".municipio");
   municipios.forEach((path) => {
@@ -53,12 +54,159 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 let municipioSelecionadoId = null;
+let mapaFoiArrastado = false;
+
+/**
+ * Controla arrastar (mover) e zoom do mapa principal:
+ * - Mouse: arrastar move o mapa; roda do mouse dá zoom.
+ * - Toque: 1 dedo move o mapa; 2 dedos (pinça) dão zoom e movem.
+ * - Duplo clique/toque reseta o zoom.
+ * Marca `mapaFoiArrastado` quando o movimento passa de um limiar
+ * pequeno, para não abrir a raspadinha sem querer ao soltar o dedo
+ * depois de mover o mapa (ver aoClicarMunicipio).
+ */
+function inicializarPanZoomDoMapa() {
+  const viewport = document.getElementById("mapa-viewport");
+  const svg = document.getElementById("mapa-rj");
+  const ESCALA_MAXIMA = 4;
+  const LIMIAR_ARRASTO = 5;
+
+  let escala = 1;
+  let deslocX = 0;
+  let deslocY = 0;
+
+  function aplicarTransform() {
+    svg.style.transform = `translate(${deslocX}px, ${deslocY}px) scale(${escala})`;
+  }
+
+  function distanciaEMeio(touches) {
+    const [a, b] = touches;
+    return {
+      distancia: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY),
+      meioX: (a.clientX + b.clientX) / 2,
+      meioY: (a.clientY + b.clientY) / 2,
+    };
+  }
+
+  // ---- Mouse: arrastar move; roda do mouse dá zoom ----
+  let arrastando = false;
+  let inicioX = 0;
+  let inicioY = 0;
+  let deslocXInicial = 0;
+  let deslocYInicial = 0;
+
+  viewport.addEventListener("mousedown", (evento) => {
+    arrastando = true;
+    mapaFoiArrastado = false;
+    inicioX = evento.clientX;
+    inicioY = evento.clientY;
+    deslocXInicial = deslocX;
+    deslocYInicial = deslocY;
+    viewport.classList.add("arrastando");
+  });
+
+  window.addEventListener("mousemove", (evento) => {
+    if (!arrastando) return;
+    const dx = evento.clientX - inicioX;
+    const dy = evento.clientY - inicioY;
+    if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) {
+      mapaFoiArrastado = true;
+    }
+    deslocX = deslocXInicial + dx;
+    deslocY = deslocYInicial + dy;
+    aplicarTransform();
+  });
+
+  window.addEventListener("mouseup", () => {
+    arrastando = false;
+    viewport.classList.remove("arrastando");
+  });
+
+  viewport.addEventListener(
+    "wheel",
+    (evento) => {
+      evento.preventDefault();
+      const fator = evento.deltaY < 0 ? 1.15 : 1 / 1.15;
+      escala = Math.min(ESCALA_MAXIMA, Math.max(1, escala * fator));
+      if (escala === 1) {
+        deslocX = 0;
+        deslocY = 0;
+      }
+      aplicarTransform();
+    },
+    { passive: false }
+  );
+
+  // ---- Toque: 1 dedo move; pinça de 2 dedos dá zoom e move ----
+  let toqueUnico = null;
+  let pinca = null;
+
+  viewport.addEventListener(
+    "touchstart",
+    (evento) => {
+      mapaFoiArrastado = false;
+      if (evento.touches.length === 1) {
+        const t = evento.touches[0];
+        toqueUnico = { x: t.clientX, y: t.clientY, deslocXInicial: deslocX, deslocYInicial: deslocY };
+        pinca = null;
+      } else if (evento.touches.length === 2) {
+        pinca = { ...distanciaEMeio(evento.touches), escalaInicial: escala, deslocXInicial: deslocX, deslocYInicial: deslocY };
+        toqueUnico = null;
+      }
+    },
+    { passive: true }
+  );
+
+  viewport.addEventListener(
+    "touchmove",
+    (evento) => {
+      if (evento.touches.length === 1 && toqueUnico) {
+        evento.preventDefault();
+        const t = evento.touches[0];
+        const dx = t.clientX - toqueUnico.x;
+        const dy = t.clientY - toqueUnico.y;
+        if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) {
+          mapaFoiArrastado = true;
+        }
+        deslocX = toqueUnico.deslocXInicial + dx;
+        deslocY = toqueUnico.deslocYInicial + dy;
+        aplicarTransform();
+      } else if (evento.touches.length === 2 && pinca) {
+        evento.preventDefault();
+        mapaFoiArrastado = true;
+        const atual = distanciaEMeio(evento.touches);
+        const fatorEscala = atual.distancia / pinca.distancia;
+        escala = Math.min(ESCALA_MAXIMA, Math.max(1, pinca.escalaInicial * fatorEscala));
+        deslocX = pinca.deslocXInicial + (atual.meioX - pinca.meioX);
+        deslocY = pinca.deslocYInicial + (atual.meioY - pinca.meioY);
+        aplicarTransform();
+      }
+    },
+    { passive: false }
+  );
+
+  viewport.addEventListener("touchend", (evento) => {
+    if (evento.touches.length === 0) {
+      toqueUnico = null;
+      pinca = null;
+    }
+  });
+
+  viewport.addEventListener("dblclick", () => {
+    escala = 1;
+    deslocX = 0;
+    deslocY = 0;
+    aplicarTransform();
+  });
+}
 
 /**
  * Decide o que fazer ao clicar num município:
  * se já visitado, só mostra os detalhes; se não, abre a raspadinha.
  */
 function aoClicarMunicipio(path) {
+  if (mapaFoiArrastado) return;
+
   const id = path.dataset.municipio;
   const nome = path.dataset.nome;
 
