@@ -101,8 +101,8 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
             allow read: if request.auth != null && request.auth.uid == uid;
           }
 
-          // Check-in mensal: só o dono lê/escreve os próprios dias.
-          match /checkins/{mesId} {
+          // Check-in semanal: só o dono lê/escreve os próprios dias.
+          match /checkins/{semanaId} {
             allow read, write: if request.auth != null && request.auth.uid == uid;
           }
         }
@@ -123,13 +123,13 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 
 ## Gamificação
 
-Tudo abaixo mora em **Configurações → Social & Conquistas**, num "hub" de botões que abrem cada modal — pra não lotar a barra de topo flutuante com muitos ícones.
+Ranking, Amigos, Conquistas e Check-in abrem a partir de botões flutuantes fixos na **lateral esquerda da tela** (`#botoes-lateral-esquerda`), sempre visíveis, separados da barra de topo (que só tem compartilhar/biblioteca/configurações).
 
 - **Apelido nunca em formato de e-mail**: `salvarApelido` (`js/auth.js`) rejeita qualquer apelido que pareça um e-mail (`pareceEmail()`, regex simples), pra não confundir com o e-mail de login nem vazar sem querer o e-mail de alguém pelo Ranking/busca de Amigos (que mostram o apelido publicamente). Se a pessoa fechar o popup de escolher apelido (primeiro login) sem confirmar nada, em vez de deixar sem apelido (obrigatório pra tudo isso funcionar), gera sozinho um `userNNNNNN` aleatório e salva (`fecharModalApelidoComAleatorio` em `js/script.js`, com nova tentativa automática no raro caso de colisão).
 - **Ranking online** (`buscarRanking`/`buscarMinhaPosicao` em `js/auth.js`, `abrirRanking` em `js/script.js`): mostra o top 50 de quem visitou mais municípios, por apelido, com a posição do usuário atual destacada mesmo se estiver fora do top 50. Alimentado pelo campo `municipiosVisitadosCount` no documento de cada usuário, sincronizado (`sincronizarProgressoOnline`) toda vez que o progresso muda (raspar, desmarcar, resetar) e ao logar.
 - **Conquistas** (`abrirConquistas` em `js/script.js`): 5 marcos — 10%, 25%, 50%, 75% e 100% dos municípios do RJ, cada porcentagem **arredondada pra cima** (`Math.ceil`, ex: 10% de 92 = 10, não 9) — cada um com sua própria raspadinha (reaproveita `scratch-card.js`), que só fica disponível pra raspar quando o marco é atingido; até lá, mostra cadeado e uma barra de progresso "X / Y municípios". Estado local (`scratchMapRJ_conquistas_v1`); imagens em `assets/img/conquistas/<chave>.png`/`<chave>fundo.png` (cai no mesmo placeholder gerado na hora enquanto não existirem).
 - **Amigos** (`abrirAmigos` em `js/script.js`): busca por e-mail exato ou apelido exato, envia pedido de amizade, aceita/recusa pedidos recebidos e lista os amigos atuais com quantos municípios cada um já visitou (pra comparar progresso). Amizade é sempre mútua (aceitar grava a entrada dos dois lados numa `writeBatch`).
-- **Check-in mensal** (`abrirCheckin` em `js/script.js`, `registrarCheckinHoje` em `js/auth.js`): toda vez que loga, marca o dia atual num calendário do mês corrente (`usuarios/{uid}/checkins/{AAAA-MM}`); o calendário reseta sozinho a cada mês novo (chave nova).
+- **Check-in semanal** (`abrirCheckin` em `js/script.js`, `registrarCheckinHoje` em `js/auth.js`): toda vez que loga, marca o dia da semana atual (domingo a sábado) num calendário curto (`usuarios/{uid}/checkins/{AAAA-MM-DD}`, chave = data do domingo daquela semana); reseta sozinho a cada semana nova. É semanal, não mensal, porque é um app de viagem — os acessos são poucos e espaçados, então uma semana inteira já é uma "meta" razoável, diferente de um app de uso diário.
 - **Raspadinha brilhante** (`decidirBrilhante`/`marcarComoVisitado` em `js/script.js`, efeito visual em `js/scratch-card.js: adicionarBrilho`): 5% de chance de virar "brilhante" (anel de partículas girando + brilho pulsante) **só na primeira vez que a sorte de cada município é decidida** — depois disso, o resultado (brilhante ou não) fica gravado pro município (`chanceDecidida`/`brilhante` no estado local) e nunca muda, mesmo desmarcando e raspando de novo. Municípios raspados **antes** dessa funcionalidade existir não têm `chanceDecidida` ainda — ganham essa decisão na próxima vez que forem raspados (por isso é preciso desmarcar e raspar de novo pra "tentar a sorte" uma única vez). A biblioteca de selos marca os municípios brilhantes com uma borda dourada e um ✨.
 - **Convite de amigo → raspadinha brilhante garantida**: o botão de compartilhar (🔗) inclui `?convite=<uid>` no link quando logado. Se alguém cria conta por esse link, quem convidou ganha o direito a UMA raspadinha brilhante garantida na próxima vez que raspar (`usuarios/{convidante}/convites/{novoUid}`, ver `creditarConviteSeExistir`/`consumirBoostBrilhante` em `js/auth.js`) — pode ser raspando um município novo ou desmarcando e raspando um que já tinha. Enquanto o boost estiver pendente, um aviso flutuante fino no topo da tela (`#aviso-brilhante-pendente`) avisa "você tem uma raspadinha brilhante te esperando".
 - **Curiosidade do município** (`mostrarCuriosidade` em `js/script.js`, dados em `data/curiosidades.json`): só aparece **depois** de raspar o selo daquele município (na tela de "selo já revelado"). Arquivo criado vazio para os 92 municípios — o usuário vai preencher o texto de cada um depois.

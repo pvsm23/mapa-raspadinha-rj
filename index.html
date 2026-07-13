@@ -270,6 +270,15 @@
     </div>
   </header>
 
+  <!-- Botoes flutuantes na lateral esquerda: ranking, amigos,
+       conquistas e check-in semanal -->
+  <div id="botoes-lateral-esquerda">
+    <button id="btn-abrir-ranking" aria-label="Ranking" title="Ranking">🏆</button>
+    <button id="btn-abrir-amigos" aria-label="Amigos" title="Amigos">👥</button>
+    <button id="btn-abrir-conquistas" aria-label="Conquistas" title="Conquistas">🎖️</button>
+    <button id="btn-abrir-checkin" aria-label="Check-in semanal" title="Check-in semanal">📅</button>
+  </div>
+
   <p id="dica-mapa">Arraste para mover · pinça ou roda do mouse para zoom</p>
 
   <!-- Popup do selo: raspar (nao visitado) ou visualizar (ja visitado,
@@ -333,16 +342,6 @@
         <h3>Conta</h3>
         <p id="conta-status">Você não está conectado.</p>
         <button id="btn-logout">Sair da conta</button>
-      </div>
-
-      <div id="secao-social">
-        <h3>Social &amp; Conquistas</h3>
-        <div id="botoes-social">
-          <button id="btn-abrir-ranking">🏆 Ranking</button>
-          <button id="btn-abrir-conquistas">🎖️ Conquistas</button>
-          <button id="btn-abrir-amigos">👥 Amigos</button>
-          <button id="btn-abrir-checkin">📅 Check-in mensal</button>
-        </div>
       </div>
 
       <div id="secao-dados-pessoais">
@@ -417,12 +416,12 @@
     </div>
   </div>
 
-  <!-- Check-in mensal: marca os dias do mes em que o app foi aberto -->
+  <!-- Check-in semanal: marca os dias da semana em que o app foi aberto -->
   <div id="modal-checkin" class="oculto">
     <div id="checkin-conteudo">
       <button id="btn-fechar-checkin" aria-label="Fechar">✕</button>
-      <h2>📅 Check-in mensal</h2>
-      <p id="checkin-mes-nome"></p>
+      <h2>📅 Check-in semanal</h2>
+      <p id="checkin-semana-label"></p>
       <div id="checkin-calendario"></div>
     </div>
   </div>

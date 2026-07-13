@@ -275,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (evento.key === "Enter") buscarAmigoPorTexto();
   });
 
-  // ---- Check-in mensal ----
+  // ---- Check-in semanal ----
   document
     .getElementById("btn-abrir-checkin")
     .addEventListener("click", () => exigirLogin(abrirCheckin));
@@ -1828,38 +1828,46 @@ async function carregarListaAmigos() {
 }
 
 /* ============================================================
-   Check-in mensal: marca os dias do mês em que o app foi aberto.
+   Check-in semanal: marca os dias da semana (dom-sáb) em que o app
+   foi aberto. Semanal (não mensal) porque é um app de viagem -- os
+   acessos são poucos e espaçados, então uma semana é uma unidade de
+   progresso mais realista que um mês inteiro.
    ============================================================ */
 
-const NOMES_MESES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+const NOMES_DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const NOMES_MESES_ABREV = [
+  "jan", "fev", "mar", "abr", "mai", "jun",
+  "jul", "ago", "set", "out", "nov", "dez",
 ];
 
 async function abrirCheckin() {
   const modal = document.getElementById("modal-checkin");
   const calendario = document.getElementById("checkin-calendario");
-  const agora = new Date();
-  const mesId = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
-  document.getElementById("checkin-mes-nome").textContent =
-    `${NOMES_MESES[agora.getMonth()]} de ${agora.getFullYear()}`;
+  const hoje = new Date();
+  const diaDaSemanaHoje = hoje.getDay();
+
+  const domingo = new Date(hoje);
+  domingo.setDate(hoje.getDate() - diaDaSemanaHoje);
+  const sabado = new Date(domingo);
+  sabado.setDate(domingo.getDate() + 6);
+
+  document.getElementById("checkin-semana-label").textContent =
+    `Semana de ${domingo.getDate()} ${NOMES_MESES_ABREV[domingo.getMonth()]} a ${sabado.getDate()} ${NOMES_MESES_ABREV[sabado.getMonth()]}`;
   calendario.innerHTML = '<div class="spinner spinner-grande"></div>';
   modal.classList.remove("oculto");
 
   try {
-    const dias = await window.raspadinhaAuth.buscarCheckinsDoMes(mesId);
-    const totalDias = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).getDate();
-    const hoje = agora.getDate();
+    const dias = await window.raspadinhaAuth.buscarCheckinsDaSemana();
 
     calendario.innerHTML = "";
-    for (let dia = 1; dia <= totalDias; dia++) {
+    NOMES_DIAS_SEMANA.forEach((nomeDia, indiceDia) => {
       const celula = document.createElement("div");
       celula.className = "checkin-dia";
-      if (dias.includes(dia)) celula.classList.add("checkin-feito");
-      if (dia === hoje) celula.classList.add("checkin-hoje");
-      celula.textContent = dia;
+      if (dias.includes(indiceDia)) celula.classList.add("checkin-feito");
+      if (indiceDia === diaDaSemanaHoje) celula.classList.add("checkin-hoje");
+      celula.textContent = nomeDia;
       calendario.appendChild(celula);
-    }
+    });
   } catch (erro) {
     console.error("Falha ao carregar check-in:", erro);
     calendario.innerHTML = "<p>Não foi possível carregar o check-in agora.</p>";

@@ -99,7 +99,7 @@ window.raspadinhaAuth = {
   listarAmigos: async () => [],
   removerAmigo: async () => {},
   registrarCheckinHoje: async () => {},
-  buscarCheckinsDoMes: async () => [],
+  buscarCheckinsDaSemana: async () => [],
   consumirBoostBrilhante: () => false,
   // TODO(PRO): trocar por uma verificação real (ex: campo no
   // Firestore ligado ao usuário logado) quando o controle de
@@ -297,28 +297,44 @@ if (CONFIGURADO) {
     return lote.commit();
   };
 
-  /* ---------- Check-in mensal ---------- */
+  /* ---------- Check-in semanal ----------
+     App de viagem tem poucos acessos por mês (não é um app de uso
+     diário), então o check-in é por SEMANA (domingo a sábado), não
+     por mês -- mais fácil de "completar" e faz mais sentido pro
+     ritmo real de uso. */
 
-  function chaveMesAtual() {
+  /**
+   * Id da semana atual = data do domingo daquela semana
+   * (AAAA-MM-DD). Assim cada semana tem uma chave própria e estável,
+   * sem precisar calcular número de semana ISO.
+   */
+  function chaveSemanaAtual() {
     const agora = new Date();
-    return `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
+    const domingo = new Date(agora);
+    domingo.setDate(agora.getDate() - agora.getDay());
+    const ano = domingo.getFullYear();
+    const mes = String(domingo.getMonth() + 1).padStart(2, "0");
+    const dia = String(domingo.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
   }
 
   window.raspadinhaAuth.registrarCheckinHoje = () => {
     const usuario = auth.currentUser;
     if (!usuario) return Promise.resolve();
-    const dia = new Date().getDate();
+    const diaDaSemana = new Date().getDay(); // 0 (domingo) a 6 (sábado)
     return setDoc(
-      doc(db, "usuarios", usuario.uid, "checkins", chaveMesAtual()),
-      { dias: arrayUnion(dia) },
+      doc(db, "usuarios", usuario.uid, "checkins", chaveSemanaAtual()),
+      { dias: arrayUnion(diaDaSemana) },
       { merge: true }
     ).catch((erro) => console.error("Falha ao registrar check-in:", erro));
   };
 
-  window.raspadinhaAuth.buscarCheckinsDoMes = async (mesId) => {
+  window.raspadinhaAuth.buscarCheckinsDaSemana = async (semanaId) => {
     const usuario = auth.currentUser;
     if (!usuario) return [];
-    const snap = await getDoc(doc(db, "usuarios", usuario.uid, "checkins", mesId || chaveMesAtual()));
+    const snap = await getDoc(
+      doc(db, "usuarios", usuario.uid, "checkins", semanaId || chaveSemanaAtual())
+    );
     return snap.exists() ? snap.data().dias || [] : [];
   };
 
