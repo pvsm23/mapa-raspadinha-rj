@@ -2,61 +2,41 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* só o mapa se move; a página em si não rola */
+}
+
 body {
   font-family: system-ui, -apple-system, sans-serif;
   background: #0f172a;
   color: #f1f5f9;
-  margin: 0;
-  padding: 24px;
-  text-align: center;
 }
 
-header h1 {
-  font-size: 1.4rem;
-  margin-bottom: 4px;
+button {
+  font-family: inherit;
 }
 
-#progresso {
-  color: #94a3b8;
-  font-size: 0.95rem;
+.oculto {
+  display: none !important;
 }
 
-#btn-biblioteca {
-  background: #334155;
-  color: #f1f5f9;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  margin-top: 8px;
-}
-
-#btn-biblioteca:hover {
-  background: #475569;
-}
-
-main {
-  margin: 24px 0;
-}
-
-#dica-mapa {
-  color: #94a3b8;
-  font-size: 0.85rem;
-  margin: 0 0 8px;
-}
+/* =========================================================
+   Mapa: único "fundo" da tela, estilo Google Maps. Tudo o
+   resto flutua por cima, fixo, e não se move com o mapa.
+   ========================================================= */
 
 #mapa-viewport {
-  position: relative;
-  width: 100%;
-  height: 70vh;
-  min-height: 320px;
-  max-height: 640px;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
-  border-radius: 12px;
   background: #1e293b;
   touch-action: none;
   cursor: grab;
+  z-index: 1;
 }
 
 #mapa-viewport.arrastando {
@@ -99,41 +79,102 @@ svg#mapa-rj {
   transform: scale(0.97);
 }
 
-#detalhes {
-  background: #1e293b;
-  border-radius: 10px;
-  padding: 16px;
-  max-width: 400px;
-  margin: 0 auto 20px auto;
+.rotulo-municipio {
+  fill: #0f172a;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 0.6px;
+  user-select: none;
 }
 
-#detalhes.oculto {
-  display: none;
+/* =========================================================
+   UI flutuante por cima do mapa
+   ========================================================= */
+
+#barra-topo {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: calc(env(safe-area-inset-left, 0px) + 12px);
+  right: calc(env(safe-area-inset-right, 0px) + 12px);
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none; /* deixa cliques passarem no espaço vazio entre os cartões */
 }
 
-#detalhes button,
-footer button {
-  background: #ef4444;
-  color: white;
+#barra-topo > * {
+  pointer-events: auto;
+}
+
+#cartao-progresso {
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+#cartao-progresso h1 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+#progresso {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 2px 0 0;
+}
+
+#botoes-topo {
+  display: flex;
+  gap: 8px;
+}
+
+#botoes-topo button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(6px);
+  color: #f1f5f9;
+  font-size: 1.2rem;
   cursor: pointer;
-  font-size: 0.9rem;
-  margin-top: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
-#detalhes button:hover,
-footer button:hover {
-  background: #dc2626;
+#botoes-topo button:hover {
+  background: #334155;
 }
 
-footer {
-  margin-top: 30px;
+#dica-mapa {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  color: #cbd5e1;
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(6px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
-/* Modal de raspadinha */
-#modal-raspadinha {
+/* =========================================================
+   Popups (selo/raspadinha, biblioteca, configurações)
+   ========================================================= */
+
+#modal-raspadinha,
+#biblioteca-selos,
+#modal-configuracoes {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.85);
@@ -144,26 +185,32 @@ footer {
   padding: 16px;
 }
 
-#modal-raspadinha.oculto {
-  display: none;
-}
-
-#modal-conteudo {
+#modal-conteudo,
+#biblioteca-conteudo,
+#configuracoes-conteudo {
   position: relative;
   background: #1e293b;
   border-radius: 12px;
   padding: 24px;
-  max-width: 380px;
   width: 100%;
   text-align: center;
 }
 
-#modal-conteudo h2 {
+#modal-conteudo,
+#configuracoes-conteudo {
+  max-width: 380px;
+}
+
+#modal-conteudo h2,
+#biblioteca-conteudo h2,
+#configuracoes-conteudo h2 {
   margin-top: 0;
   font-size: 1.1rem;
 }
 
-#btn-fechar-modal {
+#btn-fechar-modal,
+#btn-fechar-biblioteca,
+#btn-fechar-configuracoes {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -176,7 +223,9 @@ footer {
   padding: 6px;
 }
 
-#btn-fechar-modal:hover {
+#btn-fechar-modal:hover,
+#btn-fechar-biblioteca:hover,
+#btn-fechar-configuracoes:hover {
   color: #f1f5f9;
 }
 
@@ -184,6 +233,12 @@ footer {
   color: #94a3b8;
   font-size: 0.85rem;
   margin-bottom: 0;
+}
+
+#modal-status {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: -4px 0 12px;
 }
 
 .selo-revelado {
@@ -196,54 +251,123 @@ footer {
   border-radius: 50%;
 }
 
-/* Biblioteca de selos */
-#biblioteca-selos {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 16px;
-}
-
-#biblioteca-selos.oculto {
-  display: none;
-}
-
-#biblioteca-conteudo {
-  position: relative;
-  background: #1e293b;
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 720px;
-  width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
-  text-align: center;
-}
-
-#biblioteca-conteudo h2 {
-  margin-top: 0;
-  font-size: 1.1rem;
-}
-
-#btn-fechar-biblioteca {
+/* Menu "⋮" com a opção de desmarcar, escondido por padrão */
+#btn-menu-modal {
   position: absolute;
   top: 8px;
-  right: 8px;
+  left: 8px;
   background: transparent;
   border: none;
   color: #94a3b8;
   font-size: 1.2rem;
   cursor: pointer;
   line-height: 1;
-  padding: 6px;
+  padding: 6px 10px;
 }
 
-#btn-fechar-biblioteca:hover {
+#btn-menu-modal:hover {
   color: #f1f5f9;
+}
+
+#modal-menu {
+  position: absolute;
+  top: 40px;
+  left: 8px;
+  background: #334155;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+#modal-menu button {
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+#modal-menu button:hover {
+  background: #ef4444;
+}
+
+#modal-destinos {
+  text-align: left;
+  margin-top: 14px;
+}
+
+#modal-destinos h3 {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0 0 6px;
+}
+
+#modal-destinos ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#modal-destinos li {
+  font-size: 0.85rem;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+#modal-destinos li strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* Botões de ação dentro dos popups (resetar, desmarcar) */
+#btn-reset-tudo,
+#modal-menu #btn-reset-um {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+#btn-reset-tudo:hover {
+  background: #dc2626;
+}
+
+/* Biblioteca de selos */
+#biblioteca-conteudo {
+  max-width: 720px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+#biblioteca-contador {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 4px 0 8px;
+}
+
+#biblioteca-barra {
+  height: 8px;
+  border-radius: 999px;
+  background: #334155;
+  overflow: hidden;
+}
+
+#biblioteca-barra-preenchida {
+  height: 100%;
+  width: 0%;
+  background: #22c55e;
+  transition: width 0.3s ease;
 }
 
 #biblioteca-grade {
@@ -286,4 +410,13 @@ footer {
 
 .selo-item span {
   line-height: 1.2;
+}
+
+/* Configurações */
+#configuracoes-conteudo {
+  text-align: left;
+}
+
+#configuracoes-conteudo h2 {
+  text-align: center;
 }

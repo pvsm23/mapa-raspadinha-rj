@@ -69,9 +69,29 @@ function escaparAtributo(texto) {
     .replace(/>/g, "&gt;");
 }
 
-const paths = geojson.features
+function centroDoBoundingBox(feature) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const anel of feature.geometry.coordinates) {
+    for (const ponto of anel) {
+      const [x, y] = projetar(ponto);
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  return {
+    x: Number(((minX + maxX) / 2).toFixed(CASAS_DECIMAIS)),
+    y: Number(((minY + maxY) / 2).toFixed(CASAS_DECIMAIS)),
+    largura: maxX - minX,
+  };
+}
+
+const featuresOrdenadas = geojson.features
   .slice()
-  .sort((a, b) => a.properties.name.localeCompare(b.properties.name, "pt-BR"))
+  .sort((a, b) => a.properties.name.localeCompare(b.properties.name, "pt-BR"));
+
+const paths = featuresOrdenadas
   .map((feature) => {
     const codigoIbge = feature.properties.id;
     const nome = feature.properties.name;
@@ -83,9 +103,28 @@ const paths = geojson.features
   })
   .join("\n");
 
+// Rotulo com o nome de cada municipio, centralizado no bounding box.
+// pointer-events="none" faz o clique "atravessar" o texto e cair no
+// path por baixo. Tamanho da fonte varia um pouco com a largura do
+// municipio, para nomes longos em municipios pequenos nao dominarem
+// visualmente o mapa.
+const rotulos = featuresOrdenadas
+  .map((feature) => {
+    const codigoIbge = feature.properties.id;
+    const nome = feature.properties.name;
+    const { x, y, largura } = centroDoBoundingBox(feature);
+    const fonte = Math.max(3.5, Math.min(6, largura / 8));
+    return (
+      `  <text class="rotulo-municipio" x="${x}" y="${y}" ` +
+      `font-size="${fonte.toFixed(1)}" pointer-events="none">` +
+      `${escaparAtributo(nome)}</text>`
+    );
+  })
+  .join("\n");
+
 const svg =
   `<svg id="mapa-rj" viewBox="0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}" ` +
-  `xmlns="http://www.w3.org/2000/svg">\n${paths}\n</svg>\n`;
+  `xmlns="http://www.w3.org/2000/svg">\n${paths}\n${rotulos}\n</svg>\n`;
 
 fs.mkdirSync(path.dirname(SAIDA), { recursive: true });
 fs.writeFileSync(SAIDA, svg, "utf8");

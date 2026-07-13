@@ -1,17 +1,19 @@
 /* =========================================================
    Lógica do Mapa Raspadinha
-   - Clique num município não visitado -> abre modal de raspadinha
+   - Clique num município não visitado -> abre popup de raspadinha
      (motor em scratch-card.js); ao raspar o suficiente, marca
      como "visitado".
    - Clique num município já visitado -> mostra de novo o selo já
-     revelado (sem precisar raspar), no mesmo modal.
+     revelado (sem precisar raspar), no mesmo popup, com status,
+     destinos turísticos (data/destinos.json) e opção de desmarcar
+     escondida atrás do menu "⋮".
    - Biblioteca de selos: grade com todos os municípios, cinza os
-     não visitados e coloridos os já raspados; clicar num item abre
-     o mesmo fluxo de sempre (raspar ou visualizar).
+     não visitados e coloridos os já raspados, com contador e barra
+     de progresso; clicar num item abre o mesmo fluxo de sempre.
+   - Configurações: popup com o botão de resetar o mapa inteiro.
    - Estado salvo no LocalStorage (chave por código IBGE)
    - Estrutura já pensada para, mais adiante, virar:
        * localStorage -> Firestore (por usuário logado)
-       * cada município -> lista de destinos
        * placeholder gerado no canvas -> selo ilustrado real
    ========================================================= */
 
@@ -24,6 +26,9 @@ const STORAGE_KEY = "scratchMapRJ_v1";
 // }
 
 let estadoMapa = {};
+let destinosPorMunicipio = {};
+let municipioSelecionadoId = null;
+let mapaFoiArrastado = false;
 
 // Registra o service worker (PWA instalável no celular e no PC)
 if ("serviceWorker" in navigator) {
@@ -39,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
   aplicarEstadoNoSVG();
   atualizarContador();
   inicializarPanZoomDoMapa();
+  carregarDestinos();
 
   const municipios = document.querySelectorAll(".municipio");
   municipios.forEach((path) => {
@@ -52,6 +58,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-reset-um")
     .addEventListener("click", desmarcarMunicipioAtual);
+
+  document
+    .getElementById("btn-menu-modal")
+    .addEventListener("click", (evento) => {
+      evento.stopPropagation();
+      document.getElementById("modal-menu").classList.toggle("oculto");
+    });
 
   document
     .getElementById("btn-fechar-modal")
@@ -77,10 +90,37 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", (evento) => {
       if (evento.target.id === "biblioteca-selos") fecharBibliotecaSelos();
     });
+
+  document
+    .getElementById("btn-configuracoes")
+    .addEventListener("click", abrirConfiguracoes);
+
+  document
+    .getElementById("btn-fechar-configuracoes")
+    .addEventListener("click", fecharConfiguracoes);
+
+  document
+    .getElementById("modal-configuracoes")
+    .addEventListener("click", (evento) => {
+      if (evento.target.id === "modal-configuracoes") fecharConfiguracoes();
+    });
 });
 
-let municipioSelecionadoId = null;
-let mapaFoiArrastado = false;
+/**
+ * Carrega data/destinos.json (pontos turísticos por município).
+ * Hoje só tem alguns municípios preenchidos; os demais simplesmente
+ * não aparecem na lista de destinos do popup.
+ */
+function carregarDestinos() {
+  fetch("data/destinos.json")
+    .then((resposta) => (resposta.ok ? resposta.json() : {}))
+    .then((dados) => {
+      destinosPorMunicipio = dados;
+    })
+    .catch((erro) => {
+      console.error("Não foi possível carregar data/destinos.json:", erro);
+    });
+}
 
 /**
  * Controla arrastar (mover) e zoom do mapa principal:
@@ -245,6 +285,7 @@ function aoClicarMunicipio(path) {
  * tanto pelo clique no mapa quanto pela biblioteca de selos.
  */
 function abrirSeloPorId(id, nome) {
+  municipioSelecionadoId = id;
   const jaVisitado = estadoMapa[id]?.visitado;
 
   if (jaVisitado) {
@@ -266,11 +307,21 @@ function marcarComoVisitado(id, nome) {
   salvarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
-  mostrarDetalhes(id, nome);
 }
 
 /**
- * Abre o modal com a raspadinha (canvas) para o município escolhido.
+ * Prepara o popup do zero: esconde o menu "⋮", limpa status/destinos
+ * e mostra o nome do município. Chamado antes de abrir tanto a
+ * raspadinha quanto a visualização de um selo já revelado.
+ */
+function prepararModal(nome) {
+  document.getElementById("modal-municipio-nome").textContent = nome;
+  document.getElementById("modal-menu").classList.add("oculto");
+  document.getElementById("modal-raspadinha").classList.remove("oculto");
+}
+
+/**
+ * Abre o popup com a raspadinha (canvas) para o município escolhido.
  * Ao raspar o suficiente, marca como visitado automaticamente.
  *
  * Usa o selo real em assets/img/selos/<codigo-ibge>.png (colorido) e
@@ -280,10 +331,11 @@ function marcarComoVisitado(id, nome) {
  * em código) para os selos reais passarem a valer.
  */
 function abrirModalRaspadinha(id, nome) {
-  document.getElementById("modal-municipio-nome").textContent = nome;
+  prepararModal(nome);
+  document.getElementById("modal-status").textContent = "";
   document.getElementById("modal-instrucao").textContent =
     "Raspe com o dedo ou o mouse para revelar!";
-  document.getElementById("modal-raspadinha").classList.remove("oculto");
+  mostrarDestinos(id);
 
   const caminhoColorido = `assets/img/selos/${id}.png`;
   const caminhoCapa = `assets/img/selos/${id}fundo.png`;
@@ -295,6 +347,8 @@ function abrirModalRaspadinha(id, nome) {
       imageUrlCapa,
       onComplete: () => {
         marcarComoVisitado(id, nome);
+        document.getElementById("modal-status").textContent =
+          `Visitado em: ${new Date().toLocaleString("pt-BR")}`;
         setTimeout(fecharModalRaspadinha, 900);
       },
     });
@@ -312,15 +366,19 @@ function abrirModalRaspadinha(id, nome) {
 }
 
 /**
- * Mostra de novo, dentro do mesmo modal, o selo de um município já
- * visitado — sem precisar raspar de novo, já revelado por completo.
+ * Mostra de novo, dentro do mesmo popup, o selo de um município já
+ * visitado — sem precisar raspar de novo, já revelado por completo,
+ * junto com status/data e a opção de desmarcar (atrás do menu "⋮").
  */
 function visualizarSeloRevelado(id, nome) {
-  mostrarDetalhes(id, nome);
+  prepararModal(nome);
 
-  document.getElementById("modal-municipio-nome").textContent = nome;
-  document.getElementById("modal-instrucao").textContent = "Selo já coletado ✅";
-  document.getElementById("modal-raspadinha").classList.remove("oculto");
+  const dados = estadoMapa[id];
+  document.getElementById("modal-status").textContent = dados?.dataVisita
+    ? `✅ Visitado em: ${new Date(dados.dataVisita).toLocaleString("pt-BR")}`
+    : "✅ Visitado";
+  document.getElementById("modal-instrucao").textContent = "";
+  mostrarDestinos(id);
 
   const corpo = document.getElementById("scratch-modal-body");
   corpo.innerHTML = "";
@@ -333,6 +391,35 @@ function visualizarSeloRevelado(id, nome) {
     img.className = "selo-revelado";
     corpo.appendChild(img);
   });
+}
+
+/**
+ * Renderiza a lista de pontos turísticos do município (se existir
+ * em data/destinos.json) dentro do popup.
+ */
+function mostrarDestinos(id) {
+  const container = document.getElementById("modal-destinos");
+  const destino = destinosPorMunicipio[id];
+
+  if (!destino || !destino.destinos?.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const itens = destino.destinos
+    .map(
+      (d) =>
+        `<li><strong>${escaparHtml(d.nome)}</strong>${escaparHtml(d.descricao)}</li>`
+    )
+    .join("");
+
+  container.innerHTML = `<h3>Pontos turísticos</h3><ul>${itens}</ul>`;
+}
+
+function escaparHtml(texto) {
+  const div = document.createElement("div");
+  div.textContent = texto;
+  return div.innerHTML;
 }
 
 const cacheExisteImagem = {};
@@ -360,16 +447,18 @@ function carregarImagem(src) {
 }
 
 /**
- * Fecha o modal de raspadinha e limpa o canvas.
+ * Fecha o popup de raspadinha/selo e limpa o canvas.
  */
 function fecharModalRaspadinha() {
   document.getElementById("modal-raspadinha").classList.add("oculto");
+  document.getElementById("modal-menu").classList.add("oculto");
   document.getElementById("scratch-modal-body").innerHTML = "";
 }
 
 /**
  * Abre a biblioteca de selos: uma grade com todos os municípios,
- * em cinza os ainda não visitados e coloridos os já raspados.
+ * em cinza os ainda não visitados e coloridos os já raspados, com
+ * contador e barra de progresso no topo.
  * Clicar num item reaproveita a mesma lógica de abrir o selo.
  */
 function abrirBibliotecaSelos() {
@@ -379,6 +468,12 @@ function abrirBibliotecaSelos() {
   const municipios = Array.from(document.querySelectorAll(".municipio"))
     .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  const totalVisitados = municipios.filter((m) => estadoMapa[m.id]?.visitado).length;
+  document.getElementById("biblioteca-contador").textContent =
+    `${totalVisitados} / ${municipios.length} selos coletados`;
+  document.getElementById("biblioteca-barra-preenchida").style.width =
+    `${(totalVisitados / municipios.length) * 100}%`;
 
   municipios.forEach(({ id, nome }) => {
     const visitado = !!estadoMapa[id]?.visitado;
@@ -414,6 +509,14 @@ function abrirBibliotecaSelos() {
 
 function fecharBibliotecaSelos() {
   document.getElementById("biblioteca-selos").classList.add("oculto");
+}
+
+function abrirConfiguracoes() {
+  document.getElementById("modal-configuracoes").classList.remove("oculto");
+}
+
+function fecharConfiguracoes() {
+  document.getElementById("modal-configuracoes").classList.add("oculto");
 }
 
 /**
@@ -498,37 +601,21 @@ function atualizarContador() {
 }
 
 /**
- * Mostra o painel com nome, status e data da visita.
- */
-function mostrarDetalhes(id, nome) {
-  municipioSelecionadoId = id;
-  const dados = estadoMapa[id];
-
-  const painel = document.getElementById("detalhes");
-  painel.classList.remove("oculto");
-
-  document.getElementById("detalhes-nome").textContent = nome;
-  document.getElementById("detalhes-status").textContent = dados?.visitado
-    ? "Status: ✅ Visitado"
-    : "Status: ⬜ Não visitado";
-
-  document.getElementById("detalhes-data").textContent = dados?.dataVisita
-    ? `Visitado em: ${new Date(dados.dataVisita).toLocaleString("pt-BR")}`
-    : "";
-}
-
-/**
- * Desmarca o município que está atualmente selecionado no painel.
+ * Desmarca o município atualmente aberto no popup, depois de
+ * confirmar com o usuário, e fecha o popup em seguida.
  */
 function desmarcarMunicipioAtual() {
   if (!municipioSelecionadoId) return;
+
+  const confirmar = confirm("Tem certeza que deseja desmarcar este município?");
+  if (!confirmar) return;
 
   delete estadoMapa[municipioSelecionadoId];
   salvarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
-  document.getElementById("detalhes").classList.add("oculto");
   municipioSelecionadoId = null;
+  fecharModalRaspadinha();
 }
 
 /**
@@ -544,7 +631,7 @@ function resetarTudo() {
   salvarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
-  document.getElementById("detalhes").classList.add("oculto");
+  fecharConfiguracoes();
 }
 
 /* ---------- LocalStorage ---------- */
