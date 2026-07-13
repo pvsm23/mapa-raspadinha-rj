@@ -21,6 +21,7 @@ App web (PWA) onde o usuário "raspa" os municípios do Rio de Janeiro no mapa c
 ├── data/
 │   ├── rj-municipios.geojson  # fonte geográfica dos municípios do RJ
 │   ├── destinos.json          # pontos turísticos por município
+│   ├── curiosidades.json      # curiosidade/história por município (reservado, vazio)
 │   ├── regioes.json           # 8 regiões de governo do RJ (CEPERJ) -> códigos IBGE
 │   └── regioes-resumo.json    # resumo em texto de cada região (reservado, vazio)
 ├── manifest.json          # manifesto do PWA (instalável)
@@ -57,7 +58,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **Layout tela cheia (estilo Google Maps)**: o mapa é o único "fundo" (`position: fixed`, ocupa a tela toda); toda a UI (barra de progresso, botões de biblioteca/configurações, popups) flutua por cima, fixa, sem se mover com o pan/zoom do mapa. Nomes dos municípios aparecem direto no mapa (`tools/geojson-to-svg.js` gera um `<text>` por município). O popup do selo virou o único lugar para ver detalhes/status/data/destinos turísticos e desmarcar (atrás do menu "⋮", com confirmação) — a antiga seção `#detalhes` foi removida. Novo botão de Configurações (⚙️) reúne o reset geral do mapa.
 - **Login com e-mail/senha (opcional pra navegar, obrigatório pra interagir) + Analytics**: `js/firebase-config.js` já tem as chaves reais do projeto Firebase `mapa-raspadinha-rj`. Mexer no mapa (arrastar/zoom) não exige login; só pedir login (`exigirLogin()` em `script.js`) quando o usuário tenta abrir um município/região, a biblioteca ou as configurações. No primeiro login, um popup pede um apelido (salvo no Firestore, coleção `usuarios/{uid}`). Sessão dura 30 dias de **inatividade** (renova a cada acesso; só desloga de verdade depois de 30 dias sem abrir o app — ver `CHAVE_ULTIMA_ATIVIDADE` em `js/auth.js`). Login é por e-mail/senha (não Google) porque o domínio do GitHub Pages provavelmente não estava nos "domínios autorizados" do Firebase, exigência específica de provedores OAuth. Números de acesso aparecem em Firebase Console → Analytics (ou [analytics.google.com](https://analytics.google.com), propriedade `G-C5SBMCKN4H`).
   - **Passo pendente**: Console → Authentication → Sign-in method → **Email/senha → Enable** (sem isso, login e cadastro dão erro `auth/operation-not-allowed` — já testei e é exatamente esse o estado atual).
-  - **Regra de segurança do Firestore** (Console → Firestore Database → Regras) — sem isso, salvar o apelido falha (modo produção bloqueia tudo por padrão). `read` fica liberado pra qualquer autenticado (não só o dono) porque a checagem de "apelido já em uso" (ver abaixo) precisa poder consultar os apelidos de outros usuários; `write` continua só no próprio documento:
+  - **Regra de segurança do Firestore** (Console → Firestore Database → Regras) — sem isso, salvar o apelido (e todo o resto: ranking, amigos, check-in, convites) falha, porque o modo produção bloqueia tudo por padrão. `read` do documento principal fica liberado pra qualquer autenticado (não só o dono) porque a checagem de "apelido já em uso", o Ranking e a busca de Amigos por e-mail/apelido precisam poder consultar os dados de outros usuários; `write` do documento principal continua só no próprio dono. As subcoleções (`convites`, `pedidosAmizade`, `amigos`, `checkins`) usam a mesma ideia — cada uma explicada com um comentário na regra:
     ```
     rules_version = '2';
     service cloud.firestore {
@@ -65,6 +66,43 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
         match /usuarios/{uid} {
           allow read: if request.auth != null;
           allow write: if request.auth != null && request.auth.uid == uid;
+
+          // Convite de amigo -> raspadinha brilhante garantida: quem
+          // acabou de criar conta grava aqui (no perfil de quem
+          // convidou), com o PRÓPRIO uid como id do documento -- não
+          // dá pra "farmar" 2 créditos pro mesmo convidante com a
+          // mesma conta. Só o dono (convidante) lê/marca como
+          // resgatado.
+          match /convites/{novoUid} {
+            allow create: if request.auth != null && request.auth.uid == novoUid;
+            allow read, update: if request.auth != null && request.auth.uid == uid;
+          }
+
+          // Pedido de amizade: quem envia grava na caixa de entrada
+          // de quem recebe, com o PRÓPRIO uid como id (pra dar pra
+          // cancelar depois). Só o dono lê a lista; dono OU remetente
+          // podem apagar (aceitar/recusar OU cancelar o pedido).
+          match /pedidosAmizade/{remetenteUid} {
+            allow create, delete: if request.auth != null
+              && (request.auth.uid == uid || request.auth.uid == remetenteUid);
+            allow read: if request.auth != null && request.auth.uid == uid;
+          }
+
+          // Lista de amigos: cada lado da amizade só pode escrever a
+          // entrada que tem O PRÓPRIO uid como id -- é assim que dá
+          // pra ficar mútuo (eu insiro "amigoX" na minha lista E
+          // insiro "eu" na lista do amigoX) sem abrir brecha pra
+          // inserir terceiros na lista de outra pessoa.
+          match /amigos/{amigoUid} {
+            allow create, delete: if request.auth != null
+              && (request.auth.uid == uid || request.auth.uid == amigoUid);
+            allow read: if request.auth != null && request.auth.uid == uid;
+          }
+
+          // Check-in mensal: só o dono lê/escreve os próprios dias.
+          match /checkins/{mesId} {
+            allow read, write: if request.auth != null && request.auth.uid == uid;
+          }
         }
       }
     }
@@ -80,6 +118,19 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **Botão de compartilhar**: troca o antigo botão de perfil (que só duplicava a função de Configurações) por um de compartilhar o link do app (Web Share API no celular, copia o link como alternativa no desktop).
 - **Placeholder do recurso PRO**: `ehUsuarioPro()` e `baixarDadosOffline()` em `js/script.js` são stubs — sempre retornam "não é PRO" / mostram um aviso "em construção". O botão "Baixar dados offline" já existe em Configurações, mas desabilitado, esperando alguma forma de marcar quem pagou (ex: campo no Firestore).
 - **Aviso de instalar o app**: toda vez que o site abre num navegador (não dentro do app já instalado), um aviso flutuante no canto inferior esquerdo sugere instalar o Desbrava (`#aviso-instalar-pwa`). No Chrome/Edge/Android, que suportam instalar com um clique, aparece um botão "⬇️ Instalar" que já dispara o prompt nativo do navegador (evento `beforeinstallprompt`, capturado em `js/script.js`). Nos demais casos (ex: iOS Safari, que não expõe esse evento), aparece um botão "Como instalar" com instruções manuais — específicas pro iOS ("Compartilhar → Adicionar à Tela de Início") ou genéricas pro Chrome (ícone de instalar na barra de endereço, ou menu "⋮" → "Instalar Desbrava"). O aviso não aparece se: o app já estiver rodando instalado (`pwaJaInstalado()`, checa `display-mode: standalone`/`navigator.standalone`); já tiver sido instalado antes por esse navegador (flag `desbrava_pwa_instalado` no localStorage, gravada no evento `appinstalled`); ou o navegador conseguir confirmar sozinho que já está instalado mesmo numa aba comum (`navigator.getInstalledRelatedApps()`, via `related_applications` no `manifest.json` — só existe no Chrome/Edge/Android). **Limitação conhecida**: no Safari/iOS não existe nenhuma API pra saber pela web se o site já foi "Adicionado à Tela de Início" antes — lá o aviso pode reaparecer mesmo já instalado, até a pessoa instalar de fato (o que muda o `display-mode` para `standalone` e passa a contar).
+
+## Gamificação
+
+Tudo abaixo mora em **Configurações → Social & Conquistas**, num "hub" de botões que abrem cada modal — pra não lotar a barra de topo flutuante com muitos ícones.
+
+- **Apelido nunca em formato de e-mail**: `salvarApelido` (`js/auth.js`) rejeita qualquer apelido que pareça um e-mail (`pareceEmail()`, regex simples), pra não confundir com o e-mail de login nem vazar sem querer o e-mail de alguém pelo Ranking/busca de Amigos (que mostram o apelido publicamente). Se a pessoa fechar o popup de escolher apelido (primeiro login) sem confirmar nada, em vez de deixar sem apelido (obrigatório pra tudo isso funcionar), gera sozinho um `userNNNNNN` aleatório e salva (`fecharModalApelidoComAleatorio` em `js/script.js`, com nova tentativa automática no raro caso de colisão).
+- **Ranking online** (`buscarRanking`/`buscarMinhaPosicao` em `js/auth.js`, `abrirRanking` em `js/script.js`): mostra o top 50 de quem visitou mais municípios, por apelido, com a posição do usuário atual destacada mesmo se estiver fora do top 50. Alimentado pelo campo `municipiosVisitadosCount` no documento de cada usuário, sincronizado (`sincronizarProgressoOnline`) toda vez que o progresso muda (raspar, desmarcar, resetar) e ao logar.
+- **Conquistas** (`abrirConquistas` em `js/script.js`): 5 marcos — 10%, 25%, 50%, 75% e 100% dos municípios do RJ, cada porcentagem **arredondada pra cima** (`Math.ceil`, ex: 10% de 92 = 10, não 9) — cada um com sua própria raspadinha (reaproveita `scratch-card.js`), que só fica disponível pra raspar quando o marco é atingido; até lá, mostra cadeado e uma barra de progresso "X / Y municípios". Estado local (`scratchMapRJ_conquistas_v1`); imagens em `assets/img/conquistas/<chave>.png`/`<chave>fundo.png` (cai no mesmo placeholder gerado na hora enquanto não existirem).
+- **Amigos** (`abrirAmigos` em `js/script.js`): busca por e-mail exato ou apelido exato, envia pedido de amizade, aceita/recusa pedidos recebidos e lista os amigos atuais com quantos municípios cada um já visitou (pra comparar progresso). Amizade é sempre mútua (aceitar grava a entrada dos dois lados numa `writeBatch`).
+- **Check-in mensal** (`abrirCheckin` em `js/script.js`, `registrarCheckinHoje` em `js/auth.js`): toda vez que loga, marca o dia atual num calendário do mês corrente (`usuarios/{uid}/checkins/{AAAA-MM}`); o calendário reseta sozinho a cada mês novo (chave nova).
+- **Raspadinha brilhante** (`decidirBrilhante`/`marcarComoVisitado` em `js/script.js`, efeito visual em `js/scratch-card.js: adicionarBrilho`): 5% de chance de virar "brilhante" (anel de partículas girando + brilho pulsante) **só na primeira vez que a sorte de cada município é decidida** — depois disso, o resultado (brilhante ou não) fica gravado pro município (`chanceDecidida`/`brilhante` no estado local) e nunca muda, mesmo desmarcando e raspando de novo. Municípios raspados **antes** dessa funcionalidade existir não têm `chanceDecidida` ainda — ganham essa decisão na próxima vez que forem raspados (por isso é preciso desmarcar e raspar de novo pra "tentar a sorte" uma única vez). A biblioteca de selos marca os municípios brilhantes com uma borda dourada e um ✨.
+- **Convite de amigo → raspadinha brilhante garantida**: o botão de compartilhar (🔗) inclui `?convite=<uid>` no link quando logado. Se alguém cria conta por esse link, quem convidou ganha o direito a UMA raspadinha brilhante garantida na próxima vez que raspar (`usuarios/{convidante}/convites/{novoUid}`, ver `creditarConviteSeExistir`/`consumirBoostBrilhante` em `js/auth.js`) — pode ser raspando um município novo ou desmarcando e raspando um que já tinha. Enquanto o boost estiver pendente, um aviso flutuante fino no topo da tela (`#aviso-brilhante-pendente`) avisa "você tem uma raspadinha brilhante te esperando".
+- **Curiosidade do município** (`mostrarCuriosidade` em `js/script.js`, dados em `data/curiosidades.json`): só aparece **depois** de raspar o selo daquele município (na tela de "selo já revelado"). Arquivo criado vazio para os 92 municípios — o usuário vai preencher o texto de cada um depois.
 
 ## Rodando localmente
 

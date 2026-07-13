@@ -22,10 +22,22 @@
 
 const STORAGE_KEY = "scratchMapRJ_v1";
 const STORAGE_KEY_REGIOES = "scratchMapRJ_regioes_v1";
+const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
 
 // Estrutura salva no localStorage:
 // {
-//   "3303302": { visitado: true, dataVisita: "2026-07-12T14:22:00.000Z" },
+//   "3303302": {
+//     visitado: true,
+//     dataVisita: "2026-07-12T14:22:00.000Z",
+//     // "brilhante"/"chanceDecidida" -- ver decidirBrilhante(): so
+//     // existem em municipios raspados a partir da raspadinha
+//     // brilhante entrar no ar. Municipios raspados antes disso nao
+//     // tem chanceDecidida (fica undefined/falso), entao ganham UMA
+//     // chance de decidir a sorte se a pessoa desmarcar e raspar de
+//     // novo (ver desmarcarMunicipioAtual).
+//     brilhante: false,
+//     chanceDecidida: true,
+//   },
 //   "3304557": { visitado: false }
 // }
 
@@ -33,10 +45,25 @@ let estadoMapa = {};
 // Estado do mega-selo de cada regiao (independente de estadoMapa):
 // { "serrana": { revelado: true, dataRevelado: "..." } }
 let estadoRegioes = {};
+// Estado das raspadinhas de conquista (10/25/50/75/100% do mapa):
+// { "10pct": { revelado: true, dataRevelado: "..." } }
+let estadoConquistas = {};
 let destinosPorMunicipio = {};
+let curiosidadesPorMunicipio = {};
 let municipioSelecionadoId = null;
 let regiaoSelecionadaId = null;
 let mapaFoiArrastado = false;
+
+// Guarda quem convidou (?convite=uid no link compartilhado) ate a
+// conta ser criada de verdade -- soh entao js/auth.js credita a
+// raspadinha brilhante garantida pra quem convidou (ver
+// creditarConviteSeExistir em js/auth.js).
+(function detectarLinkDeConvite() {
+  const conviteUid = new URLSearchParams(window.location.search).get("convite");
+  if (conviteUid) {
+    localStorage.setItem("desbrava_convite_pendente", conviteUid);
+  }
+})();
 
 // Registra o service worker (PWA instalável no celular e no PC)
 if ("serviceWorker" in navigator) {
@@ -74,11 +101,13 @@ window.addEventListener("appinstalled", () => {
 document.addEventListener("DOMContentLoaded", () => {
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
+  estadoConquistas = carregarEstadoConquistas();
   construirMapaDeRegioes();
   aplicarEstadoNoSVG();
   atualizarContador();
   inicializarPanZoomDoMapa();
   carregarDestinos();
+  carregarCuriosidades();
   carregarRegioesInfo();
   carregarResumosRegioes();
   preCarregarSelos();
@@ -178,6 +207,9 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("keydown", (evento) => {
       if (evento.key === "Enter") confirmarApelido();
     });
+  document
+    .getElementById("btn-fechar-apelido")
+    .addEventListener("click", fecharModalApelidoComAleatorio);
 
   document
     .getElementById("btn-salvar-apelido-config")
@@ -192,6 +224,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
+  document.addEventListener("boosts-brilhantes-mudou", atualizarAvisoBrilhantePendente);
+
+  // ---- Ranking ----
+  document
+    .getElementById("btn-abrir-ranking")
+    .addEventListener("click", () => exigirLogin(abrirRanking));
+  document.getElementById("btn-fechar-ranking").addEventListener("click", fecharRanking);
+  document.getElementById("modal-ranking").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-ranking") fecharRanking();
+  });
+
+  // ---- Conquistas ----
+  document
+    .getElementById("btn-abrir-conquistas")
+    .addEventListener("click", () => exigirLogin(abrirConquistas));
+  document.getElementById("btn-fechar-conquistas").addEventListener("click", fecharConquistas);
+  document.getElementById("modal-conquistas").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-conquistas") fecharConquistas();
+  });
+
+  // ---- Amigos ----
+  document
+    .getElementById("btn-abrir-amigos")
+    .addEventListener("click", () => exigirLogin(abrirAmigos));
+  document.getElementById("btn-fechar-amigos").addEventListener("click", fecharAmigos);
+  document.getElementById("modal-amigos").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-amigos") fecharAmigos();
+  });
+  document.getElementById("btn-buscar-amigo").addEventListener("click", buscarAmigoPorTexto);
+  document.getElementById("input-busca-amigo").addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") buscarAmigoPorTexto();
+  });
+
+  // ---- Check-in mensal ----
+  document
+    .getElementById("btn-abrir-checkin")
+    .addEventListener("click", () => exigirLogin(abrirCheckin));
+  document.getElementById("btn-fechar-checkin").addEventListener("click", fecharCheckin);
+  document.getElementById("modal-checkin").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-checkin") fecharCheckin();
+  });
 
   document.getElementById("btn-instalar-pwa").addEventListener("click", instalarPwa);
   document
@@ -229,13 +302,21 @@ function fecharTelaLogin() {
 
 /**
  * Compartilha o link do app (Web Share API no celular; copia o link
- * como alternativa no desktop/navegadores sem suporte).
+ * como alternativa no desktop/navegadores sem suporte). Se a pessoa
+ * estiver logada, o link leva um "?convite=uid" -- se alguém criar
+ * conta por esse link, quem convidou ganha uma raspadinha brilhante
+ * garantida (ver decidirBrilhante/creditarConviteSeExistir).
  */
 function compartilharApp() {
+  const url = new URL(window.location.href);
+  url.search = "";
+  const uid = window.raspadinhaAuth?.usuarioAtual?.uid;
+  if (uid) url.searchParams.set("convite", uid);
+
   const dados = {
     title: "Desbrava",
     text: "Desbrava — raspe o mapa do Rio de Janeiro conforme visita cada município!",
-    url: window.location.href,
+    url: url.toString(),
   };
 
   if (navigator.share) {
@@ -461,11 +542,27 @@ function atualizarUiDeConta(detalhe) {
     status.textContent = `Conectado como ${apelido} (${usuario.email})`;
     document.getElementById("dados-email").textContent = `E-mail: ${usuario.email}`;
     document.getElementById("input-apelido-config").value = apelido;
+
+    sincronizarProgressoOnline();
+    window.raspadinhaAuth.registrarCheckinHoje();
   } else {
     status.textContent = "Você não está conectado.";
     document.getElementById("dados-email").textContent = "";
     document.getElementById("input-apelido-config").value = "";
+    atualizarAvisoBrilhantePendente();
   }
+}
+
+/**
+ * Envia pro Firestore quantos municípios já foram visitados —
+ * alimenta o Ranking online (ver abrirRanking). Silencioso: se
+ * falhar, não atrapalha nada no mapa (só fica sem contar no ranking
+ * até a próxima sincronização).
+ */
+function sincronizarProgressoOnline() {
+  if (!window.raspadinhaAuth?.usuarioAtual) return;
+  const visitados = Object.values(estadoMapa).filter((m) => m.visitado).length;
+  window.raspadinhaAuth.sincronizarProgresso(visitados);
 }
 
 /**
@@ -529,6 +626,31 @@ function confirmarApelido() {
 }
 
 /**
+ * Fecha o popup de escolher apelido sem a pessoa confirmar nada — em
+ * vez de deixar sem apelido (obrigatório pra aparecer no ranking e
+ * na busca de amigos), gera um "userNNNNNN" aleatório e salva
+ * sozinho. Tenta de novo com outro número no raro caso de colisão
+ * com um apelido que já existe.
+ */
+async function fecharModalApelidoComAleatorio() {
+  document.getElementById("modal-apelido").classList.add("oculto");
+
+  for (let tentativa = 0; tentativa < 5; tentativa++) {
+    const candidato = `user${Math.floor(100000 + Math.random() * 900000)}`;
+    try {
+      await window.raspadinhaAuth.salvarApelido(candidato);
+      return;
+    } catch (erro) {
+      if (erro?.code !== "apelido/em-uso") {
+        console.error("Falha ao gerar apelido aleatório:", erro);
+        return;
+      }
+      // colidiu com um apelido existente -- tenta outro número
+    }
+  }
+}
+
+/**
  * TODO(PRO): stub do futuro recurso de baixar os dados (selos e
  * destinos) para uso offline, restrito a assinantes PRO. O botão já
  * fica desabilitado no HTML (ver #btn-baixar-offline) até isso
@@ -565,6 +687,23 @@ function carregarDestinos() {
     })
     .catch((erro) => {
       console.error("Não foi possível carregar data/destinos.json:", erro);
+    });
+}
+
+/**
+ * Carrega data/curiosidades.json (história/curiosidade de cada
+ * município, liberada só depois de raspar o selo — ver
+ * mostrarCuriosidade). Vazio até o usuário preencher.
+ */
+function carregarCuriosidades() {
+  fetch("data/curiosidades.json")
+    .then((resposta) => (resposta.ok ? resposta.json() : {}))
+    .then((dados) => {
+      curiosidadesPorMunicipio = dados;
+    })
+    .catch(() => {
+      // Arquivo ainda nao existe/preenchido -- sem problema, so nao
+      // mostra curiosidade nenhuma.
     });
 }
 
@@ -853,16 +992,44 @@ function abrirSeloPorId(id, nome) {
 
 /**
  * Marca um município como visitado agora, salva e atualiza a UI.
+ * `brilhante` já vem decidido por decidirBrilhante() — essa função só
+ * persiste o resultado, nunca sorteia nada sozinha.
  */
-function marcarComoVisitado(id, nome) {
+function marcarComoVisitado(id, nome, brilhante) {
   estadoMapa[id] = {
+    ...estadoMapa[id],
     visitado: true,
     dataVisita: new Date().toISOString(),
+    brilhante: !!brilhante,
+    chanceDecidida: true,
   };
 
   salvarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
+  sincronizarProgressoOnline();
+  atualizarProgressoConquistas();
+}
+
+/**
+ * Decide se a raspagem que está terminando agora é "brilhante"
+ * (5% de chance), mas só na PRIMEIRA vez que a sorte desse município
+ * é decidida:
+ * - Se já tinha sido decidida antes (chanceDecidida=true), repete o
+ *   mesmo resultado de sempre — desmarcar e raspar de novo não dá
+ *   uma segunda chance.
+ * - Municípios raspados ANTES dessa funcionalidade existir não têm
+ *   chanceDecidida (undefined) — ganham a decisão na primeira vez que
+ *   forem raspados de novo (por isso é preciso desmarcar pra tentar).
+ * - Se houver uma raspadinha brilhante garantida por convite
+ *   pendente (ver js/auth.js: consumirBoostBrilhante), ela tem
+ *   prioridade sobre o sorteio aleatório.
+ */
+function decidirBrilhante(id) {
+  const anterior = estadoMapa[id];
+  if (anterior?.chanceDecidida) return !!anterior.brilhante;
+  if (window.raspadinhaAuth?.consumirBoostBrilhante()) return true;
+  return Math.random() < 0.05;
 }
 
 /**
@@ -904,10 +1071,13 @@ function abrirModalRaspadinha(id, nome) {
       imageUrl,
       imageUrlCapa,
       onComplete: () => {
-        marcarComoVisitado(id, nome);
-        document.getElementById("modal-status").textContent =
-          `Visitado em: ${new Date().toLocaleString("pt-BR")}`;
-        setTimeout(fecharModalRaspadinha, 900);
+        const brilhante = decidirBrilhante(id);
+        marcarComoVisitado(id, nome, brilhante);
+        document.getElementById("modal-status").textContent = brilhante
+          ? `✨ Raspadinha BRILHANTE! Visitado em: ${new Date().toLocaleString("pt-BR")}`
+          : `Visitado em: ${new Date().toLocaleString("pt-BR")}`;
+        setTimeout(fecharModalRaspadinha, brilhante ? 1800 : 900);
+        return brilhante;
       },
     });
   };
@@ -937,6 +1107,7 @@ function visualizarSeloRevelado(id, nome) {
     : "✅ Visitado";
   document.getElementById("modal-instrucao").textContent = "";
   mostrarDestinos(id);
+  mostrarCuriosidade(id);
 
   const corpo = document.getElementById("scratch-modal-body");
   mostrarSpinnerGrande(corpo, true);
@@ -944,12 +1115,31 @@ function visualizarSeloRevelado(id, nome) {
   const caminhoColorido = `assets/img/selos/${id}.png`;
   carregarImagem(caminhoColorido).then((existeColorido) => {
     corpo.innerHTML = "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "selo-revelado-wrapper";
     const img = document.createElement("img");
     img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(id, nome);
     img.alt = nome;
     img.className = "selo-revelado";
-    corpo.appendChild(img);
+    wrapper.appendChild(img);
+    if (dados?.brilhante) adicionarBrilho(wrapper);
+    corpo.appendChild(wrapper);
   });
+}
+
+/**
+ * Mostra a curiosidade/história do município (data/curiosidades.json)
+ * -- só existe pra ver DEPOIS de raspar o selo (por isso só é chamada
+ * daqui, na visualização de um município já visitado). Enquanto o
+ * usuário não tiver enviado o texto de um município, mostra um
+ * espaço reservado.
+ */
+function mostrarCuriosidade(id) {
+  const container = document.getElementById("modal-curiosidade");
+  const texto = curiosidadesPorMunicipio[id];
+  container.innerHTML = texto
+    ? `<h3>Curiosidade</h3><p>${escaparHtml(texto)}</p>`
+    : `<h3>Curiosidade</h3><p class="curiosidade-vazia">Em breve, uma curiosidade sobre este município.</p>`;
 }
 
 /**
@@ -1088,11 +1278,12 @@ function abrirBibliotecaSelos() {
 
   municipios.forEach(({ id, nome }) => {
     const visitado = !!estadoMapa[id]?.visitado;
+    const brilhante = visitado && !!estadoMapa[id]?.brilhante;
 
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "selo-item";
-    item.title = nome;
+    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
+    item.title = brilhante ? `${nome} ✨ (raspadinha brilhante!)` : nome;
     item.addEventListener("click", () => {
       fecharBibliotecaSelos();
       abrirSeloPorId(id, nome);
@@ -1111,6 +1302,12 @@ function abrirBibliotecaSelos() {
     legenda.textContent = nome;
 
     item.appendChild(img);
+    if (brilhante) {
+      const marca = document.createElement("span");
+      marca.className = "selo-marca-brilhante";
+      marca.textContent = "✨";
+      item.appendChild(marca);
+    }
     item.appendChild(legenda);
     grade.appendChild(item);
   });
@@ -1128,6 +1325,355 @@ function abrirConfiguracoes() {
 
 function fecharConfiguracoes() {
   document.getElementById("modal-configuracoes").classList.add("oculto");
+}
+
+/* ============================================================
+   Conquistas: raspadinha própria pra cada marco (10/25/50/75/100%
+   dos municípios do RJ). Cada limiar é arredondado pra CIMA
+   (Math.ceil) -- ex: 10% de 92 = 9.2, vira 10.
+   ============================================================ */
+
+const DEFINICOES_CONQUISTAS = [
+  { chave: "10pct", titulo: "Primeiros Passos", pct: 0.1 },
+  { chave: "25pct", titulo: "Explorador Iniciante", pct: 0.25 },
+  { chave: "50pct", titulo: "Meio Caminho Andado", pct: 0.5 },
+  { chave: "75pct", titulo: "Quase Lá", pct: 0.75 },
+  { chave: "100pct", titulo: "Desbravador Completo", pct: 1 },
+];
+
+function abrirConquistas() {
+  const container = document.getElementById("conquistas-lista");
+  container.innerHTML = "";
+
+  const totalMunicipios = document.querySelectorAll(".municipio").length;
+  const visitados = Object.values(estadoMapa).filter((m) => m.visitado).length;
+
+  DEFINICOES_CONQUISTAS.forEach(({ chave, titulo, pct }) => {
+    const limiar = Math.ceil(totalMunicipios * pct);
+    const atual = Math.min(visitados, limiar);
+    const desbloqueada = visitados >= limiar;
+
+    const item = document.createElement("div");
+    item.className = "conquista-item";
+    item.innerHTML = `
+      <h3>${escaparHtml(titulo)} <span class="conquista-pct">${Math.round(pct * 100)}%</span></h3>
+      <p class="conquista-progresso-texto">${atual} / ${limiar} municípios</p>
+      <div class="conquista-barra"><div class="conquista-barra-preenchida" style="width:${(atual / limiar) * 100}%"></div></div>
+      <div class="conquista-selo-body" id="conquista-selo-${chave}"></div>
+      <p class="conquista-instrucao" id="conquista-instrucao-${chave}"></p>
+    `;
+    container.appendChild(item);
+
+    renderizarSeloConquista(chave, titulo, desbloqueada);
+  });
+
+  document.getElementById("modal-conquistas").classList.remove("oculto");
+}
+
+function renderizarSeloConquista(chave, titulo, desbloqueada) {
+  const corpo = document.getElementById(`conquista-selo-${chave}`);
+  const instrucao = document.getElementById(`conquista-instrucao-${chave}`);
+
+  if (!desbloqueada) {
+    instrucao.textContent = "Visite mais municípios para desbloquear.";
+    corpo.innerHTML = `<div class="selo-bloqueado">🔒</div>`;
+    return;
+  }
+
+  if (estadoConquistas[chave]?.revelado) {
+    instrucao.textContent = "";
+    const caminhoColorido = `assets/img/conquistas/${chave}.png`;
+    carregarImagem(caminhoColorido).then((existeColorido) => {
+      corpo.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.className = "selo-revelado-wrapper";
+      const img = document.createElement("img");
+      img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 200);
+      img.alt = titulo;
+      img.className = "selo-revelado";
+      wrapper.appendChild(img);
+      corpo.appendChild(wrapper);
+    });
+    return;
+  }
+
+  instrucao.textContent = "Conquista desbloqueada! Raspe o selo.";
+  mostrarSpinnerGrande(corpo, true);
+  const caminhoColorido = `assets/img/conquistas/${chave}.png`;
+  const caminhoCapa = `assets/img/conquistas/${chave}fundo.png`;
+  carregarImagem(caminhoColorido).then((existeColorido) => {
+    const imageUrl = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 200);
+    const usarCapa = existeColorido
+      ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
+      : Promise.resolve(null);
+    usarCapa.then((imageUrlCapa) => {
+      corpo.innerHTML = "";
+      initScratchCard({
+        containerId: `conquista-selo-${chave}`,
+        imageUrl,
+        imageUrlCapa,
+        tamanho: 200,
+        onComplete: () => {
+          marcarConquistaComoRevelada(chave);
+          return false; // conquistas nao entram no sorteio de brilhante
+        },
+      });
+    });
+  });
+}
+
+function marcarConquistaComoRevelada(chave) {
+  estadoConquistas[chave] = { revelado: true, dataRevelado: new Date().toISOString() };
+  salvarEstadoConquistas();
+}
+
+/**
+ * Chamada sempre que o progresso muda (marcarComoVisitado). Se o
+ * modal de conquistas estiver aberto, re-renderiza pra barra de
+ * progresso e o desbloqueio aparecerem na hora.
+ */
+function atualizarProgressoConquistas() {
+  if (!document.getElementById("modal-conquistas").classList.contains("oculto")) {
+    abrirConquistas();
+  }
+}
+
+function fecharConquistas() {
+  document.getElementById("modal-conquistas").classList.add("oculto");
+}
+
+/* ============================================================
+   Ranking online: quem visitou mais municípios, por apelido.
+   ============================================================ */
+
+async function abrirRanking() {
+  const modal = document.getElementById("modal-ranking");
+  const lista = document.getElementById("ranking-lista");
+  const minhaPosicaoEl = document.getElementById("ranking-minha-posicao");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  minhaPosicaoEl.textContent = "";
+  modal.classList.remove("oculto");
+
+  try {
+    const meuUid = window.raspadinhaAuth.usuarioAtual.uid;
+    const meuCount = Object.values(estadoMapa).filter((m) => m.visitado).length;
+    const [ranking, minhaPosicao] = await Promise.all([
+      window.raspadinhaAuth.buscarRanking(50),
+      window.raspadinhaAuth.buscarMinhaPosicao(meuCount),
+    ]);
+
+    lista.innerHTML = "";
+    if (!ranking.length) {
+      lista.innerHTML = "<p>Ninguém no ranking ainda. Seja o primeiro a raspar!</p>";
+    } else {
+      ranking.forEach((item, indice) => {
+        const linha = document.createElement("div");
+        linha.className =
+          "ranking-linha" + (item.uid === meuUid ? " ranking-linha-atual" : "");
+        linha.innerHTML = `
+          <span class="ranking-posicao">#${indice + 1}</span>
+          <span class="ranking-apelido">${escaparHtml(item.apelido)}</span>
+          <span class="ranking-count">${item.count}</span>
+        `;
+        lista.appendChild(linha);
+      });
+    }
+
+    minhaPosicaoEl.textContent = `Sua posição: #${minhaPosicao} (${meuCount} municípios)`;
+  } catch (erro) {
+    console.error("Falha ao carregar ranking:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar o ranking agora. Tente de novo mais tarde.</p>";
+  }
+}
+
+function fecharRanking() {
+  document.getElementById("modal-ranking").classList.add("oculto");
+}
+
+/* ============================================================
+   Amigos: buscar por e-mail/apelido, pedidos e lista de amigos.
+   ============================================================ */
+
+function abrirAmigos() {
+  document.getElementById("input-busca-amigo").value = "";
+  document.getElementById("amigos-resultado-busca").innerHTML = "";
+  document.getElementById("modal-amigos").classList.remove("oculto");
+  carregarPedidosAmizade();
+  carregarListaAmigos();
+}
+
+function fecharAmigos() {
+  document.getElementById("modal-amigos").classList.add("oculto");
+}
+
+async function buscarAmigoPorTexto() {
+  const texto = document.getElementById("input-busca-amigo").value.trim();
+  const resultado = document.getElementById("amigos-resultado-busca");
+  if (!texto) return;
+
+  resultado.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    const encontrado = await window.raspadinhaAuth.buscarUsuario(texto);
+    if (!encontrado) {
+      resultado.innerHTML = "<p>Ninguém encontrado com esse e-mail/apelido.</p>";
+      return;
+    }
+    const souEu = encontrado.uid === window.raspadinhaAuth.usuarioAtual?.uid;
+    resultado.innerHTML = `
+      <div class="amigo-resultado-item">
+        <span>${escaparHtml(encontrado.apelido)}</span>
+        <button type="button" class="btn-adicionar-amigo" data-uid="${encontrado.uid}" ${souEu ? "disabled" : ""}>
+          ${souEu ? "Esse é você" : "Adicionar amigo"}
+        </button>
+      </div>`;
+    resultado.querySelector(".btn-adicionar-amigo")?.addEventListener("click", async (evento) => {
+      const botao = evento.currentTarget;
+      botao.disabled = true;
+      botao.textContent = "Enviando...";
+      try {
+        await window.raspadinhaAuth.enviarPedidoAmizade(botao.dataset.uid);
+        botao.textContent = "Pedido enviado!";
+      } catch (erro) {
+        botao.disabled = false;
+        botao.textContent = "Adicionar amigo";
+        alert(erro?.message || "Não foi possível enviar o pedido.");
+      }
+    });
+  } catch (erro) {
+    console.error("Falha ao buscar usuário:", erro);
+    resultado.innerHTML = "<p>Não foi possível buscar agora. Tente de novo.</p>";
+  }
+}
+
+async function carregarPedidosAmizade() {
+  const lista = document.getElementById("amigos-pedidos-lista");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    const pedidos = await window.raspadinhaAuth.listarPedidosRecebidos();
+    if (!pedidos.length) {
+      lista.innerHTML = "<p>Nenhum pedido de amizade pendente.</p>";
+      return;
+    }
+    lista.innerHTML = "";
+    pedidos.forEach((pedido) => {
+      const item = document.createElement("div");
+      item.className = "amigo-pedido-item";
+      item.innerHTML = `
+        <span>${escaparHtml(pedido.apelido)}</span>
+        <button type="button" class="btn-aceitar-pedido">Aceitar</button>
+        <button type="button" class="btn-recusar-pedido">Recusar</button>
+      `;
+      item.querySelector(".btn-aceitar-pedido").addEventListener("click", async () => {
+        await window.raspadinhaAuth.aceitarPedidoAmizade(pedido.uid);
+        carregarPedidosAmizade();
+        carregarListaAmigos();
+      });
+      item.querySelector(".btn-recusar-pedido").addEventListener("click", async () => {
+        await window.raspadinhaAuth.recusarPedidoAmizade(pedido.uid);
+        carregarPedidosAmizade();
+      });
+      lista.appendChild(item);
+    });
+  } catch (erro) {
+    console.error("Falha ao carregar pedidos de amizade:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar os pedidos agora.</p>";
+  }
+}
+
+async function carregarListaAmigos() {
+  const lista = document.getElementById("amigos-lista");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    const amigos = await window.raspadinhaAuth.listarAmigos();
+    if (!amigos.length) {
+      lista.innerHTML = "<p>Você ainda não tem amigos adicionados.</p>";
+      return;
+    }
+    lista.innerHTML = "";
+    amigos
+      .sort((a, b) => b.count - a.count)
+      .forEach((amigo) => {
+        const item = document.createElement("div");
+        item.className = "amigo-item";
+        item.innerHTML = `
+          <span class="amigo-apelido">${escaparHtml(amigo.apelido)}</span>
+          <span class="amigo-count">${amigo.count} municípios</span>
+          <button type="button" class="btn-remover-amigo">Remover</button>
+        `;
+        item.querySelector(".btn-remover-amigo").addEventListener("click", async () => {
+          if (!confirm(`Remover ${amigo.apelido} da sua lista de amigos?`)) return;
+          await window.raspadinhaAuth.removerAmigo(amigo.uid);
+          carregarListaAmigos();
+        });
+        lista.appendChild(item);
+      });
+  } catch (erro) {
+    console.error("Falha ao carregar lista de amigos:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar seus amigos agora.</p>";
+  }
+}
+
+/* ============================================================
+   Check-in mensal: marca os dias do mês em que o app foi aberto.
+   ============================================================ */
+
+const NOMES_MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+async function abrirCheckin() {
+  const modal = document.getElementById("modal-checkin");
+  const calendario = document.getElementById("checkin-calendario");
+  const agora = new Date();
+  const mesId = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
+  document.getElementById("checkin-mes-nome").textContent =
+    `${NOMES_MESES[agora.getMonth()]} de ${agora.getFullYear()}`;
+  calendario.innerHTML = '<div class="spinner spinner-grande"></div>';
+  modal.classList.remove("oculto");
+
+  try {
+    const dias = await window.raspadinhaAuth.buscarCheckinsDoMes(mesId);
+    const totalDias = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).getDate();
+    const hoje = agora.getDate();
+
+    calendario.innerHTML = "";
+    for (let dia = 1; dia <= totalDias; dia++) {
+      const celula = document.createElement("div");
+      celula.className = "checkin-dia";
+      if (dias.includes(dia)) celula.classList.add("checkin-feito");
+      if (dia === hoje) celula.classList.add("checkin-hoje");
+      celula.textContent = dia;
+      calendario.appendChild(celula);
+    }
+  } catch (erro) {
+    console.error("Falha ao carregar check-in:", erro);
+    calendario.innerHTML = "<p>Não foi possível carregar o check-in agora.</p>";
+  }
+}
+
+function fecharCheckin() {
+  document.getElementById("modal-checkin").classList.add("oculto");
+}
+
+/* ============================================================
+   Aviso flutuante: raspadinha brilhante garantida (por convite de
+   amigo) esperando pra ser usada na próxima raspagem.
+   ============================================================ */
+
+function atualizarAvisoBrilhantePendente() {
+  const aviso = document.getElementById("aviso-brilhante-pendente");
+  const pendentes = window.raspadinhaAuth?.boostsBrilhantesPendentes || 0;
+
+  if (pendentes > 0) {
+    document.getElementById("aviso-brilhante-texto").textContent =
+      pendentes === 1
+        ? "✨ Você tem uma raspadinha brilhante garantida te esperando!"
+        : `✨ Você tem ${pendentes} raspadinhas brilhantes garantidas te esperando!`;
+    aviso.classList.remove("oculto");
+  } else {
+    aviso.classList.add("oculto");
+  }
 }
 
 /**
@@ -1348,10 +1894,19 @@ function desmarcarMunicipioAtual() {
   const confirmar = confirm("Tem certeza que deseja desmarcar este município?");
   if (!confirmar) return;
 
-  delete estadoMapa[municipioSelecionadoId];
+  // Mantem brilhante/chanceDecidida (nao apaga o registro inteiro):
+  // uma vez decidida, a sorte da raspadinha brilhante desse
+  // municipio nunca muda, mesmo desmarcando e raspando de novo.
+  const anterior = estadoMapa[municipioSelecionadoId];
+  estadoMapa[municipioSelecionadoId] = anterior
+    ? { ...anterior, visitado: false }
+    : undefined;
+  if (!estadoMapa[municipioSelecionadoId]) delete estadoMapa[municipioSelecionadoId];
+
   salvarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
+  sincronizarProgressoOnline();
   municipioSelecionadoId = null;
   fecharModalRaspadinha();
 }
@@ -1367,10 +1922,13 @@ function resetarTudo() {
 
   estadoMapa = {};
   estadoRegioes = {};
+  estadoConquistas = {};
   salvarEstado();
   salvarEstadoRegioes();
+  salvarEstadoConquistas();
   aplicarEstadoNoSVG();
   atualizarContador();
+  sincronizarProgressoOnline();
   fecharConfiguracoes();
 }
 
@@ -1400,6 +1958,20 @@ function carregarEstadoRegioes() {
     return dados ? JSON.parse(dados) : {};
   } catch (erro) {
     console.error("Erro ao carregar estado das regiões do LocalStorage:", erro);
+    return {};
+  }
+}
+
+function salvarEstadoConquistas() {
+  localStorage.setItem(STORAGE_KEY_CONQUISTAS, JSON.stringify(estadoConquistas));
+}
+
+function carregarEstadoConquistas() {
+  try {
+    const dados = localStorage.getItem(STORAGE_KEY_CONQUISTAS);
+    return dados ? JSON.parse(dados) : {};
+  } catch (erro) {
+    console.error("Erro ao carregar estado das conquistas do LocalStorage:", erro);
     return {};
   }
 }

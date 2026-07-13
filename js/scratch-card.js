@@ -135,8 +135,11 @@ function initScratchCard({
     if (porcentagem >= limiarConclusao) {
       concluido = true;
       revelarTudo();
-      celebrarConclusao(wrapper);
-      if (typeof onComplete === "function") onComplete();
+      // onComplete decide (e persiste) se essa raspagem foi
+      // "brilhante" e devolve true/false — só depois disso a
+      // celebração sabe se deve mostrar o efeito de brilho.
+      const brilhante = typeof onComplete === "function" ? onComplete() : false;
+      celebrarConclusao(wrapper, !!brilhante);
     }
   }
 
@@ -161,17 +164,53 @@ function initScratchCard({
  * Efeito de "recompensa" ao completar a raspadinha: o selo dá um
  * pulo pra frente e volta (CSS), e uma chuva de confete sai de trás
  * dele. Usado tanto pro selo de município quanto pro mega-selo de
- * região (initScratchCard não sabe qual é — só celebra).
+ * região (initScratchCard não sabe qual é — só celebra). Se
+ * `brilhante` for true, também acrescenta o anel de brilhos girando
+ * (ver adicionarBrilho) — reservado pra raspadinhas brilhantes (5%
+ * de chance na primeira raspagem de cada município, ver script.js).
  */
-function celebrarConclusao(wrapper) {
+function celebrarConclusao(wrapper, brilhante) {
   wrapper.classList.remove("selo-completo");
   // força o navegador a "esquecer" a classe antes de reaplicar, pra
   // animação rodar de novo mesmo raspando o mesmo elemento 2x seguidas
   void wrapper.offsetWidth;
   wrapper.classList.add("selo-completo");
 
+  if (brilhante) adicionarBrilho(wrapper);
+
   const rect = wrapper.getBoundingClientRect();
   dispararConfete(rect.left + rect.width / 2, rect.top + rect.height / 2);
+}
+
+/**
+ * Acrescenta o efeito visual de "raspadinha brilhante": um anel de
+ * partículas girando ao redor do elemento (que precisa ter
+ * position:relative — os selos/wrappers já têm). Reaproveitado tanto
+ * na hora de completar a raspagem quanto ao reabrir um selo que já
+ * foi decidido como brilhante antes (ver visualizarSeloRevelado em
+ * script.js).
+ */
+function adicionarBrilho(elemento, quantidadeParticulas = 10) {
+  elemento.classList.add("selo-brilhante");
+
+  const anel = document.createElement("div");
+  anel.className = "brilho-anel";
+
+  const tamanho = elemento.getBoundingClientRect().width || elemento.offsetWidth || 300;
+  const raioPx = tamanho * 0.62;
+
+  for (let i = 0; i < quantidadeParticulas; i++) {
+    const angulo = (360 / quantidadeParticulas) * i;
+    const particula = document.createElement("span");
+    particula.className = "brilho-particula";
+    // truque do "ponteiro de relógio": translateY afasta do centro
+    // (no eixo local), rotate gira esse ponto já afastado ao redor
+    // do centro -- cada partícula cai numa posição diferente do anel
+    particula.style.transform = `rotate(${angulo}deg) translateY(-${raioPx}px)`;
+    anel.appendChild(particula);
+  }
+
+  elemento.appendChild(anel);
 }
 
 function dispararConfete(origemX, origemY) {

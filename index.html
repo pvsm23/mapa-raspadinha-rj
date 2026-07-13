@@ -44,11 +44,15 @@
     </div>
   </div>
 
-  <!-- Primeiro login: usuario escolhe um apelido antes de continuar -->
+  <!-- Primeiro login: usuario escolhe um apelido antes de continuar.
+       Se fechar sem confirmar, gera um "userNNNNNN" aleatorio sozinho
+       (ver fecharModalApelidoComAleatorio em js/script.js) -- todo
+       mundo precisa de um apelido pra aparecer no ranking/amigos. -->
   <div id="modal-apelido" class="oculto">
     <div id="apelido-conteudo">
+      <button id="btn-fechar-apelido" aria-label="Fechar">✕</button>
       <h2>Escolha seu nome de usuário</h2>
-      <p>Esse nome vai aparecer no seu perfil dentro do app.</p>
+      <p>Esse nome vai aparecer no seu perfil, no ranking e pros seus amigos.</p>
       <input type="text" id="input-apelido" maxlength="30" placeholder="Como quer ser chamado?">
       <button id="btn-confirmar-apelido">Confirmar</button>
     </div>
@@ -281,6 +285,8 @@
       <p id="modal-status"></p>
       <div id="scratch-modal-body"></div>
       <p id="modal-instrucao">Raspe com o dedo ou o mouse para revelar!</p>
+      <!-- So aparece depois de raspar (ver mostrarCuriosidade) -->
+      <div id="modal-curiosidade"></div>
       <div id="modal-destinos"></div>
     </div>
   </div>
@@ -327,6 +333,16 @@
         <button id="btn-logout">Sair da conta</button>
       </div>
 
+      <div id="secao-social">
+        <h3>Social &amp; Conquistas</h3>
+        <div id="botoes-social">
+          <button id="btn-abrir-ranking">🏆 Ranking</button>
+          <button id="btn-abrir-conquistas">🎖️ Conquistas</button>
+          <button id="btn-abrir-amigos">👥 Amigos</button>
+          <button id="btn-abrir-checkin">📅 Check-in mensal</button>
+        </div>
+      </div>
+
       <div id="secao-dados-pessoais">
         <h3>Dados pessoais</h3>
         <p id="dados-email"></p>
@@ -353,6 +369,66 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- Ranking online: quem visitou mais municipios, por apelido -->
+  <div id="modal-ranking" class="oculto">
+    <div id="ranking-conteudo">
+      <button id="btn-fechar-ranking" aria-label="Fechar">✕</button>
+      <h2>🏆 Ranking</h2>
+      <p id="ranking-minha-posicao"></p>
+      <div id="ranking-lista"></div>
+    </div>
+  </div>
+
+  <!-- Conquistas: cada marco (10/25/50/75/100%) tem sua propria
+       raspadinha, que so libera pra raspar ao atingir o limiar -->
+  <div id="modal-conquistas" class="oculto">
+    <div id="conquistas-conteudo">
+      <button id="btn-fechar-conquistas" aria-label="Fechar">✕</button>
+      <h2>🎖️ Conquistas</h2>
+      <div id="conquistas-lista"></div>
+    </div>
+  </div>
+
+  <!-- Amigos: busca por e-mail/apelido, pedidos e lista de amigos -->
+  <div id="modal-amigos" class="oculto">
+    <div id="amigos-conteudo">
+      <button id="btn-fechar-amigos" aria-label="Fechar">✕</button>
+      <h2>👥 Amigos</h2>
+
+      <div id="amigos-busca">
+        <input type="text" id="input-busca-amigo" placeholder="Buscar por e-mail ou apelido">
+        <button id="btn-buscar-amigo">Buscar</button>
+      </div>
+      <div id="amigos-resultado-busca"></div>
+
+      <div id="amigos-pedidos">
+        <h3>Pedidos recebidos</h3>
+        <div id="amigos-pedidos-lista"></div>
+      </div>
+
+      <div id="amigos-lista-secao">
+        <h3>Meus amigos</h3>
+        <div id="amigos-lista"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Check-in mensal: marca os dias do mes em que o app foi aberto -->
+  <div id="modal-checkin" class="oculto">
+    <div id="checkin-conteudo">
+      <button id="btn-fechar-checkin" aria-label="Fechar">✕</button>
+      <h2>📅 Check-in mensal</h2>
+      <p id="checkin-mes-nome"></p>
+      <div id="checkin-calendario"></div>
+    </div>
+  </div>
+
+  <!-- Aviso flutuante: raspadinha brilhante garantida (convite de
+       amigo) esperando pra ser usada na proxima raspagem -->
+  <div id="aviso-brilhante-pendente" class="oculto">
+    <span id="aviso-brilhante-texto"></span>
   </div>
 
   <!-- Aviso flutuante: login rodando em segundo plano (nao trava a tela) -->

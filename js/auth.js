@@ -1,13 +1,14 @@
 /**
  * Login com e-mail e senha via Firebase Authentication + Google
- * Analytics (medir acessos) + Firestore (apelido escolhido no
- * primeiro login).
+ * Analytics (medir acessos) + Firestore (apelido, progresso online
+ * pro ranking, amigos, check-in mensal e convites de raspadinha
+ * brilhante).
  *
  * Este arquivo é um módulo ES (por isso o <script type="module"> no
  * index.html) porque o SDK do Firebase é distribuído assim. Como
  * script.js é um script "normal" (não módulo), a ponte entre os dois
- * é o objeto global `window.raspadinhaAuth` e os eventos
- * "auth-mudou" / "precisa-apelido".
+ * é o objeto global `window.raspadinhaAuth` e eventos customizados
+ * ("auth-mudou", "precisa-apelido", "boosts-brilhantes-mudou").
  *
  * Login com e-mail/senha (em vez de Google): não depende da lista
  * de "domínios autorizados" do Firebase, que é o que provavelmente
@@ -33,11 +34,19 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
+  deleteDoc,
   serverTimestamp,
+  arrayUnion,
   collection,
   query,
   where,
+  orderBy,
+  limit,
   getDocs,
+  getCountFromServer,
+  onSnapshot,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const CONFIGURADO = firebaseConfig.apiKey !== "SUBSTITUA_AQUI";
@@ -48,13 +57,29 @@ const CONFIGURADO = firebaseConfig.apiKey !== "SUBSTITUA_AQUI";
 const CHAVE_ULTIMA_ATIVIDADE = "raspadinha_ultima_atividade";
 const TRINTA_DIAS_MS = 30 * 24 * 60 * 60 * 1000;
 
+// Guardado quando alguém chega pelo link de convite (?convite=uid),
+// até o momento em que a conta é criada de verdade (ver
+// creditarConviteSeExistir), pra dar a raspadinha brilhante garantida
+// pra quem convidou.
+const CHAVE_CONVITE_PENDENTE = "desbrava_convite_pendente";
+
 const AVISO_NAO_CONFIGURADO =
   "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase.";
+
+/**
+ * Nunca deixa o apelido ter formato de e-mail (pra não confundir com
+ * o e-mail de login, e não vazar sem querer o e-mail de alguém pelo
+ * ranking/busca de amigos, que mostram o apelido publicamente).
+ */
+function pareceEmail(texto) {
+  return /\S+@\S+\.\S+/.test(texto);
+}
 
 window.raspadinhaAuth = {
   configurado: CONFIGURADO,
   usuarioAtual: null,
   apelido: null,
+  boostsBrilhantesPendentes: 0,
   entrarComEmail: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
@@ -63,6 +88,19 @@ window.raspadinhaAuth = {
   },
   sair: () => {},
   salvarApelido: async () => {},
+  sincronizarProgresso: async () => {},
+  buscarRanking: async () => [],
+  buscarMinhaPosicao: async () => null,
+  buscarUsuario: async () => null,
+  enviarPedidoAmizade: async () => {},
+  listarPedidosRecebidos: async () => [],
+  aceitarPedidoAmizade: async () => {},
+  recusarPedidoAmizade: async () => {},
+  listarAmigos: async () => [],
+  removerAmigo: async () => {},
+  registrarCheckinHoje: async () => {},
+  buscarCheckinsDoMes: async () => [],
+  consumirBoostBrilhante: () => false,
   // TODO(PRO): trocar por uma verificação real (ex: campo no
   // Firestore ligado ao usuário logado) quando o controle de
   // assinatura PRO existir.
@@ -78,14 +116,23 @@ if (CONFIGURADO) {
   window.raspadinhaAuth.entrarComEmail = (email, senha) =>
     signInWithEmailAndPassword(auth, email, senha);
 
-  window.raspadinhaAuth.criarContaComEmail = (email, senha) =>
-    createUserWithEmailAndPassword(auth, email, senha);
+  window.raspadinhaAuth.criarContaComEmail = async (email, senha) => {
+    const resultado = await createUserWithEmailAndPassword(auth, email, senha);
+    await creditarConviteSeExistir(resultado.user.uid);
+    return resultado;
+  };
 
   window.raspadinhaAuth.sair = () => signOut(auth);
 
   window.raspadinhaAuth.salvarApelido = async (apelido) => {
     const usuario = auth.currentUser;
     if (!usuario) return;
+
+    if (pareceEmail(apelido)) {
+      throw Object.assign(new Error("O apelido não pode ter formato de e-mail."), {
+        code: "apelido/formato-invalido",
+      });
+    }
 
     const disponivel = await apelidoEstaDisponivel(apelido, usuario.uid);
     if (!disponivel) {
@@ -118,6 +165,226 @@ if (CONFIGURADO) {
     return resultado.docs.every((documento) => documento.id === uidAtual);
   }
 
+  /**
+   * Grava a contagem de municípios visitados no perfil do usuário —
+   * é essa contagem que alimenta o Ranking online (ver
+   * buscarRanking/buscarMinhaPosicao). Silenciosa (não trava nada no
+   * mapa se falhar; só loga no console).
+   */
+  window.raspadinhaAuth.sincronizarProgresso = (count) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { municipiosVisitadosCount: count, atualizadoEm: serverTimestamp() },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao sincronizar progresso:", erro));
+  };
+
+  /**
+   * Top N do ranking (mais municípios visitados primeiro). Usuários
+   * que ainda não sincronizaram nenhum progresso (campo inexistente)
+   * simplesmente não aparecem — normal pra quem acabou de criar
+   * conta e ainda não raspou nada.
+   */
+  window.raspadinhaAuth.buscarRanking = async (limiteN = 50) => {
+    const consulta = query(
+      collection(db, "usuarios"),
+      orderBy("municipiosVisitadosCount", "desc"),
+      limit(limiteN)
+    );
+    const resultado = await getDocs(consulta);
+    return resultado.docs.map((d) => ({
+      uid: d.id,
+      apelido: d.data().apelido || "?",
+      count: d.data().municipiosVisitadosCount || 0,
+    }));
+  };
+
+  /**
+   * Posição do usuário atual no ranking geral (mesmo que fora do
+   * topo N exibido), contando quantos têm uma contagem maior.
+   */
+  window.raspadinhaAuth.buscarMinhaPosicao = async (meuCount) => {
+    const consulta = query(
+      collection(db, "usuarios"),
+      where("municipiosVisitadosCount", ">", meuCount)
+    );
+    const agregada = await getCountFromServer(consulta);
+    return agregada.data().count + 1;
+  };
+
+  /**
+   * Busca um usuário por e-mail exato (se o texto tiver "@") ou por
+   * apelido exato, pra aba de Amigos.
+   */
+  window.raspadinhaAuth.buscarUsuario = async (texto) => {
+    const valor = texto.trim();
+    if (!valor) return null;
+    const campo = valor.includes("@") ? "email" : "apelido";
+    const consulta = query(collection(db, "usuarios"), where(campo, "==", valor));
+    const resultado = await getDocs(consulta);
+    if (resultado.empty) return null;
+    const encontrado = resultado.docs[0];
+    return {
+      uid: encontrado.id,
+      apelido: encontrado.data().apelido || "?",
+      email: encontrado.data().email || "",
+    };
+  };
+
+  window.raspadinhaAuth.enviarPedidoAmizade = (destinatarioUid) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    if (usuario.uid === destinatarioUid) {
+      return Promise.reject(new Error("Você não pode adicionar a si mesmo."));
+    }
+    return setDoc(doc(db, "usuarios", destinatarioUid, "pedidosAmizade", usuario.uid), {
+      apelido: window.raspadinhaAuth.apelido,
+      criadoEm: serverTimestamp(),
+    });
+  };
+
+  window.raspadinhaAuth.listarPedidosRecebidos = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return [];
+    const resultado = await getDocs(collection(db, "usuarios", usuario.uid, "pedidosAmizade"));
+    return resultado.docs.map((d) => ({ uid: d.id, apelido: d.data().apelido || "?" }));
+  };
+
+  window.raspadinhaAuth.aceitarPedidoAmizade = (remetenteUid) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    const lote = writeBatch(db);
+    lote.set(doc(db, "usuarios", usuario.uid, "amigos", remetenteUid), {
+      desde: serverTimestamp(),
+    });
+    lote.set(doc(db, "usuarios", remetenteUid, "amigos", usuario.uid), {
+      desde: serverTimestamp(),
+    });
+    lote.delete(doc(db, "usuarios", usuario.uid, "pedidosAmizade", remetenteUid));
+    return lote.commit();
+  };
+
+  window.raspadinhaAuth.recusarPedidoAmizade = (remetenteUid) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    return deleteDoc(doc(db, "usuarios", usuario.uid, "pedidosAmizade", remetenteUid));
+  };
+
+  window.raspadinhaAuth.listarAmigos = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return [];
+    const resultado = await getDocs(collection(db, "usuarios", usuario.uid, "amigos"));
+    return Promise.all(
+      resultado.docs.map(async (d) => {
+        const perfil = await getDoc(doc(db, "usuarios", d.id));
+        return {
+          uid: d.id,
+          apelido: perfil.data()?.apelido || "?",
+          count: perfil.data()?.municipiosVisitadosCount || 0,
+        };
+      })
+    );
+  };
+
+  window.raspadinhaAuth.removerAmigo = (amigoUid) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    const lote = writeBatch(db);
+    lote.delete(doc(db, "usuarios", usuario.uid, "amigos", amigoUid));
+    lote.delete(doc(db, "usuarios", amigoUid, "amigos", usuario.uid));
+    return lote.commit();
+  };
+
+  /* ---------- Check-in mensal ---------- */
+
+  function chaveMesAtual() {
+    const agora = new Date();
+    return `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  window.raspadinhaAuth.registrarCheckinHoje = () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    const dia = new Date().getDate();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid, "checkins", chaveMesAtual()),
+      { dias: arrayUnion(dia) },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao registrar check-in:", erro));
+  };
+
+  window.raspadinhaAuth.buscarCheckinsDoMes = async (mesId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return [];
+    const snap = await getDoc(doc(db, "usuarios", usuario.uid, "checkins", mesId || chaveMesAtual()));
+    return snap.exists() ? snap.data().dias || [] : [];
+  };
+
+  /* ---------- Convite de amigo -> raspadinha brilhante garantida ---------- */
+
+  let convitesPendentes = []; // refs dos convites ainda não resgatados
+  let pararDeObservarConvites = null;
+
+  function observarConvites(uid) {
+    pararDeObservarConvites?.();
+    const consulta = query(
+      collection(db, "usuarios", uid, "convites"),
+      where("resgatado", "==", false)
+    );
+    pararDeObservarConvites = onSnapshot(
+      consulta,
+      (snap) => {
+        convitesPendentes = snap.docs.map((d) => d.ref);
+        window.raspadinhaAuth.boostsBrilhantesPendentes = convitesPendentes.length;
+        document.dispatchEvent(new CustomEvent("boosts-brilhantes-mudou"));
+      },
+      (erro) => console.error("Falha ao observar convites:", erro)
+    );
+  }
+
+  /**
+   * Consome (sincronamente, do lado do cliente) uma raspadinha
+   * brilhante garantida, se houver alguma pendente. A confirmação no
+   * Firestore (marcar resgatado=true) roda em segundo plano — a
+   * decisão de brilhante/não-brilhante não pode esperar uma
+   * ida-e-volta de rede no meio da animação de raspar.
+   */
+  window.raspadinhaAuth.consumirBoostBrilhante = () => {
+    if (convitesPendentes.length === 0) return false;
+    const ref = convitesPendentes.shift();
+    window.raspadinhaAuth.boostsBrilhantesPendentes = convitesPendentes.length;
+    document.dispatchEvent(new CustomEvent("boosts-brilhantes-mudou"));
+    updateDoc(ref, { resgatado: true, resgatadoEm: serverTimestamp() }).catch((erro) => {
+      console.error("Falha ao consumir convite:", erro);
+    });
+    return true;
+  };
+
+  /**
+   * Se essa conta acabou de ser criada por um link de convite
+   * (?convite=uid, guardado em localStorage por script.js), credita
+   * uma raspadinha brilhante garantida pra quem convidou. Cada nova
+   * conta só pode criar UM documento de convite por convidante (o id
+   * do documento é o próprio uid da conta nova), então não dá pra
+   * "farmar" créditos repetidos pra um mesmo convidante com a mesma
+   * conta.
+   */
+  async function creditarConviteSeExistir(novoUid) {
+    const conviteDeUid = localStorage.getItem(CHAVE_CONVITE_PENDENTE);
+    localStorage.removeItem(CHAVE_CONVITE_PENDENTE);
+    if (!conviteDeUid || conviteDeUid === novoUid) return;
+    try {
+      await setDoc(doc(db, "usuarios", conviteDeUid, "convites", novoUid), {
+        criadoEm: serverTimestamp(),
+        resgatado: false,
+      });
+    } catch (erro) {
+      console.error("Não foi possível creditar o convite:", erro);
+    }
+  }
+
   onAuthStateChanged(auth, async (usuario) => {
     if (usuario) {
       const ultimaAtividade = Number(localStorage.getItem(CHAVE_ULTIMA_ATIVIDADE) || 0);
@@ -128,8 +395,13 @@ if (CONFIGURADO) {
         return;
       }
       localStorage.setItem(CHAVE_ULTIMA_ATIVIDADE, String(Date.now()));
+      observarConvites(usuario.uid);
     } else {
       localStorage.removeItem(CHAVE_ULTIMA_ATIVIDADE);
+      pararDeObservarConvites?.();
+      convitesPendentes = [];
+      window.raspadinhaAuth.boostsBrilhantesPendentes = 0;
+      document.dispatchEvent(new CustomEvent("boosts-brilhantes-mudou"));
     }
 
     window.raspadinhaAuth.usuarioAtual = usuario;

@@ -920,6 +920,64 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
   }
 }
 
+/* Raspadinha brilhante (5% de chance na 1a raspagem de cada
+   município, ver decidirBrilhante em js/script.js): anel de
+   partículas girando ao redor do selo, com um brilho de fundo. */
+.selo-brilhante {
+  position: relative;
+}
+
+.selo-brilhante::after {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.35), transparent 70%);
+  animation: pulsar-brilho 1.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes pulsar-brilho {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+.brilho-anel {
+  position: absolute;
+  inset: 0;
+  animation: girar-brilho 5s linear infinite;
+  pointer-events: none;
+}
+
+.brilho-particula {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff7d6, #facc15 55%, transparent 100%);
+  box-shadow: 0 0 10px 2px rgba(250, 204, 21, 0.85);
+}
+
+@keyframes girar-brilho {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Aviso flutuante de login em segundo plano (nao trava a tela) */
 #toast-login {
   position: fixed;
@@ -1062,4 +1120,418 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
 #btn-como-instalar-pwa {
   background: rgba(255, 255, 255, 0.12);
   color: inherit;
+}
+
+/* =========================================================
+   Gamificação: Ranking, Conquistas, Amigos, Check-in mensal,
+   raspadinha brilhante e curiosidade do município.
+   ========================================================= */
+
+#apelido-conteudo {
+  position: relative;
+}
+
+#btn-fechar-apelido {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-apelido:hover {
+  color: #f1f5f9;
+}
+
+#secao-social h3 {
+  margin-bottom: 10px;
+}
+
+#botoes-social {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#botoes-social button {
+  margin-top: 0;
+}
+
+/* Container comum (mesmo visual do popup de região) reaproveitado
+   pelos modais de Ranking/Conquistas/Amigos/Check-in */
+#modal-ranking,
+#modal-conquistas,
+#modal-amigos,
+#modal-checkin {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#ranking-conteudo,
+#conquistas-conteudo,
+#amigos-conteudo,
+#checkin-conteudo {
+  position: relative;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#ranking-conteudo h2,
+#conquistas-conteudo h2,
+#amigos-conteudo h2,
+#checkin-conteudo h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+#btn-fechar-ranking,
+#btn-fechar-conquistas,
+#btn-fechar-amigos,
+#btn-fechar-checkin {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-ranking:hover,
+#btn-fechar-conquistas:hover,
+#btn-fechar-amigos:hover,
+#btn-fechar-checkin:hover {
+  color: #f1f5f9;
+}
+
+/* ---- Ranking ---- */
+
+#ranking-minha-posicao {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+#ranking-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.ranking-linha {
+  display: grid;
+  grid-template-columns: 2.4em 1fr auto;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.ranking-linha-atual {
+  border: 1px solid #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.ranking-posicao {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.ranking-count {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+/* ---- Conquistas ---- */
+
+#conquistas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 10px;
+}
+
+.conquista-item {
+  background: #0f172a;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.conquista-item h3 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+}
+
+.conquista-pct {
+  color: #94a3b8;
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.conquista-progresso-texto {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  margin: 0 0 6px;
+}
+
+.conquista-barra {
+  height: 8px;
+  border-radius: 999px;
+  background: #334155;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.conquista-barra-preenchida {
+  height: 100%;
+  background: #22c55e;
+  transition: width 0.3s ease;
+}
+
+.conquista-selo-body .selo-bloqueado {
+  width: 120px;
+  height: 120px;
+  font-size: 2.4rem;
+}
+
+.selo-revelado-pequeno {
+  width: 200px;
+}
+
+.selo-revelado-wrapper {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.selo-revelado-wrapper .selo-revelado {
+  margin: 0;
+}
+
+.conquista-instrucao {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  margin: 8px 0 0;
+}
+
+/* ---- Amigos ---- */
+
+#amigos-busca {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#input-busca-amigo {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 0.9rem;
+}
+
+#btn-buscar-amigo {
+  background: #22c55e;
+  color: #0f172a;
+  border: none;
+  padding: 0 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+#amigos-resultado-busca:not(:empty) {
+  margin-bottom: 14px;
+}
+
+.amigo-resultado-item,
+.amigo-pedido-item,
+.amigo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.btn-adicionar-amigo,
+.btn-aceitar-pedido,
+.btn-remover-amigo {
+  background: #22c55e;
+  color: #0f172a;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-adicionar-amigo:disabled {
+  background: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.btn-recusar-pedido,
+.btn-remover-amigo {
+  background: #ef4444;
+  color: white;
+  margin-left: 6px;
+}
+
+.amigo-pedido-item {
+  flex-wrap: wrap;
+}
+
+#amigos-pedidos h3,
+#amigos-lista-secao h3 {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 16px 0 8px;
+  text-align: left;
+}
+
+.amigo-count {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+/* ---- Check-in mensal ---- */
+
+#checkin-mes-nome {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+#checkin-calendario {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.checkin-dia {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #0f172a;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.checkin-dia.checkin-feito {
+  background: rgba(34, 197, 94, 0.25);
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.checkin-dia.checkin-hoje {
+  border: 1px solid #f1f5f9;
+}
+
+/* ---- Marca de selo brilhante na biblioteca ---- */
+
+.selo-item-brilhante img {
+  border-color: #facc15;
+  box-shadow: 0 0 10px 1px rgba(250, 204, 21, 0.6);
+}
+
+.selo-item {
+  position: relative;
+}
+
+.selo-marca-brilhante {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  font-size: 0.9rem;
+}
+
+/* ---- Curiosidade do município (só depois de raspar) ---- */
+
+#modal-curiosidade:not(:empty) {
+  text-align: left;
+  margin-top: 14px;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+#modal-curiosidade h3 {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0 0 6px;
+}
+
+#modal-curiosidade p {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+#modal-curiosidade .curiosidade-vazia {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* ---- Aviso flutuante: raspadinha brilhante garantida pendente ---- */
+
+#aviso-brilhante-pendente {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 390;
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid #facc15;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  max-width: 90vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 0 14px 2px rgba(250, 204, 21, 0.4);
+  animation: pulsar-brilho 1.8s ease-in-out infinite, entrar-toast 0.25s ease;
+}
+
+#aviso-brilhante-pendente.oculto {
+  display: none;
 }
