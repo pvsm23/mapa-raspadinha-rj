@@ -183,55 +183,16 @@ function celebrarConclusao(wrapper, brilhante) {
 }
 
 /**
- * Acrescenta o efeito visual de "raspadinha brilhante": dois anéis de
- * partículas girando em sentidos opostos ao redor do elemento (que
- * precisa ter position:relative — os selos/wrappers já têm), cada
- * partícula também cintilando (pulsando tamanho/opacidade) fora de
- * sincronia com as outras. Reaproveitado tanto na hora de completar
- * a raspagem quanto ao reabrir um selo que já foi decidido como
- * brilhante antes (ver visualizarSeloRevelado em script.js).
+ * Acrescenta o efeito visual de "raspadinha brilhante": luz
+ * irradiando do selo pra fora, tipo um sol (raios girando + brilho
+ * pulsante) — tudo via CSS (ver `.selo-brilhante::before/::after` em
+ * css/styles.css), sem precisar criar partícula nenhuma por JS.
+ * Reaproveitado tanto na hora de completar a raspagem quanto ao
+ * reabrir um selo que já foi decidido como brilhante antes (ver
+ * visualizarSeloRevelado em script.js).
  */
-function adicionarBrilho(elemento, quantidadeParticulas = 24) {
+function adicionarBrilho(elemento) {
   elemento.classList.add("selo-brilhante");
-
-  const tamanho = elemento.getBoundingClientRect().width || elemento.offsetWidth || 300;
-
-  // Anel externo: mais partículas, menores, gira num sentido.
-  const anelExterno = document.createElement("div");
-  anelExterno.className = "brilho-anel brilho-anel-externo";
-  criarParticulasDoAnel(anelExterno, quantidadeParticulas, tamanho * 0.66, false);
-  elemento.appendChild(anelExterno);
-
-  // Anel interno: menos partículas, maiores, gira no sentido
-  // contrário -- dá profundidade ao efeito em vez de um anel só.
-  const anelInterno = document.createElement("div");
-  anelInterno.className = "brilho-anel brilho-anel-interno";
-  criarParticulasDoAnel(anelInterno, Math.round(quantidadeParticulas / 2), tamanho * 0.42, true);
-  elemento.appendChild(anelInterno);
-}
-
-/**
- * Preenche um anel com partículas espalhadas uniformemente ao redor
- * do centro. Cada partícula tem DOIS elementos aninhados: o de fora
- * só posiciona (rotate+translateY fixos, truque do "ponteiro de
- * relógio"), o de dentro só anima cintilar (scale+opacity) -- assim
- * as duas transformações não brigam uma com a outra.
- */
-function criarParticulasDoAnel(anel, quantidade, raioPx, grande) {
-  for (let i = 0; i < quantidade; i++) {
-    const angulo = (360 / quantidade) * i + (grande ? 180 / quantidade : 0);
-    const posicionador = document.createElement("span");
-    posicionador.className = "brilho-particula-pos";
-    posicionador.style.transform = `rotate(${angulo}deg) translateY(-${raioPx}px)`;
-
-    const particula = document.createElement("span");
-    particula.className = "brilho-particula" + (grande ? " brilho-particula-grande" : "");
-    particula.style.animationDelay = `${(Math.random() * 1.6).toFixed(2)}s`;
-    particula.style.animationDuration = `${(1.1 + Math.random() * 0.8).toFixed(2)}s`;
-
-    posicionador.appendChild(particula);
-    anel.appendChild(posicionador);
-  }
 }
 
 function dispararConfete(origemX, origemY) {

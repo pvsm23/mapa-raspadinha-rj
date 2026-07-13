@@ -1116,10 +1116,28 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 }
 
 /* Raspadinha brilhante (5% de chance na 1a raspagem de cada
-   município, ver decidirBrilhante em js/script.js): anel de
-   partículas girando ao redor do selo, com um brilho de fundo. */
+   município, ver decidirBrilhante em js/script.js): luz irradiando
+   do selo pra fora, tipo um sol -- raios girando devagar (::before)
+   por trás de um brilho pulsante (::after), tudo via CSS puro (sem
+   nenhuma partícula criada por JS). */
 .selo-brilhante {
   position: relative;
+}
+
+.selo-brilhante::before {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(250, 204, 21, 0.65) 0deg 3deg,
+    transparent 3deg 18deg
+  );
+  animation: girar-raios 14s linear infinite, respirar-raios 2.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -2;
+  mix-blend-mode: screen;
 }
 
 .selo-brilhante::after {
@@ -1145,52 +1163,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   }
 }
 
-.brilho-anel {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.brilho-anel-externo {
-  animation: girar-brilho 7s linear infinite;
-}
-
-.brilho-anel-interno {
-  animation: girar-brilho 4.5s linear infinite reverse;
-}
-
-/* Só posiciona a partícula ao redor do centro (rotate+translateY
-   fixos) -- não anima nada sozinho, pra não brigar com a cintilação
-   da partícula filha (ver .brilho-particula). */
-.brilho-particula-pos {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-}
-
-.brilho-particula {
-  position: absolute;
-  top: -3px;
-  left: -3px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff7d6, #facc15 55%, transparent 100%);
-  box-shadow: 0 0 8px 2px rgba(250, 204, 21, 0.85);
-  animation: cintilar-brilho 1.4s ease-in-out infinite;
-}
-
-.brilho-particula-grande {
-  top: -5px;
-  left: -5px;
-  width: 10px;
-  height: 10px;
-  box-shadow: 0 0 14px 3px rgba(250, 204, 21, 0.9);
-}
-
-@keyframes girar-brilho {
+@keyframes girar-raios {
   from {
     transform: rotate(0deg);
   }
@@ -1199,15 +1172,13 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   }
 }
 
-@keyframes cintilar-brilho {
+@keyframes respirar-raios {
   0%,
   100% {
-    opacity: 0.35;
-    transform: scale(0.6);
+    opacity: 0.55;
   }
   50% {
     opacity: 1;
-    transform: scale(1.15);
   }
 }
 
@@ -1653,6 +1624,12 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 .conquista-raridade.raridade-farmador {
   background: rgba(239, 68, 68, 0.25);
   color: #f87171;
+}
+
+.conquista-descricao {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  margin: 4px 0 8px;
 }
 
 .conquista-progresso-texto {

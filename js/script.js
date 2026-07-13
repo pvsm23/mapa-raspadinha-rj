@@ -1875,7 +1875,7 @@ function renderizarGradeConquistasNaBiblioteca() {
     `Conquistas (${desbloqueadas} / ${DEFINICOES_CONQUISTAS.length})`;
 
   DEFINICOES_CONQUISTAS.forEach((def) => {
-    const { chave, titulo } = def;
+    const { chave, titulo, descricao } = def;
     const { atual, meta } = progressoConquista(def, ctx);
     const desbloqueada = atual >= meta;
     const revelado = desbloqueada && !!estadoConquistas[chave]?.revelado;
@@ -1883,7 +1883,7 @@ function renderizarGradeConquistasNaBiblioteca() {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "selo-item";
-    item.title = titulo;
+    item.title = `${titulo} — ${descricao}`;
     item.addEventListener("click", () => {
       fecharBibliotecaSelos();
       exigirLogin(abrirConquistas);
@@ -1933,35 +1933,35 @@ function fecharConfiguracoes() {
 // contas) -- da mais fácil (comum) pra mais difícil (farmador de
 // aura), na ordem que faz sentido pra cada tipo de meta.
 const DEFINICOES_CONQUISTAS = [
-  { chave: "primeiros-passos", titulo: "Primeiros Passos", tipo: "municipios", meta: 3, raridade: "comum" },
-  { chave: "25pct", titulo: "Explorador Iniciante", tipo: "municipios-pct", meta: 0.25, raridade: "incomum" },
-  { chave: "50pct", titulo: "Meio Caminho Andado", tipo: "municipios-pct", meta: 0.5, raridade: "raro" },
-  { chave: "75pct", titulo: "Quase Lá", tipo: "municipios-pct", meta: 0.75, raridade: "muito-raro" },
-  { chave: "100pct", titulo: "Desbravador", tipo: "municipios-pct", meta: 1, raridade: "lendario" },
+  { chave: "primeiros-passos", titulo: "Primeiros Passos", tipo: "municipios", meta: 3, raridade: "comum", descricao: "Visite e confirme 3 municípios." },
+  { chave: "25pct", titulo: "Explorador Iniciante", tipo: "municipios-pct", meta: 0.25, raridade: "incomum", descricao: "Confirme 25% dos municípios do RJ." },
+  { chave: "50pct", titulo: "Meio Caminho Andado", tipo: "municipios-pct", meta: 0.5, raridade: "raro", descricao: "Confirme 50% dos municípios do RJ." },
+  { chave: "75pct", titulo: "Quase Lá", tipo: "municipios-pct", meta: 0.75, raridade: "muito-raro", descricao: "Confirme 75% dos municípios do RJ." },
+  { chave: "100pct", titulo: "Desbravador", tipo: "municipios-pct", meta: 1, raridade: "lendario", descricao: "Confirme os 92 municípios do RJ." },
 
-  { chave: "streak-7", titulo: "Semana Cheia", tipo: "streak", meta: 7, raridade: "incomum" },
+  { chave: "streak-7", titulo: "Semana Cheia", tipo: "streak", meta: 7, raridade: "incomum", descricao: "Abra o app 7 dias seguidos, sem pular nenhum." },
 
-  { chave: "dia-3", titulo: "Dia Corrido", tipo: "municipios-no-dia", meta: 3, raridade: "incomum" },
-  { chave: "dia-5", titulo: "Maratona do Dia", tipo: "municipios-no-dia", meta: 5, raridade: "raro" },
-  { chave: "dia-8", titulo: "Turbo Turista", tipo: "municipios-no-dia", meta: 8, raridade: "muito-raro" },
+  { chave: "dia-3", titulo: "Dia Corrido", tipo: "municipios-no-dia", meta: 3, raridade: "incomum", descricao: "Confirme 3 municípios diferentes no mesmo dia." },
+  { chave: "dia-5", titulo: "Maratona do Dia", tipo: "municipios-no-dia", meta: 5, raridade: "raro", descricao: "Confirme 5 municípios diferentes no mesmo dia." },
+  { chave: "dia-8", titulo: "Turbo Turista", tipo: "municipios-no-dia", meta: 8, raridade: "muito-raro", descricao: "Confirme 8 municípios diferentes no mesmo dia." },
 
-  { chave: "regiao-1", titulo: "Primeira Região", tipo: "regioes", meta: 1, raridade: "incomum" },
-  { chave: "regiao-25pct", titulo: "Regiões em Dobro", tipo: "regioes-pct", meta: 0.25, raridade: "raro" },
-  { chave: "regiao-50pct", titulo: "Metade do Estado", tipo: "regioes-pct", meta: 0.5, raridade: "muito-raro" },
-  { chave: "regiao-100pct", titulo: "Senhor das Regiões", tipo: "regioes-pct", meta: 1, raridade: "lendario" },
+  { chave: "regiao-1", titulo: "Primeira Região", tipo: "regioes", meta: 1, raridade: "incomum", descricao: "Complete todos os municípios de 1 região e raspe o mega-selo." },
+  { chave: "regiao-25pct", titulo: "Regiões em Dobro", tipo: "regioes-pct", meta: 0.25, raridade: "raro", descricao: "Complete 25% das 8 regiões do RJ." },
+  { chave: "regiao-50pct", titulo: "Metade do Estado", tipo: "regioes-pct", meta: 0.5, raridade: "muito-raro", descricao: "Complete 50% das 8 regiões do RJ." },
+  { chave: "regiao-100pct", titulo: "Senhor das Regiões", tipo: "regioes-pct", meta: 1, raridade: "lendario", descricao: "Complete as 8 regiões do RJ." },
 
-  { chave: "brilhante-1", titulo: "Primeira Fagulha", tipo: "brilhantes", meta: 1, raridade: "raro" },
-  { chave: "brilhante-3", titulo: "Coleção Dourada", tipo: "brilhantes", meta: 3, raridade: "muito-raro" },
-  { chave: "brilhante-5", titulo: "Mão de Ouro", tipo: "brilhantes", meta: 5, raridade: "muito-raro" },
-  { chave: "brilhante-10", titulo: "Sortudo", tipo: "brilhantes", meta: 10, raridade: "lendario" },
-  { chave: "brilhante-25", titulo: "Ímã de Sorte", tipo: "brilhantes", meta: 25, raridade: "lendario" },
-  { chave: "brilhante-50", titulo: "Rei do Brilho", tipo: "brilhantes", meta: 50, raridade: "farmador" },
-  { chave: "brilhante-100pct", titulo: "Tudo Reluz", tipo: "brilhantes-pct", meta: 1, raridade: "farmador" },
+  { chave: "brilhante-1", titulo: "Primeira Fagulha", tipo: "brilhantes", meta: 1, raridade: "raro", descricao: "Consiga 1 selo de município brilhante (5% de chance por raspagem)." },
+  { chave: "brilhante-3", titulo: "Coleção Dourada", tipo: "brilhantes", meta: 3, raridade: "muito-raro", descricao: "Consiga 3 selos de município brilhantes." },
+  { chave: "brilhante-5", titulo: "Mão de Ouro", tipo: "brilhantes", meta: 5, raridade: "muito-raro", descricao: "Consiga 5 selos de município brilhantes." },
+  { chave: "brilhante-10", titulo: "Sortudo", tipo: "brilhantes", meta: 10, raridade: "lendario", descricao: "Consiga 10 selos de município brilhantes." },
+  { chave: "brilhante-25", titulo: "Ímã de Sorte", tipo: "brilhantes", meta: 25, raridade: "lendario", descricao: "Consiga 25 selos de município brilhantes." },
+  { chave: "brilhante-50", titulo: "Rei do Brilho", tipo: "brilhantes", meta: 50, raridade: "farmador", descricao: "Consiga 50 selos de município brilhantes." },
+  { chave: "brilhante-100pct", titulo: "Tudo Reluz", tipo: "brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Deixe os 92 selos de município brilhantes." },
 
-  { chave: "regiao-brilhante-1", titulo: "Região Radiante", tipo: "regioes-brilhantes", meta: 1, raridade: "muito-raro" },
-  { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25, raridade: "lendario" },
-  { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5, raridade: "farmador" },
-  { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1, raridade: "farmador" },
+  { chave: "regiao-brilhante-1", titulo: "Região Radiante", tipo: "regioes-brilhantes", meta: 1, raridade: "muito-raro", descricao: "Consiga 1 mega-selo de região brilhante (10% de chance)." },
+  { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25, raridade: "lendario", descricao: "Consiga mega-selos brilhantes em 25% das regiões." },
+  { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5, raridade: "farmador", descricao: "Consiga mega-selos brilhantes em 50% das regiões." },
+  { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Consiga mega-selos brilhantes nas 8 regiões." },
 ];
 
 /**
@@ -2070,6 +2070,7 @@ function abrirConquistas() {
     item.innerHTML = `
       <h3>${escaparHtml(def.titulo)}</h3>
       <span class="conquista-raridade raridade-${def.raridade}">${NOMES_RARIDADE[def.raridade]}</span>
+      <p class="conquista-descricao">${escaparHtml(def.descricao)}</p>
       <p class="conquista-progresso-texto">${atual} / ${meta}</p>
       <div class="conquista-barra"><div class="conquista-barra-preenchida" style="width:${(atual / meta) * 100}%"></div></div>
       <div class="conquista-selo-body" id="conquista-selo-${def.chave}"></div>
