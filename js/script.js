@@ -53,6 +53,11 @@ if ("serviceWorker" in navigator) {
 // DOMContentLoaded), por isso fica fora do bloco de inicialização.
 let promptInstalacaoPwa = null;
 
+// Uma vez que a pessoa instala (pelo nosso botão), nunca mais mostra
+// o aviso nesse navegador — mesmo que ela volte a abrir pela aba
+// comum em vez do app instalado.
+const CHAVE_PWA_INSTALADO = "desbrava_pwa_instalado";
+
 window.addEventListener("beforeinstallprompt", (evento) => {
   evento.preventDefault();
   promptInstalacaoPwa = evento;
@@ -62,6 +67,7 @@ window.addEventListener("beforeinstallprompt", (evento) => {
 
 window.addEventListener("appinstalled", () => {
   promptInstalacaoPwa = null;
+  localStorage.setItem(CHAVE_PWA_INSTALADO, "true");
   fecharAvisoInstalarPwa();
 });
 
@@ -264,9 +270,29 @@ function ehIOS() {
  * Mostra o aviso sugerindo instalar o app, com um botão de instalar
  * direto (se o navegador oferecer, ex: Chrome/Edge/Android) ou um
  * botão "Como instalar" com instruções manuais caso contrário.
+ *
+ * Não mostra se: já está rodando instalado, se essa instalação já
+ * foi registrada antes (CHAVE_PWA_INSTALADO) ou se o navegador
+ * consegue confirmar que já está instalado mesmo estando numa aba
+ * comum (navigator.getInstalledRelatedApps — só Chrome/Edge/Android;
+ * no Safari/iOS não existe forma de checar isso pela web).
  */
-function mostrarAvisoInstalarPwa() {
+async function mostrarAvisoInstalarPwa() {
   if (pwaJaInstalado()) return;
+  if (localStorage.getItem(CHAVE_PWA_INSTALADO) === "true") return;
+
+  if (navigator.getInstalledRelatedApps) {
+    try {
+      const relacionados = await navigator.getInstalledRelatedApps();
+      if (relacionados.length > 0) {
+        localStorage.setItem(CHAVE_PWA_INSTALADO, "true");
+        return;
+      }
+    } catch {
+      // API experimental: se falhar, segue e mostra o aviso normalmente.
+    }
+  }
+
   document.getElementById("aviso-instalar-pwa").classList.remove("oculto");
 }
 

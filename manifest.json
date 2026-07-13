@@ -9,6 +9,9 @@
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "lang": "pt-BR",
+  "related_applications": [
+    { "platform": "webapp", "url": "./manifest.json" }
+  ],
   "icons": [
     {
       "src": "assets/icons/desbrava-icone.png",
