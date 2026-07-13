@@ -10,7 +10,7 @@
  * atualizaria se o CACHE_NAME mudasse a cada vez, o que é fácil de
  * esquecer de fazer.
  */
-const CACHE_NAME = "mapa-raspadinha-v3";
+const CACHE_NAME = "mapa-raspadinha-v4";
 const ARQUIVOS_BASICOS = [
   "./",
   "./index.html",
@@ -44,7 +44,10 @@ self.addEventListener("activate", (evento) => {
 
 self.addEventListener("fetch", (evento) => {
   evento.respondWith(
-    fetch(evento.request)
+    // cache: "no-store" evita que o proprio navegador sirva uma
+    // resposta HTTP antiga aqui dentro do service worker (o SW so
+    // deveria confiar no CACHE DELE, nao no cache HTTP do browser).
+    fetch(evento.request, { cache: "no-store" })
       .then((resposta) => {
         const copia = resposta.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(evento.request, copia));

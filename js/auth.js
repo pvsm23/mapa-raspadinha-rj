@@ -1,5 +1,6 @@
 /**
- * Login com Google via Firebase Authentication.
+ * Login com Google via Firebase Authentication + Google Analytics
+ * (medir quantos acessos o site tem, sem precisar de login).
  *
  * Este arquivo é um módulo ES (por isso o <script type="module"> no
  * index.html) porque o SDK do Firebase é distribuído assim. Como
@@ -12,6 +13,7 @@
  */
 import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-analytics.js";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -39,6 +41,7 @@ window.raspadinhaAuth = {
 
 if (CONFIGURADO) {
   const app = initializeApp(firebaseConfig);
+  getAnalytics(app); // conta acessos automaticamente (ver Firebase Console > Analytics)
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
