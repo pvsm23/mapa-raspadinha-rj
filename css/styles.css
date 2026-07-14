@@ -1483,7 +1483,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #modal-checkin,
 #modal-compartilhar,
 #modal-perfil,
-#modal-historia-municipio {
+#modal-historia-municipio,
+#modal-feedback {
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -1500,7 +1501,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #checkin-conteudo,
 #compartilhar-conteudo,
 #perfil-conteudo,
-#historia-municipio-conteudo {
+#historia-municipio-conteudo,
+#feedback-conteudo {
   position: relative;
   background: #1e293b;
   border-radius: 12px;
@@ -1518,7 +1520,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #checkin-conteudo h2,
 #compartilhar-conteudo h2,
 #perfil-conteudo h2,
-#historia-municipio-conteudo h2 {
+#historia-municipio-conteudo h2,
+#feedback-conteudo h2 {
   margin-top: 0;
   font-size: 1.15rem;
 }
@@ -1529,7 +1532,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-checkin,
 #btn-fechar-compartilhar,
 #btn-fechar-perfil,
-#btn-fechar-historia-municipio {
+#btn-fechar-historia-municipio,
+#btn-fechar-feedback {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -1548,8 +1552,181 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-checkin:hover,
 #btn-fechar-compartilhar:hover,
 #btn-fechar-perfil:hover,
-#btn-fechar-historia-municipio:hover {
+#btn-fechar-historia-municipio:hover,
+#btn-fechar-feedback:hover {
   color: #f1f5f9;
+}
+
+/* ---- Feedback e colaboração ---- */
+
+#feedback-intro {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 16px;
+}
+
+#feedback-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.feedback-opcao {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.feedback-opcao:hover {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.feedback-opcao.feedback-opcao-ativa {
+  border-color: #38bdf8;
+  background: #0c2536;
+}
+
+.feedback-painel {
+  text-align: left;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #334155;
+}
+
+.feedback-painel h3 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+
+.feedback-painel p {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  margin: 0 0 10px;
+}
+
+.feedback-painel textarea {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+.feedback-painel button[id^="btn-enviar-feedback"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: #22c55e;
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.feedback-status {
+  font-size: 0.8rem;
+  margin: 8px 0 0;
+}
+
+.feedback-status.status-sucesso {
+  color: #4ade80;
+}
+
+.feedback-status.status-erro {
+  color: #f87171;
+}
+
+#pix-chave-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+#pix-chave-texto {
+  flex: 1;
+  font-size: 0.85rem;
+  word-break: break-all;
+  color: #f1f5f9;
+}
+
+#btn-copiar-pix {
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ---- Aviso: app em desenvolvimento ---- */
+
+#modal-aviso-desenvolvimento {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(15, 23, 42, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#aviso-desenvolvimento-conteudo {
+  background: #1e293b;
+  border: 1px solid #38bdf8;
+  border-radius: 12px;
+  padding: 26px 22px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+#aviso-desenvolvimento-conteudo h2 {
+  margin-top: 0;
+}
+
+#aviso-desenvolvimento-conteudo p {
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+#btn-fechar-aviso-desenvolvimento {
+  width: 100%;
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 8px;
 }
 
 /* Corpo da historia completa do municipio: paragrafos alinhados a

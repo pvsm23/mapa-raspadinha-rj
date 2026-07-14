@@ -118,6 +118,27 @@ dourada — não existe "conquista brilhante"). As 24 chaves atuais:
 `brilhante-100pct`, `regiao-brilhante-1`, `regiao-brilhante-25pct`,
 `regiao-brilhante-50pct`, `regiao-brilhante-100pct`.
 
+## Chave PIX de colaboração
+
+Botão 💬 (barra de topo) → aba "🤝 Colaborar" mostra uma chave PIX pra
+quem quiser ajudar financeiramente (sempre opcional). A chave fica na
+constante `CHAVE_PIX_COLABORACAO`, bem no topo de `js/script.js` —
+troque o placeholder `SUBSTITUA_AQUI_PELA_SUA_CHAVE_PIX` pela sua
+chave de verdade (CPF, e-mail, telefone ou chave aleatória) antes de
+publicar. Diferente do código secreto do Plano PRO, essa chave **não
+precisa ser segredo** (é justamente pra aparecer pro usuário copiar),
+então não tem problema ela estar visível no código-fonte público.
+
+Sobre **como receber** — recomendação: **chave PIX é a opção mais
+simples** pra esse caso (doação avulsa, sem meta fixa, contínua ao
+longo do tempo) — sem taxas, cai na hora, todo mundo no Brasil já usa.
+"Vaquinha online" (Vakinha, Kickante etc.) costuma servir melhor pra
+metas fixas com prazo (ex: "preciso de R$500 pra taxa da Play Store"),
+não pra apoio recorrente/avulso — e geralmente cobra uma taxa sobre o
+valor arrecadado. Se no futuro quiser apoio recorrente (tipo
+assinatura mensal), vale olhar Apoia.se ou Padrim (equivalentes
+brasileiros do Patreon).
+
 ## Plano PRO
 
 Fase 1 (feita): só o distintivo "PRO" amarelo do lado do apelido no

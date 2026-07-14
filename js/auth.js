@@ -90,6 +90,7 @@ window.raspadinhaAuth = {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
   enviarEmailProprio: async () => {},
+  enviarFeedback: async () => {},
   sair: () => {},
   salvarApelido: async () => {},
   sincronizarProgresso: async () => {},
@@ -161,6 +162,25 @@ if (CONFIGURADO) {
       to: [usuario.email],
       message: { subject: assunto, html: corpoHtml },
     }).catch((erro) => console.error("Falha ao enfileirar e-mail:", erro));
+  };
+
+  /**
+   * Grava um relato de bug ou sugestão na coleção "feedback" do
+   * Firestore -- lido só pelo Console do Firebase (não tem tela
+   * dentro do app pra ler as respostas). Exige login (mesma regra de
+   * qualquer interação de verdade no app), pra amarrar cada relato a
+   * uma conta e não virar um jeito fácil de mandar spam.
+   */
+  window.raspadinhaAuth.enviarFeedback = (tipo, texto) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    return addDoc(collection(db, "feedback"), {
+      tipo,
+      texto,
+      uid: usuario.uid,
+      apelido: window.raspadinhaAuth.apelido || "",
+      criadoEm: serverTimestamp(),
+    });
   };
 
   window.raspadinhaAuth.sair = () => signOut(auth);

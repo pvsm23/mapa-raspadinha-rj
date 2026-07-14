@@ -25,6 +25,10 @@ const STORAGE_KEY_REGIOES = "scratchMapRJ_regioes_v1";
 const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
 const STORAGE_KEY_STREAK = "scratchMapRJ_streak_v1";
 
+// Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
+// SUBSTITUA_AQUI pela sua chave de verdade antes de publicar.
+const CHAVE_PIX_COLABORACAO = "SUBSTITUA_AQUI_PELA_SUA_CHAVE_PIX";
+
 // Estrutura salva no localStorage:
 // {
 //   "3303302": {
@@ -317,6 +321,27 @@ document.addEventListener("DOMContentLoaded", () => {
     if (evento.target.id === "modal-checkin") fecharCheckin();
   });
 
+  // ---- Feedback e colaboração ----
+  document.getElementById("btn-feedback").addEventListener("click", abrirFeedback);
+  document.getElementById("btn-fechar-feedback").addEventListener("click", fecharFeedback);
+  document.getElementById("modal-feedback").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-feedback") fecharFeedback();
+  });
+  document.querySelectorAll(".feedback-opcao").forEach((botao) => {
+    botao.addEventListener("click", () => mostrarPainelFeedback(botao.dataset.painel));
+  });
+  document
+    .getElementById("btn-enviar-feedback-bug")
+    .addEventListener("click", () => enviarFeedback("bug"));
+  document
+    .getElementById("btn-enviar-feedback-sugestao")
+    .addEventListener("click", () => enviarFeedback("sugestao"));
+  document.getElementById("btn-copiar-pix").addEventListener("click", copiarChavePix);
+
+  document
+    .getElementById("btn-fechar-aviso-desenvolvimento")
+    .addEventListener("click", fecharAvisoDesenvolvimento);
+
   // ---- Perfil público ----
   document.getElementById("btn-fechar-perfil").addEventListener("click", fecharPerfil);
   document.getElementById("modal-perfil").addEventListener("click", (evento) => {
@@ -360,6 +385,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Pequeno atraso pra não competir com o resto da tela carregando.
   setTimeout(mostrarAvisoInstalarPwa, 1200);
+
+  mostrarAvisoDesenvolvimentoSeNecessario();
 });
 
 /**
@@ -2818,6 +2845,107 @@ async function abrirCheckin() {
 
 function fecharCheckin() {
   document.getElementById("modal-checkin").classList.add("oculto");
+}
+
+/* ============================================================
+   Feedback e colaboração: relatar bug, dar sugestão, ou colaborar
+   (opcionalmente, via PIX). Bug/sugestão exigem login (mesma regra
+   de qualquer outra interação de verdade no app -- ver exigirLogin);
+   ver a chave PIX já mostra sem precisar logar.
+   ============================================================ */
+
+function abrirFeedback() {
+  document.getElementById("modal-feedback").classList.remove("oculto");
+  document.getElementById("pix-chave-texto").textContent = CHAVE_PIX_COLABORACAO;
+}
+
+function fecharFeedback() {
+  document.getElementById("modal-feedback").classList.add("oculto");
+  document.querySelectorAll(".feedback-painel").forEach((painel) => painel.classList.add("oculto"));
+  document
+    .querySelectorAll(".feedback-opcao")
+    .forEach((botao) => botao.classList.remove("feedback-opcao-ativa"));
+}
+
+function mostrarPainelFeedback(painel) {
+  document.querySelectorAll(".feedback-painel").forEach((el) => {
+    el.classList.toggle("oculto", el.id !== `feedback-painel-${painel}`);
+  });
+  document.querySelectorAll(".feedback-opcao").forEach((botao) => {
+    botao.classList.toggle("feedback-opcao-ativa", botao.dataset.painel === painel);
+  });
+}
+
+/**
+ * Envia um relato de bug ou sugestão (coleção "feedback" no
+ * Firestore) -- exige login, igual qualquer outra interação de
+ * verdade no app. A regra do Firestore só aceita `tipo`
+ * "bug"/"sugestao" e um texto não vazio (ver README.md).
+ */
+function enviarFeedback(tipo) {
+  exigirLogin(async () => {
+    const textarea = document.getElementById(`input-feedback-${tipo}`);
+    const botao = document.getElementById(`btn-enviar-feedback-${tipo}`);
+    const status = document.getElementById(`feedback-status-${tipo}`);
+    const texto = textarea.value.trim();
+
+    if (!texto) return;
+
+    botao.disabled = true;
+    botao.querySelector(".btn-texto").classList.add("oculto");
+    botao.querySelector(".spinner").classList.remove("oculto");
+    status.classList.add("oculto");
+
+    try {
+      await window.raspadinhaAuth.enviarFeedback(tipo, texto);
+      textarea.value = "";
+      status.textContent = "Enviado! Muito obrigado. 🙏";
+      status.className = "feedback-status status-sucesso";
+    } catch (erro) {
+      console.error("Falha ao enviar feedback:", erro);
+      status.textContent = "Não foi possível enviar agora. Tenta de novo mais tarde?";
+      status.className = "feedback-status status-erro";
+    } finally {
+      botao.disabled = false;
+      botao.querySelector(".btn-texto").classList.remove("oculto");
+      botao.querySelector(".spinner").classList.add("oculto");
+    }
+  });
+}
+
+/**
+ * Copia a chave PIX pra área de transferência (com um retorno visual
+ * rápido); se a Clipboard API não estiver disponível, mostra a chave
+ * pra copiar manualmente.
+ */
+async function copiarChavePix() {
+  const status = document.getElementById("feedback-status-pix");
+  try {
+    await navigator.clipboard.writeText(CHAVE_PIX_COLABORACAO);
+    status.textContent = "Chave copiada! 💙";
+    status.className = "feedback-status status-sucesso";
+  } catch {
+    status.textContent = "Não deu pra copiar sozinho -- selecione a chave acima manualmente.";
+    status.className = "feedback-status status-erro";
+  }
+}
+
+const CHAVE_AVISO_DESENVOLVIMENTO_VISTO = "scratchMapRJ_aviso_dev_visto_v1";
+
+/**
+ * Mostra, só na primeira vez (controlado por localStorage), um aviso
+ * de que o app ainda está em desenvolvimento -- não é a versão final,
+ * ainda não está na Play Store, é e sempre vai ser gratuito, e dá pra
+ * colaborar (nunca obrigatório) pelo botão 💬 no topo.
+ */
+function mostrarAvisoDesenvolvimentoSeNecessario() {
+  if (localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)) return;
+  document.getElementById("modal-aviso-desenvolvimento").classList.remove("oculto");
+}
+
+function fecharAvisoDesenvolvimento() {
+  localStorage.setItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO, "true");
+  document.getElementById("modal-aviso-desenvolvimento").classList.add("oculto");
 }
 
 /* ============================================================

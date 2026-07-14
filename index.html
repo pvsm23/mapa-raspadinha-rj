@@ -264,6 +264,7 @@
       <p id="progresso">Visitados: <span id="contador">0</span> / <span id="total">3</span></p>
     </div>
     <div id="botoes-topo">
+      <button id="btn-feedback" aria-label="Feedback e colaboração" title="Feedback e colaboração">💬</button>
       <button id="btn-compartilhar" aria-label="Compartilhar" title="Compartilhar">🔗</button>
       <button id="btn-biblioteca" aria-label="Biblioteca de selos" title="Biblioteca de selos">📖</button>
       <button id="btn-configuracoes" aria-label="Configurações" title="Configurações">⚙️</button>
@@ -476,6 +477,66 @@
         <h3>Meus amigos</h3>
         <div id="amigos-lista"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Feedback e colaboração: relatar bug, dar sugestão ou colaborar
+       (financeiramente, via PIX) -->
+  <div id="modal-feedback" class="oculto">
+    <div id="feedback-conteudo">
+      <button id="btn-fechar-feedback" aria-label="Fechar">✕</button>
+      <h2>💬 Feedback e colaboração</h2>
+      <p id="feedback-intro">O Desbrava é feito por uma pessoa só, nas horas vagas. Sua opinião ajuda (e muito) a melhorar o app!</p>
+
+      <div id="feedback-opcoes">
+        <button type="button" class="feedback-opcao" data-painel="bug">🐛 Relatar um bug</button>
+        <button type="button" class="feedback-opcao" data-painel="sugestao">💡 Dar uma sugestão</button>
+        <button type="button" class="feedback-opcao" data-painel="colaborar">🤝 Colaborar</button>
+      </div>
+
+      <div id="feedback-painel-bug" class="feedback-painel oculto">
+        <h3>🐛 Relatar um bug</h3>
+        <p>Descreva o que aconteceu, e se lembrar, o que você esperava que acontecesse.</p>
+        <textarea id="input-feedback-bug" rows="4" maxlength="2000" placeholder="Ex: ao raspar o selo de Niterói, o mapa travou..."></textarea>
+        <button type="button" id="btn-enviar-feedback-bug">
+          <span class="btn-texto">Enviar relato</span>
+          <span class="spinner oculto"></span>
+        </button>
+        <p class="feedback-status oculto" id="feedback-status-bug"></p>
+      </div>
+
+      <div id="feedback-painel-sugestao" class="feedback-painel oculto">
+        <h3>💡 Dar uma sugestão</h3>
+        <p>Que função, município, ou melhoria você gostaria de ver no Desbrava?</p>
+        <textarea id="input-feedback-sugestao" rows="4" maxlength="2000" placeholder="Ex: seria legal ter um modo escuro/claro..."></textarea>
+        <button type="button" id="btn-enviar-feedback-sugestao">
+          <span class="btn-texto">Enviar sugestão</span>
+          <span class="spinner oculto"></span>
+        </button>
+        <p class="feedback-status oculto" id="feedback-status-sugestao"></p>
+      </div>
+
+      <div id="feedback-painel-colaborar" class="feedback-painel oculto">
+        <h3>🤝 Colaborar</h3>
+        <p>O Desbrava é e sempre vai ser <strong>gratuito</strong> — colaborar é totalmente opcional, só pra quem quiser ajudar a manter o projeto vivo (hospedagem, futuramente a taxa da Play Store etc).</p>
+        <p>Pix (chave aleatória):</p>
+        <div id="pix-chave-linha">
+          <code id="pix-chave-texto"></code>
+          <button type="button" id="btn-copiar-pix">Copiar</button>
+        </div>
+        <p class="feedback-status oculto" id="feedback-status-pix"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aviso: app em desenvolvimento (mostra 1x, ver
+       mostrarAvisoDesenvolvimentoSeNecessario em js/script.js) -->
+  <div id="modal-aviso-desenvolvimento" class="oculto">
+    <div id="aviso-desenvolvimento-conteudo">
+      <h2>🚧 Em desenvolvimento</h2>
+      <p>O Desbrava ainda está em fase de testes — essa não é a versão oficial final, e no futuro o app vai estar disponível na Play Store.</p>
+      <p>Ele é e sempre vai ser <strong>gratuito pra usar</strong>. Se quiser, dá pra colaborar com sugestões, relatos de bugs ou até financeiramente pelo botão 💬 no topo da tela — mas nunca é obrigatório.</p>
+      <button type="button" id="btn-fechar-aviso-desenvolvimento">Entendi, vamos explorar!</button>
     </div>
   </div>
 
