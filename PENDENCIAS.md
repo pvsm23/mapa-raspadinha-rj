@@ -54,8 +54,27 @@ Arquivo: `data/destinos.json`. Cada município tem uma lista
 - `textoCompleto`: só preenchido pros 5 pontos turísticos de Niterói
   até agora (exemplo de referência). Falta pros outros 91 municípios
   (455 pontos turísticos).
-- `linkMaps`: nenhum município tem ainda (nem Niterói) — precisa do
-  link de verdade do Google Maps de cada lugar.
+- `linkMaps`: **já preenchido pros 5 pontos turísticos de Niterói**
+  (exemplo de referência) — falta pros outros 91 municípios.
+
+### Como conseguir e colocar o `linkMaps` você mesmo
+
+1. Abra [Google Maps](https://maps.google.com) (celular ou computador)
+   e busque o nome do ponto turístico.
+2. Clique em **"Compartilhar"** no card do lugar → **"Copiar link"**
+   (é um link curto, tipo `https://maps.app.goo.gl/XXXXXXXXXXXXX`).
+3. Abra `data/destinos.json`, ache o município pelo código IBGE (ex:
+   Niterói é `"3303302"`) e cole o link no campo `linkMaps` do ponto
+   turístico certo — **confira que o nome do lugar bate** (o Google às
+   vezes sugere um resultado diferente do esperado na busca).
+4. Salve o arquivo. Não precisa mexer em nenhum código — só abrir o
+   ponto turístico no popup do município já mostra o botão
+   "▶️ Abrir no Maps" habilitado, puxando esse link.
+5. **Cuidado com JSON inválido**: toda entrada precisa de vírgula
+   entre os campos (menos o último) e aspas duplas em tudo — se
+   quiser conferir se não quebrou nada antes de testar no app, cole o
+   conteúdo do arquivo em [jsonlint.com](https://jsonlint.com) ou peça
+   pra eu validar.
 
 ## 3. Resumo de cada região
 

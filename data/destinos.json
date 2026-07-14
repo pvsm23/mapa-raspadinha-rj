@@ -1180,27 +1180,32 @@
       {
         "nome": "Museu de Arte Contemporânea (MAC)",
         "descricao": "Obra de Oscar Niemeyer em formato de disco, cartão-postal da cidade.",
-        "textoCompleto": "Inaugurado em 1996, o MAC foi projetado por Oscar Niemeyer no Mirante da Boa Viagem, com o cálculo estrutural da \"taça\" apoiada num único pilar central resolvido pelo engenheiro Bruno Contarini. Niemeyer costumava corrigir quem chamava o prédio de \"disco voador\": a forma nasceu da ideia de uma flor desabrochando na rocha. A rampa vermelha faz o visitante girar e contemplar a paisagem antes de entrar, e o espelho d'água na base cria a ilusão de que o imenso edifício de concreto flutua. Hoje o museu abriga a valiosa Coleção João Sattamini."
+        "textoCompleto": "Inaugurado em 1996, o MAC foi projetado por Oscar Niemeyer no Mirante da Boa Viagem, com o cálculo estrutural da \"taça\" apoiada num único pilar central resolvido pelo engenheiro Bruno Contarini. Niemeyer costumava corrigir quem chamava o prédio de \"disco voador\": a forma nasceu da ideia de uma flor desabrochando na rocha. A rampa vermelha faz o visitante girar e contemplar a paisagem antes de entrar, e o espelho d'água na base cria a ilusão de que o imenso edifício de concreto flutua. Hoje o museu abriga a valiosa Coleção João Sattamini.",
+        "linkMaps": "https://maps.app.goo.gl/JG2B57LmUGTPqPNq7"
       },
       {
         "nome": "Caminho Niemeyer",
         "descricao": "Conjunto de sete edifícios projetados por Oscar Niemeyer.",
-        "textoCompleto": "Idealizado nos anos 2000 para revitalizar o centro e a orla de Niterói, o Caminho Niemeyer transformou o trajeto à beira da Baía de Guanabara num museu a céu aberto dedicado à arquitetura moderna brasileira. Graças a ele, Niterói tem o segundo maior acervo de obras de Oscar Niemeyer do mundo, atrás só de Brasília. Ao longo de cerca de 11 km, o percurso liga o Centro ao MAC, passando pelo Teatro Popular (com cobertura ondulada que lembra as ondas do mar), o Memorial Roberto Silveira e a cúpula da Fundação Oscar Niemeyer."
+        "textoCompleto": "Idealizado nos anos 2000 para revitalizar o centro e a orla de Niterói, o Caminho Niemeyer transformou o trajeto à beira da Baía de Guanabara num museu a céu aberto dedicado à arquitetura moderna brasileira. Graças a ele, Niterói tem o segundo maior acervo de obras de Oscar Niemeyer do mundo, atrás só de Brasília. Ao longo de cerca de 11 km, o percurso liga o Centro ao MAC, passando pelo Teatro Popular (com cobertura ondulada que lembra as ondas do mar), o Memorial Roberto Silveira e a cúpula da Fundação Oscar Niemeyer.",
+        "linkMaps": "https://maps.app.goo.gl/5nXfsGxttYxyM4K27"
       },
       {
         "nome": "Parque da Cidade",
         "descricao": "Mirante a mais de 270 metros de altura com vista da Baía de Guanabara.",
-        "textoCompleto": "No topo do Morro da Viração, no bairro de São Francisco, a cerca de 270 metros de altitude, o parque foi criado para barrar o crescimento urbano sobre as montanhas e hoje protege remanescentes de Mata Atlântica como Área de Proteção Ambiental. É um dos maiores redutos do país para a prática do voo livre, com rampas de parapente e asa-delta, e oferece um dos pores do sol mais espetaculares do Rio de Janeiro — em certas épocas do ano, alinhado com o Pão de Açúcar ou o Cristo Redentor. Trilhas rústicas de mountain bike e caminhada descem a montanha em direção ao litoral."
+        "textoCompleto": "No topo do Morro da Viração, no bairro de São Francisco, a cerca de 270 metros de altitude, o parque foi criado para barrar o crescimento urbano sobre as montanhas e hoje protege remanescentes de Mata Atlântica como Área de Proteção Ambiental. É um dos maiores redutos do país para a prática do voo livre, com rampas de parapente e asa-delta, e oferece um dos pores do sol mais espetaculares do Rio de Janeiro — em certas épocas do ano, alinhado com o Pão de Açúcar ou o Cristo Redentor. Trilhas rústicas de mountain bike e caminhada descem a montanha em direção ao litoral.",
+        "linkMaps": "https://maps.app.goo.gl/3NwPtiTH7qUgpMS38"
       },
       {
         "nome": "Praia de Itacoatiara",
         "descricao": "Praia de mar forte, considerada uma das mais bonitas do estado.",
-        "textoCompleto": "O nome, de origem tupi-guarani, significa \"pedra pintada\", em alusão às fissuras naturais das rochas locais. Um rígido plano urbanístico da Região Oceânica impediu a verticalização e preservou o verde da restinga, mantendo a atmosfera rústica da praia. A faixa principal tem mar bravo de tombo e já sediou grandes circuitos de surfe e bodyboard, enquanto no canto direito a \"Prainha\" (Canto do Pampo) forma uma lagoa salgada e calma, refúgio seguro para crianças. O Costão de Itacoatiara, monólito que ladeia a praia, oferece a trilha de montanhismo mais tradicional da região, com vista de 360 graus do oceano."
+        "textoCompleto": "O nome, de origem tupi-guarani, significa \"pedra pintada\", em alusão às fissuras naturais das rochas locais. Um rígido plano urbanístico da Região Oceânica impediu a verticalização e preservou o verde da restinga, mantendo a atmosfera rústica da praia. A faixa principal tem mar bravo de tombo e já sediou grandes circuitos de surfe e bodyboard, enquanto no canto direito a \"Prainha\" (Canto do Pampo) forma uma lagoa salgada e calma, refúgio seguro para crianças. O Costão de Itacoatiara, monólito que ladeia a praia, oferece a trilha de montanhismo mais tradicional da região, com vista de 360 graus do oceano.",
+        "linkMaps": "https://maps.app.goo.gl/Dfc8opDaKZ5AadyE7"
       },
       {
         "nome": "Fortaleza de Santa Cruz da Barra",
         "descricao": "Fortificação de 1555 na entrada da Baía de Guanabara.",
-        "textoCompleto": "Erguida a partir de 1555 pelo francês Nicolas Durand de Villegaignon para proteger a invasão da \"França Antártica\", a fortaleza foi depois tomada e reforçada pelos portugueses, que a usaram em fogo cruzado com o Forte de São João para bloquear a entrada da Baía de Guanabara. As pedras das primeiras muralhas vieram da Europa como lastro dos navios que chegavam vazios para voltar carregados de riquezas tropicais. Ao longo de mais de três séculos, resistiu a ataques como o do corsário francês Duguay-Trouin em 1711 e funcionou como prisão de segurança máxima do Império e da República, com presos como Bento Gonçalves, José Bonifácio e Euclides da Cunha."
+        "textoCompleto": "Erguida a partir de 1555 pelo francês Nicolas Durand de Villegaignon para proteger a invasão da \"França Antártica\", a fortaleza foi depois tomada e reforçada pelos portugueses, que a usaram em fogo cruzado com o Forte de São João para bloquear a entrada da Baía de Guanabara. As pedras das primeiras muralhas vieram da Europa como lastro dos navios que chegavam vazios para voltar carregados de riquezas tropicais. Ao longo de mais de três séculos, resistiu a ataques como o do corsário francês Duguay-Trouin em 1711 e funcionou como prisão de segurança máxima do Império e da República, com presos como Bento Gonçalves, José Bonifácio e Euclides da Cunha.",
+        "linkMaps": "https://maps.app.goo.gl/VwB6ewZ7axraRTCE8"
       }
     ]
   },
