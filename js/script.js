@@ -3743,7 +3743,14 @@ async function carregarEstadoDoUsuario(uid) {
           ...estadoMapa[id],
           visitado: !!dados.visitado,
           verificado: !!dados.verificado,
-          brilhante: !!dados.brilhante,
+          // O Firestore só reflete o "brilhante" de verdade enquanto o
+          // município está visitado (ver estadoPublicoMunicipio em
+          // sincronizarMunicipioOnline) -- desmarcado, ele sempre manda
+          // false por design, mesmo que a decisão real (guardada só
+          // localmente) tenha sido brilhante. Sem esse cuidado, restaurar
+          // do Firestore apagaria esse resultado quando o município
+          // estivesse desmarcado no momento do login.
+          brilhante: dados.visitado ? !!dados.brilhante : !!estadoMapa[id]?.brilhante,
           chanceDecidida: estadoMapa[id]?.chanceDecidida || !!dados.visitado,
         };
       });
