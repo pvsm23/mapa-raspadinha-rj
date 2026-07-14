@@ -111,6 +111,7 @@ window.raspadinhaAuth = {
   sincronizarConquista: async () => {},
   definirPerfilPublico: async () => {},
   buscarPerfilPublico: async () => null,
+  buscarMeuEstadoCompleto: async () => null,
   salvarSnapshotMapa: async () => {},
   contarPessoasComMunicipioVerificado: async () => 0,
   contarPessoasComRegiao: async () => 0,
@@ -312,6 +313,25 @@ if (CONFIGURADO) {
       estadoRegioes: dados.estadoRegioes || {},
       mapaSnapshot: dados.mapaSnapshot || null,
       mapaSnapshotData: dados.mapaSnapshotData || null,
+    };
+  };
+
+  /**
+   * Busca o estado (município/região) do PRÓPRIO usuário logado, pra
+   * restaurar no login (ver carregarEstadoDoUsuario em js/script.js)
+   * -- é a fonte de verdade por conta (isolada por uid nas regras do
+   * Firestore), usada pra corrigir sozinho qualquer mistura que ainda
+   * exista no localStorage do navegador local.
+   */
+  window.raspadinhaAuth.buscarMeuEstadoCompleto = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return null;
+    const snap = await getDoc(doc(db, "usuarios", usuario.uid));
+    if (!snap.exists()) return null;
+    const dados = snap.data();
+    return {
+      estadoMunicipios: dados.estadoMunicipios || {},
+      estadoRegioes: dados.estadoRegioes || {},
     };
   };
 

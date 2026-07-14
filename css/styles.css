@@ -2261,11 +2261,32 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   border: 1px solid #f1f5f9;
 }
 
-/* ---- Marca de selo brilhante na biblioteca ---- */
+/* ---- Marca de selo brilhante na biblioteca/perfil ---- */
 
 .selo-item-brilhante img {
   border-color: #facc15;
   box-shadow: 0 0 10px 1px rgba(250, 204, 21, 0.6);
+}
+
+/* Mesmo efeito de sol (raios girando) do popup principal
+   (.selo-brilhante em css/styles.css), só que com um raio menor pra
+   caber numa grade com vários selos lado a lado sem invadir o
+   vizinho -- reaproveita as mesmas @keyframes girar-raios/
+   respirar-raios. Persiste sempre, não só na hora de raspar. */
+.selo-item-brilhante::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(250, 204, 21, 0.55) 0deg 3deg,
+    transparent 3deg 18deg
+  );
+  animation: girar-raios 14s linear infinite, respirar-raios 2.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+  mix-blend-mode: screen;
 }
 
 .selo-item {

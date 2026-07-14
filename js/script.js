@@ -28,6 +28,18 @@ const STORAGE_KEY_STREAK = "scratchMapRJ_streak_v1";
 // Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
 const CHAVE_PIX_COLABORACAO = "pvsm23@jim.com";
 
+// Dono "atual" das chaves de localStorage acima -- "anon" enquanto
+// ninguém logou nesta aba, ou o uid de quem está logado. CRÍTICO:
+// sem isso, contas diferentes no MESMO navegador liam/escreviam a
+// MESMA chave fixa e se misturavam (o progresso de uma conta
+// aparecia/sobrescrevia o da outra) -- ver carregarEstadoDoUsuario /
+// voltarParaEstadoAnonimo, chamadas sempre que o login muda.
+let uidStorageAtual = "anon";
+
+function chaveComUid(chaveBase) {
+  return `${chaveBase}_${uidStorageAtual}`;
+}
+
 // Estrutura salva no localStorage:
 // {
 //   "3303302": {
@@ -644,7 +656,7 @@ function sairDaConta() {
  * ao deslogar, NÃO reabre o popup de login sozinho; ele só aparece
  * quando alguma ação realmente exigir (ver exigirLogin()).
  */
-function atualizarUiDeConta(detalhe) {
+async function atualizarUiDeConta(detalhe) {
   const status = document.getElementById("conta-status");
 
   if (detalhe) {
@@ -657,6 +669,13 @@ function atualizarUiDeConta(detalhe) {
     document.getElementById("dados-email").textContent = `E-mail: ${usuario.email}`;
     document.getElementById("input-apelido-config").value = apelido;
 
+    // IMPORTANTE: troca pro estado (município/região) DESSA conta —
+    // e restaura do Firestore por cima — ANTES de sincronizar de
+    // volta pro Firestore. Sem isso, se o navegador ainda tivesse o
+    // estado de outra conta (ver carregarEstadoDoUsuario), essa
+    // sincronização gravaria dado misturado por cima do certo.
+    await carregarEstadoDoUsuario(usuario.uid);
+
     sincronizarProgressoOnline();
     window.raspadinhaAuth.registrarCheckinHoje();
     gerarSnapshotMapaSeNecessario();
@@ -667,6 +686,7 @@ function atualizarUiDeConta(detalhe) {
     status.textContent = "Você não está conectado.";
     document.getElementById("dados-email").textContent = "";
     document.getElementById("input-apelido-config").value = "";
+    voltarParaEstadoAnonimo();
     atualizarAvisoBrilhantePendente();
   }
 }
@@ -2560,7 +2580,9 @@ const CHAVE_CONQUISTAS_NOTIFICADAS = "scratchMapRJ_conquistas_notificadas_v1";
  */
 function verificarNovasConquistasDesbloqueadas() {
   const ctx = calcularContextoConquistas();
-  const jaNotificadas = new Set(JSON.parse(localStorage.getItem(CHAVE_CONQUISTAS_NOTIFICADAS) || "[]"));
+  const jaNotificadas = new Set(
+    JSON.parse(localStorage.getItem(chaveComUid(CHAVE_CONQUISTAS_NOTIFICADAS)) || "[]")
+  );
   let mudou = false;
 
   DEFINICOES_CONQUISTAS.forEach((def) => {
@@ -2575,7 +2597,9 @@ function verificarNovasConquistasDesbloqueadas() {
     }
   });
 
-  if (mudou) localStorage.setItem(CHAVE_CONQUISTAS_NOTIFICADAS, JSON.stringify([...jaNotificadas]));
+  if (mudou) {
+    localStorage.setItem(chaveComUid(CHAVE_CONQUISTAS_NOTIFICADAS), JSON.stringify([...jaNotificadas]));
+  }
 }
 
 function fecharConquistas() {
@@ -3040,12 +3064,12 @@ const CHAVE_DATA_SNAPSHOT_MAPA = "scratchMapRJ_snapshot_mapa_data_v1";
  */
 function gerarSnapshotMapaSeNecessario() {
   const hoje = new Date().toDateString();
-  if (localStorage.getItem(CHAVE_DATA_SNAPSHOT_MAPA) === hoje) return;
+  if (localStorage.getItem(chaveComUid(CHAVE_DATA_SNAPSHOT_MAPA)) === hoje) return;
 
   gerarSnapshotMapaComoDataUrl()
     .then((dataUrl) => {
       if (!dataUrl) return;
-      localStorage.setItem(CHAVE_DATA_SNAPSHOT_MAPA, hoje);
+      localStorage.setItem(chaveComUid(CHAVE_DATA_SNAPSHOT_MAPA), hoje);
       window.raspadinhaAuth?.salvarSnapshotMapa(dataUrl, hoje);
     })
     .catch((erro) => console.error("Falha ao gerar snapshot do mapa:", erro));
@@ -3617,12 +3641,12 @@ function resetarTudo() {
 /* ---------- LocalStorage ---------- */
 
 function salvarEstado() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(estadoMapa));
+  localStorage.setItem(chaveComUid(STORAGE_KEY), JSON.stringify(estadoMapa));
 }
 
 function carregarEstado() {
   try {
-    const dados = localStorage.getItem(STORAGE_KEY);
+    const dados = localStorage.getItem(chaveComUid(STORAGE_KEY));
     return dados ? JSON.parse(dados) : {};
   } catch (erro) {
     console.error("Erro ao carregar estado do LocalStorage:", erro);
@@ -3631,12 +3655,12 @@ function carregarEstado() {
 }
 
 function salvarEstadoRegioes() {
-  localStorage.setItem(STORAGE_KEY_REGIOES, JSON.stringify(estadoRegioes));
+  localStorage.setItem(chaveComUid(STORAGE_KEY_REGIOES), JSON.stringify(estadoRegioes));
 }
 
 function carregarEstadoRegioes() {
   try {
-    const dados = localStorage.getItem(STORAGE_KEY_REGIOES);
+    const dados = localStorage.getItem(chaveComUid(STORAGE_KEY_REGIOES));
     return dados ? JSON.parse(dados) : {};
   } catch (erro) {
     console.error("Erro ao carregar estado das regiões do LocalStorage:", erro);
@@ -3645,12 +3669,12 @@ function carregarEstadoRegioes() {
 }
 
 function salvarEstadoConquistas() {
-  localStorage.setItem(STORAGE_KEY_CONQUISTAS, JSON.stringify(estadoConquistas));
+  localStorage.setItem(chaveComUid(STORAGE_KEY_CONQUISTAS), JSON.stringify(estadoConquistas));
 }
 
 function carregarEstadoConquistas() {
   try {
-    const dados = localStorage.getItem(STORAGE_KEY_CONQUISTAS);
+    const dados = localStorage.getItem(chaveComUid(STORAGE_KEY_CONQUISTAS));
     return dados ? JSON.parse(dados) : {};
   } catch (erro) {
     console.error("Erro ao carregar estado das conquistas do LocalStorage:", erro);
@@ -3660,7 +3684,7 @@ function carregarEstadoConquistas() {
 
 function carregarEstadoStreak() {
   try {
-    const dados = localStorage.getItem(STORAGE_KEY_STREAK);
+    const dados = localStorage.getItem(chaveComUid(STORAGE_KEY_STREAK));
     return dados ? JSON.parse(dados) : { ultimoDia: null, contagem: 0 };
   } catch (erro) {
     console.error("Erro ao carregar streak do LocalStorage:", erro);
@@ -3669,7 +3693,94 @@ function carregarEstadoStreak() {
 }
 
 function salvarEstadoStreak() {
-  localStorage.setItem(STORAGE_KEY_STREAK, JSON.stringify(estadoStreak));
+  localStorage.setItem(chaveComUid(STORAGE_KEY_STREAK), JSON.stringify(estadoStreak));
+}
+
+/**
+ * Migração 1x: contas que já usavam o app antes desta correção têm o
+ * progresso guardado na chave FIXA antiga (sem uid nenhum -- a causa
+ * da mistura de dados entre contas no mesmo navegador). Se a conta
+ * que está logando ainda não tem uma chave própria, herda o que
+ * estiver na chave antiga (não apaga a antiga, só copia).
+ */
+function migrarEstadoAntigoSeNecessario(uid) {
+  [STORAGE_KEY, STORAGE_KEY_REGIOES, STORAGE_KEY_CONQUISTAS, STORAGE_KEY_STREAK].forEach(
+    (chaveBase) => {
+      const chaveNova = `${chaveBase}_${uid}`;
+      if (localStorage.getItem(chaveNova) !== null) return; // já migrado antes
+      const dadosAntigos = localStorage.getItem(chaveBase);
+      if (dadosAntigos !== null) localStorage.setItem(chaveNova, dadosAntigos);
+    }
+  );
+}
+
+/**
+ * Chamada sempre que alguém loga (ver atualizarUiDeConta): troca o
+ * "dono" das chaves de localStorage pro uid de quem acabou de logar,
+ * migra dados antigos (contas de antes desta correção) se for a
+ * primeira vez, recarrega os 4 estados da chave certa, e por cima
+ * disso ainda restaura município/região a partir do Firestore (fonte
+ * de verdade por conta, já que fica isolado por uid nas regras de
+ * segurança) -- isso corrige sozinho qualquer mistura que ainda
+ * exista no navegador local. Só depois disso é seguro sincronizar de
+ * volta pro Firestore (sincronizarProgressoOnline etc.), pra não
+ * gravar dado misturado por cima do dado certo da conta.
+ */
+async function carregarEstadoDoUsuario(uid) {
+  migrarEstadoAntigoSeNecessario(uid);
+  uidStorageAtual = uid;
+
+  estadoMapa = carregarEstado();
+  estadoRegioes = carregarEstadoRegioes();
+  estadoConquistas = carregarEstadoConquistas();
+  estadoStreak = carregarEstadoStreak();
+
+  try {
+    const estadoNuvem = await window.raspadinhaAuth?.buscarMeuEstadoCompleto();
+    if (estadoNuvem) {
+      Object.entries(estadoNuvem.estadoMunicipios || {}).forEach(([id, dados]) => {
+        estadoMapa[id] = {
+          ...estadoMapa[id],
+          visitado: !!dados.visitado,
+          verificado: !!dados.verificado,
+          brilhante: !!dados.brilhante,
+          chanceDecidida: estadoMapa[id]?.chanceDecidida || !!dados.visitado,
+        };
+      });
+      Object.entries(estadoNuvem.estadoRegioes || {}).forEach(([id, dados]) => {
+        estadoRegioes[id] = {
+          ...estadoRegioes[id],
+          revelado: !!dados.revelado,
+          brilhante: !!dados.brilhante,
+          chanceDecidida: estadoRegioes[id]?.chanceDecidida || !!dados.revelado,
+        };
+      });
+      salvarEstado();
+      salvarEstadoRegioes();
+    }
+  } catch (erro) {
+    console.error("Falha ao restaurar estado do Firestore no login:", erro);
+    // sem nuvem acessível, segue só com o que tinha local mesmo
+  }
+
+  aplicarEstadoNoSVG();
+  atualizarContador();
+}
+
+/**
+ * Chamada ao deslogar: volta as chaves de localStorage pro dono
+ * "anon" (navegação sem login) -- sem isso, o estado da conta que
+ * acabou de sair continuaria em memória/repintado no mapa até um
+ * reload manual.
+ */
+function voltarParaEstadoAnonimo() {
+  uidStorageAtual = "anon";
+  estadoMapa = carregarEstado();
+  estadoRegioes = carregarEstadoRegioes();
+  estadoConquistas = carregarEstadoConquistas();
+  estadoStreak = carregarEstadoStreak();
+  aplicarEstadoNoSVG();
+  atualizarContador();
 }
 
 /**
