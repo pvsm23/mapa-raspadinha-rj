@@ -529,8 +529,53 @@
     </div>
   </div>
 
-  <!-- Aviso: app em desenvolvimento (mostra 1x, ver
-       mostrarAvisoDesenvolvimentoSeNecessario em js/script.js) -->
+  <!-- Boas-vindas/tutorial: mostra 1x, antes do aviso de
+       desenvolvimento (ver mostrarBoasVindasSeNecessario em
+       js/script.js), explicando a ideia do app e como funciona -->
+  <div id="modal-boas-vindas" class="oculto">
+    <div id="boas-vindas-conteudo">
+      <h2>🗺️ Bem-vindo ao Desbrava!</h2>
+      <p>A ideia por trás do app é simples: te dar aquele empurrãozinho pra sair de casa e conhecer lugares novos. Os 92 municípios do Rio de Janeiro têm história, cultura e paisagens que valem muito a pena — o mapa aqui é só um jeito divertido de registrar essa jornada de verdade, não de substituí-la.</p>
+
+      <div class="boas-vindas-item">
+        <span class="boas-vindas-icone">🗺️</span>
+        <div>
+          <h3>Selos dos municípios</h3>
+          <p>Cada município tem um selo pra "raspar" na tela — mas ele só conta de verdade depois que o GPS confirma que você esteve lá pessoalmente.</p>
+        </div>
+      </div>
+
+      <div class="boas-vindas-item">
+        <span class="boas-vindas-icone">📍</span>
+        <div>
+          <h3>Pontos turísticos</h3>
+          <p>Dentro de cada município, uma lista de lugares reais pra visitar, com um pouco de história e curiosidade de cada um — pra te dar ideia de onde ir.</p>
+        </div>
+      </div>
+
+      <div class="boas-vindas-item">
+        <span class="boas-vindas-icone">🏆</span>
+        <div>
+          <h3>Conquistas</h3>
+          <p>Metas que vão desbloqueando conforme você explora — dos primeiros municípios até completar regiões inteiras do estado.</p>
+        </div>
+      </div>
+
+      <div class="boas-vindas-item">
+        <span class="boas-vindas-icone">✨</span>
+        <div>
+          <h3>Selo brilhante</h3>
+          <p>Uma pequena chance (5% por município, 10% por região) de o selo sair "brilhante" — uma versão rara e especial, só de bônus e diversão.</p>
+        </div>
+      </div>
+
+      <button type="button" id="btn-fechar-boas-vindas">Bora explorar! 🚀</button>
+    </div>
+  </div>
+
+  <!-- Aviso: app em desenvolvimento (mostra 1x, logo depois das
+       boas-vindas, ver mostrarAvisoDesenvolvimentoSeNecessario em
+       js/script.js) -->
   <div id="modal-aviso-desenvolvimento" class="oculto">
     <div id="aviso-desenvolvimento-conteudo">
       <h2>🚧 Em desenvolvimento</h2>

@@ -123,11 +123,11 @@ dourada — não existe "conquista brilhante"). As 24 chaves atuais:
 Botão 💬 (barra de topo) → aba "🤝 Colaborar" mostra uma chave PIX pra
 quem quiser ajudar financeiramente (sempre opcional). A chave fica na
 constante `CHAVE_PIX_COLABORACAO`, bem no topo de `js/script.js` —
-troque o placeholder `SUBSTITUA_AQUI_PELA_SUA_CHAVE_PIX` pela sua
-chave de verdade (CPF, e-mail, telefone ou chave aleatória) antes de
-publicar. Diferente do código secreto do Plano PRO, essa chave **não
-precisa ser segredo** (é justamente pra aparecer pro usuário copiar),
-então não tem problema ela estar visível no código-fonte público.
+**já preenchida** (`pvsm23@jim.com`). Diferente do código secreto do
+Plano PRO, essa chave **não precisa ser segredo** (é justamente pra
+aparecer pro usuário copiar), então não tem problema ela estar
+visível no código-fonte público. Se quiser trocar, é só editar essa
+constante.
 
 Sobre **como receber** — recomendação: **chave PIX é a opção mais
 simples** pra esse caso (doação avulsa, sem meta fixa, contínua ao

@@ -26,8 +26,7 @@ const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
 const STORAGE_KEY_STREAK = "scratchMapRJ_streak_v1";
 
 // Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
-// SUBSTITUA_AQUI pela sua chave de verdade antes de publicar.
-const CHAVE_PIX_COLABORACAO = "SUBSTITUA_AQUI_PELA_SUA_CHAVE_PIX";
+const CHAVE_PIX_COLABORACAO = "pvsm23@jim.com";
 
 // Estrutura salva no localStorage:
 // {
@@ -339,6 +338,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-copiar-pix").addEventListener("click", copiarChavePix);
 
   document
+    .getElementById("btn-fechar-boas-vindas")
+    .addEventListener("click", fecharBoasVindas);
+
+  document
     .getElementById("btn-fechar-aviso-desenvolvimento")
     .addEventListener("click", fecharAvisoDesenvolvimento);
 
@@ -386,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Pequeno atraso pra não competir com o resto da tela carregando.
   setTimeout(mostrarAvisoInstalarPwa, 1200);
 
-  mostrarAvisoDesenvolvimentoSeNecessario();
+  mostrarBoasVindasSeNecessario();
 });
 
 /**
@@ -2930,13 +2933,38 @@ async function copiarChavePix() {
   }
 }
 
+const CHAVE_BOAS_VINDAS_VISTAS = "scratchMapRJ_boasvindas_vistas_v1";
+
+/**
+ * Mostra, só na primeira vez (controlado por localStorage), um
+ * tutorial curto explicando a ideia do app (incentivar a sair de casa
+ * e conhecer municípios de verdade) e os conceitos principais: selos,
+ * pontos turísticos, conquistas e selo brilhante. Ao fechar, encadeia
+ * o aviso de "em desenvolvimento" (ver fecharBoasVindas) -- assim os
+ * dois nunca aparecem sobrepostos ao mesmo tempo.
+ */
+function mostrarBoasVindasSeNecessario() {
+  if (localStorage.getItem(CHAVE_BOAS_VINDAS_VISTAS)) {
+    mostrarAvisoDesenvolvimentoSeNecessario();
+    return;
+  }
+  document.getElementById("modal-boas-vindas").classList.remove("oculto");
+}
+
+function fecharBoasVindas() {
+  localStorage.setItem(CHAVE_BOAS_VINDAS_VISTAS, "true");
+  document.getElementById("modal-boas-vindas").classList.add("oculto");
+  mostrarAvisoDesenvolvimentoSeNecessario();
+}
+
 const CHAVE_AVISO_DESENVOLVIMENTO_VISTO = "scratchMapRJ_aviso_dev_visto_v1";
 
 /**
  * Mostra, só na primeira vez (controlado por localStorage), um aviso
  * de que o app ainda está em desenvolvimento -- não é a versão final,
  * ainda não está na Play Store, é e sempre vai ser gratuito, e dá pra
- * colaborar (nunca obrigatório) pelo botão 💬 no topo.
+ * colaborar (nunca obrigatório) pelo botão 💬 no topo. Chamada depois
+ * das boas-vindas (ver mostrarBoasVindasSeNecessario/fecharBoasVindas).
  */
 function mostrarAvisoDesenvolvimentoSeNecessario() {
   if (localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)) return;
