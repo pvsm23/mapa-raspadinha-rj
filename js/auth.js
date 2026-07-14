@@ -68,7 +68,8 @@ const CHAVE_CONVITE_PENDENTE = "desbrava_convite_pendente";
 // sugestão (botão 💬) numa planilha do Google Sheets, além do
 // Firestore -- ver enviarFeedbackParaPlanilha() e PENDENCIAS.md pra
 // o passo a passo de deploy (o app da própria conta do Paulo).
-const URL_PLANILHA_FEEDBACK = "SUBSTITUA_AQUI_PELA_URL_DO_APPS_SCRIPT";
+const URL_PLANILHA_FEEDBACK =
+  "https://script.google.com/macros/s/AKfycbyYHIrhBjxGBRmUEXxrSairtxPaQVEuazj0vKvmNWYLEBiNnpr5ftc8DuW2brcoLyBj/exec";
 
 const AVISO_NAO_CONFIGURADO =
   "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase.";
