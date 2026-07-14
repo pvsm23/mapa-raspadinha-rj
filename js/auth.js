@@ -64,6 +64,12 @@ const TRINTA_DIAS_MS = 30 * 24 * 60 * 60 * 1000;
 // pra quem convidou.
 const CHAVE_CONVITE_PENDENTE = "desbrava_convite_pendente";
 
+// URL do Google Apps Script Web App que grava os relatos de bug/
+// sugestão (botão 💬) numa planilha do Google Sheets, além do
+// Firestore -- ver enviarFeedbackParaPlanilha() e PENDENCIAS.md pra
+// o passo a passo de deploy (o app da própria conta do Paulo).
+const URL_PLANILHA_FEEDBACK = "SUBSTITUA_AQUI_PELA_URL_DO_APPS_SCRIPT";
+
 const AVISO_NAO_CONFIGURADO =
   "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase.";
 
@@ -80,7 +86,15 @@ window.raspadinhaAuth = {
   configurado: CONFIGURADO,
   usuarioAtual: null,
   apelido: null,
-  ehPro: false,
+  // Distintivo "PRO" no ranking (ver README.md, seção Plano PRO) --
+  // booleano, não confundir com a função `ehPro()` mais abaixo neste
+  // mesmo objeto (stub antigo do recurso de download offline, um
+  // propósito totalmente diferente). Nomes parecidos de propósito
+  // (ambos ligados a "ser PRO"), mas ESTE aqui precisa de um nome
+  // próprio, senão a atribuição booleana em onAuthStateChanged
+  // sobrescreveria a função e quebraria ehUsuarioPro() em
+  // js/script.js assim que alguém logasse.
+  contaEhPro: false,
   db: null,
   boostsBrilhantesPendentes: 0,
   entrarComEmail: async () => {
@@ -167,22 +181,59 @@ if (CONFIGURADO) {
 
   /**
    * Grava um relato de bug ou sugestão na coleção "feedback" do
-   * Firestore -- lido só pelo Console do Firebase (não tem tela
-   * dentro do app pra ler as respostas). Exige login (mesma regra de
-   * qualquer interação de verdade no app), pra amarrar cada relato a
-   * uma conta e não virar um jeito fácil de mandar spam.
+   * Firestore (backup/auditoria -- lido pelo Console do Firebase) E
+   * manda pra planilha do Google Sheets (ver enviarFeedbackParaPlanilha),
+   * que é onde o Paulo realmente acompanha isso no dia a dia. Exige
+   * login (mesma regra de qualquer interação de verdade no app), pra
+   * amarrar cada relato a uma conta e não virar um jeito fácil de
+   * mandar spam -- é assim que já sai com apelido e e-mail prontos,
+   * sem precisar perguntar de novo pra pessoa.
    */
   window.raspadinhaAuth.enviarFeedback = (tipo, texto) => {
     const usuario = auth.currentUser;
     if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+
+    enviarFeedbackParaPlanilha(tipo, texto, usuario);
+
     return addDoc(collection(db, "feedback"), {
       tipo,
       texto,
       uid: usuario.uid,
       apelido: window.raspadinhaAuth.apelido || "",
+      email: usuario.email || "",
       criadoEm: serverTimestamp(),
     });
   };
+
+  /**
+   * Manda o relato também pra planilha do Google Sheets, via um
+   * Google Apps Script Web App implantado na própria conta do Paulo
+   * (ver PENDENCIAS.md pro passo a passo de deploy) -- "melhor
+   * esforço": roda em paralelo ao Firestore, e se a URL ainda não
+   * estiver configurada ou a chamada falhar (rede, script fora do ar
+   * etc.), não afeta o "Enviado!" que o usuário já vê (baseado no
+   * Firestore, que é a fonte confiável).
+   *
+   * Usa `mode: "no-cors"` porque um Web App do Apps Script não manda
+   * os cabeçalhos de CORS que o fetch exigiria pra LER a resposta --
+   * sem isso, o navegador bloqueia a chamada inteira mesmo o Apps
+   * Script recebendo certinho do outro lado. Como consequência, não
+   * dá pra saber aqui se deu certo (por isso é só "melhor esforço").
+   */
+  function enviarFeedbackParaPlanilha(tipo, texto, usuario) {
+    if (!URL_PLANILHA_FEEDBACK || URL_PLANILHA_FEEDBACK.startsWith("SUBSTITUA")) return;
+    fetch(URL_PLANILHA_FEEDBACK, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        tipo,
+        apelido: window.raspadinhaAuth.apelido || "",
+        email: usuario.email || "",
+        texto,
+      }),
+    }).catch((erro) => console.error("Falha ao enviar feedback pra planilha:", erro));
+  }
 
   window.raspadinhaAuth.sair = () => signOut(auth);
 
@@ -642,7 +693,7 @@ if (CONFIGURADO) {
 
     if (!usuario) {
       window.raspadinhaAuth.apelido = null;
-      window.raspadinhaAuth.ehPro = false;
+      window.raspadinhaAuth.contaEhPro = false;
       document.dispatchEvent(new CustomEvent("auth-mudou", { detail: null }));
       return;
     }
@@ -651,7 +702,7 @@ if (CONFIGURADO) {
       const snap = await getDoc(doc(db, "usuarios", usuario.uid));
       const apelido = snap.exists() ? snap.data().apelido : null;
       window.raspadinhaAuth.apelido = apelido || null;
-      window.raspadinhaAuth.ehPro = !!snap.data()?.ehPro;
+      window.raspadinhaAuth.contaEhPro = !!snap.data()?.ehPro;
 
       if (apelido) {
         document.dispatchEvent(

@@ -139,6 +139,30 @@ valor arrecadado. Se no futuro quiser apoio recorrente (tipo
 assinatura mensal), vale olhar Apoia.se ou Padrim (equivalentes
 brasileiros do Patreon).
 
+## Feedback (bugs/sugestões) → planilha do Google Sheets
+
+Botão 💬 → "🐛 Relatar um bug" / "💡 Dar uma sugestão" grava em dois
+lugares ao mesmo tempo: a coleção `feedback` do Firestore (backup,
+lido no Console do Firebase) **e** uma planilha do Google Sheets, que
+é onde dá pra acompanhar isso no dia a dia sem precisar abrir o
+Firebase. Cada relato já sai com apelido e e-mail (da própria conta
+logada, sem precisar perguntar de novo), separados por aba: **Bugs**
+numa aba, **Sugestões** noutra (criadas sozinhas na planilha, na
+primeira vez que cada tipo chegar).
+
+**Passo pendente**: a integração com a planilha só funciona depois de
+implantar o Google Apps Script. O código já está pronto em
+[`tools/apps-script-feedback.gs`](tools/apps-script-feedback.gs), com
+o passo a passo completo em comentário no topo do arquivo (resumo:
+Extensões → Apps Script na planilha, colar o código, Implantar como
+"App da Web", copiar a URL). Depois de implantar, troque o
+placeholder `SUBSTITUA_AQUI_PELA_URL_DO_APPS_SCRIPT` pela URL de
+verdade em `URL_PLANILHA_FEEDBACK`, no topo de `js/auth.js`. Até lá,
+o envio pra planilha é pulado silenciosamente (sem quebrar nada) — só
+o Firestore recebe.
+
+A planilha usada: [link fornecido pelo Paulo](https://docs.google.com/spreadsheets/d/1-Oe4Zsf6uvolTDy4VInl9qJn14aR8G22Z14OtzaStlc/edit).
+
 ## Plano PRO
 
 Fase 1 (feita): só o distintivo "PRO" amarelo do lado do apelido no

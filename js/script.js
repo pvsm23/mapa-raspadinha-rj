@@ -1603,16 +1603,22 @@ async function verificarLocalizacaoAoAbrirApp() {
     const nome = path?.dataset.nome;
     if (!nome) return;
 
+    // Já raspado (visitado) -- NUNCA convida a raspar de novo, só
+    // ainda que raro, isso não pode reaparecer mostrando "raspagem
+    // disponível" pra quem já tem o selo. Só falta confirmar o local
+    // (se ainda não verificado), e isso é feito sozinho, sem exigir
+    // ação nenhuma.
     const dados = estadoMapa[id];
-    if (dados?.visitado && dados?.verificado) return; // já tudo certo
-
-    if (dados?.visitado && !dados?.verificado) {
-      // já tinha raspado, só faltava confirmar o local -- confirma sozinho
-      atualizarVerificacaoMunicipio(id, true, "");
-      mostrarAvisoMunicipioDetectado(nome, null);
+    if (dados?.visitado) {
+      if (!dados.verificado) {
+        atualizarVerificacaoMunicipio(id, true, "");
+        mostrarAvisoMunicipioDetectado(nome, null);
+      }
       return;
     }
 
+    // Só chega aqui se o município NUNCA foi raspado -- aí sim faz
+    // sentido convidar a raspar.
     mostrarAvisoMunicipioDetectado(nome, () => {
       exigirLogin(() => {
         window.controleMapa?.focarEmMunicipio(id);
@@ -2658,7 +2664,7 @@ async function carregarRanking() {
           uid: meuUid,
           apelido: window.raspadinhaAuth.apelido,
           count: meuCount,
-          ehPro: window.raspadinhaAuth.ehPro,
+          ehPro: window.raspadinhaAuth.contaEhPro,
         },
       ].sort((a, b) => b.count - a.count);
 
@@ -3734,6 +3740,13 @@ async function carregarEstadoDoUsuario(uid) {
   estadoRegioes = carregarEstadoRegioes();
   estadoConquistas = carregarEstadoConquistas();
   estadoStreak = carregarEstadoStreak();
+  // registrarAcessoDeHoje() já rodou no DOMContentLoaded, mas contra o
+  // bucket "anon" (uid ainda não era conhecido nesse momento) -- chama
+  // de novo aqui, agora contra o streak de VERDADE dessa conta, senão
+  // a conquista "Semana Cheia" nunca contaria acesso nenhum pra quem
+  // está logado (só pra sessões anônimas, que nem chegam a ver
+  // conquistas).
+  registrarAcessoDeHoje();
 
   try {
     const estadoNuvem = await window.raspadinhaAuth?.buscarMeuEstadoCompleto();
