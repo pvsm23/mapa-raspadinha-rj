@@ -211,9 +211,12 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   background: #334155;
 }
 
-/* Botoes flutuantes na lateral esquerda: ranking, amigos, conquistas
-   e check-in semanal -- ficam fora da barra de topo pra nao lotar o
-   cabecalho, mas continuam sempre visiveis e de facil acesso. */
+/* Botoes flutuantes na lateral esquerda: perfil, ranking, amigos,
+   conquistas, check-in semanal e mapa do Brasil -- ficam fora da
+   barra de topo pra nao lotar o cabecalho. So a setinha
+   (#btn-toggle-lateral) fica sempre visivel; apertar ela abre/fecha
+   o resto (#botoes-lateral-lista), ver alternarBotoesLaterais em
+   js/script.js -- evita empilhar botoes demais na tela de uma vez. */
 #botoes-lateral-esquerda {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 96px);
@@ -239,6 +242,16 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #botoes-lateral-esquerda button:hover {
   background: #334155;
+}
+
+#botoes-lateral-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#botoes-lateral-lista.recolhido {
+  display: none;
 }
 
 #dica-mapa {

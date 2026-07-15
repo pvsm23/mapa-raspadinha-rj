@@ -267,16 +267,13 @@
       <button id="btn-feedback" aria-label="Feedback e colaboração" title="Feedback e colaboração">💬</button>
       <button id="btn-compartilhar" aria-label="Compartilhar" title="Compartilhar">🔗</button>
       <button id="btn-biblioteca" aria-label="Biblioteca de selos" title="Biblioteca de selos">📖</button>
-      <!-- Só aparece se a pessoa ativar em Configurações -> Experimental
-           (vem desabilitado de fábrica, ver check-mapa-brasil) -->
-      <button id="btn-mapa-brasil" class="oculto" aria-label="Mapa do Brasil" title="Mapa do Brasil (beta)">🇧🇷</button>
       <button id="btn-configuracoes" aria-label="Configurações" title="Configurações">⚙️</button>
     </div>
   </header>
 
-  <!-- Mapa do Brasil (beta, opt-in): contorno de cada estado, todos
-       "em breve" exceto o RJ (que já é o app principal). Ver
-       abrirMapaBrasil/fecharMapaBrasil em js/script.js. -->
+  <!-- Mapa do Brasil: contorno de cada estado, todos "em breve" exceto
+       o RJ (que já é o app principal). Ver abrirMapaBrasil/
+       fecharMapaBrasil em js/script.js. -->
   <div id="modal-brasil" class="oculto">
     <div id="brasil-conteudo">
       <button id="btn-fechar-brasil" aria-label="Fechar">✕</button>
@@ -305,11 +302,15 @@
   <!-- Botoes flutuantes na lateral esquerda: ranking, amigos,
        conquistas e check-in semanal -->
   <div id="botoes-lateral-esquerda">
-    <button id="btn-meu-perfil" aria-label="Meu perfil" title="Meu perfil">👤</button>
-    <button id="btn-abrir-ranking" aria-label="Ranking" title="Ranking">🏆</button>
-    <button id="btn-abrir-amigos" aria-label="Amigos" title="Amigos">👥</button>
-    <button id="btn-abrir-conquistas" aria-label="Conquistas" title="Conquistas">🎖️</button>
-    <button id="btn-abrir-checkin" aria-label="Check-in semanal" title="Check-in semanal">📅</button>
+    <button id="btn-toggle-lateral" aria-label="Mostrar mais opções" title="Mais opções" aria-expanded="false">▸</button>
+    <div id="botoes-lateral-lista" class="recolhido">
+      <button id="btn-meu-perfil" aria-label="Meu perfil" title="Meu perfil">👤</button>
+      <button id="btn-abrir-ranking" aria-label="Ranking" title="Ranking">🏆</button>
+      <button id="btn-abrir-amigos" aria-label="Amigos" title="Amigos">👥</button>
+      <button id="btn-abrir-conquistas" aria-label="Conquistas" title="Conquistas">🎖️</button>
+      <button id="btn-abrir-checkin" aria-label="Check-in semanal" title="Check-in semanal">📅</button>
+      <button id="btn-mapa-brasil" aria-label="Mapa do Brasil" title="Mapa do Brasil">🇧🇷</button>
+    </div>
   </div>
 
   <p id="dica-mapa">Arraste para mover · pinça ou roda do mouse para zoom</p>
@@ -430,14 +431,6 @@
           <span class="btn-texto">Salvar apelido</span>
           <span class="spinner oculto"></span>
         </button>
-      </div>
-
-      <div id="secao-experimental">
-        <h3>Experimental</h3>
-        <label id="label-mapa-brasil">
-          <input type="checkbox" id="check-mapa-brasil">
-          🇧🇷 Mapa do Brasil (beta) — mostra o contorno dos outros estados, ainda "em breve"
-        </label>
       </div>
 
       <div id="secao-pro">

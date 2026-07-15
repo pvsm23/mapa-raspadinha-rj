@@ -382,17 +382,15 @@ document.addEventListener("DOMContentLoaded", () => {
     alternarNotificacoes(evento.target.checked);
   });
 
-  // ---- Mapa do Brasil (beta, opt-in) ----
-  sincronizarCheckboxMapaBrasil();
-  document.getElementById("check-mapa-brasil").addEventListener("change", (evento) => {
-    localStorage.setItem(CHAVE_MAPA_BRASIL_ATIVADO, evento.target.checked ? "true" : "false");
-    sincronizarCheckboxMapaBrasil();
-  });
+  // ---- Mapa do Brasil ----
   document.getElementById("btn-mapa-brasil").addEventListener("click", abrirMapaBrasil);
   document.getElementById("btn-fechar-brasil").addEventListener("click", fecharMapaBrasil);
   document.getElementById("modal-brasil").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-brasil") fecharMapaBrasil();
   });
+
+  // ---- Botões flutuantes da lateral esquerda (janela suspensa) ----
+  document.getElementById("btn-toggle-lateral").addEventListener("click", alternarBotoesLaterais);
 
   // ---- Busca de município/ponto turístico ----
   document.getElementById("btn-buscar-local").addEventListener("click", abrirBuscaLocal);
@@ -2395,7 +2393,6 @@ function fecharBibliotecaSelos() {
 
 function abrirConfiguracoes() {
   sincronizarCheckboxNotificacoes();
-  sincronizarCheckboxMapaBrasil();
   document.getElementById("modal-configuracoes").classList.remove("oculto");
 }
 
@@ -3907,28 +3904,14 @@ function registrarAcessoDeHoje() {
 }
 
 /* ============================================================
-   Mapa do Brasil (beta, opt-in): contorno de cada estado, todos
-   "em breve" (cinza + borrado) exceto o RJ, que já é o app principal
-   -- clicar nele fecha essa visão e volta pro mapa detalhado. Vem
-   DESABILITADO de fábrica (preferência local, ver
-   CHAVE_MAPA_BRASIL_ATIVADO); só quem ativar em Configurações ->
-   Experimental enxerga o botão 🇧🇷 na barra de topo. Ver
-   tools/br-estados-to-svg.js pra como o SVG é gerado a partir de
-   data/br-estados.geojson (malha oficial do IBGE) + data/estados.json.
+   Mapa do Brasil: contorno de cada estado, todos "em breve" (cinza +
+   borrado) exceto o RJ, que já é o app principal -- clicar nele fecha
+   essa visão e volta pro mapa detalhado. Botão 🇧🇷 vive dentro da
+   janela suspensa da lateral esquerda (ver alternarBotoesLaterais),
+   sempre disponível. Ver tools/br-estados-to-svg.js pra como o SVG é
+   gerado a partir de data/br-estados.geojson (malha oficial do IBGE)
+   + data/estados.json.
    ============================================================ */
-
-const CHAVE_MAPA_BRASIL_ATIVADO = "desbrava_mapa_brasil_ativado";
-
-/**
- * Reflete no checkbox de Configurações e na visibilidade do botão
- * 🇧🇷 (barra de topo) a preferência salva localmente -- chamada ao
- * carregar a página e sempre que Configurações é aberto.
- */
-function sincronizarCheckboxMapaBrasil() {
-  const ativado = localStorage.getItem(CHAVE_MAPA_BRASIL_ATIVADO) === "true";
-  document.getElementById("check-mapa-brasil").checked = ativado;
-  document.getElementById("btn-mapa-brasil").classList.toggle("oculto", !ativado);
-}
 
 // Cache do SVG buscado (só faz o fetch uma vez por sessão, já que o
 // arquivo não muda em runtime).
@@ -3972,4 +3955,21 @@ async function abrirMapaBrasil() {
 
 function fecharMapaBrasil() {
   document.getElementById("modal-brasil").classList.add("oculto");
+}
+
+/**
+ * Abre/fecha a "janela suspensa" com os botões da lateral esquerda
+ * (perfil, ranking, amigos, conquistas, check-in, mapa do Brasil) --
+ * antes ficavam todos soltos e sempre visíveis; agora só a setinha
+ * fica sempre à mostra, e apertar ela expande/recolhe o resto, pra
+ * não lotar a tela com muitos botões flutuantes de uma vez.
+ */
+function alternarBotoesLaterais() {
+  const lista = document.getElementById("botoes-lateral-lista");
+  const botao = document.getElementById("btn-toggle-lateral");
+  const abrindo = lista.classList.contains("recolhido");
+
+  lista.classList.toggle("recolhido", !abrindo);
+  botao.textContent = abrindo ? "◂" : "▸";
+  botao.setAttribute("aria-expanded", abrindo ? "true" : "false");
 }
