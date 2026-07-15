@@ -1849,6 +1849,16 @@ function visualizarSeloRevelado(id, nome) {
   });
 }
 
+// Texto padrão pros 91 municípios que ainda não têm curiosidade
+// escrita -- vive de verdade em data/curiosidades.json (não só como
+// fallback aqui), de propósito: assim TODO município sempre tem um
+// `resumo` de verdade, não vazio/undefined, o que evita qualquer
+// tela em branco ou comportamento estranho enquanto o JSON ainda tá
+// carregando ou nalgum caso raro de falha de rede (ver também o
+// conserto no fallback do Service Worker, em sw.js). O fallback aqui
+// só cobre o caso do JSON não ter carregado ainda de jeito nenhum.
+const CURIOSIDADE_TEXTO_PADRAO = "Em breve, uma curiosidade sobre este município.";
+
 /**
  * Mostra a curiosidade/história do município (data/curiosidades.json)
  * -- só existe pra ver DEPOIS de raspar o selo (por isso só é chamada
@@ -1862,12 +1872,13 @@ function visualizarSeloRevelado(id, nome) {
 function mostrarCuriosidade(id, nome) {
   const container = document.getElementById("modal-curiosidade");
   const dados = curiosidadesPorMunicipio[id];
-  const resumo = dados?.resumo;
+  const resumo = dados?.resumo || CURIOSIDADE_TEXTO_PADRAO;
+  const temResumoReal = resumo !== CURIOSIDADE_TEXTO_PADRAO;
   const temHistoriaCompleta = !!dados?.historiaCompleta?.length;
 
-  container.innerHTML = resumo
+  container.innerHTML = temResumoReal
     ? `<h3>Curiosidade</h3><p>${escaparHtml(resumo)}</p>`
-    : `<h3>Curiosidade</h3><p class="curiosidade-vazia">Em breve, uma curiosidade sobre este município.</p>`;
+    : `<h3>Curiosidade</h3><p class="curiosidade-vazia">${escaparHtml(CURIOSIDADE_TEXTO_PADRAO)}</p>`;
 
   if (temHistoriaCompleta) {
     const botao = document.createElement("button");

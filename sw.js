@@ -10,7 +10,7 @@
  * atualizaria se o CACHE_NAME mudasse a cada vez, o que é fácil de
  * esquecer de fazer.
  */
-const CACHE_NAME = "mapa-raspadinha-v5";
+const CACHE_NAME = "mapa-raspadinha-v6";
 const ARQUIVOS_BASICOS = [
   "./",
   "./index.html",
@@ -67,6 +67,22 @@ self.addEventListener("fetch", (evento) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(evento.request, copia));
         return resposta;
       })
-      .catch(() => caches.match(evento.request).then((r) => r || caches.match("./index.html")))
+      .catch(() =>
+        caches.match(evento.request).then((r) => {
+          if (r) return r;
+          // So cai pro index.html se for navegacao de pagina de
+          // verdade (ex: abrir o app offline). Pra pedidos de DADOS
+          // (json, imagens etc.) sem cache ainda, e melhor deixar
+          // falhar de verdade -- sem isso, um data/curiosidades.json
+          // que falhasse na rede e ainda nao tivesse cache virava,
+          // silenciosamente, o HTML da pagina inteira disfarcado de
+          // resposta "ok" pro fetch() que esperava JSON, um jeito
+          // sorrateiro de corromper dado sem erro nenhum aparecer.
+          if (evento.request.mode === "navigate" || evento.request.destination === "document") {
+            return caches.match("./index.html");
+          }
+          throw new Error("Sem rede e sem cache pra " + evento.request.url);
+        })
+      )
   );
 });
