@@ -347,6 +347,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-enviar-feedback-sugestao")
     .addEventListener("click", () => enviarFeedback("sugestao"));
+  document
+    .getElementById("btn-enviar-feedback-ponto-turistico")
+    .addEventListener("click", () => enviarFeedback("ponto-turistico"));
   document.getElementById("btn-copiar-pix").addEventListener("click", copiarChavePix);
 
   document
@@ -377,6 +380,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---- Notificações locais ----
   document.getElementById("check-notificacoes").addEventListener("change", (evento) => {
     alternarNotificacoes(evento.target.checked);
+  });
+
+  // ---- Mapa do Brasil (beta, opt-in) ----
+  sincronizarCheckboxMapaBrasil();
+  document.getElementById("check-mapa-brasil").addEventListener("change", (evento) => {
+    localStorage.setItem(CHAVE_MAPA_BRASIL_ATIVADO, evento.target.checked ? "true" : "false");
+    sincronizarCheckboxMapaBrasil();
+  });
+  document.getElementById("btn-mapa-brasil").addEventListener("click", abrirMapaBrasil);
+  document.getElementById("btn-fechar-brasil").addEventListener("click", fecharMapaBrasil);
+  document.getElementById("modal-brasil").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-brasil") fecharMapaBrasil();
   });
 
   // ---- Busca de município/ponto turístico ----
@@ -1744,6 +1759,11 @@ function abrirModalRaspadinha(id, nome) {
       containerId: "scratch-modal-body",
       imageUrl,
       imageUrlCapa,
+      // Trava a sorte assim que a pessoa raspa a primeira vez, mesmo
+      // que abandone sem terminar -- sem isso, dava pra "espiar"
+      // (raspar uma pontinha, ver que não veio brilhante, fechar sem
+      // completar) e tentar de novo depois (ver travarSorteNaPrimeiraRaspada).
+      onPrimeiroToque: () => travarSorteNaPrimeiraRaspada(id, brilhante),
       onComplete: () => {
         // Marca como raspado na hora (selo revelado, sorte já
         // decidida), mas ainda "nao verificado" -- so conta de
@@ -1781,6 +1801,27 @@ function abrirModalRaspadinha(id, nome) {
       iniciar(caminhoColorido.url, existeCapa ? caminhoCapa : null);
     });
   });
+}
+
+/**
+ * Trava a sorte (brilhante ou não) assim que a pessoa raspa a
+ * primeira vez, mesmo que abandone sem terminar de raspar. Sem isso,
+ * dava pra "espiar" o resultado (raspar uma pontinha, ver que não
+ * veio brilhante, fechar sem completar) e tentar de novo depois --
+ * `chanceDecidida` só era gravado na conclusão (ver
+ * marcarComoVisitado/decidirBrilhante), então nada impedia um novo
+ * sorteio a cada reabertura enquanto não completasse de verdade.
+ * Não mexe em `visitado`/`dataVisita`: só marcarComoVisitado (na
+ * conclusão de verdade) conta como visita.
+ */
+function travarSorteNaPrimeiraRaspada(id, brilhante) {
+  if (estadoMapa[id]?.chanceDecidida) return; // já travado, nada a fazer
+  estadoMapa[id] = {
+    ...estadoMapa[id],
+    brilhante: !!brilhante,
+    chanceDecidida: true,
+  };
+  salvarEstado();
 }
 
 /**
@@ -2354,6 +2395,7 @@ function fecharBibliotecaSelos() {
 
 function abrirConfiguracoes() {
   sincronizarCheckboxNotificacoes();
+  sincronizarCheckboxMapaBrasil();
   document.getElementById("modal-configuracoes").classList.remove("oculto");
 }
 
@@ -2929,10 +2971,11 @@ function mostrarPainelFeedback(painel) {
 }
 
 /**
- * Envia um relato de bug ou sugestão (coleção "feedback" no
- * Firestore) -- exige login, igual qualquer outra interação de
- * verdade no app. A regra do Firestore só aceita `tipo`
- * "bug"/"sugestao" e um texto não vazio (ver README.md).
+ * Envia um relato de bug, sugestão ou ponto turístico (coleção
+ * "feedback" no Firestore) -- exige login, igual qualquer outra
+ * interação de verdade no app. A regra do Firestore só aceita `tipo`
+ * "bug"/"sugestao"/"ponto-turistico" e um texto não vazio (ver
+ * README.md). Ponto turístico também exige o nome do município.
  */
 function enviarFeedback(tipo) {
   exigirLogin(async () => {
@@ -2941,7 +2984,12 @@ function enviarFeedback(tipo) {
     const status = document.getElementById(`feedback-status-${tipo}`);
     const texto = textarea.value.trim();
 
+    const inputMunicipio =
+      tipo === "ponto-turistico" ? document.getElementById("input-ponto-turistico-municipio") : null;
+    const municipio = inputMunicipio?.value.trim() || "";
+
     if (!texto) return;
+    if (inputMunicipio && !municipio) return;
 
     botao.disabled = true;
     botao.querySelector(".btn-texto").classList.add("oculto");
@@ -2949,8 +2997,9 @@ function enviarFeedback(tipo) {
     status.classList.add("oculto");
 
     try {
-      await window.raspadinhaAuth.enviarFeedback(tipo, texto);
+      await window.raspadinhaAuth.enviarFeedback(tipo, texto, municipio ? { municipio } : {});
       textarea.value = "";
+      if (inputMunicipio) inputMunicipio.value = "";
       status.textContent = "🎉 Recebemos o seu relato! Muito obrigado por ajudar a melhorar o Desbrava.";
       status.className = "feedback-status status-sucesso";
       const rect = botao.getBoundingClientRect();
@@ -3080,23 +3129,20 @@ function fecharPerfil() {
   document.getElementById("modal-perfil").classList.add("oculto");
 }
 
-const CHAVE_DATA_SNAPSHOT_MAPA = "scratchMapRJ_snapshot_mapa_data_v1";
-
 /**
- * Gera e grava no Firestore, no máximo 1x por dia, um snapshot
- * estático (imagem) do mapa do usuário logado -- é essa imagem que
- * alimenta o mini-mapa do perfil público (ver renderizarMiniMapaPerfil
- * e salvarSnapshotMapa em js/auth.js). Guarda a última data gerada no
- * localStorage pra não regravar no Firestore toda vez que a conta loga.
+ * Gera e grava no Firestore um snapshot estático (imagem) do mapa do
+ * usuário logado -- é essa imagem que alimenta o mini-mapa do perfil
+ * público (ver renderizarMiniMapaPerfil e salvarSnapshotMapa em
+ * js/auth.js). Roda toda vez que a conta loga (ver atualizarUiDeConta),
+ * pra sempre refletir o progresso mais recente -- antes só regravava
+ * 1x por dia (controlado por localStorage), o que deixava o mini-mapa
+ * "parado" no perfil por até 24h depois de raspar um selo novo.
  */
 function gerarSnapshotMapaSeNecessario() {
   const hoje = new Date().toDateString();
-  if (localStorage.getItem(chaveComUid(CHAVE_DATA_SNAPSHOT_MAPA)) === hoje) return;
-
   gerarSnapshotMapaComoDataUrl()
     .then((dataUrl) => {
       if (!dataUrl) return;
-      localStorage.setItem(chaveComUid(CHAVE_DATA_SNAPSHOT_MAPA), hoje);
       window.raspadinhaAuth?.salvarSnapshotMapa(dataUrl, hoje);
     })
     .catch((erro) => console.error("Falha ao gerar snapshot do mapa:", erro));
@@ -3300,6 +3346,7 @@ function abrirPopupRegiao(regiaoId) {
             imageUrl: resultado.url,
             imageUrlCapa,
             tamanho: 400,
+            onPrimeiroToque: () => travarSorteRegiaoNaPrimeiraRaspada(regiaoId, brilhante),
             onComplete: () => {
               marcarRegiaoComoRevelada(regiaoId, brilhante);
               return brilhante;
@@ -3342,6 +3389,21 @@ function decidirBrilhanteRegiao(regiaoId) {
   const anterior = estadoRegioes[regiaoId];
   if (anterior?.chanceDecidida) return !!anterior.brilhante;
   return Math.random() < 0.1;
+}
+
+/**
+ * Mesma trava de travarSorteNaPrimeiraRaspada, mas pro mega-selo de
+ * região: assim que a pessoa raspa a primeira vez, a sorte fica
+ * fixada, mesmo que abandone sem terminar de raspar.
+ */
+function travarSorteRegiaoNaPrimeiraRaspada(regiaoId, brilhante) {
+  if (estadoRegioes[regiaoId]?.chanceDecidida) return;
+  estadoRegioes[regiaoId] = {
+    ...estadoRegioes[regiaoId],
+    brilhante: !!brilhante,
+    chanceDecidida: true,
+  };
+  salvarEstadoRegioes();
 }
 
 function mostrarSpinnerGrande(corpo, mostrar) {
@@ -3455,6 +3517,8 @@ function aplicarEstadoNoSVG() {
       const dados = estadoMapa[id];
       path.classList.toggle("visitado", estaVerificado(id));
       path.classList.toggle("nao-verificado", !!dados?.visitado && !dados?.verificado);
+      // Selo brilhante também vale no mapa (dourado), não só no popup
+      path.classList.toggle("brilhante", !!dados?.visitado && !!dados?.brilhante);
     }
   });
 }
@@ -3840,4 +3904,72 @@ function registrarAcessoDeHoje() {
   estadoStreak.contagem = estadoStreak.ultimoDia === ontemChave ? estadoStreak.contagem + 1 : 1;
   estadoStreak.ultimoDia = hojeChave;
   salvarEstadoStreak();
+}
+
+/* ============================================================
+   Mapa do Brasil (beta, opt-in): contorno de cada estado, todos
+   "em breve" (cinza + borrado) exceto o RJ, que já é o app principal
+   -- clicar nele fecha essa visão e volta pro mapa detalhado. Vem
+   DESABILITADO de fábrica (preferência local, ver
+   CHAVE_MAPA_BRASIL_ATIVADO); só quem ativar em Configurações ->
+   Experimental enxerga o botão 🇧🇷 na barra de topo. Ver
+   tools/br-estados-to-svg.js pra como o SVG é gerado a partir de
+   data/br-estados.geojson (malha oficial do IBGE) + data/estados.json.
+   ============================================================ */
+
+const CHAVE_MAPA_BRASIL_ATIVADO = "desbrava_mapa_brasil_ativado";
+
+/**
+ * Reflete no checkbox de Configurações e na visibilidade do botão
+ * 🇧🇷 (barra de topo) a preferência salva localmente -- chamada ao
+ * carregar a página e sempre que Configurações é aberto.
+ */
+function sincronizarCheckboxMapaBrasil() {
+  const ativado = localStorage.getItem(CHAVE_MAPA_BRASIL_ATIVADO) === "true";
+  document.getElementById("check-mapa-brasil").checked = ativado;
+  document.getElementById("btn-mapa-brasil").classList.toggle("oculto", !ativado);
+}
+
+// Cache do SVG buscado (só faz o fetch uma vez por sessão, já que o
+// arquivo não muda em runtime).
+let svgMapaBrasilCache = null;
+
+/**
+ * Abre a visão do Brasil, buscando e injetando o SVG na primeira vez
+ * (fica em cache depois). Clicar num estado "em breve" só mostra um
+ * aviso; clicar no RJ (o único liberado) fecha essa tela, já que o
+ * app principal É o mapa detalhado do RJ.
+ */
+async function abrirMapaBrasil() {
+  document.getElementById("modal-brasil").classList.remove("oculto");
+  document.getElementById("brasil-status").textContent = "";
+  const container = document.getElementById("brasil-mapa-container");
+
+  if (!svgMapaBrasilCache) {
+    container.innerHTML = '<div class="spinner spinner-grande"></div>';
+    try {
+      const resposta = await fetch("assets/svg/br-estados.svg");
+      svgMapaBrasilCache = await resposta.text();
+    } catch (erro) {
+      console.error("Falha ao carregar o mapa do Brasil:", erro);
+      container.innerHTML = "<p>Não foi possível carregar o mapa agora.</p>";
+      return;
+    }
+  }
+
+  container.innerHTML = svgMapaBrasilCache;
+  container.querySelectorAll(".estado").forEach((path) => {
+    path.addEventListener("click", () => {
+      const nome = path.dataset.nome;
+      if (path.classList.contains("estado-liberado")) {
+        fecharMapaBrasil();
+        return;
+      }
+      document.getElementById("brasil-status").textContent = `${nome} chega em breve!`;
+    });
+  });
+}
+
+function fecharMapaBrasil() {
+  document.getElementById("modal-brasil").classList.add("oculto");
 }

@@ -1,7 +1,8 @@
 /**
- * Google Apps Script Web App que recebe os relatos de bug/sugestão do
- * botão 💬 do Desbrava (ver enviarFeedbackParaPlanilha em js/auth.js)
- * e grava uma linha na planilha certa -- "Bugs" ou "Sugestões" -- de
+ * Google Apps Script Web App que recebe os relatos de bug/sugestão/
+ * ponto turístico do botão 💬 do Desbrava (ver
+ * enviarFeedbackParaPlanilha em js/auth.js) e grava uma linha na
+ * planilha certa -- "Bugs", "Sugestões" ou "Pontos Turísticos" -- de
  * acordo com o campo "tipo" recebido.
  *
  * COMO IMPLANTAR (só precisa fazer uma vez):
@@ -31,16 +32,30 @@
  */
 function doPost(e) {
   var dados = JSON.parse(e.postData.contents);
-  var nomeAba = dados.tipo === "bug" ? "Bugs" : "Sugestões";
+
+  var config = {
+    bug: { aba: "Bugs", cabecalho: ["Data", "Apelido", "E-mail", "Texto"] },
+    sugestao: { aba: "Sugestões", cabecalho: ["Data", "Apelido", "E-mail", "Texto"] },
+    "ponto-turistico": {
+      aba: "Pontos Turísticos",
+      cabecalho: ["Data", "Apelido", "E-mail", "Município", "Texto"],
+    },
+  };
+  var info = config[dados.tipo] || config.sugestao;
 
   var planilha = SpreadsheetApp.getActiveSpreadsheet();
-  var aba = planilha.getSheetByName(nomeAba);
+  var aba = planilha.getSheetByName(info.aba);
   if (!aba) {
-    aba = planilha.insertSheet(nomeAba);
-    aba.appendRow(["Data", "Apelido", "E-mail", "Texto"]);
+    aba = planilha.insertSheet(info.aba);
+    aba.appendRow(info.cabecalho);
   }
 
-  aba.appendRow([new Date(), dados.apelido || "", dados.email || "", dados.texto || ""]);
+  var linha =
+    dados.tipo === "ponto-turistico"
+      ? [new Date(), dados.apelido || "", dados.email || "", dados.municipio || "", dados.texto || ""]
+      : [new Date(), dados.apelido || "", dados.email || "", dados.texto || ""];
+
+  aba.appendRow(linha);
 
   return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(
     ContentService.MimeType.JSON

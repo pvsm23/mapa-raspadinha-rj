@@ -181,25 +181,28 @@ if (CONFIGURADO) {
   };
 
   /**
-   * Grava um relato de bug ou sugestão na coleção "feedback" do
-   * Firestore (backup/auditoria -- lido pelo Console do Firebase) E
-   * manda pra planilha do Google Sheets (ver enviarFeedbackParaPlanilha),
-   * que é onde o Paulo realmente acompanha isso no dia a dia. Exige
-   * login (mesma regra de qualquer interação de verdade no app), pra
-   * amarrar cada relato a uma conta e não virar um jeito fácil de
-   * mandar spam -- é assim que já sai com apelido e e-mail prontos,
-   * sem precisar perguntar de novo pra pessoa.
+   * Grava um relato de bug, sugestão ou ponto turístico na coleção
+   * "feedback" do Firestore (backup/auditoria -- lido pelo Console do
+   * Firebase) E manda pra planilha do Google Sheets (ver
+   * enviarFeedbackParaPlanilha), que é onde o Paulo realmente
+   * acompanha isso no dia a dia. Exige login (mesma regra de
+   * qualquer interação de verdade no app), pra amarrar cada relato a
+   * uma conta e não virar um jeito fácil de mandar spam -- é assim
+   * que já sai com apelido e e-mail prontos, sem precisar perguntar
+   * de novo pra pessoa. `extras` carrega campos específicos de cada
+   * tipo (ex: `municipio` na sugestão de ponto turístico).
    */
-  window.raspadinhaAuth.enviarFeedback = async (tipo, texto) => {
+  window.raspadinhaAuth.enviarFeedback = async (tipo, texto, extras = {}) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
 
-    enviarFeedbackParaPlanilha(tipo, texto, usuario);
+    enviarFeedbackParaPlanilha(tipo, texto, usuario, extras);
 
     try {
       await addDoc(collection(db, "feedback"), {
         tipo,
         texto,
+        ...extras,
         uid: usuario.uid,
         apelido: window.raspadinhaAuth.apelido || "",
         email: usuario.email || "",
@@ -229,7 +232,7 @@ if (CONFIGURADO) {
    * Script recebendo certinho do outro lado. Como consequência, não
    * dá pra saber aqui se deu certo (por isso é só "melhor esforço").
    */
-  function enviarFeedbackParaPlanilha(tipo, texto, usuario) {
+  function enviarFeedbackParaPlanilha(tipo, texto, usuario, extras = {}) {
     if (!URL_PLANILHA_FEEDBACK || URL_PLANILHA_FEEDBACK.startsWith("SUBSTITUA")) return;
     fetch(URL_PLANILHA_FEEDBACK, {
       method: "POST",
@@ -240,6 +243,7 @@ if (CONFIGURADO) {
         apelido: window.raspadinhaAuth.apelido || "",
         email: usuario.email || "",
         texto,
+        ...extras,
       }),
     }).catch((erro) => console.error("Falha ao enviar feedback pra planilha:", erro));
   }

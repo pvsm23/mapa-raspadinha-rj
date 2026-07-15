@@ -75,13 +75,25 @@ svg#mapa-rj {
 }
 
 /* Raspado, mas a geolocalizacao ainda nao confirmou a visita --
-   vermelho em vez de verde (ver estaVerificado em js/script.js) */
+   azul em vez de verde (ver estaVerificado em js/script.js). Antes
+   era vermelho, mas isso deixava alarmante quem só queria marcar sem
+   verificar na hora; azul passa a mesma informação sem soar como erro. */
 .municipio.nao-verificado {
-  fill: #ef4444;
+  fill: #3b82f6;
 }
 
 .municipio.nao-verificado:hover {
-  fill: #dc2626;
+  fill: #2563eb;
+}
+
+/* Município com selo brilhante (ver aplicarEstadoNoSVG) -- dourado
+   em vez de verde, pro brilho valer também no mapa, não só no popup */
+.municipio.visitado.brilhante {
+  fill: #facc15;
+}
+
+.municipio.visitado.brilhante:hover {
+  fill: #eab308;
 }
 
 /* Pequeno feedback visual ao clicar */
@@ -251,7 +263,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #modal-raspadinha,
 #biblioteca-selos,
-#modal-configuracoes {
+#modal-configuracoes,
+#modal-brasil {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.85);
@@ -264,7 +277,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #modal-conteudo,
 #biblioteca-conteudo,
-#configuracoes-conteudo {
+#configuracoes-conteudo,
+#brasil-conteudo {
   position: relative;
   background: #1e293b;
   border-radius: 12px;
@@ -283,16 +297,24 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   overflow-y: auto;
 }
 
+#brasil-conteudo {
+  max-width: 720px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
 #modal-conteudo h2,
 #biblioteca-conteudo h2,
-#configuracoes-conteudo h2 {
+#configuracoes-conteudo h2,
+#brasil-conteudo h2 {
   margin-top: 0;
   font-size: 1.1rem;
 }
 
 #btn-fechar-modal,
 #btn-fechar-biblioteca,
-#btn-fechar-configuracoes {
+#btn-fechar-configuracoes,
+#btn-fechar-brasil {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -307,8 +329,62 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #btn-fechar-modal:hover,
 #btn-fechar-biblioteca:hover,
-#btn-fechar-configuracoes:hover {
+#btn-fechar-configuracoes:hover,
+#btn-fechar-brasil:hover {
   color: #f1f5f9;
+}
+
+/* Mapa do Brasil (beta, opt-in em Configuracoes -> Experimental):
+   contorno de cada estado, todos "em breve" (cinza + borrado) exceto
+   o RJ (colorido, clicavel -- ja e o app principal). Ver
+   abrirMapaBrasil/fecharMapaBrasil em js/script.js e
+   tools/br-estados-to-svg.js pra como o SVG e gerado. */
+#brasil-intro {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+#brasil-mapa-container svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+#brasil-mapa-container .estado {
+  stroke: #0f172a;
+  stroke-width: 0.6;
+}
+
+#brasil-mapa-container .estado-bloqueado {
+  fill: #475569;
+  filter: blur(2.5px);
+  cursor: not-allowed;
+}
+
+#brasil-mapa-container .estado-liberado {
+  fill: #22c55e;
+  cursor: pointer;
+  transition: fill 0.2s ease;
+}
+
+#brasil-mapa-container .estado-liberado:hover {
+  fill: #16a34a;
+}
+
+#brasil-mapa-container .rotulo-estado {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #f1f5f9;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+#brasil-status {
+  min-height: 1.2em;
+  color: #facc15;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
 }
 
 #modal-instrucao {
@@ -1617,7 +1693,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   margin: 0 0 10px;
 }
 
-.feedback-painel textarea {
+.feedback-painel textarea,
+.feedback-painel input[type="text"] {
   width: 100%;
   background: #0f172a;
   border: 1px solid #334155;
@@ -1626,8 +1703,11 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   padding: 10px;
   font-size: 0.85rem;
   font-family: inherit;
-  resize: vertical;
   margin-bottom: 10px;
+}
+
+.feedback-painel textarea {
+  resize: vertical;
 }
 
 .feedback-painel button[id^="btn-enviar-feedback"] {
@@ -2385,7 +2465,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-verificar-local {
   display: block;
   width: 100%;
-  background: #ef4444;
+  background: #3b82f6;
   color: white;
   border: none;
   padding: 10px 14px;
@@ -2397,7 +2477,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 }
 
 #btn-verificar-local:hover {
-  background: #dc2626;
+  background: #2563eb;
 }
 
 #btn-verificar-local:disabled {
@@ -2414,17 +2494,17 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   position: absolute;
   inset: -6px;
   border-radius: 50%;
-  border: 3px solid #ef4444;
+  border: 3px solid #3b82f6;
   pointer-events: none;
 }
 
 .selo-item img.selo-nao-verificado {
-  border-color: #ef4444;
+  border-color: #3b82f6;
   opacity: 0.85;
 }
 
 .selo-item-nao-verificado img {
-  box-shadow: 0 0 10px 1px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 10px 1px rgba(59, 130, 246, 0.6);
 }
 
 .selo-marca-alerta {

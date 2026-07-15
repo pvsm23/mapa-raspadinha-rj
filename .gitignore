@@ -4,3 +4,7 @@ node_modules/
 *.log
 .claude/
 PROJETO-mapa-raspadinha-resumo.md
+
+# Planilhas de controle interno (uso local, nunca sobem pro repositorio)
+Municípios do Rio de Janeiro.xlsx
+Pasta de inclusão de selos/

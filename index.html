@@ -267,9 +267,25 @@
       <button id="btn-feedback" aria-label="Feedback e colaboração" title="Feedback e colaboração">💬</button>
       <button id="btn-compartilhar" aria-label="Compartilhar" title="Compartilhar">🔗</button>
       <button id="btn-biblioteca" aria-label="Biblioteca de selos" title="Biblioteca de selos">📖</button>
+      <!-- Só aparece se a pessoa ativar em Configurações -> Experimental
+           (vem desabilitado de fábrica, ver check-mapa-brasil) -->
+      <button id="btn-mapa-brasil" class="oculto" aria-label="Mapa do Brasil" title="Mapa do Brasil (beta)">🇧🇷</button>
       <button id="btn-configuracoes" aria-label="Configurações" title="Configurações">⚙️</button>
     </div>
   </header>
+
+  <!-- Mapa do Brasil (beta, opt-in): contorno de cada estado, todos
+       "em breve" exceto o RJ (que já é o app principal). Ver
+       abrirMapaBrasil/fecharMapaBrasil em js/script.js. -->
+  <div id="modal-brasil" class="oculto">
+    <div id="brasil-conteudo">
+      <button id="btn-fechar-brasil" aria-label="Fechar">✕</button>
+      <h2>🇧🇷 Mapa do Brasil</h2>
+      <p id="brasil-intro">O Desbrava começou pelo Rio de Janeiro. Conforme cada estado ficar pronto, ele desbloqueia aqui.</p>
+      <div id="brasil-mapa-container"></div>
+      <p id="brasil-status"></p>
+    </div>
+  </div>
 
   <!-- Popup do botao compartilhar: explica o bonus de convite antes
        de compartilhar de fato -->
@@ -416,6 +432,14 @@
         </button>
       </div>
 
+      <div id="secao-experimental">
+        <h3>Experimental</h3>
+        <label id="label-mapa-brasil">
+          <input type="checkbox" id="check-mapa-brasil">
+          🇧🇷 Mapa do Brasil (beta) — mostra o contorno dos outros estados, ainda "em breve"
+        </label>
+      </div>
+
       <div id="secao-pro">
         <h3>Recursos PRO</h3>
         <!--
@@ -491,6 +515,7 @@
       <div id="feedback-opcoes">
         <button type="button" class="feedback-opcao" data-painel="bug">🐛 Relatar um bug</button>
         <button type="button" class="feedback-opcao" data-painel="sugestao">💡 Dar uma sugestão</button>
+        <button type="button" class="feedback-opcao" data-painel="ponto-turistico">📍 Sugerir ponto turístico</button>
         <button type="button" class="feedback-opcao" data-painel="colaborar">🤝 Colaborar</button>
       </div>
 
@@ -514,6 +539,18 @@
           <span class="spinner oculto"></span>
         </button>
         <p class="feedback-status oculto" id="feedback-status-sugestao"></p>
+      </div>
+
+      <div id="feedback-painel-ponto-turistico" class="feedback-painel oculto">
+        <h3>📍 Sugerir ponto turístico</h3>
+        <p>Conhece um lugar bacana que ainda não está na lista de um município? Conta pra gente.</p>
+        <input type="text" id="input-ponto-turistico-municipio" maxlength="100" placeholder="Município (ex: Niterói)" />
+        <textarea id="input-feedback-ponto-turistico" rows="4" maxlength="2000" placeholder="Ex: Mirante da Boa Vista, tem uma vista incrível da baía..."></textarea>
+        <button type="button" id="btn-enviar-feedback-ponto-turistico">
+          <span class="btn-texto">Enviar sugestão</span>
+          <span class="spinner oculto"></span>
+        </button>
+        <p class="feedback-status oculto" id="feedback-status-ponto-turistico"></p>
       </div>
 
       <div id="feedback-painel-colaborar" class="feedback-painel oculto">

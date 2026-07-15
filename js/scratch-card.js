@@ -6,17 +6,26 @@
        containerId: "scratch-modal-body",
        imageUrl: "assets/img/selos/3303302.png",
        imageUrlCapa: "assets/img/selos/3303302fundo.png", // opcional
+       onPrimeiroToque: () => travarSorteNaPrimeiraRaspada("3303302", brilhante), // opcional
        onComplete: () => marcarComoVisitado("3303302")
      });
 
    Como funciona:
-   1. Desenha a imagem colorida (selo) num <canvas> de fundo.
+   1. Desenha a imagem colorida (selo) num <canvas> de fundo -- já é
+      a arte final (colorida ou dourada, decidida por quem chama
+      initScratchCard antes de montar a raspadinha).
    2. Desenha a "capa" por cima, num <canvas> de "raspagem": se
       imageUrlCapa for passada, usa essa imagem (ex: a mesma arte
       em preto e branco); senão, cai numa camada cinza lisa.
    3. Ao arrastar o dedo/mouse, apaga pixels da capa
       (destination-out), revelando a imagem colorida de baixo.
-   4. A cada movimento, amostra os pixels da capa para calcular
+   4. Na primeira raspada de verdade (primeiro `raspar()` que
+      acontece), dispara onPrimeiroToque() uma única vez -- serve pra
+      quem chama travar a sorte (brilhante ou não) permanentemente
+      naquele instante, mesmo que a pessoa abandone sem terminar de
+      raspar (ver travarSorteNaPrimeiraRaspada/decidirBrilhante em
+      script.js).
+   5. A cada movimento, amostra os pixels da capa para calcular
       quanto já foi raspado. Ao passar do limiar (perto de 100%,
       já que o pincel redondo nunca cobre 100% exato), dispara
       onComplete() e revela tudo de vez, com um pulo do selo (CSS)
@@ -27,6 +36,7 @@ function initScratchCard({
   containerId,
   imageUrl,
   imageUrlCapa,
+  onPrimeiroToque,
   onComplete,
   tamanho = 300,
   raioPincel = 24,
@@ -88,6 +98,7 @@ function initScratchCard({
 
   let raspando = false;
   let concluido = false;
+  let primeiroToqueDisparado = false;
 
   function coordenadasEvento(evento) {
     const rect = canvasRaspagem.getBoundingClientRect();
@@ -130,6 +141,11 @@ function initScratchCard({
     evento.preventDefault();
     const { x, y } = coordenadasEvento(evento);
     raspar(x, y);
+
+    if (!primeiroToqueDisparado) {
+      primeiroToqueDisparado = true;
+      if (typeof onPrimeiroToque === "function") onPrimeiroToque();
+    }
 
     const porcentagem = calcularPorcentagemRaspada();
     if (porcentagem >= limiarConclusao) {
