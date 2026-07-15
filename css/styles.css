@@ -1245,6 +1245,12 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
    nenhuma partícula criada por JS). */
 .selo-brilhante {
   position: relative;
+  /* isolation: cria um contexto de empilhamento próprio -- sem isso,
+     os raios do ::before/::after (z-index negativo) escapavam pro
+     contexto do modal (#modal-raspadinha, que tem z-index:100) e
+     eram pintados ATRÁS do fundo opaco de #modal-conteudo, ficando
+     escondidos mesmo com a animação rodando normalmente. */
+  isolation: isolate;
 }
 
 .selo-brilhante::before {
@@ -2273,6 +2279,13 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
    caber numa grade com vários selos lado a lado sem invadir o
    vizinho -- reaproveita as mesmas @keyframes girar-raios/
    respirar-raios. Persiste sempre, não só na hora de raspar. */
+.selo-item-brilhante {
+  /* mesmo motivo do .selo-brilhante acima: sem isolar o contexto de
+     empilhamento, o ::before de z-index negativo escapava pro fundo
+     opaco do card/modal ancestral e ficava escondido. */
+  isolation: isolate;
+}
+
 .selo-item-brilhante::before {
   content: "";
   position: absolute;
