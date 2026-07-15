@@ -2951,11 +2951,13 @@ function enviarFeedback(tipo) {
     try {
       await window.raspadinhaAuth.enviarFeedback(tipo, texto);
       textarea.value = "";
-      status.textContent = "Enviado! Muito obrigado. 🙏";
+      status.textContent = "🎉 Recebemos o seu relato! Muito obrigado por ajudar a melhorar o Desbrava.";
       status.className = "feedback-status status-sucesso";
+      const rect = botao.getBoundingClientRect();
+      dispararConfete(rect.left + rect.width / 2, rect.top);
     } catch (erro) {
       console.error("Falha ao enviar feedback:", erro);
-      status.textContent = "Não foi possível enviar agora. Tenta de novo mais tarde?";
+      status.textContent = "Não foi possível enviar agora -- tenta de novo em instantes?";
       status.className = "feedback-status status-erro";
     } finally {
       botao.disabled = false;

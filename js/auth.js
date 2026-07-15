@@ -190,20 +190,28 @@ if (CONFIGURADO) {
    * mandar spam -- é assim que já sai com apelido e e-mail prontos,
    * sem precisar perguntar de novo pra pessoa.
    */
-  window.raspadinhaAuth.enviarFeedback = (tipo, texto) => {
+  window.raspadinhaAuth.enviarFeedback = async (tipo, texto) => {
     const usuario = auth.currentUser;
-    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    if (!usuario) throw new Error("Faça login primeiro.");
 
     enviarFeedbackParaPlanilha(tipo, texto, usuario);
 
-    return addDoc(collection(db, "feedback"), {
-      tipo,
-      texto,
-      uid: usuario.uid,
-      apelido: window.raspadinhaAuth.apelido || "",
-      email: usuario.email || "",
-      criadoEm: serverTimestamp(),
-    });
+    try {
+      await addDoc(collection(db, "feedback"), {
+        tipo,
+        texto,
+        uid: usuario.uid,
+        apelido: window.raspadinhaAuth.apelido || "",
+        email: usuario.email || "",
+        criadoEm: serverTimestamp(),
+      });
+    } catch (erro) {
+      // A planilha (chamada acima) é o destino que o Paulo realmente
+      // acompanha no dia a dia -- se só o backup no Firestore falhar
+      // (ex: regra desatualizada), o relato já chegou onde importa,
+      // então não vale mostrar erro pro usuário por causa disso.
+      console.error("Falha ao gravar feedback no Firestore (backup):", erro);
+    }
   };
 
   /**
