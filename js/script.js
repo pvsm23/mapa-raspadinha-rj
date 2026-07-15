@@ -1721,6 +1721,14 @@ function abrirModalRaspadinha(id, nome) {
   document.getElementById("modal-instrucao").textContent =
     "Raspe com o dedo ou o mouse para revelar!";
   document.getElementById("modal-selo-estatistica").textContent = "";
+  // IMPORTANTE: limpa a curiosidade -- ela só é preenchida por
+  // mostrarCuriosidade(), chamada só em visualizarSeloRevelado (selo
+  // já raspado). Sem essa limpeza aqui, abrir um município AINDA NÃO
+  // raspado depois de ter visto outro (já raspado, com curiosidade
+  // de verdade) deixava o texto do município ANTERIOR "grudado" na
+  // tela, por trás da raspadinha nova -- essa era a causa real do
+  // "resumo/história de um município aparecendo em outro".
+  document.getElementById("modal-curiosidade").innerHTML = "";
   mostrarDestinos(id);
 
   // Decide a sorte JÁ na abertura (não na conclusão): assim dá pra
