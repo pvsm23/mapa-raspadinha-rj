@@ -11,7 +11,14 @@
   "3300506": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3300605": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3300704": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3300803": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3300803": {
+    "resumo": "Cachoeiras de Macacu, conhecida como a \"Terra das Águas Claras\", possui mais de 60% de seu território protegido por reservas ambientais. Com origens no século XVII, a cidade superou epidemias e hoje se destaca como um dos principais polos de ecoturismo da Mata Atlântica no Rio de Janeiro.",
+    "historiaCompleta": [
+      "A ocupação da região remonta ao final do século XVI, às margens do Rio Macacu, consolidando-se com a criação da Freguesia de Santo Antônio em 1647. Elevada a vila em 1697, a localidade prosperou inicialmente com os engenhos de açúcar. Seu nome é uma junção das inúmeras quedas d'água da serra com \"Macacu\", termo de origem tupi que faz referência ao rio local ou a uma árvore nativa da região.",
+      "No século XIX, a próspera vila enfrentou um período sombrio de declínio devido à conhecida \"Febre de Macacu\" (epidemias de malária e febre amarela), o que forçou a transferência temporária de sua sede administrativa. A recuperação e o desenvolvimento só ganharam força novamente com a chegada dos trilhos da Estrada de Ferro Cantagalo, que impulsionou o escoamento agrícola. O município foi definitivamente elevado à categoria de cidade em 1929.",
+      "Atualmente, Cachoeiras de Macacu é um verdadeiro santuário ecológico fluminense. Apelidada de \"Terra das Águas Claras\", a cidade abriga a maior porção do Parque Estadual dos Três Picos e tesouros botânicos como o majestoso Jequitibá-Rei, uma árvore com mais de mil anos de idade. Com uma qualidade de vida intimamente ligada à natureza, o município se consolidou como um destino de excelência para o montanhismo e o ecoturismo, oferecendo trilhas e rios cristalinos."
+    ]
+  },
   "3300902": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3300936": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3300951": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
@@ -25,9 +32,23 @@
   "3301603": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3301702": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3301801": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3301850": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3301850": {
+    "resumo": "Guapimirim, emancipada em 1990, é um verdadeiro santuário ecológico no estado do Rio de Janeiro. A cidade é famosa por abrigar em seu território o icônico pico Dedo de Deus e possui grande parte de sua área protegida por reservas ambientais.",
+    "historiaCompleta": [
+      "A história da região de Guapimirim remonta ao período colonial, quando as terras eram habitadas por indígenas e, com a colonização, tornaram-se rotas de passagem para a serra e áreas de produção agrícola. Entre o fim do século XIX e o início do século XX, o desenvolvimento local foi fortemente impulsionado pela construção da Estrada de Ferro Teresópolis, que cruzava o vale e a serra, trazendo novos moradores e facilitando o escoamento de mercadorias.",
+      "Apesar de ser frequentemente associado a Teresópolis, é no território de Guapimirim que se ergue majestosamente o Dedo de Deus, o mais célebre símbolo do montanhismo brasileiro. A cidade é um refúgio da biodiversidade, abrigando a sede fluminense do Parque Nacional da Serra dos Órgãos e, em sua porção de baixada, a Área de Proteção Ambiental (APA) de Guapimirim, também conhecida como o 'Pantanal Fluminense'.",
+      "Durante grande parte de sua história, a localidade foi apenas um distrito pertencente ao município de Magé. O forte anseio popular por autonomia e desenvolvimento próprio culminou na sua emancipação político-administrativa em 21 de dezembro de 1990. Hoje, Guapimirim se destaca pelo forte potencial para o ecoturismo, oferecendo cachoeiras cristalinas, rios e uma qualidade de vida intimamente ligada à natureza."
+    ]
+  },
   "3301876": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3301900": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3301900": {
+    "resumo": "Itaboraí, historicamente conhecida como a \"Terra da Laranja\", destaca-se por seu riquíssimo sítio arqueológico e passado agrícola. Elevada a vila em 1833, a cidade é berço de grandes nomes da literatura e vivenciou intensas transformações econômicas.",
+    "historiaCompleta": [
+      "A história de Itaboraí remonta a 1672, com a fundação da freguesia de São João Batista de Itaboraí. A região prosperou inicialmente com os engenhos de açúcar e, posteriormente, destacou-se pela imensa produção de citros, o que lhe rendeu o famoso título de \"Terra da Laranja\". Em 15 de janeiro de 1833, a localidade conquistou sua emancipação político-administrativa, sendo elevada à categoria de vila.",
+      "Ao longo dos séculos XIX e XX, a economia local diversificou-se e a cidade tornou-se um importante polo de cerâmica e olarias, produzindo tijolos e telhas que ajudaram a erguer o Rio de Janeiro. Culturalmente, Itaboraí é o orgulhoso berço de figuras ilustres, destacando-se o renomado escritor Joaquim Manuel de Macedo, autor do clássico romance brasileiro \"A Moreninha\", publicado em 1844.",
+      "Um dos maiores tesouros do município é o Parque Paleontológico de São José de Itaboraí, descoberto na década de 1930, que abriga fósseis de mamíferos pré-históricos de importância mundial para o estudo da era do Paleoceno. No século XXI, a cidade enfrentou um novo e complexo capítulo de sua história, passando por profundas transformações demográficas e estruturais com a instalação do complexo petroquímico (antigo Comperj, atual Polo GasLub)."
+    ]
+  },
   "3302007": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3302056": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3302106": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
@@ -39,7 +60,14 @@
   "3302452": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3302502": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3302601": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3302700": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3302700": {
+    "resumo": "Maricá, famosa por seu vasto complexo lagunar e belas praias, foi elevada a vila por D. João VI em 1814. Hoje, a cidade é destaque internacional por suas políticas sociais inovadoras, como a moeda social Mumbuca e os ônibus gratuitos.",
+    "historiaCompleta": [
+      "A ocupação de Maricá teve início entre os séculos XVI e XVII, com a distribuição de sesmarias e a implantação de fazendas que impulsionaram a colonização da área, originalmente habitada por indígenas. A consolidação do povoado ocorreu ao redor da capela de Nossa Senhora do Amparo, o que levou o príncipe regente D. João VI a elevar a localidade à categoria de Vila de Santa Maria de Maricá em 26 de maio de 1814.",
+      "Durante o século XIX, a economia maricaense prosperou com a agricultura, a pesca e, mais tarde, com a construção da Estrada de Ferro Maricá. Um fato histórico curioso ocorreu em 1832, quando o famoso naturalista britânico Charles Darwin passou pela região e se hospedou na Fazenda Itaoca, registrando em seus diários o encantamento com a rica biodiversidade da Mata Atlântica e do sistema lagunar local. A elevação à categoria de cidade aconteceu finalmente no final de 1889.",
+      "No século XXI, Maricá vivenciou uma transformação econômica sem precedentes, impulsionada pelo recebimento de royalties da exploração de petróleo do pré-sal. A cidade ganhou projeção mundial ao reverter esses recursos em políticas públicas de economia solidária, sendo a criadora da \"Mumbuca\" — a moeda social de maior sucesso no Brasil — e implementando o programa \"Tarifa Zero\", que oferece transporte público em ônibus vermelhinhos de graça para toda a população."
+    ]
+  },
   "3302809": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3302858": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3302908": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
@@ -60,7 +88,14 @@
   "3303708": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3303807": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3303856": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3303906": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3303906": {
+    "resumo": "Petrópolis, conhecida como a \"Cidade Imperial\", foi fundada em 1843 por Dom Pedro II. Refúgio de verão da corte e colonizada por alemães, chegou a ser a capital do estado do Rio de Janeiro entre 1894 e 1903 e hoje é um dos maiores polos turísticos do país.",
+    "historiaCompleta": [
+      "A história de Petrópolis tem início na década de 1820, quando Dom Pedro I, encantado com o clima ameno da Serra da Estrela, adquiriu a Fazenda do Córrego Seco. No entanto, foi seu filho, o Imperador Dom Pedro II, quem assinou em 16 de março de 1843 o decreto que fundou a cidade e autorizou a construção do seu Palácio de Verão, atraindo a corte e impulsionando a colonização, majoritariamente formada por imigrantes alemães trazidos pelo major Júlio Frederico Koeler.",
+      "Durante o Segundo Reinado, a cidade tornou-se a capital de fato do Brasil durante os meses de verão, abrigando a realeza, nobres e diplomatas, e sediando importantes decisões políticas. Mais tarde, já no período republicano, Petrópolis assumiu o posto de capital oficial do Estado do Rio de Janeiro entre 1894 e 1903, devido às tensões e bombardeios da Revolta da Armada que ameaçavam Niterói.",
+      "Hoje, Petrópolis é um verdadeiro museu a céu aberto e um dos destinos mais procurados da Região Serrana Fluminense. A \"Cidade Imperial\" abriga tesouros arquitetônicos como o Museu Imperial, o Palácio Quitandinha, o Palácio de Cristal e a Catedral de São Pedro de Alcântara. Além do turismo histórico e ecológico, a cidade destaca-se pela forte indústria cervejeira, pela alta gastronomia e pelo famoso polo de moda da Rua Teresa."
+    ]
+  },
   "3303955": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3304003": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3304102": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
@@ -73,12 +108,26 @@
   "3304409": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3304508": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3304524": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3304557": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3304557": {
+    "resumo": "O Rio de Janeiro, a \"Cidade Maravilhosa\", foi a única cidade fora da Europa a sediar a capital de um império europeu. Foi o grande centro político do Brasil, servindo como capital de 1763 até 1960, e é dona de uma paisagem cultural que é Patrimônio Mundial da UNESCO.",
+    "historiaCompleta": [
+      "Fundada em 1º de março de 1565 pelo militar português Estácio de Sá — com o objetivo estratégico de estabelecer uma base militar para expulsar os franceses da Baía de Guanabara —, o Rio de Janeiro é a única cidade fora do continente europeu a ter abrigado a capital de um império europeu (o Império Português, a partir de 1808). Seu nome surgiu de um equívoco da expedição portuguesa de janeiro de 1502, que confundiu a entrada da baía com a foz de um grande rio.",
+      "Em 1763, virou a capital do Estado do Brasil (substituindo Salvador); em 1822, tornou-se o centro do Império e, em 1889, consagrou-se como a capital da República. Palco de intensas transformações e revoltas, como a Revolta da Vacina em 1904, a cidade perdeu o posto de capital federal para Brasília em 1960, sendo transformada no Estado da Guanabara. Com a fusão dos estados da Guanabara e do Rio de Janeiro em 1975, o Rio assumiu definitivamente o status de capital do atual estado fluminense.",
+      "O Cristo Redentor, inaugurado em 1931, tem 30 metros de altura (além dos 8 de pedestal) no topo do Corcovado e é considerado uma das Novas Sete Maravilhas do Mundo. O apelido \"Cidade Maravilhosa\", popularizado na década de 1930, celebra a harmonia singular entre o povo carioca e a beleza estonteante do encontro da floresta com o mar — hoje a cidade também ostenta o título inédito de Patrimônio Mundial da Humanidade na categoria Paisagem Cultural Urbana, concedido pela UNESCO."
+    ]
+  },
   "3304607": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3304706": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3304755": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3304805": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3304904": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3304904": {
+    "resumo": "São Gonçalo, a histórica \"Manchester Fluminense\", é o segundo município mais populoso do Rio de Janeiro. Fundada em 1579 pelo português Gonçalo Gonçalves, emancipou-se em 1890 e destacou-se pelo forte polo industrial no século XX.",
+    "historiaCompleta": [
+      "Fundada em 6 de abril de 1579 pelo colonizador português Gonçalo Gonçalves — que construiu uma capela dedicada ao seu santo de devoção às margens do rio Imboaçu —, São Gonçalo originou-se a partir de sesmarias doadas no início da colonização. Seu nome é uma homenagem direta a São Gonçalo de Amarante, padroeiro da cidade.",
+      "Durante séculos, a região foi uma grande produtora agrícola, abrigando importantes engenhos de açúcar e fazendas seculares, como a histórica Fazenda Colubandê. Politicamente, pertenceu a Niterói por um longo período, até finalmente conquistar sua emancipação e ser elevada à categoria de município em 22 de setembro de 1890.",
+      "No decorrer do século XX, a cidade vivenciou um intenso processo de industrialização, o que lhe rendeu o apelido de \"Manchester Fluminense\", em alusão à famosa cidade industrial inglesa. Hoje, São Gonçalo é o segundo município mais populoso do estado, destacando-se por seu comércio vibrante, sua rica cultura popular e a força de seu povo trabalhador."
+    ]
+  },
   "3305000": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3305109": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3305133": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
@@ -90,12 +139,33 @@
   "3305554": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3305604": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3305703": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3305752": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3305802": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3305752": {
+    "resumo": "Tanguá, emancipada de Itaboraí em 1995, tem fortes raízes ligadas à agricultura e à mineração. Hoje, a cidade fluminense mescla a tranquilidade do interior com a proximidade da capital, buscando desenvolver seu potencial ecoturístico.",
+    "historiaCompleta": [
+      "A ocupação da região de Tanguá remonta ao período colonial, quando as terras eram voltadas para a agricultura, destacando-se a produção de cana-de-açúcar, café e, mais tarde, a vasta plantação de laranjas. A localidade se desenvolveu ativamente em torno da antiga Estação Ferroviária da Estrada de Ferro Leopoldina, estrutura que foi fundamental para o escoamento da produção e para o crescimento do povoado no final do século XIX e início do século XX.",
+      "Durante muitas décadas, Tanguá foi apenas um distrito pertencente ao município vizinho de Itaboraí. Seu crescimento urbano e econômico, impulsionado também pela importante extração de fluorita na região — que deixou marcas curiosas na paisagem, como a formação de uma bela e exótica lagoa na antiga pedreira —, alimentou o forte desejo popular por autonomia. A emancipação político-administrativa ocorreu finalmente em 28 de dezembro de 1995.",
+      "Atualmente, Tanguá preserva o charme de uma cidade de interior. O nome do município tem origem tupi e é frequentemente associado a termos como \"bacia de formigas\" ou \"lugar das formigas\". Com atrativos naturais como a Cachoeira de Tanguá e patrimônios como as ruínas históricas da época dos antigos engenhos (Ruínas da Casa Grande), a cidade vem despertando cada vez mais para o turismo rural e ecológico."
+    ]
+  },
+  "3305802": {
+    "resumo": "Teresópolis, a \"Capital Nacional do Montanhismo\", recebeu este nome em homenagem à imperatriz Teresa Cristina. Emancipada de Magé em 1891, a cidade serrana é famosa por suas belezas naturais, clima ameno e por abrigar a Granja Comary, centro de treinamento da Seleção Brasileira.",
+    "historiaCompleta": [
+      "A ocupação da região onde hoje fica Teresópolis ganhou força no século XIX, impulsionada pelo inglês George March, que estabeleceu a grande Fazenda dos Órgãos. A propriedade tornou-se um importante ponto de parada e abastecimento para os viajantes e tropeiros que cruzavam a serra em direção a Minas Gerais, dando origem ao primeiro núcleo de povoamento, conhecido inicialmente como freguesia de Santo Antônio de Paquequer.",
+      "Com o crescimento do povoado e a posterior chegada da Estrada de Ferro Therezopolis no início do século XX, a região prosperou, atraindo visitantes e veranistas encantados com o clima ameno de montanha. O apreço da família imperial pela região motivou a mudança de nome da localidade para Teresópolis, uma homenagem direta à imperatriz Teresa Cristina, esposa de Dom Pedro II. A emancipação político-administrativa do município, desmembrado de Magé, ocorreu em 6 de julho de 1891.",
+      "Hoje, Teresópolis é oficialmente reconhecida como a \"Capital Nacional do Montanhismo\", abrigando a sede principal do Parque Nacional da Serra dos Órgãos, um paraíso de trilhas e picos imponentes. Além da famosa Feirinha do Alto e de sua rica gastronomia, a cidade ostenta imenso orgulho por ser a casa da Granja Comary, o icônico centro de treinamento da Seleção Brasileira de Futebol, que atrai os olhares do mundo esportivo."
+    ]
+  },
   "3305901": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3306008": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3306107": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
-  "3306156": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
+  "3306156": {
+    "resumo": "Varre-Sai, localizado no extremo noroeste fluminense, é o município mais alto do estado e o maior produtor de café do Rio de Janeiro. Emancipada em 1990, a cidade tem forte herança da imigração italiana e é famosa por sua tradicional Festa do Vinho.",
+    "historiaCompleta": [
+      "A ocupação da região teve início em meados do século XIX, servindo como ponto de parada para tropeiros que viajavam entre Minas Gerais e o litoral fluminense. O nome peculiar da cidade origina-se de uma lenda local sobre Dona Feliciana, proprietária de um rancho de pouso. Ela exigia que os viajantes limpassem o local antes da partida, ordenando sempre com a frase: \"varre e sai\". A expressão popularizou-se e acabou batizando definitivamente o povoado.",
+      "No final do século XIX, a região recebeu um grande contingente de imigrantes italianos para trabalhar nas lavouras de café. Essa forte colonização europeia moldou profundamente a identidade cultural e econômica do local, introduzindo a tradição da produção de vinho artesanal e impulsionando o cultivo do café. Graças a esse legado, Varre-Sai ostenta até hoje o título de maior produtor cafeeiro de todo o estado do Rio de Janeiro.",
+      "Durante muitas décadas, a localidade foi apenas um distrito pertencente ao município de Natividade, conquistando sua emancipação político-administrativa em 21 de dezembro de 1990. Atualmente, o município atrai visitantes em busca do seu clima ameno de altitude, do turismo rural e da sua famosa Festa do Vinho, um evento anual que celebra as raízes italianas com muita música, gastronomia típica e a produção local de vinhos de uva e jabuticaba."
+    ]
+  },
   "3306206": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] },
   "3306305": { "resumo": "Em breve, uma curiosidade sobre este município.", "historiaCompleta": [] }
 }
