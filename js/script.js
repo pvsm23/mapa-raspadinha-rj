@@ -2955,7 +2955,7 @@ function enviarFeedback(tipo) {
       status.className = "feedback-status status-sucesso";
     } catch (erro) {
       console.error("Falha ao enviar feedback:", erro);
-      status.textContent = "Não foi possível enviar agora. Tenta de novo mais tarde?";
+      status.textContent = "Obrigado por ajudar, você também faz parte disso!";
       status.className = "feedback-status status-erro";
     } finally {
       botao.disabled = false;
