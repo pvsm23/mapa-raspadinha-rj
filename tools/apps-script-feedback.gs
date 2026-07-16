@@ -11,7 +11,17 @@
  *   js/auth.js), aba "Usuários" -- essa aba é só pra CONSULTA; quem
  *   decide o status de verdade é o app (painel de moderação em
  *   Configurações), não editar essa planilha esperando que volte pro
- *   Firestore sozinho.
+ *   Firestore sozinho;
+ * - SOLUÇÃO PROVISÓRIA (ver README.md, seção Comunidade Desbrava): o
+ *   upload da foto de cada post, salva numa pasta do Drive da própria
+ *   conta que roda este script -- usado enquanto o projeto não migrar
+ *   pro plano Blaze do Firebase (que passou a ser exigido pra ativar
+ *   o Cloud Storage). Ver uploadFotoPost/excluirFotoPost abaixo.
+ *   IMPORTANTE: como isso usa DriveApp (serviço novo pra este script),
+ *   depois de colar essa versão você precisa criar uma NOVA
+ *   implantação (não só salvar) e autorizar de novo quando o Google
+ *   pedir -- é o mesmo aviso de sempre, só que agora pedindo acesso ao
+ *   Drive também.
  *
  * COMO IMPLANTAR (só precisa fazer uma vez):
  * 1. Abra a planilha no Google Sheets.
@@ -46,6 +56,14 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(
       ContentService.MimeType.JSON
     );
+  }
+
+  if (dados.tipo === "upload-foto-post") {
+    return uploadFotoPost(dados);
+  }
+
+  if (dados.tipo === "excluir-foto-post") {
+    return excluirFotoPost(dados);
   }
 
   var config = {
@@ -127,4 +145,49 @@ function atualizarUsuarioNaPlanilha(dados) {
     }
   }
   aba.appendRow([dados.apelido || "", dados.email || "", dados.status || "ativo"]);
+}
+
+/**
+ * Salva a foto de um post numa pasta do Drive (criada sozinha no
+ * primeiro uso) e deixa com o link "qualquer pessoa com o link pode
+ * ver" -- é a única forma de um <img> no site conseguir carregar a
+ * imagem, já que o Drive não tem como checar se quem está pedindo é
+ * um usuário logado no Desbrava (diferente do Firebase Storage, que
+ * checava isso pela regra de segurança). Ver aviso de privacidade no
+ * README.md.
+ */
+function uploadFotoPost(dados) {
+  var pasta = obterPastaFotosPosts();
+  var bytes = Utilities.base64Decode(dados.base64);
+  var blob = Utilities.newBlob(bytes, dados.mimeType || "image/jpeg", dados.nomeArquivo || Date.now() + ".jpg");
+  var arquivo = pasta.createFile(blob);
+  arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  var fotoUrl = "https://drive.google.com/thumbnail?id=" + arquivo.getId() + "&sz=w1600";
+  return ContentService.createTextOutput(
+    JSON.stringify({ ok: true, fotoUrl: fotoUrl, fotoId: arquivo.getId() })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Chamado ao excluir um post (ou a conta inteira) -- "melhor
+ * esforço", não trava a exclusão do post/conta se o arquivo já tiver
+ * sido apagado ou não for encontrado.
+ */
+function excluirFotoPost(dados) {
+  try {
+    if (dados.fotoId) DriveApp.getFileById(dados.fotoId).setTrashed(true);
+  } catch (erro) {
+    // Arquivo já pode não existir mais -- sem problema.
+  }
+  return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(
+    ContentService.MimeType.JSON
+  );
+}
+
+function obterPastaFotosPosts() {
+  var nome = "Desbrava - Fotos de posts (provisório)";
+  var pastas = DriveApp.getFoldersByName(nome);
+  if (pastas.hasNext()) return pastas.next();
+  return DriveApp.createFolder(nome);
 }

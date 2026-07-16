@@ -432,12 +432,14 @@ if (CONFIGURADO) {
       await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
     }
 
-    // Posts próprios + a foto de cada um no Storage.
+    // Posts próprios + a foto de cada um (Drive, ver fotoDriveId, ou
+    // Storage nos poucos posts antigos que ainda tiverem fotoStoragePath).
     const postsSnap = await getDocs(query(collection(db, "posts"), where("autorUid", "==", uid)));
     await Promise.all(
       postsSnap.docs.map(async (d) => {
         const post = d.data();
         await deleteDoc(d.ref);
+        if (post.fotoDriveId) enviarParaPlanilha({ tipo: "excluir-foto-post", fotoId: post.fotoDriveId });
         if (post.fotoStoragePath) {
           await deleteObject(refStorage(storage, post.fotoStoragePath)).catch(() => {});
         }
@@ -746,10 +748,58 @@ if (CONFIGURADO) {
      no Firestore, coleção "posts" (ver README.md pras regras). */
 
   /**
-   * Cria um post: sobe a foto pro Storage em posts/{uid}/{postId}.jpg
-   * e grava os metadados no Firestore -- um único doc novo, usando o
-   * id gerado ANTES de gravar (doc(collection(...)).id) pra poder
-   * nomear o arquivo da foto com o mesmo id do post.
+   * Lê um Blob como base64 puro (sem o prefixo "data:...;base64,") --
+   * usado pra mandar a foto do post pro Apps Script via JSON (ver
+   * subirFotoPostParaDrive), já que fetch não sobe um Blob binário
+   * direto num corpo de texto.
+   */
+  function blobParaBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const leitor = new FileReader();
+      leitor.onload = () => resolve(String(leitor.result).split(",")[1] || "");
+      leitor.onerror = () => reject(new Error("Não foi possível ler a foto."));
+      leitor.readAsDataURL(blob);
+    });
+  }
+
+  /**
+   * SOLUÇÃO PROVISÓRIA (ver README.md): sobe a foto do post pro Google
+   * Drive via o mesmo Apps Script Web App do feedback, em vez do
+   * Firebase Storage -- o projeto ainda está no plano Spark (grátis),
+   * que não permite mais ativar o Storage sem migrar pro Blaze
+   * (pago por uso). Diferença importante: a foto fica com o link
+   * "qualquer pessoa com o link pode ver" (o Drive não tem como
+   * checar login do Desbrava), diferente do Storage, que só entregava
+   * pra quem estivesse logado (ver buscarFotoPost logo abaixo, que
+   * ainda existe pra eventuais posts antigos feitos direto no
+   * Storage). Migrar de volta é só trocar esta função pelo
+   * uploadBytes de antes.
+   */
+  async function subirFotoPostParaDrive(arquivoFoto, nomeArquivo) {
+    if (!URL_PLANILHA_FEEDBACK || URL_PLANILHA_FEEDBACK.startsWith("SUBSTITUA")) {
+      throw new Error("Upload de foto ainda não configurado (Apps Script).");
+    }
+    const base64 = await blobParaBase64(arquivoFoto);
+    const resposta = await fetch(URL_PLANILHA_FEEDBACK, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        tipo: "upload-foto-post",
+        base64,
+        mimeType: arquivoFoto.type || "image/jpeg",
+        nomeArquivo,
+      }),
+    });
+    const dados = await resposta.json();
+    if (!dados.ok || !dados.fotoUrl) throw new Error("Não foi possível subir a foto.");
+    return { fotoUrl: dados.fotoUrl, fotoId: dados.fotoId };
+  }
+
+  /**
+   * Cria um post: sobe a foto (ver subirFotoPostParaDrive) e grava os
+   * metadados no Firestore -- um único doc novo, usando o id gerado
+   * ANTES de gravar (doc(collection(...)).id) pra poder nomear o
+   * arquivo da foto com o mesmo id do post.
    */
   window.raspadinhaAuth.criarPost = async ({ arquivoFoto, texto, municipioId, pessoasMarcadas }) => {
     const usuario = auth.currentUser;
@@ -758,12 +808,9 @@ if (CONFIGURADO) {
 
     const novoDocRef = doc(collection(db, "posts"));
     const postId = novoDocRef.id;
-    const caminhoFoto = `posts/${usuario.uid}/${postId}.jpg`;
 
-    await comTimeout(
-      uploadBytes(refStorage(storage, caminhoFoto), arquivoFoto, {
-        contentType: arquivoFoto.type || "image/jpeg",
-      }),
+    const { fotoUrl, fotoId } = await comTimeout(
+      subirFotoPostParaDrive(arquivoFoto, `${postId}.jpg`),
       30000,
       "A conexão está lenta demais pra subir a foto. Verifique sua internet e tente de novo."
     );
@@ -773,7 +820,8 @@ if (CONFIGURADO) {
         autorUid: usuario.uid,
         autorApelido: window.raspadinhaAuth.apelido || "?",
         texto: (texto || "").slice(0, 500),
-        fotoStoragePath: caminhoFoto,
+        fotoUrl,
+        fotoDriveId: fotoId,
         municipioId: municipioId || null,
         // Guarda os dois: uids "crus" (array-contains, pra um dia dar
         // pra consultar "posts que me marcaram") e a lista com apelido
@@ -895,15 +943,14 @@ if (CONFIGURADO) {
    * fica órfã, mas inacessível (ninguém acha o id de um post que não
    * existe mais pra listar os comentários dele).
    */
-  window.raspadinhaAuth.excluirPost = async (postId, caminhoFoto) => {
+  window.raspadinhaAuth.excluirPost = async (postId, fotoDriveId) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     await deleteDoc(doc(db, "posts", postId));
-    if (caminhoFoto) {
-      await deleteObject(refStorage(storage, caminhoFoto)).catch((erro) =>
-        console.error("Falha ao excluir foto do post:", erro)
-      );
-    }
+    // Apagar do Drive é "melhor esforço" (fire-and-forget, mesma
+    // técnica de enviarParaPlanilha) -- não trava a exclusão do post
+    // se isso falhar.
+    if (fotoDriveId) enviarParaPlanilha({ tipo: "excluir-foto-post", fotoId: fotoDriveId });
   };
 
   /**

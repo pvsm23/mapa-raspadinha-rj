@@ -1,14 +1,62 @@
 {
-  "cafe-fluminense": {
-    "nome": "Rota do Café Fluminense",
-    "descricao": "Cidades do Vale do Paraíba que viveram o auge do café no Império.",
-    "historia": "No século XIX, o Vale do Paraíba fluminense foi o maior produtor de café do mundo, sustentando boa parte da economia do Império. As fazendas, mansões e igrejas erguidas com a riqueza do café ainda marcam a paisagem dessas cidades — um patrimônio histórico que também carrega as marcas do trabalho escravizado por trás dessa prosperidade.",
-    "municipios": ["3306107", "3303708", "3306008", "3306206"]
+  "caminho-do-ouro": {
+    "nome": "Rota do Caminho do Ouro",
+    "descricao": "O primeiro caminho do ouro de Minas até o litoral, entre serras, portos e ataques de corsários.",
+    "historia": "No fim do século XVII e início do XVIII, o Caminho Velho foi a primeira grande rota de escoamento do ouro de Minas Gerais até a costa fluminense: o metal descia a serra em lombos de mula, por estradas de pedra construídas à custa do trabalho escravizado. O movimento de navios portugueses na Baía da Ilha Grande e no porto de Paraty atraiu corsários franceses e ingleses, que viviam de ataques a essas embarcações. A rota revive os antigos caminhos na Mata Atlântica, os fortes erguidos para proteger a costa e a arquitetura colonial voltada à segurança e à cobrança de impostos sobre a riqueza da Coroa.",
+    "municipios": ["3303807", "3300100", "3304409", "3304003", "3302007"]
   },
-  "serra-fluminense": {
-    "nome": "Rota da Serra Fluminense",
-    "descricao": "Clima de montanha, arquitetura europeia e trilhas na Serra dos Órgãos.",
-    "historia": "A imigração europeia (principalmente alemã e suíça) deixou marcas fortes nessas cidades serranas, do clima ameno às construções de inspiração europeia. É também aqui que fica o Parque Nacional da Serra dos Órgãos, com algumas das trilhas de montanha mais procuradas do estado.",
-    "municipios": ["3303906", "3305802", "3303401"]
+  "pau-brasil-corsarios": {
+    "nome": "Rota do Pau-Brasil e dos Corsários",
+    "descricao": "Antes do ouro, o litoral fluminense já era disputado por corsários franceses atrás do pau-brasil.",
+    "historia": "Ainda no século XVI, muito antes do ciclo do ouro, o litoral norte e a Região dos Lagos eram o centro econômico da colônia por causa das florestas de pau-brasil. A costa recortada escondia navios corsários franceses, aliados aos indígenas Tamoios na Confederação dos Tamoios, que contrabandeavam a madeira avermelhada cobiçada pelos tintureiros europeus. Para conter o contrabando, Portugal ergueu fortificações como o Forte São Mateus, em Cabo Frio, e promoveu um violento extermínio dos povos nativos da região. Uma rota sobre navegação, exploração botânica e a disputa sangrenta pelo controle do território que viria a ser o Brasil.",
+    "municipios": ["3300704", "3300233", "3300258", "3305208", "3302403", "3304524"]
+  },
+  "rota-do-acucar": {
+    "nome": "Rota do Açúcar",
+    "descricao": "Coronéis, engenhos e o \"ouro branco\" que fez do Norte Fluminense o motor agrícola do Império.",
+    "historia": "O Norte Fluminense foi o grande polo açucareiro do Brasil Colônia até boa parte do século XX. A planície fértil fez nascer uma elite de coronéis e barões tão ricos que importaram máquinas a vapor da Europa antes mesmo de chegarem à capital do Império. A rota contrasta a opulência dos solares e fazendas — e obras como o Canal Campos-Macaé, uma das maiores empreitadas de engenharia do período imperial — com a realidade dos milhares de africanos escravizados que moviam as moendas dos engenhos. Hoje, as antigas usinas abandonadas formam uma paisagem industrial melancólica e cheia de história.",
+    "municipios": ["3301009", "3304151", "3305000", "3302403", "3300936", "3304805"]
+  },
+  "sal-e-ventos": {
+    "nome": "Rota do Sal e dos Ventos",
+    "descricao": "Moinhos de vento e pirâmides de sal branco que já fizeram da Região dos Lagos a maior produtora do país.",
+    "historia": "Os ventos constantes e a altíssima salinidade da Lagoa de Araruama criaram as condições ideais para a extração de sal marinho. Durante o Império e a República, o estado do Rio foi o maior produtor de sal do Brasil, e a paisagem da região foi moldada por quilômetros de salinas brancas e dezenas de moinhos de vento de madeira, usados para bombear a água do mar. A rota conta a história do desenvolvimento econômico que veio bem antes do turismo de massa transformar a Região dos Lagos.",
+    "municipios": ["3305208", "3300209", "3300704", "3301876", "3305505", "3300258"]
+  },
+  "resistencia-quilombola": {
+    "nome": "Rota da Resistência Quilombola",
+    "descricao": "Do Cais do Valongo aos quilombos que resistem até hoje, uma rota de memória da diáspora africana.",
+    "historia": "Uma rota de memória e resistência sobre a brutalidade da diáspora africana forçada e a força de quem sobreviveu a ela. O percurso liga o Cais do Valongo, no Rio de Janeiro — maior porto de chegada de pessoas escravizadas nas Américas —, aos portos clandestinos usados em Mangaratiba e Búzios depois da proibição do tráfico, no século XIX. O trajeto passa por quilombos que existem até hoje, como o da Rasa (Búzios) e o de Machadinha (Quissamã), onde comunidades quilombolas preservam expressões culturais como o jongo, a culinária de terreiro e religiões de matriz africana.",
+    "municipios": ["3304557", "3302601", "3300233", "3300704", "3304151", "3306107"]
+  },
+  "missoes-jesuiticas": {
+    "nome": "Rota das Missões Jesuíticas",
+    "descricao": "Aldeamentos, fazendas e igrejas erguidas pelos jesuítas antes de serem expulsos do Brasil.",
+    "historia": "A Companhia de Jesus teve papel central na organização territorial inicial do Rio de Janeiro. Sob o pretexto da catequese, os jesuítas criaram grandes aldeamentos indígenas e fazendas — como a de Macaé — que funcionavam quase como cidades independentes, concentrando um poder econômico considerável. A rota passa por igrejas erguidas em pedra e argamassa de conchas, e conta a ascensão e a queda abrupta da ordem, expulsa do Brasil em 1759 pelo Marquês de Pombal, que confiscou todas as suas terras e bens.",
+    "municipios": ["3303302", "3305208", "3301306", "3301009", "3302700", "3301900", "3302403"]
+  },
+  "franca-antartica": {
+    "nome": "Rota da França Antártica",
+    "descricao": "As batalhas navais que decidiram quem ficaria com a Baía de Guanabara, entre franceses e portugueses.",
+    "historia": "Em 1555, a Baía de Guanabara não era portuguesa: foi ocupada por franceses que sonhavam em fundar ali a França Antártica, uma colônia tropical. A rota percorre as batalhas navais e terrestres que definiram o controle do Rio de Janeiro, passando pelo sistema de fortalezas da baía, como a Fortaleza de Santa Cruz, e homenageando Araribóia, líder indígena temiminó que lutou ao lado de Estácio de Sá contra franceses e Tamoios. Como recompensa, Araribóia recebeu terras do outro lado da baía — de onde nasceria a cidade de Niterói.",
+    "municipios": ["3304557", "3303302", "3302502", "3301850"]
+  },
+  "trilhos-e-veraneio": {
+    "nome": "Rota dos Trilhos e do Veraneio",
+    "descricao": "A estrada de ferro que fugia da febre amarela e transformou cidades da serra em estâncias de luxo.",
+    "historia": "Construída para escoar o café, a Estrada de Ferro D. Pedro II teve um efeito colateral inesperado: o veraneio. Cortando a Serra do Mar por meio de obras de engenharia notáveis — pontilhões de ferro importados, túneis abertos à mão —, o trem permitiu que a nobreza e a elite política do Rio fugissem dos surtos de febre amarela da capital colonial e imperial. A rota passa por estações de trem centenárias e viadutos históricos, e mostra como essas cidades viraram estâncias climáticas de luxo da época.",
+    "municipios": ["3302908", "3301801", "3302809", "3306206", "3303856", "3303609"]
+  },
+  "caca-as-baleias": {
+    "nome": "Rota da Caça às Baleias",
+    "descricao": "As \"armações\" baleeiras que abasteciam de óleo os lampiões do Rio entre os séculos XVII e XIX.",
+    "historia": "Entre os séculos XVII e XIX, parte da economia desse litoral girava em torno da caça às baleias. Nessas cidades existiam as \"armações\" — complexos onde as baleias eram retalhadas e sua gordura, fervida. O óleo resultante iluminava os lampiões das ruas do Rio de Janeiro e entrava como liga na argamassa de construções coloniais; a própria Armação dos Búzios leva esse nome por causa de uma dessas estações. A rota também é um convite a pensar no quase extermínio das baleias-francas e jubartes, contrastado com o presente, em que a região virou santuário de observação e proteção ecológica.",
+    "municipios": ["3300258", "3302403", "3304524", "3300233", "3303302"]
+  },
+  "caminho-novo": {
+    "nome": "Rota do Caminho Novo",
+    "descricao": "O atalho que Garcia Rodrigues Paes abriu na mata pra encurtar o caminho do ouro até o Rio.",
+    "historia": "No início do século XVIII, Garcia Rodrigues Paes — filho do bandeirante Fernão Dias — abriu o Caminho Novo, rasgando a serra pra encurtar bastante o trajeto do ouro de Minas Gerais até o Rio de Janeiro, em relação ao antigo caminho por Paraty. Décadas depois, essas mesmas estradas testemunhariam a repressão à Inconfidência Mineira, usadas tanto para levar tropas e ordens da Coroa quanto para prender e transportar os envolvidos na conspiração. A rota mistura pontes de pedra, ruínas de antigos pedágios reais (os \"registros de ouro\", onde o metal era fiscalizado e taxado) e o início das grandes fazendas fluminenses que se espalhariam pelo Vale do Paraíba.",
+    "municipios": ["3303708", "3306008", "3300951", "3303906", "3300225"]
   }
 }

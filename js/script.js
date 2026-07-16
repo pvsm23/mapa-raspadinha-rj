@@ -5071,9 +5071,12 @@ function alternarBotoesLaterais() {
 /* ============================================================
    Comunidade Desbrava: rede social com posts (foto + legenda),
    @menção de município/pessoa, curtir, comentar, compartilhar e
-   feed Global/Amigos. Fotos ficam no Firebase Storage e só carregam
-   pra quem está logado (getBytes+blob, nunca getDownloadURL -- ver
-   buscarFotoPost em js/auth.js).
+   feed Global/Amigos. Fotos ficam PROVISORIAMENTE no Google Drive
+   (link "qualquer pessoa com o link pode ver", ver
+   subirFotoPostParaDrive em js/auth.js) enquanto o projeto não migrar
+   pro plano Blaze do Firebase -- não checa login pra ver a foto, ao
+   contrário do plano original (Firebase Storage, getBytes+blob, nunca
+   getDownloadURL). Ver README.md.
    ============================================================ */
 
 /**
@@ -5212,10 +5215,10 @@ async function carregarFeedSocial(resetar) {
 }
 
 /**
- * Monta o card de um post: foto carregada de forma assíncrona (via
- * getBytes+blob, ver buscarFotoPost em js/auth.js -- só funciona
- * logado), chip de município clicável, curtir/comentar/compartilhar
- * e excluir (só pro autor).
+ * Monta o card de um post: foto (post.fotoUrl, provisoriamente no
+ * Drive -- ver subirFotoPostParaDrive em js/auth.js), chip de
+ * município clicável, curtir/comentar/compartilhar e excluir (só pro
+ * autor).
  */
 function renderizarCardPost(post) {
   const card = document.createElement("div");
@@ -5252,12 +5255,20 @@ function renderizarCardPost(post) {
     </div>
   `;
 
+  // Provisório: posts novos trazem "fotoUrl" pronta (Drive, ver
+  // subirFotoPostParaDrive em js/auth.js) -- só posts antigos (se
+  // houver algum, de antes dessa mudança) ainda dependem de buscar a
+  // foto do Storage de forma assíncrona.
   const imgEl = card.querySelector(".post-card-foto");
-  window.raspadinhaAuth.buscarFotoPost(post.fotoStoragePath).then((url) => {
-    if (!url) return;
-    imgEl.src = url;
-    blobUrlsFotosPosts.push(url);
-  });
+  if (post.fotoUrl) {
+    imgEl.src = post.fotoUrl;
+  } else if (post.fotoStoragePath) {
+    window.raspadinhaAuth.buscarFotoPost(post.fotoStoragePath).then((url) => {
+      if (!url) return;
+      imgEl.src = url;
+      blobUrlsFotosPosts.push(url);
+    });
+  }
 
   card.querySelector(".post-card-municipio")?.addEventListener("click", () => abrirPainelSocial(post.municipioId));
   card.querySelector(".post-card-autor").addEventListener("click", () => {
@@ -5357,7 +5368,7 @@ async function enviarComentario(post, card, input) {
 async function aoExcluirPost(post, card) {
   if (!confirm("Excluir esse post? Essa ação não pode ser desfeita.")) return;
   try {
-    await window.raspadinhaAuth.excluirPost(post.id, post.fotoStoragePath);
+    await window.raspadinhaAuth.excluirPost(post.id, post.fotoDriveId);
     card.remove();
   } catch (erro) {
     alert(erro?.message || "Não foi possível excluir o post.");
