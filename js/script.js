@@ -106,6 +106,28 @@ let feedSocialAcabou = false;
 let blobUrlsFotosPosts = []; // URL.createObjectURL ativos, revogados ao fechar o painel
 let pessoasMarcadasForm = []; // { uid, apelido } marcados no formulario de criar post
 
+// ---- Sugestões da Comunidade (por município) ----
+// Categorias agrupadas (evita ter uma categoria quase vazia pra cada
+// item bem específico, ex: "praias"/"cachoeiras"/"lagoas" cabem todas
+// em "Natureza e Paisagens").
+const CATEGORIAS_SUGESTAO = [
+  { chave: "cultura-historia", label: "🏛️ Atrações Culturais e Históricas" },
+  { chave: "trilhas", label: "🥾 Trilhas e Caminhadas" },
+  { chave: "natureza", label: "🏞️ Natureza e Paisagens" },
+  { chave: "gastronomia", label: "🍽️ Gastronomia" },
+  { chave: "parques-diversao", label: "🎡 Parques e Diversão" },
+  { chave: "compras", label: "🛍️ Turismo de Compras" },
+  { chave: "esporte-aventura", label: "🧗 Esporte e Aventura" },
+  { chave: "bem-estar", label: "♨️ Bem-Estar (águas termais, spas)" },
+  { chave: "peregrinacao", label: "🙏 Peregrinação e Fé" },
+  { chave: "sitios-chacaras", label: "🌾 Sítios e Chácaras" },
+  { chave: "outro", label: "📌 Outro" },
+];
+const LABEL_CATEGORIA_SUGESTAO = Object.fromEntries(CATEGORIAS_SUGESTAO.map((c) => [c.chave, c.label]));
+
+let municipioAtualSugestoes = null;
+let filtroCategoriaSugestaoAtual = "";
+
 // Guarda o id do post (?post=id no link compartilhado, ver
 // compartilharPost) ate poder abrir o painel social nele -- só dá pra
 // abrir de verdade depois do login resolver (ver
@@ -519,6 +541,25 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-publicar-post").addEventListener("click", publicarPost);
   document.getElementById("btn-social-carregar-mais").addEventListener("click", () => carregarFeedSocial(false));
 
+  // ---- Sugestões da Comunidade ----
+  document
+    .getElementById("btn-sugestoes-comunidade")
+    .addEventListener("click", () => exigirLogin(() => abrirSugestoesComunidade(municipioSelecionadoId)));
+  document.getElementById("btn-fechar-sugestoes-comunidade").addEventListener("click", fecharSugestoesComunidade);
+  document.getElementById("modal-sugestoes-comunidade").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-sugestoes-comunidade") fecharSugestoesComunidade();
+  });
+  document.getElementById("select-sugestoes-municipio").addEventListener("change", (evento) => {
+    abrirSugestoesComunidade(evento.target.value);
+  });
+  document.getElementById("select-sugestoes-categoria").addEventListener("change", (evento) => {
+    filtroCategoriaSugestaoAtual = evento.target.value;
+    renderizarListaSugestoes();
+  });
+  document.getElementById("btn-abrir-nova-sugestao").addEventListener("click", alternarFormularioNovaSugestao);
+  document.getElementById("input-foto-sugestao").addEventListener("change", aoEscolherFotoSugestao);
+  document.getElementById("btn-publicar-sugestao").addEventListener("click", publicarSugestao);
+
   // ---- Botões flutuantes da lateral esquerda (janela suspensa) ----
   document.getElementById("btn-toggle-lateral").addEventListener("click", alternarBotoesLaterais);
 
@@ -545,7 +586,26 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(mostrarAvisoInstalarPwa, 1200);
 
   mostrarBoasVindasSeNecessario();
+  esconderTelaCarregamento();
 });
+
+/**
+ * Esconde a tela de carregamento (splash preta com o logo, ver
+ * #tela-carregamento em index.html) quando a inicialização acima
+ * termina. Espera um mínimo de 500ms desde a abertura pra tela não
+ * "piscar" em aparelhos rápidos (aparecer e sumir em 1 frame é pior
+ * do que não existir), e faz um fade-out antes de remover de vez.
+ */
+function esconderTelaCarregamento() {
+  const tela = document.getElementById("tela-carregamento");
+  if (!tela) return;
+  const decorrido = performance.now();
+  const restante = Math.max(0, 500 - decorrido);
+  setTimeout(() => {
+    tela.classList.add("sumindo");
+    setTimeout(() => tela.remove(), 450);
+  }, restante);
+}
 
 /**
  * Só deixa executar `acao` se o usuário estiver logado; senão, abre
@@ -5417,6 +5477,326 @@ async function aoExcluirPost(post, card) {
     card.remove();
   } catch (erro) {
     alert(erro?.message || "Não foi possível excluir o post.");
+  }
+}
+
+/* ============================================================
+   Sugestões da Comunidade: lugares/restaurantes/etc sugeridos por
+   quem usa o app, um feed PRÓPRIO POR MUNICÍPIO (ver
+   window.raspadinhaAuth.buscarSugestoes em js/auth.js -- subcoleção
+   sugestoesComunidade/{municipioId}/itens, sempre ordenada por mais
+   curtido primeiro). Dá pra trocar de município direto no select
+   dentro do modal, sem precisar abrir outro município no mapa.
+   ============================================================ */
+
+let sugestoesCarregadas = [];
+
+/**
+ * Abre (ou troca de município dentro d)o modal de Sugestões da
+ * Comunidade. Chamado tanto pelo botão no popup do município quanto
+ * pelo próprio select de trocar município lá dentro.
+ */
+function abrirSugestoesComunidade(municipioId) {
+  if (!municipioId) return;
+  municipioAtualSugestoes = municipioId;
+  filtroCategoriaSugestaoAtual = "";
+
+  preencherSelectsDeSugestao();
+  document.getElementById("select-sugestoes-municipio").value = municipioId;
+  document.getElementById("select-sugestoes-categoria").value = "";
+  document.getElementById("sugestoes-form").classList.add("oculto");
+  resetarFormularioNovaSugestao();
+
+  document.getElementById("modal-sugestoes-comunidade").classList.remove("oculto");
+  carregarSugestoes();
+}
+
+function fecharSugestoesComunidade() {
+  document.getElementById("modal-sugestoes-comunidade").classList.add("oculto");
+}
+
+/**
+ * Preenche o select de município (mesma lista/ordem alfabética de
+ * preencherSelectMunicipiosPost) e o select de categoria (fixo, ver
+ * CATEGORIAS_SUGESTAO) -- só precisa fazer isso uma vez de verdade,
+ * mas rodar de novo não tem custo real (poucas dezenas de opções).
+ */
+function preencherSelectsDeSugestao() {
+  const selectMunicipio = document.getElementById("select-sugestoes-municipio");
+  if (!selectMunicipio.dataset.preenchido) {
+    const opcoes = Object.entries(idParaNomeMunicipio).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+    selectMunicipio.innerHTML = "";
+    opcoes.forEach(([id, nome]) => {
+      const opcao = document.createElement("option");
+      opcao.value = id;
+      opcao.textContent = nome;
+      selectMunicipio.appendChild(opcao);
+    });
+    selectMunicipio.dataset.preenchido = "1";
+  }
+
+  const selectCategoriaFiltro = document.getElementById("select-sugestoes-categoria");
+  const selectCategoriaForm = document.getElementById("select-categoria-sugestao");
+  if (!selectCategoriaForm.dataset.preenchido) {
+    CATEGORIAS_SUGESTAO.forEach((cat) => {
+      const opcaoFiltro = document.createElement("option");
+      opcaoFiltro.value = cat.chave;
+      opcaoFiltro.textContent = cat.label;
+      selectCategoriaFiltro.appendChild(opcaoFiltro);
+
+      const opcaoForm = document.createElement("option");
+      opcaoForm.value = cat.chave;
+      opcaoForm.textContent = cat.label;
+      selectCategoriaForm.appendChild(opcaoForm);
+    });
+    selectCategoriaForm.dataset.preenchido = "1";
+  }
+}
+
+/**
+ * Busca as sugestões do município atual (até 200 de uma vez, já
+ * ordenadas por mais curtido -- ver buscarSugestoes em js/auth.js).
+ * O filtro por categoria é aplicado só na hora de renderizar
+ * (renderizarListaSugestoes), sem precisar de uma nova consulta ao
+ * Firestore pra cada categoria escolhida.
+ */
+async function carregarSugestoes() {
+  const listaEl = document.getElementById("sugestoes-lista");
+  listaEl.innerHTML = '<div class="spinner spinner-grande"></div>';
+
+  try {
+    const resultado = await window.raspadinhaAuth.buscarSugestoes(municipioAtualSugestoes, { limiteN: 200 });
+    sugestoesCarregadas = resultado.sugestoes;
+    renderizarListaSugestoes();
+  } catch (erro) {
+    console.error("Falha ao carregar sugestões:", erro);
+    listaEl.innerHTML = "<p>Não foi possível carregar as sugestões agora.</p>";
+  }
+}
+
+function renderizarListaSugestoes() {
+  const listaEl = document.getElementById("sugestoes-lista");
+  const sugestoesFiltradas = filtroCategoriaSugestaoAtual
+    ? sugestoesCarregadas.filter((s) => s.categoria === filtroCategoriaSugestaoAtual)
+    : sugestoesCarregadas;
+
+  listaEl.innerHTML = sugestoesFiltradas.length
+    ? ""
+    : "<p>Nenhuma sugestão por aqui ainda. Seja o primeiro a sugerir um lugar!</p>";
+  sugestoesFiltradas.forEach((sugestao) => listaEl.appendChild(renderizarCardSugestao(sugestao)));
+}
+
+function alternarFormularioNovaSugestao() {
+  document.getElementById("sugestoes-form").classList.toggle("oculto");
+}
+
+function resetarFormularioNovaSugestao() {
+  document.getElementById("input-titulo-sugestao").value = "";
+  document.getElementById("select-categoria-sugestao").value = "outro";
+  document.getElementById("input-descricao-sugestao").value = "";
+  document.getElementById("input-link-maps-sugestao").value = "";
+  document.getElementById("input-foto-sugestao").value = "";
+  document.getElementById("preview-foto-sugestao").classList.add("oculto");
+  document.getElementById("check-anonimo-sugestao").checked = false;
+  document.getElementById("sugestao-form-erro").classList.add("oculto");
+}
+
+function aoEscolherFotoSugestao(evento) {
+  const arquivo = evento.target.files[0];
+  const preview = document.getElementById("preview-foto-sugestao");
+  if (!arquivo) {
+    preview.classList.add("oculto");
+    return;
+  }
+  preview.src = URL.createObjectURL(arquivo);
+  preview.classList.remove("oculto");
+}
+
+async function publicarSugestao() {
+  const titulo = document.getElementById("input-titulo-sugestao").value.trim();
+  const categoria = document.getElementById("select-categoria-sugestao").value;
+  const descricao = document.getElementById("input-descricao-sugestao").value.trim();
+  const linkMaps = document.getElementById("input-link-maps-sugestao").value.trim();
+  const arquivo = document.getElementById("input-foto-sugestao").files[0] || null;
+  const anonimo = document.getElementById("check-anonimo-sugestao").checked;
+  const erroEl = document.getElementById("sugestao-form-erro");
+  const statusEl = document.getElementById("sugestao-form-status");
+  const botao = document.getElementById("btn-publicar-sugestao");
+
+  erroEl.classList.add("oculto");
+  if (!titulo) {
+    erroEl.textContent = "Dê um nome pro lugar.";
+    erroEl.classList.remove("oculto");
+    return;
+  }
+
+  botao.disabled = true;
+  botao.querySelector(".spinner").classList.remove("oculto");
+  statusEl.textContent = arquivo ? "Preparando a foto..." : "Publicando...";
+  statusEl.classList.remove("oculto");
+
+  try {
+    const fotoComprimida = arquivo ? await comprimirFotoPost(arquivo) : null;
+    statusEl.textContent = "Publicando...";
+    await window.raspadinhaAuth.criarSugestao({
+      municipioId: municipioAtualSugestoes,
+      titulo,
+      categoria,
+      descricao,
+      linkMaps,
+      arquivoFoto: fotoComprimida,
+      anonimo,
+    });
+    resetarFormularioNovaSugestao();
+    document.getElementById("sugestoes-form").classList.add("oculto");
+    carregarSugestoes();
+  } catch (erro) {
+    console.error("Falha ao publicar sugestão:", erro);
+    erroEl.textContent = erro?.message || "Não foi possível publicar agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.querySelector(".spinner").classList.add("oculto");
+    statusEl.classList.add("oculto");
+  }
+}
+
+/**
+ * Monta o card de uma sugestão: título, categoria, foto (se tiver),
+ * link do Maps (se tiver), autor (ou "Anônimo", ver campo `anonimo`
+ * -- só afeta a exibição, não quem pode editar/excluir de verdade) e
+ * curtir/comentar/excluir (só pro autor).
+ */
+function renderizarCardSugestao(sugestao) {
+  const card = document.createElement("div");
+  card.className = "sugestao-card";
+  card.dataset.itemId = sugestao.id;
+
+  const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
+  const curtidoPor = sugestao.curtidoPor || [];
+  const curtido = curtidoPor.includes(meuUid);
+  const souAutor = sugestao.autorUid === meuUid;
+  const nomeAutor = sugestao.anonimo ? "🕵️ Anônimo" : sugestao.autorApelido;
+  const labelCategoria = LABEL_CATEGORIA_SUGESTAO[sugestao.categoria] || LABEL_CATEGORIA_SUGESTAO.outro;
+
+  card.innerHTML = `
+    <div class="sugestao-card-cabecalho">
+      <span class="sugestao-card-categoria">${escaparHtml(labelCategoria)}</span>
+      <span class="sugestao-card-autor">${escaparHtml(nomeAutor)}</span>
+    </div>
+    <h3 class="sugestao-card-titulo">${escaparHtml(sugestao.titulo)}</h3>
+    ${sugestao.fotoUrl ? `<img class="sugestao-card-foto" src="${escaparHtml(sugestao.fotoUrl)}" alt="Foto de ${escaparHtml(sugestao.titulo)}">` : ""}
+    ${sugestao.descricao ? `<p class="sugestao-card-descricao">${escaparHtml(sugestao.descricao)}</p>` : ""}
+    ${sugestao.linkMaps ? `<a class="sugestao-card-maps" href="${escaparHtml(sugestao.linkMaps)}" target="_blank" rel="noopener">📍 Abrir no Maps</a>` : ""}
+    <div class="sugestao-card-acoes">
+      <button type="button" class="sugestao-card-curtir${curtido ? " curtido" : ""}">❤️ <span class="sugestao-card-curtidas">${curtidoPor.length}</span></button>
+      <button type="button" class="sugestao-card-comentar">💬 <span class="sugestao-card-num-comentarios">${sugestao.numComentarios || 0}</span></button>
+      ${souAutor ? '<button type="button" class="sugestao-card-excluir">Excluir</button>' : ""}
+    </div>
+    <div class="sugestao-card-comentarios oculto">
+      <div class="sugestao-card-lista-comentarios"></div>
+      <div class="sugestao-card-novo-comentario">
+        <input type="text" placeholder="Escreva um comentário..." maxlength="500">
+        <button type="button">Enviar</button>
+      </div>
+    </div>
+  `;
+
+  card.querySelector(".sugestao-card-curtir").addEventListener("click", () => aoCurtirSugestao(sugestao, card));
+  card.querySelector(".sugestao-card-comentar").addEventListener("click", () => aoAbrirComentariosSugestao(sugestao, card));
+  card.querySelector(".sugestao-card-excluir")?.addEventListener("click", () => aoExcluirSugestao(sugestao, card));
+
+  const inputComentario = card.querySelector(".sugestao-card-novo-comentario input");
+  card.querySelector(".sugestao-card-novo-comentario button").addEventListener("click", () =>
+    enviarComentarioSugestao(sugestao, card, inputComentario)
+  );
+  inputComentario.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") enviarComentarioSugestao(sugestao, card, inputComentario);
+  });
+
+  return card;
+}
+
+async function aoCurtirSugestao(sugestao, card) {
+  const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
+  const botao = card.querySelector(".sugestao-card-curtir");
+  const contador = card.querySelector(".sugestao-card-curtidas");
+  const jaCurtido = botao.classList.contains("curtido");
+  const novoEstado = !jaCurtido;
+
+  botao.classList.toggle("curtido", novoEstado);
+  contador.textContent = Number(contador.textContent) + (novoEstado ? 1 : -1);
+
+  try {
+    await window.raspadinhaAuth.curtirSugestao(municipioAtualSugestoes, sugestao.id, novoEstado);
+    sugestao.numCurtidas = (sugestao.numCurtidas || 0) + (novoEstado ? 1 : -1);
+    if (novoEstado) sugestao.curtidoPor = [...(sugestao.curtidoPor || []), meuUid];
+    else sugestao.curtidoPor = (sugestao.curtidoPor || []).filter((uid) => uid !== meuUid);
+  } catch (erro) {
+    console.error("Falha ao curtir sugestão:", erro);
+    botao.classList.toggle("curtido", jaCurtido);
+    contador.textContent = Number(contador.textContent) + (novoEstado ? -1 : 1);
+  }
+}
+
+async function aoAbrirComentariosSugestao(sugestao, card) {
+  const painel = card.querySelector(".sugestao-card-comentarios");
+  const abrindo = painel.classList.contains("oculto");
+  painel.classList.toggle("oculto", !abrindo);
+  if (!abrindo) return;
+
+  const lista = card.querySelector(".sugestao-card-lista-comentarios");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    const comentarios = await window.raspadinhaAuth.listarComentariosSugestao(municipioAtualSugestoes, sugestao.id);
+    lista.innerHTML = comentarios.length ? "" : "<p>Nenhum comentário ainda.</p>";
+    comentarios.forEach((c) => {
+      const linha = document.createElement("p");
+      linha.className = "comentario-linha";
+      linha.innerHTML = `<b>${escaparHtml(c.autorApelido)}:</b> ${escaparHtml(c.texto)}`;
+      lista.appendChild(linha);
+    });
+  } catch (erro) {
+    console.error("Falha ao carregar comentários:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar os comentários.</p>";
+  }
+}
+
+async function enviarComentarioSugestao(sugestao, card, input) {
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  input.disabled = true;
+  try {
+    await window.raspadinhaAuth.comentarSugestao(municipioAtualSugestoes, sugestao.id, texto);
+    input.value = "";
+
+    sugestao.numComentarios = (sugestao.numComentarios || 0) + 1;
+    card.querySelector(".sugestao-card-num-comentarios").textContent = sugestao.numComentarios;
+
+    const lista = card.querySelector(".sugestao-card-lista-comentarios");
+    if (lista.children.length === 1 && lista.children[0].tagName === "P" && !lista.children[0].className) {
+      lista.innerHTML = "";
+    }
+    const linha = document.createElement("p");
+    linha.className = "comentario-linha";
+    linha.innerHTML = `<b>${escaparHtml(window.raspadinhaAuth.apelido)}:</b> ${escaparHtml(texto)}`;
+    lista.appendChild(linha);
+  } catch (erro) {
+    alert(erro?.message || "Não foi possível enviar o comentário.");
+  } finally {
+    input.disabled = false;
+  }
+}
+
+async function aoExcluirSugestao(sugestao, card) {
+  if (!confirm("Excluir essa sugestão? Essa ação não pode ser desfeita.")) return;
+  try {
+    await window.raspadinhaAuth.excluirSugestao(municipioAtualSugestoes, sugestao.id, sugestao.fotoDriveId);
+    card.remove();
+    sugestoesCarregadas = sugestoesCarregadas.filter((s) => s.id !== sugestao.id);
+  } catch (erro) {
+    alert(erro?.message || "Não foi possível excluir a sugestão.");
   }
 }
 

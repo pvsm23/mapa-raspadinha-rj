@@ -193,6 +193,65 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* ============================================================
+   Tela de carregamento (splash): preta, logo branco e uma barra
+   fina de progresso indeterminado. Fica por cima de TUDO
+   (z-index acima de qualquer modal) até o app terminar de
+   inicializar -- ver esconderTelaCarregamento em js/script.js.
+   ============================================================ */
+#tela-carregamento {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  transition: opacity 0.4s ease;
+}
+
+#tela-carregamento h1 {
+  color: #fff;
+  font-size: 2rem;
+  margin: 0;
+}
+
+#carregamento-barra {
+  width: min(220px, 60vw);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+/* Progresso "indeterminado": um trecho branco que desliza em loop
+   (não dá pra saber % real do parse/scripts, então a barra só
+   comunica "tá vivo, carregando"). */
+#carregamento-barra-preenchida {
+  width: 40%;
+  height: 100%;
+  background: #fff;
+  border-radius: 999px;
+  animation: carregamento-desliza 1.1s ease-in-out infinite;
+}
+
+@keyframes carregamento-desliza {
+  0% {
+    transform: translateX(-250%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* Fade-out antes de remover de vez (ver esconderTelaCarregamento). */
+#tela-carregamento.sumindo {
+  opacity: 0;
+  pointer-events: none;
+}
+
 #progresso {
   color: #94a3b8;
   font-size: 0.85rem;
@@ -854,6 +913,326 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #btn-social-carregar-mais.oculto {
   display: none;
+}
+
+/* Botão "Sugestões da Comunidade" no popup do município -- mesmo
+   formato de #btn-verificar-local (bloco cheio, canto arredondado),
+   cor diferente só pra distinguir visualmente das outras ações. */
+#btn-sugestoes-comunidade {
+  display: block;
+  width: 100%;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 10px 0;
+}
+
+#btn-sugestoes-comunidade:hover {
+  background: #7c3aed;
+}
+
+/* ============================================================
+   Sugestões da Comunidade -- mesmo painel deslizante da Comunidade
+   Desbrava (#modal-social), só que com um seletor de município (dá
+   pra trocar de "comunidade" sem fechar o modal) e filtro de
+   categoria.
+   ============================================================ */
+#modal-sugestoes-comunidade {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+#modal-sugestoes-comunidade.oculto {
+  display: none;
+}
+
+#sugestoes-comunidade-conteudo {
+  position: relative;
+  background: #1e293b;
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  text-align: left;
+}
+
+#sugestoes-comunidade-conteudo h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+#btn-fechar-sugestoes-comunidade {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-sugestoes-comunidade:hover {
+  color: #f1f5f9;
+}
+
+#sugestoes-comunidade-conteudo label {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  margin: 10px 0 4px;
+}
+
+#sugestoes-comunidade-conteudo > select,
+#sugestoes-form input[type="file"],
+#sugestoes-form input[type="text"],
+#sugestoes-form input[type="url"],
+#sugestoes-form textarea,
+#sugestoes-form select {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+#btn-abrir-nova-sugestao {
+  display: block;
+  width: 100%;
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 14px 0;
+}
+
+#btn-abrir-nova-sugestao:hover {
+  background: #16a34a;
+}
+
+#sugestoes-form {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+#sugestoes-form.oculto {
+  display: none;
+}
+
+#preview-foto-sugestao {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+#preview-foto-sugestao.oculto {
+  display: none;
+}
+
+#label-anonimo-sugestao {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px !important;
+  cursor: pointer;
+}
+
+#sugestao-form-erro {
+  color: #f87171;
+  font-size: 0.8rem;
+  margin: 8px 0 0;
+}
+
+#btn-publicar-sugestao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 14px;
+}
+
+#btn-publicar-sugestao:hover {
+  background: #7c3aed;
+}
+
+#btn-publicar-sugestao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#sugestao-form-status {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+#sugestoes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.sugestao-card {
+  background: #0f172a;
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.sugestao-card-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  margin-bottom: 6px;
+}
+
+.sugestao-card-categoria {
+  background: rgba(139, 92, 246, 0.2);
+  color: #a78bfa;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sugestao-card-autor {
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.sugestao-card-titulo {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.sugestao-card-foto {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.sugestao-card-descricao {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  margin: 0 0 8px;
+}
+
+.sugestao-card-maps {
+  display: inline-block;
+  color: #60a5fa;
+  font-size: 0.8rem;
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+
+.sugestao-card-maps:hover {
+  text-decoration: underline;
+}
+
+.sugestao-card-acoes {
+  display: flex;
+  gap: 14px;
+  padding-top: 4px;
+  border-top: 1px solid #1e293b;
+}
+
+.sugestao-card-acoes button {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sugestao-card-acoes button:hover {
+  color: #f1f5f9;
+}
+
+.sugestao-card-curtir.curtido {
+  color: #ef4444;
+}
+
+.sugestao-card-excluir {
+  margin-left: auto;
+  color: #ef4444 !important;
+}
+
+.sugestao-card-comentarios {
+  padding-top: 8px;
+}
+
+.sugestao-card-comentarios.oculto {
+  display: none;
+}
+
+.sugestao-card-novo-comentario {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.sugestao-card-novo-comentario input {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.sugestao-card-novo-comentario button {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.8rem;
 }
 
 #btn-posts-municipio {

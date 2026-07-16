@@ -227,6 +227,37 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
           }
         }
 
+        // Sugestões da Comunidade: uma subcoleção POR MUNICÍPIO (o id
+        // do IBGE vira o id do documento pai, que nunca precisa
+        // existir de verdade -- só serve pra agrupar a subcoleção
+        // "itens"). Mesmo espírito de permissão dos posts, só que
+        // curtir aqui mexe em DOIS campos na mesma escrita
+        // (curtidoPor + numCurtidas, o contador que permite ordenar
+        // "mais curtido primeiro" sem precisar de índice composto).
+        match /sugestoesComunidade/{municipioId}/itens/{itemId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null
+            && request.resource.data.autorUid == request.auth.uid;
+          allow update: if request.auth != null
+            && (
+              request.auth.uid == resource.data.autorUid
+              || request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['curtidoPor', 'numCurtidas'])
+              || request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['numComentarios'])
+            );
+          allow delete: if request.auth != null
+            && request.auth.uid == resource.data.autorUid;
+
+          match /comentarios/{comentarioId} {
+            allow read: if request.auth != null;
+            allow create: if request.auth != null
+              && request.resource.data.autorUid == request.auth.uid;
+            allow delete: if request.auth != null
+              && request.auth.uid == resource.data.autorUid;
+          }
+        }
+
         // Configuração global do app (hoje só o toggle de anúncios,
         // ver painel de Admin em Configurações e
         // atualizarVisibilidadeAnuncio em js/script.js) -- read
@@ -255,6 +286,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
       }
     }
     ```
+  - **Sugestões da Comunidade** (botão 💡 no popup do município, entre a curiosidade e os pontos turísticos): cada município tem sua PRÓPRIA lista de sugestões de lugares/restaurantes/etc, sempre ordenada por mais curtida primeiro (`sugestoesComunidade/{municipioId}/itens`, ver `abrirSugestoesComunidade`/`carregarSugestoes` em `js/script.js`). Dá pra trocar de município direto no select do modal, sem fechar e abrir outro no mapa. Cada sugestão tem categoria (`CATEGORIAS_SUGESTAO`, ~11 grupos, filtro aplicado no cliente pra não precisar de índice composto), descrição, link de Maps e foto opcionais (mesma infra provisória do Drive, ver item abaixo), e uma opção de postar anonimamente (`anonimo: true` -- só muda como o app EXIBE o autor; o `autorUid` real continua gravado, porque a regra do Firestore precisa dele pra saber quem pode editar/excluir). Curtir/comentar reaproveita o mesmo padrão dos posts, com uma diferença: curtir também atualiza um contador `numCurtidas` na mesma escrita (o Firestore não ordena por tamanho de array, só por campo numérico).
   - **⚠️ PROVISÓRIO: fotos de post vão pro Google Drive, não pro Storage acima.** O Firebase passou a exigir o plano **Blaze** (pago por uso, com cota grátis generosa) pra ativar o Cloud Storage — o projeto ainda está no Spark (grátis), então a regra acima existe mas o bucket nunca foi provisionado de verdade. Enquanto isso não muda, `criarPost`/`excluirPost` (`js/auth.js`) sobem/apagam a foto no **Google Drive** via o mesmo Apps Script do feedback (`tools/apps-script-feedback.gs`, ações `upload-foto-post`/`excluir-foto-post`), guardando o link em `fotoUrl`/`fotoDriveId` no post (em vez de `fotoStoragePath`). **Troca importante de privacidade**: o Drive só sabe fazer link "qualquer pessoa com o link pode ver" — diferente do Storage, que só entregava a foto pra quem estivesse logado no Desbrava, a foto no Drive abre pra qualquer um que descobrir o link, logado ou não. Decisão consciente, aceita enquanto for só posts de início/teste. **Pra migrar de volta** quando decidir sobre o Blaze: trocar `subirFotoPostParaDrive` (em `js/auth.js`) de volta pro `uploadBytes`/`getBytes` do Storage (o código antigo, com `fotoStoragePath`, continua funcionando pra quem tiver posts assim — só não é mais usado pra posts novos), publicar as regras do Storage acima, e pronto.
 - **8 regiões de governo (CEPERJ)**: com o mapa afastado (zoom < 1.8x), os 92 municípios aparecem coloridos pela sua REGIÃO — cinza até todos os municípios dela serem visitados, verde quando a região inteira estiver completa. Clicar num município nessa visão abre o popup da região (`data/regioes.json`, fonte CEPERJ + Lei Complementar 105/2002 pra Costa Verde), com contador, e um "mega-selo" (raspadinha bem maior, 400px) que só fica disponível pra raspar quando a região estiver 100% completa. Espaço reservado pro resumo em texto de cada região em `data/regioes-resumo.json` (vazio, a preencher depois). Zoom máximo foi de 4x pra 10x; nomes dos municípios só aparecem a partir de 3.5x (pra não lotar a tela quando dá pra ver vários de uma vez).
 - **Destinos clicáveis**: cada ponto turístico no popup do município agora é clicável, abrindo um texto reservado (`textoCompleto`, ainda não preenchido em nenhum destino) e um botão "▶️ Abrir no Maps" — fica desabilitado até o destino ter um `linkMaps` de verdade em `data/destinos.json`.

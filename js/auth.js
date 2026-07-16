@@ -198,6 +198,15 @@ window.raspadinhaAuth = {
   excluirPost: async () => {},
   buscarFotoPost: async () => null,
   buscarPost: async () => null,
+  // ---- Sugestões da Comunidade ----
+  criarSugestao: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
+  buscarSugestoes: async () => ({ sugestoes: [], proximoCursor: null }),
+  curtirSugestao: async () => {},
+  comentarSugestao: async () => {},
+  listarComentariosSugestao: async () => [],
+  excluirSugestao: async () => {},
   // ---- Moderação e exclusão de conta ----
   UID_DONO,
   registrarAtividadeSuspeita: async () => {},
@@ -950,6 +959,148 @@ if (CONFIGURADO) {
     // Apagar do Drive é "melhor esforço" (fire-and-forget, mesma
     // técnica de enviarParaPlanilha) -- não trava a exclusão do post
     // se isso falhar.
+    if (fotoDriveId) enviarParaPlanilha({ tipo: "excluir-foto-post", fotoId: fotoDriveId });
+  };
+
+  /* ============================================================
+     Sugestões da Comunidade: uma subcoleção por município
+     (sugestoesComunidade/{municipioId}/itens/{itemId}) -- assim o
+     feed de um município já vem isolado sem precisar de "where" +
+     "orderBy" combinados (o tipo de consulta que exige um índice
+     composto criado manualmente, como aconteceu com o filtro de
+     posts por município). Ordenar por "mais curtido primeiro" só
+     usa um índice de campo único (numCurtidas), que o Firestore cria
+     sozinho.
+     ============================================================ */
+
+  /**
+   * Cria uma sugestão de lugar num município. Reaproveita a mesma
+   * infra provisória de foto dos posts (subirFotoPostParaDrive, ver
+   * criarPost acima) -- mesmo aviso de privacidade (link público).
+   * "anonimo" só afeta como o app RENDERIZA o autor (ver
+   * renderizarCardSugestao em js/script.js); o autorUid real
+   * continua gravado, porque a regra do Firestore precisa dele pra
+   * saber quem pode editar/excluir.
+   */
+  window.raspadinhaAuth.criarSugestao = async ({
+    municipioId,
+    titulo,
+    descricao,
+    categoria,
+    linkMaps,
+    arquivoFoto,
+    anonimo,
+  }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!municipioId) throw new Error("Selecione um município.");
+    if (!(titulo || "").trim()) throw new Error("Dê um nome pro lugar.");
+
+    const novoDocRef = doc(collection(db, "sugestoesComunidade", municipioId, "itens"));
+    const itemId = novoDocRef.id;
+
+    let fotoUrl = null;
+    let fotoId = null;
+    if (arquivoFoto) {
+      const resultado = await comTimeout(
+        subirFotoPostParaDrive(arquivoFoto, `sugestao-${itemId}.jpg`),
+        30000,
+        "A conexão está lenta demais pra subir a foto. Verifique sua internet e tente de novo."
+      );
+      fotoUrl = resultado.fotoUrl;
+      fotoId = resultado.fotoId;
+    }
+
+    await comTimeout(
+      setDoc(novoDocRef, {
+        autorUid: usuario.uid,
+        autorApelido: window.raspadinhaAuth.apelido || "?",
+        anonimo: !!anonimo,
+        titulo: titulo.trim().slice(0, 80),
+        descricao: (descricao || "").trim().slice(0, 500),
+        categoria: categoria || "outro",
+        linkMaps: (linkMaps || "").trim().slice(0, 500) || null,
+        fotoUrl,
+        fotoDriveId: fotoId,
+        curtidoPor: [],
+        numCurtidas: 0,
+        numComentarios: 0,
+        criadoEm: serverTimestamp(),
+      }),
+      15000,
+      "A conexão está lenta demais pra publicar. Verifique sua internet e tente de novo."
+    );
+
+    return itemId;
+  };
+
+  /**
+   * Sugestões de UM município, sempre ordenadas por mais curtidas
+   * primeiro (numCurtidas, contador denormalizado -- ver
+   * curtirSugestao). Paginado do mesmo jeito que buscarFeedGlobal.
+   */
+  window.raspadinhaAuth.buscarSugestoes = async (municipioId, { cursor, limiteN = 20 } = {}) => {
+    const clausulas = [orderBy("numCurtidas", "desc"), limit(limiteN)];
+    if (cursor) clausulas.push(startAfter(cursor));
+    const consulta = query(collection(db, "sugestoesComunidade", municipioId, "itens"), ...clausulas);
+    const resultado = await getDocs(consulta);
+    const sugestoes = resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return {
+      sugestoes,
+      proximoCursor: resultado.docs.length === limiteN ? resultado.docs[resultado.docs.length - 1] : null,
+    };
+  };
+
+  /**
+   * Curtir/descurtir: diferente de curtirPost, aqui também mantém um
+   * contador numérico (numCurtidas) na mesma escrita -- é o que
+   * permite ordenar "mais curtido primeiro" direto na consulta (ver
+   * buscarSugestoes), já que o Firestore não ordena por tamanho de
+   * array.
+   */
+  window.raspadinhaAuth.curtirSugestao = (municipioId, itemId, curtir) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    return updateDoc(doc(db, "sugestoesComunidade", municipioId, "itens", itemId), {
+      curtidoPor: curtir ? arrayUnion(usuario.uid) : arrayRemove(usuario.uid),
+      numCurtidas: increment(curtir ? 1 : -1),
+    });
+  };
+
+  window.raspadinhaAuth.comentarSugestao = async (municipioId, itemId, texto) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const textoLimpo = (texto || "").trim().slice(0, 500);
+    if (!textoLimpo) return;
+
+    const itemRef = doc(db, "sugestoesComunidade", municipioId, "itens", itemId);
+    await addDoc(collection(itemRef, "comentarios"), {
+      autorUid: usuario.uid,
+      autorApelido: window.raspadinhaAuth.apelido || "?",
+      texto: textoLimpo,
+      criadoEm: serverTimestamp(),
+    });
+    await updateDoc(itemRef, { numComentarios: increment(1) });
+  };
+
+  window.raspadinhaAuth.listarComentariosSugestao = async (municipioId, itemId) => {
+    const consulta = query(
+      collection(db, "sugestoesComunidade", municipioId, "itens", itemId, "comentarios"),
+      orderBy("criadoEm", "asc")
+    );
+    const resultado = await getDocs(consulta);
+    return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  /**
+   * Exclui uma sugestão (só o autor, ver regra) -- mesma lógica de
+   * excluirPost (apaga o doc, apaga a foto do Drive em "melhor
+   * esforço", não cascateia os comentários).
+   */
+  window.raspadinhaAuth.excluirSugestao = async (municipioId, itemId, fotoDriveId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await deleteDoc(doc(db, "sugestoesComunidade", municipioId, "itens", itemId));
     if (fotoDriveId) enviarParaPlanilha({ tipo: "excluir-foto-post", fotoId: fotoDriveId });
   };
 

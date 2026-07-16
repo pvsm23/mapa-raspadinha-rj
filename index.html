@@ -30,6 +30,18 @@
 </head>
 <body>
 
+  <!-- Tela de carregamento: visível DESDE O PRIMEIRO PAINT (sem
+       .oculto -- é o JS que a esconde quando a inicialização termina,
+       ver esconderTelaCarregamento em js/script.js). Cobre o mapa/UI
+       ainda pela metade enquanto o navegador processa o SVG grande e
+       os scripts. -->
+  <div id="tela-carregamento">
+    <h1 class="logo-desbrava">DESBRAVA</h1>
+    <div id="carregamento-barra">
+      <div id="carregamento-barra-preenchida"></div>
+    </div>
+  </div>
+
   <!--
     Login: navegar/mexer no mapa nao exige login. So pede login (via
     exigirLogin() em script.js) quando o usuario tenta interagir de
@@ -444,6 +456,9 @@
       <!-- So aparece na visualizacao de um selo ja raspado (numero
            de contas que tem esse selo) -->
       <p id="modal-selo-estatistica"></p>
+      <!-- Abre a lista de sugestoes de lugares desse municipio (ver
+           abrirSugestoesComunidade em js/script.js) -->
+      <button type="button" id="btn-sugestoes-comunidade">💡 Sugestões da Comunidade</button>
       <div id="modal-destinos"></div>
     </div>
   </div>
@@ -494,6 +509,61 @@
       <p id="rota-detalhe-instrucao"></p>
       <div id="rota-detalhe-historia"></div>
       <p id="rota-detalhe-selo-estatistica"></p>
+    </div>
+  </div>
+
+  <!-- Sugestões da Comunidade: lugares/restaurantes/etc sugeridos por
+       usuários, um feed PRÓPRIO POR MUNICÍPIO (ver
+       abrirSugestoesComunidade em js/script.js). Sempre ordenado por
+       mais curtido primeiro; dá pra trocar de município de dentro do
+       próprio modal (select-sugestoes-municipio), sem precisar fechar
+       e abrir outro no mapa. -->
+  <div id="modal-sugestoes-comunidade" class="oculto">
+    <div id="sugestoes-comunidade-conteudo">
+      <button id="btn-fechar-sugestoes-comunidade" aria-label="Fechar">✕</button>
+      <h2>💡 Sugestões da Comunidade</h2>
+
+      <label for="select-sugestoes-municipio">Município</label>
+      <select id="select-sugestoes-municipio"></select>
+
+      <label for="select-sugestoes-categoria">Categoria</label>
+      <select id="select-sugestoes-categoria">
+        <option value="">Todas as categorias</option>
+      </select>
+
+      <button type="button" id="btn-abrir-nova-sugestao">➕ Sugerir um lugar</button>
+
+      <div id="sugestoes-form" class="oculto">
+        <label for="input-titulo-sugestao">Nome do lugar</label>
+        <input type="text" id="input-titulo-sugestao" maxlength="80" placeholder="Ex: Cachoeira do Corumbá">
+
+        <label for="select-categoria-sugestao">Categoria</label>
+        <select id="select-categoria-sugestao"></select>
+
+        <label for="input-descricao-sugestao">Descrição</label>
+        <textarea id="input-descricao-sugestao" rows="3" maxlength="500" placeholder="Conte um pouco sobre o lugar..."></textarea>
+
+        <label for="input-link-maps-sugestao">Link do Google Maps (opcional)</label>
+        <input type="url" id="input-link-maps-sugestao" placeholder="https://maps.app.goo.gl/...">
+
+        <label for="input-foto-sugestao">Foto (opcional)</label>
+        <input type="file" id="input-foto-sugestao" accept="image/*">
+        <img id="preview-foto-sugestao" class="oculto" alt="Prévia da foto">
+
+        <label id="label-anonimo-sugestao">
+          <input type="checkbox" id="check-anonimo-sugestao">
+          Postar de forma anônima
+        </label>
+
+        <p id="sugestao-form-erro" class="oculto"></p>
+        <button type="button" id="btn-publicar-sugestao">
+          <span class="btn-texto">Publicar sugestão</span>
+          <span class="spinner oculto"></span>
+        </button>
+        <p id="sugestao-form-status" class="oculto"></p>
+      </div>
+
+      <div id="sugestoes-lista"></div>
     </div>
   </div>
 
