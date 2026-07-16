@@ -191,7 +191,16 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #botoes-topo {
   display: flex;
+  /* Sem isso, numa tela estreita a fileira de botões (mais larga
+     desde que o botão da Comunidade Desbrava entrou, agora são 5)
+     estourava a largura da tela e o último botão (Configurações)
+     ficava fora da área visível, escondido pelo overflow:hidden do
+     body -- em vez de cortar, agora quebra pra uma segunda linha,
+     alinhada à direita igual à primeira. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+  max-width: 100%;
 }
 
 #botoes-topo button {
