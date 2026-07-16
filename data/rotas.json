@@ -118,5 +118,17 @@
     "descricao": "A primeira ferrovia do Brasil e a aposta arrojada do Barão de Mauá na indústria.",
     "historia": "Uma rota pela visão arrojada de Irineu Evangelista de Sousa, o Barão e Visconde de Mauá, pioneiro da infraestrutura no Brasil Império. Em vez de fazendas tradicionais, o roteiro foca nas suas inovações: a primeira estrada de ferro do Brasil, inaugurada em 1854 ligando Guia de Pacobaíba (Magé) ao sopé da serra, além de companhias de iluminação a gás, estaleiros de navios a vapor e estradas pavimentadas, como a Estrada Normal da Estrela, rumo a Petrópolis. Mauá também tinha negócios e ligações financeiras com os barões do café do Vale do Paraíba, caso de Valença — episódios do embate entre um Brasil agrário conservador e a tentativa de industrialização do país.",
     "municipios": ["3302502", "3303906", "3306107", "3304557"]
+  },
+  "cafe-fluminense": {
+    "nome": "Rota do Café Fluminense",
+    "descricao": "O Vale do Paraíba fluminense foi, por décadas, o maior produtor de café do mundo — sustentado pelo trabalho escravizado.",
+    "historia": "Em meados do século XIX, o Vale do Paraíba fluminense se tornou o maior produtor de café do mundo, sustentando boa parte da economia do Segundo Reinado. A prosperidade concentrada em poucas mãos criou uma verdadeira aristocracia rural, os \"barões do café\", que erguiam fazendas e sobrados urbanos suntuosos, muitos financiados diretamente pela Coroa em troca de títulos de nobreza. A Estrada de Ferro D. Pedro II, cruzando por Barra do Piraí, foi vital pra escoar a produção até o porto do Rio. Por trás desse brilho, centenas de milhares de pessoas escravizadas sustentavam as lavouras nas encostas — e foi o fim desse trabalho forçado, somado ao desgaste do solo, que precipitou a decadência da região após a Abolição, quando o eixo cafeeiro migrou pra São Paulo.",
+    "municipios": ["3306206", "3306107", "3303708", "3306008", "3300308", "3304508"]
+  },
+  "serra-fluminense": {
+    "nome": "Rota da Serra Fluminense",
+    "descricao": "Colônias suíças e alemãs que vieram fugir da fome na Europa e acabaram fundando cidades inteiras na serra.",
+    "historia": "Em 1820, ainda no Brasil Reino, D. João VI patrocinou a primeira leva de imigração europeia organizada do país: centenas de famílias suíças famintas, atraídas por promessas de terra, deram origem a Nova Friburgo. Conflitos por lotes de terra levaram parte desses colonos a se estabelecer no que viria a ser Sumidouro. Décadas depois, Petrópolis nasceu como colônia alemã planejada, ao lado de um projeto ainda maior: a residência de verão do imperador D. Pedro II, que fugia do calor e das epidemias do Rio. Teresópolis completa essa rota como outro refúgio climático de altitude, hoje porta de entrada do Parque Nacional da Serra dos Órgãos. A arquitetura de telhados inclinados, os sobrenomes europeus e o clima ameno ainda marcam essas cidades até hoje.",
+    "municipios": ["3303401", "3305703", "3303906", "3305802"]
   }
 }
