@@ -1421,6 +1421,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 /* Configurações */
 #configuracoes-conteudo {
   text-align: left;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 #configuracoes-conteudo h2 {
@@ -1431,6 +1433,26 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   font-size: 0.9rem;
   color: #94a3b8;
   margin: 20px 0 8px;
+}
+
+/* Cada seção de Configurações vira um "cartão" visualmente separado
+   (fundo levemente destacado + borda + espaçamento), em vez de todos
+   os botões ficarem soltos e misturados numa lista só. */
+.cartao-config {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.cartao-config h3 {
+  margin: 0 0 10px;
+}
+
+#secao-zona-risco.cartao-config {
+  background: rgba(239, 68, 68, 0.07);
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 #configuracoes-conteudo button {

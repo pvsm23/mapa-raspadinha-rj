@@ -98,6 +98,18 @@ const UID_DONO = "c9vv4d4bPSVgbYoJYU8XF1lHKWv1";
 const AVISO_NAO_CONFIGURADO =
   "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase.";
 
+// O SDK do Firebase Storage tenta de novo sozinho (com backoff) numa
+// conexão instável, o que pode parecer "carregando pra sempre" numa
+// rede de celular ruim -- essa função garante que qualquer operação
+// falha com uma mensagem clara depois de um tempo, em vez de travar
+// o spinner indefinidamente (ver uso em criarPost).
+function comTimeout(promessa, ms, mensagemErro) {
+  return Promise.race([
+    promessa,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(mensagemErro)), ms)),
+  ]);
+}
+
 /**
  * Nunca deixa o apelido ter formato de e-mail (pra não confundir com
  * o e-mail de login, e não vazar sem querer o e-mail de alguém pelo
@@ -748,26 +760,34 @@ if (CONFIGURADO) {
     const postId = novoDocRef.id;
     const caminhoFoto = `posts/${usuario.uid}/${postId}.jpg`;
 
-    await uploadBytes(refStorage(storage, caminhoFoto), arquivoFoto, {
-      contentType: arquivoFoto.type || "image/jpeg",
-    });
+    await comTimeout(
+      uploadBytes(refStorage(storage, caminhoFoto), arquivoFoto, {
+        contentType: arquivoFoto.type || "image/jpeg",
+      }),
+      30000,
+      "A conexão está lenta demais pra subir a foto. Verifique sua internet e tente de novo."
+    );
 
-    await setDoc(novoDocRef, {
-      autorUid: usuario.uid,
-      autorApelido: window.raspadinhaAuth.apelido || "?",
-      texto: (texto || "").slice(0, 500),
-      fotoStoragePath: caminhoFoto,
-      municipioId: municipioId || null,
-      // Guarda os dois: uids "crus" (array-contains, pra um dia dar
-      // pra consultar "posts que me marcaram") e a lista com apelido
-      // já junto (pra renderizar o card sem precisar buscar cada
-      // perfil separado).
-      pessoasMarcadasUids: (pessoasMarcadas || []).map((p) => p.uid),
-      pessoasMarcadas: pessoasMarcadas || [],
-      curtidoPor: [],
-      numComentarios: 0,
-      criadoEm: serverTimestamp(),
-    });
+    await comTimeout(
+      setDoc(novoDocRef, {
+        autorUid: usuario.uid,
+        autorApelido: window.raspadinhaAuth.apelido || "?",
+        texto: (texto || "").slice(0, 500),
+        fotoStoragePath: caminhoFoto,
+        municipioId: municipioId || null,
+        // Guarda os dois: uids "crus" (array-contains, pra um dia dar
+        // pra consultar "posts que me marcaram") e a lista com apelido
+        // já junto (pra renderizar o card sem precisar buscar cada
+        // perfil separado).
+        pessoasMarcadasUids: (pessoasMarcadas || []).map((p) => p.uid),
+        pessoasMarcadas: pessoasMarcadas || [],
+        curtidoPor: [],
+        numComentarios: 0,
+        criadoEm: serverTimestamp(),
+      }),
+      15000,
+      "A conexão está lenta demais pra publicar. Verifique sua internet e tente de novo."
+    );
 
     return postId;
   };

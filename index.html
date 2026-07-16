@@ -539,31 +539,15 @@
     <div id="configuracoes-conteudo">
       <button id="btn-fechar-configuracoes" aria-label="Fechar">✕</button>
       <h2>Configurações</h2>
-      <button id="btn-reset-tudo">🗑️ Resetar mapa inteiro</button>
 
-      <div id="secao-notificacoes">
-        <h3>Notificações</h3>
-        <label id="label-notificacoes">
-          <input type="checkbox" id="check-notificacoes">
-          🔔 Avisar quando detectar um município pra raspar ou desbloquear uma conquista
-        </label>
-        <p id="notificacoes-status" class="oculto"></p>
-      </div>
-
-      <div id="secao-conta">
-        <h3>Conta</h3>
+      <div id="secao-conta" class="cartao-config">
+        <h3>👤 Conta</h3>
         <p id="conta-status">Você não está conectado.</p>
+        <p id="dados-email"></p>
         <label id="label-perfil-publico">
           <input type="checkbox" id="check-perfil-publico" checked>
           Perfil público (outras pessoas podem ver seus selos e mapa)
         </label>
-        <button id="btn-logout">Sair da conta</button>
-        <button type="button" id="btn-compartilhar-progresso">📤 Compartilhar meu progresso</button>
-      </div>
-
-      <div id="secao-dados-pessoais">
-        <h3>Dados pessoais</h3>
-        <p id="dados-email"></p>
         <label for="input-apelido-config">Apelido</label>
         <input type="text" id="input-apelido-config" maxlength="30" placeholder="Como quer ser chamado?">
         <p id="erro-apelido-config" class="oculto"></p>
@@ -571,17 +555,21 @@
           <span class="btn-texto">Salvar apelido</span>
           <span class="spinner oculto"></span>
         </button>
+        <button id="btn-compartilhar-progresso" type="button">📤 Compartilhar meu progresso</button>
+        <button id="btn-logout">🚪 Sair da conta</button>
       </div>
 
-      <!-- Só aparece pra conta "dona" do projeto (UID_DONO em
-           js/auth.js) -- abre o painel de Admin (moderação + anúncios),
-           ver abrirAdmin em js/script.js. -->
-      <div id="secao-admin" class="oculto">
-        <button type="button" id="btn-abrir-admin">👑 Configurações de admin</button>
+      <div id="secao-notificacoes" class="cartao-config">
+        <h3>🔔 Notificações</h3>
+        <label id="label-notificacoes">
+          <input type="checkbox" id="check-notificacoes">
+          Avisar quando detectar um município pra raspar ou desbloquear uma conquista
+        </label>
+        <p id="notificacoes-status" class="oculto"></p>
       </div>
 
-      <div id="secao-pro">
-        <h3>Recursos PRO</h3>
+      <div id="secao-pro" class="cartao-config">
+        <h3>⭐ Recursos PRO</h3>
         <!--
           TODO(PRO): esta secao e um placeholder. A funcao de baixar
           os dados (selos/destinos) para uso offline soh deve ficar
@@ -594,11 +582,23 @@
         </button>
       </div>
 
-      <!-- Excluir conta: 3 confirmações crescentes (2 confirm() +
-           esse ultimo passo digitando "EXCLUIR") antes de chamar
-           excluirConta -- ver abrirFluxoExclusaoConta em js/script.js. -->
-      <div id="secao-zona-risco">
-        <h3>Zona de risco</h3>
+      <!-- Só aparece pra conta "dona" do projeto (UID_DONO em
+           js/auth.js) -- abre o painel de Admin (moderação + anúncios),
+           ver abrirAdmin em js/script.js. -->
+      <div id="secao-admin" class="cartao-config oculto">
+        <h3>👑 Admin</h3>
+        <button type="button" id="btn-abrir-admin">Abrir configurações de admin</button>
+      </div>
+
+      <!-- Resetar tudo + excluir conta: as duas ações destrutivas e
+           irreversíveis ficam juntas na mesma "Zona de risco", nunca
+           soltas em outra parte da janela. Excluir conta tem 3
+           confirmações crescentes (2 confirm() + esse ultimo passo
+           digitando "EXCLUIR") antes de chamar excluirConta -- ver
+           abrirFluxoExclusaoConta em js/script.js. -->
+      <div id="secao-zona-risco" class="cartao-config">
+        <h3>⚠️ Zona de risco</h3>
+        <button id="btn-reset-tudo">🗑️ Resetar mapa inteiro</button>
         <p>Excluir sua conta apaga todo o progresso, selos, amigos, posts e fotos -- essa ação não pode ser desfeita.</p>
         <button type="button" id="btn-abrir-excluir-conta" class="btn-excluir-conta">🗑️ Excluir minha conta</button>
       </div>
