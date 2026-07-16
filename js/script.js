@@ -592,15 +592,16 @@ document.addEventListener("DOMContentLoaded", () => {
 /**
  * Esconde a tela de carregamento (splash preta com o logo, ver
  * #tela-carregamento em index.html) quando a inicialização acima
- * termina. Espera um mínimo de 500ms desde a abertura pra tela não
- * "piscar" em aparelhos rápidos (aparecer e sumir em 1 frame é pior
- * do que não existir), e faz um fade-out antes de remover de vez.
+ * termina. Fica no ar por no mínimo 1s desde a abertura -- puramente
+ * estético (o app costuma carregar rápido demais pra dar tempo de
+ * ver a splash), então garantimos que ela apareça por pelo menos 1
+ * segundo. Depois faz um fade-out antes de remover de vez.
  */
 function esconderTelaCarregamento() {
   const tela = document.getElementById("tela-carregamento");
   if (!tela) return;
   const decorrido = performance.now();
-  const restante = Math.max(0, 500 - decorrido);
+  const restante = Math.max(0, 1000 - decorrido);
   setTimeout(() => {
     tela.classList.add("sumindo");
     setTimeout(() => tela.remove(), 450);
