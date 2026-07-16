@@ -254,6 +254,20 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   display: none;
 }
 
+/* A seta precisa se destacar das outras -- é o único botão sempre
+   visível, e sem ele ninguém acha o resto (perfil/ranking/amigos/
+   conquistas/check-in/mapa do Brasil). Maior, mais grossa e com cor
+   de destaque em vez do cinza padrão dos outros botões. */
+#botoes-lateral-esquerda button#btn-toggle-lateral {
+  font-size: 1.7rem;
+  font-weight: 900;
+  background: #3b82f6;
+}
+
+#botoes-lateral-esquerda button#btn-toggle-lateral:hover {
+  background: #2563eb;
+}
+
 #dica-mapa {
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
@@ -398,6 +412,28 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   color: #facc15;
   font-size: 0.85rem;
   margin: 10px 0 0;
+}
+
+/* Reaproveitável em qualquer tela com conteúdo "em breve" (ver
+   abrirColaborar em js/script.js) -- reusa o mesmo PIX do botão
+   "🤝 Colaborar" do feedback, só com um texto convidando a ajudar a
+   acelerar o que ainda não chegou. */
+.btn-colaborar-em-breve {
+  display: block;
+  width: 100%;
+  background: rgba(250, 204, 21, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 14px 0 0;
+}
+
+.btn-colaborar-em-breve:hover {
+  background: rgba(250, 204, 21, 0.25);
 }
 
 #modal-instrucao {

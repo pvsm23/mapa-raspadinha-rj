@@ -388,6 +388,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-brasil").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-brasil") fecharMapaBrasil();
   });
+  document.getElementById("btn-brasil-colaborar").addEventListener("click", () => {
+    fecharMapaBrasil();
+    abrirColaborar();
+  });
 
   // ---- Botões flutuantes da lateral esquerda (janela suspensa) ----
   document.getElementById("btn-toggle-lateral").addEventListener("click", alternarBotoesLaterais);
@@ -2950,6 +2954,19 @@ function abrirFeedback() {
   document.getElementById("pix-chave-texto").textContent = CHAVE_PIX_COLABORACAO;
 }
 
+/**
+ * Atalho pro botão "🤝 Colaborar" (mesma chave PIX, mesmo popup),
+ * chamado a partir de qualquer tela com conteúdo "em breve" (ver
+ * .btn-colaborar-em-breve em css/styles.css) -- toda vez que algo
+ * ainda não pronto for mostrado (mapa do Brasil, e o que vier depois),
+ * vale colocar esse mesmo botão pra estimular quem quiser ajudar a
+ * acelerar.
+ */
+function abrirColaborar() {
+  abrirFeedback();
+  mostrarPainelFeedback("colaborar");
+}
+
 function fecharFeedback() {
   document.getElementById("modal-feedback").classList.add("oculto");
   document.querySelectorAll(".feedback-painel").forEach((painel) => painel.classList.add("oculto"));
@@ -3164,7 +3181,18 @@ function gerarSnapshotMapaComoDataUrl() {
 
     clone.querySelectorAll(".municipio").forEach((path) => {
       const id = path.dataset.municipio;
-      const cor = estaVerificado(id) ? "#22c55e" : estadoMapa[id]?.visitado ? "#ef4444" : "#9ca3af";
+      const dados = estadoMapa[id];
+      // Mesma prioridade de cor do mapa principal (ver aplicarEstadoNoSVG
+      // em js/script.js): dourado > verde > azul (raspado, mas ainda não
+      // verificado -- antes era vermelho) > cinza.
+      const cor =
+        dados?.visitado && dados?.brilhante
+          ? "#facc15"
+          : estaVerificado(id)
+          ? "#22c55e"
+          : dados?.visitado
+          ? "#3b82f6"
+          : "#9ca3af";
       path.setAttribute("fill", cor);
       path.setAttribute("stroke", "#0f172a");
       path.setAttribute("stroke-width", "2");
@@ -3837,7 +3865,19 @@ async function carregarEstadoDoUsuario(uid) {
         estadoMapa[id] = {
           ...estadoMapa[id],
           visitado: !!dados.visitado,
-          verificado: !!dados.verificado,
+          // OR com o valor local: a sincronização pro Firestore
+          // (sincronizarMunicipioOnline) é "dispara e esquece", sem
+          // esperar terminar -- se a aba fechar/perder rede antes de
+          // completar, a nuvem fica com `verificado: false` desatualizado.
+          // Sem esse OR, o próximo login restaurava esse dado velho por
+          // cima do local (já true), desfazendo a verificação -- e como
+          // verificarLocalizacaoAoAbrirApp roda de novo a cada abertura
+          // do app, a pessoa via o aviso "confirmando sua localização"
+          // voltar sem parar pra um município que já tinha sido
+          // confirmado antes. `verificado` só vai de false pra true,
+          // nunca o contrário (fora o desmarcar, que apaga o registro
+          // inteiro), então esse OR é sempre seguro.
+          verificado: !!dados.verificado || !!estadoMapa[id]?.verificado,
           // O Firestore só reflete o "brilhante" de verdade enquanto o
           // município está visitado (ver estadoPublicoMunicipio em
           // sincronizarMunicipioOnline) -- desmarcado, ele sempre manda
