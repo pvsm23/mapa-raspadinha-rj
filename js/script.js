@@ -3120,6 +3120,28 @@ const DEFINICOES_CONQUISTAS = [
   { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25, raridade: "lendario", descricao: "Consiga mega-selos brilhantes em 25% das regiões." },
   { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5, raridade: "farmador", descricao: "Consiga mega-selos brilhantes em 50% das regiões." },
   { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Consiga mega-selos brilhantes nas 8 regiões." },
+
+  { chave: "rota-1", titulo: "Primeira Rota", tipo: "rotas", meta: 1, raridade: "incomum", descricao: "Complete todos os municípios de 1 rota temática e raspe o selo especial." },
+  { chave: "rota-25pct", titulo: "Rotas em Dobro", tipo: "rotas-pct", meta: 0.25, raridade: "raro", descricao: "Complete 25% das rotas temáticas." },
+  { chave: "rota-50pct", titulo: "Metade das Rotas", tipo: "rotas-pct", meta: 0.5, raridade: "muito-raro", descricao: "Complete 50% das rotas temáticas." },
+  { chave: "rota-100pct", titulo: "Mestre das Rotas", tipo: "rotas-pct", meta: 1, raridade: "lendario", descricao: "Complete todas as rotas temáticas do estado." },
+
+  { chave: "rota-brilhante-1", titulo: "Rota Radiante", tipo: "rotas-brilhantes", meta: 1, raridade: "muito-raro", descricao: "Consiga 1 selo de rota brilhante (10% de chance)." },
+  { chave: "rota-brilhante-25pct", titulo: "Trilha Dourada", tipo: "rotas-brilhantes-pct", meta: 0.25, raridade: "lendario", descricao: "Consiga selos de rota brilhantes em 25% das rotas." },
+  { chave: "rota-brilhante-50pct", titulo: "Metade Reluzente", tipo: "rotas-brilhantes-pct", meta: 0.5, raridade: "farmador", descricao: "Consiga selos de rota brilhantes em 50% das rotas." },
+  { chave: "rota-brilhante-100pct", titulo: "Todas as Rotas em Ouro", tipo: "rotas-brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Consiga selos de rota brilhantes em todas as rotas." },
+
+  // Conquistas "históricas": cada uma exige completar UMA rota
+  // específica (não uma contagem genérica) -- escolhidas pra cobrir
+  // eras/temas bem diferentes da história fluminense. Raridade segue
+  // o mesmo critério do resto do arquivo (dificuldade = tamanho da
+  // rota, não importância do tema).
+  { chave: "rota-tema-ouro", titulo: "Febre do Ouro", tipo: "rota-tema", rotaId: "caminho-do-ouro", raridade: "raro", descricao: "Complete a Rota do Caminho do Ouro." },
+  { chave: "rota-tema-cafe", titulo: "Barão do Café", tipo: "rota-tema", rotaId: "cafe-fluminense", raridade: "muito-raro", descricao: "Complete a Rota do Café Fluminense." },
+  { chave: "rota-tema-franca-antartica", titulo: "Guardião de Guanabara", tipo: "rota-tema", rotaId: "franca-antartica", raridade: "incomum", descricao: "Complete a Rota da França Antártica." },
+  { chave: "rota-tema-chibata", titulo: "Almirante Negro", tipo: "rota-tema", rotaId: "revolta-da-chibata", raridade: "comum", descricao: "Complete a Rota da Revolta da Chibata." },
+  { chave: "rota-tema-quilombola", titulo: "Memória Quilombola", tipo: "rota-tema", rotaId: "resistencia-quilombola", raridade: "muito-raro", descricao: "Complete a Rota da Resistência Quilombola." },
+  { chave: "rota-tema-darwin", titulo: "Naturalista do Litoral", tipo: "rota-tema", rotaId: "naturalistas-darwin", raridade: "lendario", descricao: "Complete a Rota dos Naturalistas e de Charles Darwin." },
 ];
 
 /**
@@ -3148,16 +3170,22 @@ function maiorQuantidadeMunicipiosNoMesmoDia() {
 function calcularContextoConquistas() {
   const totalMunicipios = document.querySelectorAll("#mapa-rj .municipio").length;
   const totalRegioes = Object.keys(municipiosPorRegiao).length;
+  const totalRotas = Object.keys(rotasInfo).length;
   return {
     totalMunicipios,
     totalRegioes,
+    totalRotas,
     municipiosVerificados: Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length,
     regioesCompletas: Object.keys(municipiosPorRegiao).filter((id) => regiaoEstaCompleta(id)).length,
+    rotasCompletas: Object.keys(rotasInfo).filter((id) => rotaEstaCompleta(id)).length,
     municipiosBrilhantes: Object.keys(estadoMapa).filter(
       (id) => estadoMapa[id]?.visitado && estadoMapa[id]?.brilhante
     ).length,
     regioesBrilhantes: Object.keys(estadoRegioes).filter(
       (id) => estadoRegioes[id]?.revelado && estadoRegioes[id]?.brilhante
+    ).length,
+    rotasBrilhantes: Object.keys(estadoRotas).filter(
+      (id) => estadoRotas[id]?.revelado && estadoRotas[id]?.brilhante
     ).length,
     maiorNoDia: maiorQuantidadeMunicipiosNoMesmoDia(),
     streakAtual: estadoStreak.contagem,
@@ -3196,6 +3224,23 @@ function progressoConquista(def, ctx) {
       const meta = Math.max(1, Math.ceil(ctx.totalRegioes * def.meta));
       return { atual: Math.min(ctx.regioesBrilhantes, meta), meta };
     }
+    case "rotas":
+      return { atual: Math.min(ctx.rotasCompletas, def.meta), meta: def.meta };
+    case "rotas-pct": {
+      const meta = Math.max(1, Math.ceil(ctx.totalRotas * def.meta));
+      return { atual: Math.min(ctx.rotasCompletas, meta), meta };
+    }
+    case "rotas-brilhantes":
+      return { atual: Math.min(ctx.rotasBrilhantes, def.meta), meta: def.meta };
+    case "rotas-brilhantes-pct": {
+      const meta = Math.max(1, Math.ceil(ctx.totalRotas * def.meta));
+      return { atual: Math.min(ctx.rotasBrilhantes, meta), meta };
+    }
+    // Conquista "histórica": exige completar UMA rota temática
+    // específica (def.rotaId), em vez de uma contagem genérica --
+    // usa rotaEstaCompleta diretamente, não o contexto pré-calculado.
+    case "rota-tema":
+      return { atual: rotaEstaCompleta(def.rotaId) ? 1 : 0, meta: 1 };
     default:
       return { atual: 0, meta: def.meta || 1 };
   }
