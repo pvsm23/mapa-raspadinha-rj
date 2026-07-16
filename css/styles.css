@@ -310,6 +310,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #modal-raspadinha,
 #biblioteca-selos,
 #modal-configuracoes,
+#modal-admin,
 #modal-brasil {
   position: fixed;
   inset: 0;
@@ -324,6 +325,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #modal-conteudo,
 #biblioteca-conteudo,
 #configuracoes-conteudo,
+#admin-conteudo,
 #brasil-conteudo {
   position: relative;
   background: #1e293b;
@@ -334,11 +336,13 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 }
 
 #modal-conteudo,
-#configuracoes-conteudo {
+#configuracoes-conteudo,
+#admin-conteudo {
   max-width: 380px;
 }
 
-#modal-conteudo {
+#modal-conteudo,
+#admin-conteudo {
   max-height: 85vh;
   overflow-y: auto;
 }
@@ -352,6 +356,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #modal-conteudo h2,
 #biblioteca-conteudo h2,
 #configuracoes-conteudo h2,
+#admin-conteudo h2,
 #brasil-conteudo h2 {
   margin-top: 0;
   font-size: 1.1rem;
@@ -360,6 +365,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-modal,
 #btn-fechar-biblioteca,
 #btn-fechar-configuracoes,
+#btn-fechar-admin,
 #btn-fechar-brasil {
   position: absolute;
   top: 8px;
@@ -376,6 +382,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-modal:hover,
 #btn-fechar-biblioteca:hover,
 #btn-fechar-configuracoes:hover,
+#btn-fechar-admin:hover,
 #btn-fechar-brasil:hover {
   color: #f1f5f9;
 }
@@ -1300,18 +1307,20 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #biblioteca-grade,
 #biblioteca-grade-regioes,
+#biblioteca-grade-rotas,
 #biblioteca-grade-conquistas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
 }
 
 #biblioteca-titulo-regioes,
+#biblioteca-titulo-rotas,
 #biblioteca-titulo-conquistas {
   font-size: 0.9rem;
   color: #94a3b8;
-  margin: 24px 0 0;
+  margin: 20px 0 0;
   text-align: left;
 }
 
@@ -1323,14 +1332,14 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 4px;
-  font-size: 0.75rem;
+  gap: 4px;
+  padding: 2px;
+  font-size: 0.68rem;
 }
 
 .selo-item img {
-  width: 72px;
-  height: 72px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   object-fit: cover;
   background: #334155;
@@ -1340,6 +1349,65 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 .selo-item img.selo-cinza {
   filter: grayscale(1);
   opacity: 0.6;
+}
+
+/* Lightbox: clicar num selo da biblioteca abre a imagem grande aqui
+   (em vez de navegar pro popup completo), com um botão de voltar que
+   só fecha o lightbox -- ver abrirSeloLightbox em js/script.js. */
+#modal-selo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(15, 23, 42, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+#modal-selo-lightbox.oculto {
+  display: none;
+}
+
+#selo-lightbox-conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 360px;
+  width: 100%;
+}
+
+#selo-lightbox-imagem {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #334155;
+  border: 3px solid #334155;
+}
+
+#selo-lightbox-legenda {
+  color: #f1f5f9;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
+}
+
+#btn-voltar-lightbox {
+  background: #334155;
+  color: #f1f5f9;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+#btn-voltar-lightbox:hover {
+  background: #475569;
 }
 
 .selo-item img.selo-colorido {
@@ -1393,6 +1461,56 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #configuracoes-conteudo #btn-reset-tudo:hover {
   background: #dc2626;
+}
+
+/* Painel de Admin (só a conta dona vê o botão que abre isso) */
+#btn-abrir-admin {
+  background: #a16207 !important;
+  color: #fef9c3 !important;
+  font-weight: 600;
+}
+
+#btn-abrir-admin:hover {
+  background: #854d0e !important;
+}
+
+#admin-conteudo {
+  text-align: left;
+}
+
+#admin-conteudo h2 {
+  text-align: center;
+}
+
+#admin-conteudo h3 {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 20px 0 8px;
+}
+
+#admin-conteudo h3:first-of-type {
+  margin-top: 0;
+}
+
+#label-anuncios-ativados,
+#label-anuncios-para-mim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+#anuncios-admin-status {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  margin: 8px 0 0;
+}
+
+#secao-anuncio {
+  margin-top: 20px;
+  text-align: center;
 }
 
 #conta-status {
@@ -1464,7 +1582,24 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   font-size: 0.9rem;
 }
 
-#configuracoes-conteudo #btn-buscar-moderacao {
+#admin-conteudo button {
+  display: block;
+  width: 100%;
+  background: #334155;
+  color: #f1f5f9;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 6px;
+}
+
+#admin-conteudo button:hover {
+  background: #475569;
+}
+
+#admin-conteudo #btn-buscar-moderacao {
   width: auto;
   white-space: nowrap;
 }
@@ -1506,6 +1641,18 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 .moderacao-item-acoes button.status-ativa {
   background: #3b82f6;
+}
+
+.moderacao-item-anuncio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #1e293b;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  cursor: pointer;
 }
 
 #secao-zona-risco {
@@ -1619,6 +1766,97 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-excluir-de-vez:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+#modal-cartao-progresso {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-cartao-progresso.oculto {
+  display: none;
+}
+
+#cartao-progresso-conteudo {
+  position: relative;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 360px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#cartao-progresso-conteudo h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+#btn-fechar-cartao-progresso {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-cartao-progresso:hover {
+  color: #f1f5f9;
+}
+
+#cartao-progresso-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  margin-bottom: 16px;
+}
+
+#cartao-progresso-preview img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+#cartao-progresso-acoes {
+  display: flex;
+  gap: 8px;
+}
+
+#cartao-progresso-acoes button {
+  flex: 1;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+#cartao-progresso-acoes button:hover {
+  background: #2563eb;
+}
+
+#btn-baixar-cartao {
+  background: #334155 !important;
+}
+
+#btn-baixar-cartao:hover {
+  background: #475569 !important;
 }
 
 /* Popup de login: aparece só quando uma ação exige estar logado */
@@ -1975,6 +2213,179 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   justify-content: center;
   font-size: 3rem;
   opacity: 0.6;
+}
+
+/* Rotas temáticas: lista + detalhe da rota (mesmo padrão visual do
+   popup de região). */
+#modal-rotas,
+#modal-rota-detalhe {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-rotas.oculto,
+#modal-rota-detalhe.oculto {
+  display: none;
+}
+
+#rotas-conteudo,
+#rota-detalhe-conteudo {
+  position: relative;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#rotas-conteudo h2,
+#rota-detalhe-conteudo h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+#btn-fechar-rotas,
+#btn-fechar-rota-detalhe {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-rotas:hover,
+#btn-fechar-rota-detalhe:hover {
+  color: #f1f5f9;
+}
+
+#rotas-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+#rota-detalhe-descricao {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+#rota-detalhe-status {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 8px;
+}
+
+#rota-detalhe-barra {
+  height: 8px;
+  border-radius: 999px;
+  background: #334155;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+#rota-detalhe-barra-preenchida {
+  height: 100%;
+  width: 0%;
+  background: #22c55e;
+  transition: width 0.3s ease;
+}
+
+#btn-ver-rota-no-mapa {
+  display: block;
+  width: 100%;
+  background: #334155;
+  color: #f1f5f9;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+#btn-ver-rota-no-mapa:hover {
+  background: #475569;
+}
+
+#rota-detalhe-instrucao {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+#rota-detalhe-historia:not(:empty) {
+  text-align: left;
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  white-space: pre-line;
+}
+
+/* Visão de rota no mapa: destaca os municípios da rota, esmaece o
+   resto, e esconde toda a UI flutuante (ver entrarModoRota/
+   sairModoRota em js/script.js) exceto o botão de sair. */
+.municipio-da-rota {
+  stroke: #a855f7;
+  stroke-width: 4;
+}
+
+.municipio-fora-da-rota {
+  opacity: 0.25;
+}
+
+#btn-sair-rota {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: #a855f7;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+#btn-sair-rota.oculto {
+  display: none;
+}
+
+#btn-sair-rota:hover {
+  background: #9333ea;
+}
+
+body.modo-rota-ativo #barra-topo,
+body.modo-rota-ativo #botoes-lateral-esquerda,
+body.modo-rota-ativo #btn-buscar-local,
+body.modo-rota-ativo #btn-onde-estou,
+body.modo-rota-ativo #aviso-instalar-pwa,
+body.modo-rota-ativo #aviso-brilhante-pendente,
+body.modo-rota-ativo #aviso-municipio-detectado,
+body.modo-rota-ativo #toast-login,
+body.modo-rota-ativo #toast-onde-estou {
+  display: none !important;
 }
 
 /* Comemoração ao terminar de raspar: o selo "pula" pra frente e

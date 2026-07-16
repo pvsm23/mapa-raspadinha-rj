@@ -1,0 +1,14 @@
+{
+  "cafe-fluminense": {
+    "nome": "Rota do Café Fluminense",
+    "descricao": "Cidades do Vale do Paraíba que viveram o auge do café no Império.",
+    "historia": "No século XIX, o Vale do Paraíba fluminense foi o maior produtor de café do mundo, sustentando boa parte da economia do Império. As fazendas, mansões e igrejas erguidas com a riqueza do café ainda marcam a paisagem dessas cidades — um patrimônio histórico que também carrega as marcas do trabalho escravizado por trás dessa prosperidade.",
+    "municipios": ["3306107", "3303708", "3306008", "3306206"]
+  },
+  "serra-fluminense": {
+    "nome": "Rota da Serra Fluminense",
+    "descricao": "Clima de montanha, arquitetura europeia e trilhas na Serra dos Órgãos.",
+    "historia": "A imigração europeia (principalmente alemã e suíça) deixou marcas fortes nessas cidades serranas, do clima ameno às construções de inspiração europeia. É também aqui que fica o Parque Nacional da Serra dos Órgãos, com algumas das trilhas de montanha mais procuradas do estado.",
+    "municipios": ["3303906", "3305802", "3303401"]
+  }
+}

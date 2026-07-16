@@ -162,6 +162,11 @@ window.raspadinhaAuth = {
   sincronizarMunicipio: async () => {},
   sincronizarRegiao: async () => {},
   sincronizarConquista: async () => {},
+  sincronizarRota: async () => {},
+  buscarConfigGlobal: async () => ({ anunciosAtivados: false }),
+  definirAnunciosGlobalAtivados: async () => {},
+  definirAnuncioPorUsuario: async () => {},
+  buscarConfigAnuncio: async () => false,
   definirPerfilPublico: async () => {},
   buscarPerfilPublico: async () => null,
   buscarMeuEstadoCompleto: async () => null,
@@ -585,6 +590,68 @@ if (CONFIGURADO) {
     ).catch((erro) => console.error("Falha ao sincronizar conquista (perfil):", erro));
   };
 
+  window.raspadinhaAuth.sincronizarRota = (id, dados) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.resolve();
+    return setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { estadoRotas: { [id]: dados } },
+      { merge: true }
+    ).catch((erro) => console.error("Falha ao sincronizar rota (perfil):", erro));
+  };
+
+  /**
+   * Configuração global do app (padrão de anúncio pra quem NÃO tem um
+   * override individual -- ver anunciosAtivados em usuarios/{uid}
+   * abaixo) -- fica numa coleção separada de "usuarios" porque
+   * precisa ser lida por QUALQUER pessoa (logada ou não, ver
+   * buscarConfigAnuncio/atualizarVisibilidadeAnuncio em
+   * js/script.js), mas só escrita pela conta dona do projeto.
+   */
+  window.raspadinhaAuth.buscarConfigGlobal = async () => {
+    const snap = await getDoc(doc(db, "configuracoes", "global"));
+    return snap.exists() ? snap.data() : { anunciosAtivados: false };
+  };
+
+  window.raspadinhaAuth.definirAnunciosGlobalAtivados = async (ativado) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await setDoc(doc(db, "configuracoes", "global"), { anunciosAtivados: !!ativado }, { merge: true });
+  };
+
+  /**
+   * Liga/desliga anúncio pra UMA conta específica (override
+   * individual, campo `anunciosAtivados` no doc de usuarios/{uid} --
+   * NÃO é o mesmo campo/coleção do padrão global acima). Usado tanto
+   * pra "anúncio pra mim" (uidAlvo = a própria conta dona) quanto pra
+   * qualquer outra conta escolhida por apelido no painel de Admin. A
+   * regra do Firestore só deixa esse campo ser escrito pelo
+   * UID_DONO, em QUALQUER conta.
+   */
+  window.raspadinhaAuth.definirAnuncioPorUsuario = async (uidAlvo, ativado) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await updateDoc(doc(db, "usuarios", uidAlvo), { anunciosAtivados: !!ativado });
+  };
+
+  /**
+   * Decide se o anúncio deve aparecer PRA ESSA sessão: se a conta
+   * logada tiver um override individual (`anunciosAtivados` no
+   * próprio doc), esse valor manda; senão, cai no padrão global.
+   * Visitante sem login (sem doc de usuário) sempre usa o padrão
+   * global.
+   */
+  window.raspadinhaAuth.buscarConfigAnuncio = async () => {
+    const usuario = auth.currentUser;
+    if (usuario) {
+      const snap = await getDoc(doc(db, "usuarios", usuario.uid));
+      const override = snap.data()?.anunciosAtivados;
+      if (override !== undefined) return !!override;
+    }
+    const configGlobal = await window.raspadinhaAuth.buscarConfigGlobal();
+    return !!configGlobal?.anunciosAtivados;
+  };
+
   /**
    * Liga/desliga a visibilidade do perfil público (padrão: público,
    * já que é opt-out, não opt-in -- ver README).
@@ -637,6 +704,7 @@ if (CONFIGURADO) {
     return {
       estadoMunicipios: dados.estadoMunicipios || {},
       estadoRegioes: dados.estadoRegioes || {},
+      estadoRotas: dados.estadoRotas || {},
     };
   };
 
@@ -914,6 +982,9 @@ if (CONFIGURADO) {
       apelido: encontrado.data().apelido || "?",
       email: encontrado.data().email || "",
       status: encontrado.data().status || "ativo",
+      // undefined = sem override individual, usa o padrão global
+      // (ver buscarConfigAnuncio/definirAnuncioPorUsuario acima).
+      anunciosAtivados: encontrado.data().anunciosAtivados,
     };
   };
 

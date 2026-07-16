@@ -24,6 +24,7 @@ const STORAGE_KEY = "scratchMapRJ_v1";
 const STORAGE_KEY_REGIOES = "scratchMapRJ_regioes_v1";
 const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
 const STORAGE_KEY_STREAK = "scratchMapRJ_streak_v1";
+const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 
 // Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
 const CHAVE_PIX_COLABORACAO = "pvsm23@jim.com";
@@ -73,6 +74,11 @@ let estadoRegioes = {};
 // Estado das raspadinhas de conquista (10/25/50/75/100% do mapa):
 // { "10pct": { revelado: true, dataRevelado: "..." } }
 let estadoConquistas = {};
+// Estado do mega-selo de cada rota temática (mesma ideia de
+// estadoRegioes, só que os municípios da rota vêm de data/rotas.json
+// em vez do agrupamento embutido no SVG):
+// { "cafe-fluminense": { revelado: true, dataRevelado: "..." } }
+let estadoRotas = {};
 // Sequencia de dias seguidos abrindo o app (streak), pra conquista
 // "7 dias seguidos" -- local, nao depende do check-in (semanal) no
 // Firestore pra nao precisar de leitura assincrona so pra isso.
@@ -85,6 +91,7 @@ let curiosidadesPorMunicipio = {};
 let geojsonMunicipios = {};
 let municipioSelecionadoId = null;
 let regiaoSelecionadaId = null;
+let rotaSelecionadaId = null;
 let mapaFoiArrastado = false;
 
 // ---- Comunidade Desbrava (rede social) ----
@@ -153,6 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
   estadoConquistas = carregarEstadoConquistas();
+  estadoRotas = carregarEstadoRotas();
   estadoStreak = carregarEstadoStreak();
   registrarAcessoDeHoje();
   construirMapaDeRegioes();
@@ -166,6 +174,8 @@ document.addEventListener("DOMContentLoaded", () => {
   carregarGeoJsonMunicipios().then(() => verificarLocalizacaoAoAbrirApp());
   carregarRegioesInfo();
   carregarResumosRegioes();
+  carregarRotasInfo();
+  atualizarVisibilidadeAnuncio();
   preCarregarSelos();
 
   // Confere de novo sempre que o app volta a ficar visível (ex: usuário
@@ -236,6 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (evento.target.id === "biblioteca-selos") fecharBibliotecaSelos();
     });
 
+  document.getElementById("btn-voltar-lightbox").addEventListener("click", fecharSeloLightbox);
+  document.getElementById("modal-selo-lightbox").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-selo-lightbox") fecharSeloLightbox();
+  });
+
   document
     .getElementById("btn-configuracoes")
     .addEventListener("click", () => exigirLogin(abrirConfiguracoes));
@@ -263,6 +278,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btn-compartilhar-de-fato").addEventListener("click", compartilharApp);
   document.getElementById("btn-logout").addEventListener("click", sairDaConta);
+  document
+    .getElementById("btn-compartilhar-progresso")
+    .addEventListener("click", abrirCartaoProgresso);
+  document
+    .getElementById("btn-fechar-cartao-progresso")
+    .addEventListener("click", fecharCartaoProgresso);
+  document.getElementById("modal-cartao-progresso").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-cartao-progresso") fecharCartaoProgresso();
+  });
+  document
+    .getElementById("btn-compartilhar-cartao")
+    .addEventListener("click", compartilharCartaoProgresso);
+  document.getElementById("btn-baixar-cartao").addEventListener("click", baixarCartaoProgresso);
   document.getElementById("form-login").addEventListener("submit", aoEnviarFormLogin);
   document
     .getElementById("btn-alternar-modo")
@@ -300,11 +328,22 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-salvar-apelido-config")
     .addEventListener("click", salvarApelidoConfig);
 
-  // ---- Moderação (só aparece pra conta dona do projeto) ----
+  // ---- Painel de Admin (moderação + anúncios, só pra conta dona) ----
+  document.getElementById("btn-abrir-admin").addEventListener("click", abrirAdmin);
+  document.getElementById("btn-fechar-admin").addEventListener("click", fecharAdmin);
+  document.getElementById("modal-admin").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-admin") fecharAdmin();
+  });
   document.getElementById("btn-buscar-moderacao").addEventListener("click", buscarContaParaModerar);
   document.getElementById("input-busca-moderacao").addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") buscarContaParaModerar();
   });
+  document
+    .getElementById("check-anuncios-ativados")
+    .addEventListener("change", alternarAnunciosAdmin);
+  document
+    .getElementById("check-anuncios-para-mim")
+    .addEventListener("change", alternarAnuncioParaMim);
 
   // ---- Excluir conta ----
   document.getElementById("btn-abrir-excluir-conta").addEventListener("click", iniciarFluxoExclusaoConta);
@@ -356,6 +395,25 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-conquistas").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-conquistas") fecharConquistas();
   });
+
+  // ---- Rotas temáticas ----
+  document.getElementById("btn-abrir-rotas").addEventListener("click", () => exigirLogin(abrirRotas));
+  document.getElementById("btn-fechar-rotas").addEventListener("click", fecharRotas);
+  document.getElementById("modal-rotas").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-rotas") fecharRotas();
+  });
+  document.getElementById("btn-fechar-rota-detalhe").addEventListener("click", fecharPopupRota);
+  document.getElementById("modal-rota-detalhe").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-rota-detalhe") fecharPopupRota();
+  });
+  document.getElementById("btn-ver-rota-no-mapa").addEventListener("click", () => {
+    if (!rotaSelecionadaId) return;
+    const idParaVerNoMapa = rotaSelecionadaId;
+    fecharPopupRota();
+    fecharRotas();
+    entrarModoRota(idParaVerNoMapa);
+  });
+  document.getElementById("btn-sair-rota").addEventListener("click", sairModoRota);
 
   // ---- Amigos ----
   document
@@ -787,18 +845,19 @@ async function atualizarUiDeConta(detalhe) {
       document.getElementById("check-perfil-publico").checked = perfil?.perfilPublico !== false;
     });
 
-    // Painel de moderação: só existe pra a conta "dona" do projeto
-    // (UID_DONO em js/auth.js) -- a regra do Firestore é quem
-    // realmente impede qualquer outra conta de mudar status alheio,
-    // isso aqui é só a UI não aparecer à toa pra ninguém mais.
+    // Botão do painel de Admin: só existe pra a conta "dona" do
+    // projeto (UID_DONO em js/auth.js) -- a regra do Firestore é quem
+    // realmente impede qualquer outra conta de mudar status alheio ou
+    // o toggle de anúncios, isso aqui é só a UI não aparecer à toa
+    // pra ninguém mais.
     document
-      .getElementById("secao-moderacao")
+      .getElementById("secao-admin")
       .classList.toggle("oculto", usuario.uid !== window.raspadinhaAuth.UID_DONO);
   } else {
     status.textContent = "Você não está conectado.";
     document.getElementById("dados-email").textContent = "";
     document.getElementById("input-apelido-config").value = "";
-    document.getElementById("secao-moderacao").classList.add("oculto");
+    document.getElementById("secao-admin").classList.add("oculto");
     voltarParaEstadoAnonimo();
     atualizarAvisoBrilhantePendente();
   }
@@ -874,9 +933,146 @@ function salvarApelidoConfig() {
 }
 
 /* ============================================================
-   Moderação (só visível pra conta dona do projeto, ver UID_DONO em
-   js/auth.js e o toggle de #secao-moderacao em atualizarUiDeConta).
+   Painel de Admin (moderação + anúncios): tudo aqui só é aberto pela
+   conta dona do projeto (ver UID_DONO em js/auth.js e o toggle de
+   #secao-admin em atualizarUiDeConta).
    ============================================================ */
+
+function abrirAdmin() {
+  document.getElementById("modal-admin").classList.remove("oculto");
+  document.getElementById("moderacao-resultado").innerHTML = "";
+  document.getElementById("input-busca-moderacao").value = "";
+  atualizarCheckboxAnunciosGlobal();
+  atualizarCheckboxAnuncioParaMim();
+}
+
+function fecharAdmin() {
+  document.getElementById("modal-admin").classList.add("oculto");
+}
+
+async function atualizarCheckboxAnunciosGlobal() {
+  const checkbox = document.getElementById("check-anuncios-ativados");
+  checkbox.disabled = true;
+  try {
+    const config = await window.raspadinhaAuth.buscarConfigGlobal();
+    checkbox.checked = !!config?.anunciosAtivados;
+  } catch (erro) {
+    console.error("Falha ao carregar configuração de anúncios:", erro);
+  } finally {
+    checkbox.disabled = false;
+  }
+}
+
+/**
+ * "Pra mim" é só um atalho de definirAnuncioPorUsuario mirando a
+ * própria conta dona (evita ter que se buscar por apelido na
+ * Moderação só pra mudar o próprio anúncio).
+ */
+async function atualizarCheckboxAnuncioParaMim() {
+  const checkbox = document.getElementById("check-anuncios-para-mim");
+  const uid = window.raspadinhaAuth.usuarioAtual?.uid;
+  if (!uid) return;
+
+  checkbox.disabled = true;
+  try {
+    const conta = await window.raspadinhaAuth.buscarUsuario(window.raspadinhaAuth.apelido || "");
+    checkbox.checked = !!conta?.anunciosAtivados;
+  } catch (erro) {
+    console.error("Falha ao carregar configuração de anúncio pra mim:", erro);
+  } finally {
+    checkbox.disabled = false;
+  }
+}
+
+async function alternarAnuncioParaMim(evento) {
+  const checkbox = evento.target;
+  const uid = window.raspadinhaAuth.usuarioAtual?.uid;
+  if (!uid) return;
+
+  checkbox.disabled = true;
+  try {
+    await window.raspadinhaAuth.definirAnuncioPorUsuario(uid, checkbox.checked);
+    atualizarVisibilidadeAnuncio();
+  } catch (erro) {
+    console.error("Falha ao mudar anúncio pra mim:", erro);
+    checkbox.checked = !checkbox.checked;
+    alert(erro?.message || "Não foi possível salvar agora.");
+  } finally {
+    checkbox.disabled = false;
+  }
+}
+
+async function alternarAnunciosAdmin(evento) {
+  const checkbox = evento.target;
+  const status = document.getElementById("anuncios-admin-status");
+  checkbox.disabled = true;
+  status.classList.add("oculto");
+  try {
+    await window.raspadinhaAuth.definirAnunciosGlobalAtivados(checkbox.checked);
+    atualizarVisibilidadeAnuncio();
+  } catch (erro) {
+    console.error("Falha ao mudar configuração de anúncios:", erro);
+    checkbox.checked = !checkbox.checked;
+    status.textContent = erro?.message || "Não foi possível salvar agora.";
+    status.classList.remove("oculto");
+  } finally {
+    checkbox.disabled = false;
+  }
+}
+
+// true assim que o script do AdSense já foi injetado uma vez --
+// evita carregar/duplicar a tag toda vez que o anúncio precisa
+// reaparecer (ex: depois de ligar o toggle em Admin).
+let scriptAdsenseInjetado = false;
+
+/**
+ * Mostra/esconde o slot de anúncio (Google AdSense) no rodapé de
+ * Configurações, pra QUALQUER pessoa (logada ou não). A decisão é da
+ * conta logada (ver buscarConfigAnuncio em js/auth.js): se ela tiver
+ * um override individual (ligado/desligado especificamente pra ela
+ * no painel de Admin), esse valor manda; senão cai no padrão global
+ * (configuracoes/global, lido por todo mundo mas só escrito pela
+ * conta dona). Só injeta o script do AdSense de verdade quando o
+ * anúncio precisa aparecer e o placeholder do client ID já tiver
+ * sido trocado pelo real -- sem isso, o slot fica escondido sem
+ * gerar nenhum erro.
+ */
+async function atualizarVisibilidadeAnuncio() {
+  const secao = document.getElementById("secao-anuncio");
+  try {
+    const deveMostrar = await window.raspadinhaAuth.buscarConfigAnuncio();
+    const clientId = secao.querySelector("ins")?.dataset.adClient || "";
+
+    if (!deveMostrar || !clientId || clientId.startsWith("SUBSTITUA_AQUI")) {
+      secao.classList.add("oculto");
+      return;
+    }
+
+    secao.classList.remove("oculto");
+    if (!scriptAdsenseInjetado) {
+      scriptAdsenseInjetado = true;
+      const script = document.createElement("script");
+      script.async = true;
+      script.crossOrigin = "anonymous";
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`;
+      script.onload = () => empurrarAnuncioAdsense();
+      document.head.appendChild(script);
+    } else {
+      empurrarAnuncioAdsense();
+    }
+  } catch (erro) {
+    console.error("Falha ao checar configuração de anúncios:", erro);
+    secao.classList.add("oculto");
+  }
+}
+
+function empurrarAnuncioAdsense() {
+  try {
+    (window.adsbygoogle = window.adsbygoogle || []).push({});
+  } catch (erro) {
+    console.error("Falha ao inicializar o anúncio:", erro);
+  }
+}
 
 /**
  * Busca por e-mail/apelido (reaproveita buscarUsuario, mesma função
@@ -915,8 +1111,26 @@ function renderizarItemModeracao(container, conta) {
         <button type="button" data-status="suspenso">Suspenso</button>
         <button type="button" data-status="banido">Banido</button>
       </div>
+      <label class="moderacao-item-anuncio">
+        <input type="checkbox" id="check-anuncio-item-moderacao">
+        Mostrar anúncio pra essa conta (override individual)
+      </label>
     </div>
   `;
+  container.querySelector("#check-anuncio-item-moderacao").checked = !!conta.anunciosAtivados;
+  container.querySelector("#check-anuncio-item-moderacao").addEventListener("change", async (evento) => {
+    const checkbox = evento.target;
+    checkbox.disabled = true;
+    try {
+      await window.raspadinhaAuth.definirAnuncioPorUsuario(conta.uid, checkbox.checked);
+    } catch (erro) {
+      checkbox.checked = !checkbox.checked;
+      alert(erro?.message || "Não foi possível mudar o anúncio dessa conta agora.");
+    } finally {
+      checkbox.disabled = false;
+    }
+  });
+
   container.querySelectorAll(".moderacao-item-acoes button").forEach((botao) => {
     botao.classList.toggle("status-ativa", botao.dataset.status === conta.status);
     botao.addEventListener("click", async () => {
@@ -1157,6 +1371,24 @@ function carregarResumosRegioes() {
     });
 }
 
+// Rotas temáticas (agrupamento curado de municípios, ex: "Rota do
+// Café Fluminense") -- diferente das 8 regiões (que vêm do SVG e
+// particionam o estado inteiro), rotas são definidas só em
+// data/rotas.json e podem se sobrepor livremente.
+// { "cafe-fluminense": { nome, descricao, historia, municipios: [...] } }
+let rotasInfo = {};
+
+function carregarRotasInfo() {
+  fetch("data/rotas.json")
+    .then((resposta) => (resposta.ok ? resposta.json() : {}))
+    .then((dados) => {
+      rotasInfo = dados;
+    })
+    .catch((erro) => {
+      console.error("Não foi possível carregar data/rotas.json:", erro);
+    });
+}
+
 /**
  * Controla arrastar (mover) e zoom do mapa principal:
  * - Mouse: arrastar move o mapa; roda do mouse dá zoom.
@@ -1346,12 +1578,14 @@ function inicializarPanZoomDoMapa() {
     }
   });
 
-  viewport.addEventListener("dblclick", () => {
+  function resetarZoom() {
     escala = 1;
     deslocX = 0;
     deslocY = 0;
     aplicarTransform();
-  });
+  }
+
+  viewport.addEventListener("dblclick", resetarZoom);
 
   aplicarTransform(); // define o modo inicial (regiões, com escala 1)
 
@@ -1384,6 +1618,61 @@ function inicializarPanZoomDoMapa() {
         svg.style.transition = "";
       }, 650);
     },
+
+    /**
+     * Anima o mapa até enquadrar TODOS os municípios de uma lista
+     * (usado pela visão de rota temática, ver entrarModoRota) -- em
+     * vez de mirar um alvo de escala fixo como focarEmMunicipio,
+     * calcula a escala que faz o grupo inteiro caber com folga
+     * (`margem`) dentro do viewport, ancorando o zoom no centro do
+     * grupo (mesma matemática do zoom por roda do mouse).
+     */
+    focarEmMunicipios(ids, margem = 0.75) {
+      const paths = ids
+        .map((id) => document.querySelector(`#mapa-rj [data-municipio="${id}"]`))
+        .filter(Boolean);
+      if (!paths.length) return;
+
+      const rectViewport = viewport.getBoundingClientRect();
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      paths.forEach((path) => {
+        const r = path.getBoundingClientRect();
+        minX = Math.min(minX, r.left);
+        minY = Math.min(minY, r.top);
+        maxX = Math.max(maxX, r.right);
+        maxY = Math.max(maxY, r.bottom);
+      });
+
+      // Desfaz a escala atual pra achar o tamanho "natural" (escala 1)
+      // do grupo -- só assim dá pra calcular quanto precisa ampliar.
+      const larguraGrupo = (maxX - minX) / escala;
+      const alturaGrupo = (maxY - minY) / escala;
+      const centroX = (minX + maxX) / 2;
+      const centroY = (minY + maxY) / 2;
+
+      const novaEscala = Math.min(
+        ESCALA_MAXIMA,
+        Math.max(1, Math.min((rectViewport.width * margem) / larguraGrupo, (rectViewport.height * margem) / alturaGrupo))
+      );
+
+      const ancoraX = centroX - rectViewport.left;
+      const ancoraY = centroY - rectViewport.top;
+
+      svg.style.transition = "transform 0.6s ease";
+      aplicarZoomAncorado(novaEscala, ancoraX, ancoraY);
+      deslocX += rectViewport.width / 2 - ancoraX;
+      deslocY += rectViewport.height / 2 - ancoraY;
+      aplicarTransform();
+
+      setTimeout(() => {
+        svg.style.transition = "";
+      }, 650);
+    },
+
+    resetarZoom,
   };
 }
 
@@ -2569,10 +2858,6 @@ function abrirBibliotecaSelos() {
       : brilhante
       ? `${nome} ✨ (raspadinha brilhante!)`
       : nome;
-    item.addEventListener("click", () => {
-      fecharBibliotecaSelos();
-      abrirSeloPorId(id, nome);
-    });
 
     const img = document.createElement("img");
     img.alt = nome;
@@ -2581,6 +2866,8 @@ function abrirBibliotecaSelos() {
     resolverImagemColorida(`assets/img/selos/${id}`, brilhante, id, nome).then((resultado) => {
       img.src = resultado.url;
     });
+
+    item.addEventListener("click", () => abrirSeloLightbox(img.src, nome));
 
     const legenda = document.createElement("span");
     legenda.textContent = nome;
@@ -2602,9 +2889,27 @@ function abrirBibliotecaSelos() {
   });
 
   renderizarGradeRegioesNaBiblioteca();
+  renderizarGradeRotasNaBiblioteca();
   renderizarGradeConquistasNaBiblioteca();
 
   document.getElementById("biblioteca-selos").classList.remove("oculto");
+}
+
+/**
+ * Lightbox simples: mostra a imagem de um selo (já resolvida --
+ * colorida ou placeholder) em tamanho maior, com um botão de voltar
+ * que só fecha o lightbox, sem navegar pro popup completo do
+ * município/região/rota/conquista.
+ */
+function abrirSeloLightbox(imageUrl, nome) {
+  document.getElementById("selo-lightbox-imagem").src = imageUrl;
+  document.getElementById("selo-lightbox-imagem").alt = nome;
+  document.getElementById("selo-lightbox-legenda").textContent = nome;
+  document.getElementById("modal-selo-lightbox").classList.remove("oculto");
+}
+
+function fecharSeloLightbox() {
+  document.getElementById("modal-selo-lightbox").classList.add("oculto");
 }
 
 /**
@@ -2633,10 +2938,6 @@ function renderizarGradeRegioesNaBiblioteca() {
     item.type = "button";
     item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
     item.title = brilhante ? `${nome} ✨ (mega-selo brilhante!)` : nome;
-    item.addEventListener("click", () => {
-      fecharBibliotecaSelos();
-      abrirPopupRegiao(id);
-    });
 
     const img = document.createElement("img");
     img.alt = nome;
@@ -2649,6 +2950,63 @@ function renderizarGradeRegioesNaBiblioteca() {
     } else {
       img.src = gerarSeloPlaceholder(id, nome);
     }
+
+    item.addEventListener("click", () => abrirSeloLightbox(img.src, nome));
+
+    const legenda = document.createElement("span");
+    legenda.textContent = completa ? nome : `🔒 ${nome}`;
+
+    item.appendChild(img);
+    if (brilhante) {
+      const marca = document.createElement("span");
+      marca.className = "selo-marca-brilhante";
+      marca.textContent = "✨";
+      item.appendChild(marca);
+    }
+    item.appendChild(legenda);
+    grade.appendChild(item);
+  });
+}
+
+/**
+ * Selos de rota temática dentro da biblioteca -- mesma ideia dos
+ * selos de região: cadeado até completar todos os municípios da rota.
+ */
+function renderizarGradeRotasNaBiblioteca() {
+  const grade = document.getElementById("biblioteca-grade-rotas");
+  grade.innerHTML = "";
+
+  const idsRotas = Object.keys(rotasInfo).sort((a, b) =>
+    (rotasInfo[a]?.nome || a).localeCompare(rotasInfo[b]?.nome || b, "pt-BR")
+  );
+  const completas = idsRotas.filter((id) => rotaEstaCompleta(id)).length;
+  document.getElementById("biblioteca-titulo-rotas").textContent =
+    `Selos de rota (${completas} / ${idsRotas.length})`;
+
+  idsRotas.forEach((id) => {
+    const nome = rotasInfo[id]?.nome || id;
+    const completa = rotaEstaCompleta(id);
+    const revelado = completa && !!estadoRotas[id]?.revelado;
+    const brilhante = revelado && !!estadoRotas[id]?.brilhante;
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
+    item.title = brilhante ? `${nome} ✨ (selo de rota brilhante!)` : nome;
+
+    const img = document.createElement("img");
+    img.alt = nome;
+    img.className = revelado ? "selo-colorido" : "selo-cinza";
+
+    if (revelado) {
+      resolverImagemColorida(`assets/img/rotas/${id}`, brilhante, id, nome).then((resultado) => {
+        img.src = resultado.url;
+      });
+    } else {
+      img.src = gerarSeloPlaceholder(id, nome);
+    }
+
+    item.addEventListener("click", () => abrirSeloLightbox(img.src, nome));
 
     const legenda = document.createElement("span");
     legenda.textContent = completa ? nome : `🔒 ${nome}`;
@@ -2691,10 +3049,6 @@ function renderizarGradeConquistasNaBiblioteca() {
     item.type = "button";
     item.className = "selo-item";
     item.title = `${titulo} — ${descricao}`;
-    item.addEventListener("click", () => {
-      fecharBibliotecaSelos();
-      exigirLogin(abrirConquistas);
-    });
 
     const img = document.createElement("img");
     img.alt = titulo;
@@ -2708,6 +3062,8 @@ function renderizarGradeConquistasNaBiblioteca() {
     } else {
       img.src = gerarSeloPlaceholder(chave, titulo);
     }
+
+    item.addEventListener("click", () => abrirSeloLightbox(img.src, titulo));
 
     const legenda = document.createElement("span");
     legenda.textContent = desbloqueada ? titulo : `🔒 ${titulo}`;
@@ -3551,6 +3907,137 @@ function gerarSnapshotMapaComoDataUrl() {
   });
 }
 
+/* ============================================================
+   Cartão de progresso compartilhável: uma imagem tipo "resumo",
+   com o mini-mapa colorido (reaproveita gerarSnapshotMapaComoDataUrl)
+   + estatísticas, pronta pra compartilhar fora do app.
+   ============================================================ */
+
+let cartaoProgressoDataUrlAtual = null;
+
+async function gerarCartaoProgresso() {
+  const largura = 600;
+  const altura = 900;
+
+  const miniMapaUrl = await gerarSnapshotMapaComoDataUrl();
+
+  const total = document.querySelectorAll("#mapa-rj .municipio").length;
+  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
+  const regioesCompletas = Object.keys(municipiosPorRegiao).filter((id) => regiaoEstaCompleta(id)).length;
+  const rotasCompletas = Object.keys(rotasInfo).filter((id) => rotaEstaCompleta(id)).length;
+  const brilhantes = Object.values(estadoMapa).filter((d) => d.visitado && d.brilhante).length;
+  const apelido = window.raspadinhaAuth?.apelido || "Desbravador";
+
+  const canvas = document.createElement("canvas");
+  canvas.width = largura;
+  canvas.height = altura;
+  const ctx = canvas.getContext("2d");
+
+  const gradiente = ctx.createLinearGradient(0, 0, 0, altura);
+  gradiente.addColorStop(0, "#1e293b");
+  gradiente.addColorStop(1, "#0f172a");
+  ctx.fillStyle = gradiente;
+  ctx.fillRect(0, 0, largura, altura);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#f1f5f9";
+  ctx.font = "bold 48px system-ui, sans-serif";
+  ctx.fillText("DESBRAVA", largura / 2, 90);
+
+  ctx.font = "600 24px system-ui, sans-serif";
+  ctx.fillStyle = "#94a3b8";
+  ctx.fillText(`Progresso de ${apelido}`, largura / 2, 128);
+
+  const larguraMapa = 500;
+  const alturaMapa = larguraMapa * (286 / 400);
+  const topoMapa = 165;
+  if (miniMapaUrl) {
+    const imagemMapa = await new Promise((resolve) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => resolve(null);
+      el.src = miniMapaUrl;
+    });
+    if (imagemMapa) {
+      ctx.drawImage(imagemMapa, (largura - larguraMapa) / 2, topoMapa, larguraMapa, alturaMapa);
+    }
+  }
+
+  const linhas = [
+    `${visitados} / ${total} municípios visitados`,
+    `${regioesCompletas} região${regioesCompletas === 1 ? "" : "ões"} completa${regioesCompletas === 1 ? "" : "s"}`,
+    `${rotasCompletas} rota${rotasCompletas === 1 ? "" : "s"} completa${rotasCompletas === 1 ? "" : "s"}`,
+    `${brilhantes} selo${brilhantes === 1 ? "" : "s"} brilhante${brilhantes === 1 ? "" : "s"} ✨`,
+  ];
+  ctx.font = "600 30px system-ui, sans-serif";
+  ctx.fillStyle = "#f1f5f9";
+  const topoEstatisticas = topoMapa + alturaMapa + 64;
+  linhas.forEach((linha, indice) => {
+    ctx.fillText(linha, largura / 2, topoEstatisticas + indice * 48);
+  });
+
+  ctx.font = "18px system-ui, sans-serif";
+  ctx.fillStyle = "#64748b";
+  ctx.fillText(`${window.location.origin} · raspe o mapa do Rio de Janeiro`, largura / 2, altura - 30);
+
+  return canvas.toDataURL("image/png");
+}
+
+async function abrirCartaoProgresso() {
+  const modal = document.getElementById("modal-cartao-progresso");
+  const preview = document.getElementById("cartao-progresso-preview");
+  preview.innerHTML = '<div class="spinner spinner-grande"></div>';
+  modal.classList.remove("oculto");
+
+  try {
+    cartaoProgressoDataUrlAtual = await gerarCartaoProgresso();
+    preview.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = cartaoProgressoDataUrlAtual;
+    img.alt = "Cartão de progresso";
+    preview.appendChild(img);
+  } catch (erro) {
+    console.error("Falha ao gerar o cartão de progresso:", erro);
+    preview.innerHTML = "<p>Não foi possível gerar o cartão agora.</p>";
+  }
+}
+
+function fecharCartaoProgresso() {
+  document.getElementById("modal-cartao-progresso").classList.add("oculto");
+}
+
+async function compartilharCartaoProgresso() {
+  if (!cartaoProgressoDataUrlAtual) return;
+
+  try {
+    const resposta = await fetch(cartaoProgressoDataUrlAtual);
+    const blob = await resposta.blob();
+    const arquivo = new File([blob], "desbrava-progresso.png", { type: "image/png" });
+
+    if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+      await navigator.share({
+        files: [arquivo],
+        title: "Meu progresso no Desbrava",
+        text: "Olha meu progresso raspando o mapa do Rio de Janeiro no Desbrava!",
+      });
+      return;
+    }
+  } catch (erro) {
+    // Cancelou o compartilhamento ou o navegador não suporta arquivo
+    // no Web Share -- cai no download como alternativa.
+  }
+
+  baixarCartaoProgresso();
+}
+
+function baixarCartaoProgresso() {
+  if (!cartaoProgressoDataUrlAtual) return;
+  const link = document.createElement("a");
+  link.href = cartaoProgressoDataUrlAtual;
+  link.download = "desbrava-progresso.png";
+  link.click();
+}
+
 /**
  * Mini-mapa do perfil: mostra o snapshot estático (gerado 1x por dia,
  * ver gerarSnapshotMapaSeNecessario) em vez de clonar o SVG ao vivo --
@@ -3790,6 +4277,222 @@ function fecharPopupRegiao() {
   document.getElementById("modal-regiao").classList.add("oculto");
   document.getElementById("regiao-selo-body").innerHTML = "";
   regiaoSelecionadaId = null;
+}
+
+/* ============================================================
+   Rotas temáticas: agrupamento curado de municípios (ver
+   data/rotas.json), com selo/raspadinha própria -- mesma mecânica do
+   mega-selo de região (só "completo" quando todos os municípios da
+   rota estiverem verificados), mas os municípios vêm do JSON em vez
+   do agrupamento embutido no SVG (podem se sobrepor livremente entre
+   rotas, diferente das 8 regiões que particionam o estado inteiro).
+   ============================================================ */
+
+function rotaEstaCompleta(rotaId) {
+  const idsDaRota = rotasInfo[rotaId]?.municipios || [];
+  return idsDaRota.length > 0 && idsDaRota.every((id) => estaVerificado(id));
+}
+
+function abrirRotas() {
+  const lista = document.getElementById("rotas-lista");
+  lista.innerHTML = "";
+
+  const idsRotas = Object.keys(rotasInfo).sort((a, b) =>
+    (rotasInfo[a]?.nome || a).localeCompare(rotasInfo[b]?.nome || b, "pt-BR")
+  );
+
+  idsRotas.forEach((id) => {
+    const info = rotasInfo[id];
+    const idsDaRota = info.municipios || [];
+    const visitados = idsDaRota.filter((mid) => estaVerificado(mid)).length;
+    const completa = rotaEstaCompleta(id);
+    const revelado = completa && !!estadoRotas[id]?.revelado;
+    const brilhante = revelado && !!estadoRotas[id]?.brilhante;
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
+    item.title = info.nome;
+
+    const img = document.createElement("img");
+    img.alt = info.nome;
+    img.className = revelado ? "selo-colorido" : "selo-cinza";
+    if (revelado) {
+      resolverImagemColorida(`assets/img/rotas/${id}`, brilhante, id, info.nome).then((resultado) => {
+        img.src = resultado.url;
+      });
+    } else {
+      img.src = gerarSeloPlaceholder(id, info.nome);
+    }
+
+    const legenda = document.createElement("span");
+    legenda.textContent = `${completa ? "" : "🔒 "}${info.nome} (${visitados}/${idsDaRota.length})`;
+
+    item.appendChild(img);
+    if (brilhante) {
+      const marca = document.createElement("span");
+      marca.className = "selo-marca-brilhante";
+      marca.textContent = "✨";
+      item.appendChild(marca);
+    }
+    item.appendChild(legenda);
+    item.addEventListener("click", () => {
+      fecharRotas();
+      abrirPopupRota(id);
+    });
+    lista.appendChild(item);
+  });
+
+  document.getElementById("modal-rotas").classList.remove("oculto");
+}
+
+function fecharRotas() {
+  document.getElementById("modal-rotas").classList.add("oculto");
+}
+
+function abrirPopupRota(rotaId) {
+  rotaSelecionadaId = rotaId;
+  const info = rotasInfo[rotaId];
+  if (!info) return;
+
+  const idsDaRota = info.municipios || [];
+  const visitados = idsDaRota.filter((id) => estaVerificado(id)).length;
+  const completa = visitados === idsDaRota.length && idsDaRota.length > 0;
+
+  document.getElementById("rota-detalhe-nome").textContent = info.nome;
+  document.getElementById("rota-detalhe-descricao").textContent = info.descricao || "";
+  document.getElementById("rota-detalhe-status").textContent =
+    `${visitados} / ${idsDaRota.length} municípios verificados`;
+  document.getElementById("rota-detalhe-barra-preenchida").style.width =
+    `${(visitados / idsDaRota.length) * 100}%`;
+  document.getElementById("rota-detalhe-historia").textContent = info.historia || "";
+
+  const corpo = document.getElementById("rota-detalhe-selo-body");
+  corpo.innerHTML = "";
+  const instrucao = document.getElementById("rota-detalhe-instrucao");
+
+  if (!completa) {
+    const faltam = idsDaRota.length - visitados;
+    instrucao.textContent = `Complete os ${faltam} município${faltam === 1 ? "" : "s"} que falta${faltam === 1 ? "" : "m"} nessa rota para desbloquear o selo especial.`;
+    mostrarSpinnerGrande(corpo, false);
+    corpo.innerHTML = `<div class="selo-bloqueado">🔒</div>`;
+    document.getElementById("rota-detalhe-selo-estatistica").textContent = "";
+  } else if (estadoRotas[rotaId]?.revelado) {
+    instrucao.textContent = "";
+    exibirMegaSeloRotaRevelado(rotaId, corpo);
+  } else {
+    instrucao.textContent = "Rota completa! Raspe o selo especial.";
+    document.getElementById("rota-detalhe-selo-estatistica").textContent = "";
+    mostrarSpinnerGrande(corpo, true);
+    // Selo de rota brilhante: mesma chance do mega-selo de região
+    // (10%), decidida na abertura (ver decidirBrilhanteRota).
+    const brilhante = decidirBrilhanteRota(rotaId);
+    const caminhoCapa = `assets/img/rotas/${rotaId}fundo.png`;
+    resolverImagemColorida(`assets/img/rotas/${rotaId}`, brilhante, rotaId, info.nome, 400).then(
+      (resultado) => {
+        const usarCapa = resultado.arteReal
+          ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
+          : Promise.resolve(null);
+        usarCapa.then((imageUrlCapa) => {
+          corpo.innerHTML = "";
+          initScratchCard({
+            containerId: "rota-detalhe-selo-body",
+            imageUrl: resultado.url,
+            imageUrlCapa,
+            tamanho: 400,
+            onPrimeiroToque: () => travarSorteRotaNaPrimeiraRaspada(rotaId, brilhante),
+            onComplete: () => {
+              marcarRotaComoRevelada(rotaId, brilhante);
+              return brilhante;
+            },
+          });
+        });
+      }
+    );
+  }
+
+  document.getElementById("modal-rota-detalhe").classList.remove("oculto");
+}
+
+function exibirMegaSeloRotaRevelado(rotaId, corpo) {
+  const info = rotasInfo[rotaId];
+  const brilhante = !!estadoRotas[rotaId]?.brilhante;
+  resolverImagemColorida(`assets/img/rotas/${rotaId}`, brilhante, rotaId, info.nome, 400).then(
+    (resultado) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "selo-revelado-wrapper";
+      const img = document.createElement("img");
+      img.src = resultado.url;
+      img.alt = info.nome;
+      img.className = "selo-revelado selo-revelado-grande";
+      wrapper.appendChild(img);
+      if (brilhante) adicionarBrilho(wrapper);
+      corpo.appendChild(wrapper);
+    }
+  );
+}
+
+function decidirBrilhanteRota(rotaId) {
+  const anterior = estadoRotas[rotaId];
+  if (anterior?.chanceDecidida) return !!anterior.brilhante;
+  return Math.random() < 0.1;
+}
+
+function travarSorteRotaNaPrimeiraRaspada(rotaId, brilhante) {
+  if (estadoRotas[rotaId]?.chanceDecidida) return;
+  estadoRotas[rotaId] = { ...estadoRotas[rotaId], brilhante: !!brilhante, chanceDecidida: true };
+  salvarEstadoRotas();
+}
+
+function marcarRotaComoRevelada(rotaId, brilhante) {
+  estadoRotas[rotaId] = {
+    revelado: true,
+    dataRevelado: new Date().toISOString(),
+    brilhante: !!brilhante,
+    chanceDecidida: true,
+  };
+  salvarEstadoRotas();
+  if (window.raspadinhaAuth?.usuarioAtual) {
+    window.raspadinhaAuth.sincronizarRota(rotaId, { revelado: true, brilhante: !!brilhante });
+  }
+}
+
+function fecharPopupRota() {
+  document.getElementById("modal-rota-detalhe").classList.add("oculto");
+  document.getElementById("rota-detalhe-selo-body").innerHTML = "";
+  rotaSelecionadaId = null;
+}
+
+/**
+ * Visão dedicada de uma rota no mapa: zoom+destaque só nos
+ * municípios dela (o resto fica esmaecido) e some com toda a UI
+ * flutuante (barra de topo, botões da lateral, busca etc.) via
+ * `body.modo-rota-ativo` -- só o botão "Sair da rota" continua
+ * visível. `sairModoRota` desfaz tudo.
+ */
+function entrarModoRota(rotaId) {
+  const info = rotasInfo[rotaId];
+  if (!info) return;
+  const idsDaRota = info.municipios || [];
+
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
+    const naRota = idsDaRota.includes(path.dataset.municipio);
+    path.classList.toggle("municipio-da-rota", naRota);
+    path.classList.toggle("municipio-fora-da-rota", !naRota);
+  });
+
+  document.body.classList.add("modo-rota-ativo");
+  document.getElementById("btn-sair-rota").classList.remove("oculto");
+  window.controleMapa?.focarEmMunicipios(idsDaRota);
+}
+
+function sairModoRota() {
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
+    path.classList.remove("municipio-da-rota", "municipio-fora-da-rota");
+  });
+  document.body.classList.remove("modo-rota-ativo");
+  document.getElementById("btn-sair-rota").classList.add("oculto");
+  window.controleMapa?.resetarZoom();
 }
 
 /**
@@ -4074,9 +4777,11 @@ function resetarTudo() {
   estadoMapa = {};
   estadoRegioes = {};
   estadoConquistas = {};
+  estadoRotas = {};
   salvarEstado();
   salvarEstadoRegioes();
   salvarEstadoConquistas();
+  salvarEstadoRotas();
   aplicarEstadoNoSVG();
   atualizarContador();
   sincronizarProgressoOnline();
@@ -4110,6 +4815,20 @@ function carregarEstadoRegioes() {
     return dados ? JSON.parse(dados) : {};
   } catch (erro) {
     console.error("Erro ao carregar estado das regiões do LocalStorage:", erro);
+    return {};
+  }
+}
+
+function salvarEstadoRotas() {
+  localStorage.setItem(chaveComUid(STORAGE_KEY_ROTAS), JSON.stringify(estadoRotas));
+}
+
+function carregarEstadoRotas() {
+  try {
+    const dados = localStorage.getItem(chaveComUid(STORAGE_KEY_ROTAS));
+    return dados ? JSON.parse(dados) : {};
+  } catch (erro) {
+    console.error("Erro ao carregar estado das rotas do LocalStorage:", erro);
     return {};
   }
 }
@@ -4179,6 +4898,7 @@ async function carregarEstadoDoUsuario(uid) {
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
   estadoConquistas = carregarEstadoConquistas();
+  estadoRotas = carregarEstadoRotas();
   estadoStreak = carregarEstadoStreak();
   // registrarAcessoDeHoje() já rodou no DOMContentLoaded, mas contra o
   // bucket "anon" (uid ainda não era conhecido nesse momento) -- chama
@@ -4227,8 +4947,17 @@ async function carregarEstadoDoUsuario(uid) {
           chanceDecidida: estadoRegioes[id]?.chanceDecidida || !!dados.revelado,
         };
       });
+      Object.entries(estadoNuvem.estadoRotas || {}).forEach(([id, dados]) => {
+        estadoRotas[id] = {
+          ...estadoRotas[id],
+          revelado: !!dados.revelado,
+          brilhante: !!dados.brilhante,
+          chanceDecidida: estadoRotas[id]?.chanceDecidida || !!dados.revelado,
+        };
+      });
       salvarEstado();
       salvarEstadoRegioes();
+      salvarEstadoRotas();
     }
   } catch (erro) {
     console.error("Falha ao restaurar estado do Firestore no login:", erro);
@@ -4250,6 +4979,7 @@ function voltarParaEstadoAnonimo() {
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
   estadoConquistas = carregarEstadoConquistas();
+  estadoRotas = carregarEstadoRotas();
   estadoStreak = carregarEstadoStreak();
   aplicarEstadoNoSVG();
   atualizarContador();

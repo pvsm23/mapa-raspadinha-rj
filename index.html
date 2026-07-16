@@ -385,6 +385,7 @@
       <button id="btn-abrir-ranking" aria-label="Ranking" title="Ranking">🏆</button>
       <button id="btn-abrir-amigos" aria-label="Amigos" title="Amigos">👥</button>
       <button id="btn-abrir-conquistas" aria-label="Conquistas" title="Conquistas">🎖️</button>
+      <button id="btn-abrir-rotas" aria-label="Rotas temáticas" title="Rotas temáticas">🗺️</button>
       <button id="btn-abrir-checkin" aria-label="Check-in semanal" title="Check-in semanal">📅</button>
       <button id="btn-mapa-brasil" aria-label="Mapa do Brasil" title="Mapa do Brasil">🇧🇷</button>
     </div>
@@ -457,6 +458,41 @@
     </div>
   </div>
 
+  <!-- Rotas tematicas: lista (agrupamento curado de municipios, ver
+       data/rotas.json) -->
+  <div id="modal-rotas" class="oculto">
+    <div id="rotas-conteudo">
+      <button id="btn-fechar-rotas" aria-label="Fechar">✕</button>
+      <h2>🗺️ Rotas Temáticas</h2>
+      <div id="rotas-lista"></div>
+    </div>
+  </div>
+
+  <!-- Rotas tematicas: detalhe de uma rota (historia, progresso e o
+       selo especial, mesmo padrao do popup de regiao) -->
+  <div id="modal-rota-detalhe" class="oculto">
+    <div id="rota-detalhe-conteudo">
+      <button id="btn-fechar-rota-detalhe" aria-label="Fechar">✕</button>
+      <h2 id="rota-detalhe-nome"></h2>
+      <p id="rota-detalhe-descricao"></p>
+      <p id="rota-detalhe-status"></p>
+      <div id="rota-detalhe-barra">
+        <div id="rota-detalhe-barra-preenchida"></div>
+      </div>
+      <button type="button" id="btn-ver-rota-no-mapa">🗺️ Ver no mapa</button>
+      <div id="rota-detalhe-selo-body"></div>
+      <p id="rota-detalhe-instrucao"></p>
+      <div id="rota-detalhe-historia"></div>
+      <p id="rota-detalhe-selo-estatistica"></p>
+    </div>
+  </div>
+
+  <!-- Botao fixo pra sair da visualizacao de uma rota no mapa -- o
+       unico botao que continua visivel quando body.modo-rota-ativo
+       esconde o resto da UI flutuante (ver entrarModoRota/sairModoRota
+       em js/script.js) -->
+  <button type="button" id="btn-sair-rota" class="oculto">✕ Sair da rota</button>
+
   <div id="biblioteca-selos" class="oculto">
     <div id="biblioteca-conteudo">
       <button id="btn-fechar-biblioteca" aria-label="Fechar">✕</button>
@@ -470,8 +506,22 @@
       <h3 id="biblioteca-titulo-regioes">Selos de região</h3>
       <div id="biblioteca-grade-regioes"></div>
 
+      <h3 id="biblioteca-titulo-rotas">Selos de rota</h3>
+      <div id="biblioteca-grade-rotas"></div>
+
       <h3 id="biblioteca-titulo-conquistas">Conquistas</h3>
       <div id="biblioteca-grade-conquistas"></div>
+    </div>
+  </div>
+
+  <!-- Lightbox: clicar num selo de qualquer grade da biblioteca abre
+       a imagem grande aqui, em vez de navegar pro popup completo (ver
+       abrirSeloLightbox em js/script.js) -->
+  <div id="modal-selo-lightbox" class="oculto">
+    <div id="selo-lightbox-conteudo">
+      <img id="selo-lightbox-imagem" alt="">
+      <p id="selo-lightbox-legenda"></p>
+      <button type="button" id="btn-voltar-lightbox">← Voltar</button>
     </div>
   </div>
 
@@ -498,6 +548,7 @@
           Perfil público (outras pessoas podem ver seus selos e mapa)
         </label>
         <button id="btn-logout">Sair da conta</button>
+        <button type="button" id="btn-compartilhar-progresso">📤 Compartilhar meu progresso</button>
       </div>
 
       <div id="secao-dados-pessoais">
@@ -513,17 +564,10 @@
       </div>
 
       <!-- Só aparece pra conta "dona" do projeto (UID_DONO em
-           js/auth.js) -- ver abrirModerador/aplicarStatusModerado em
-           js/script.js. Busca por e-mail/apelido (mesma função de
-           Amigos) e aplica Ativo/Suspenso/Banido -- a regra do
-           Firestore garante que só esse uid consegue de verdade. -->
-      <div id="secao-moderacao" class="oculto">
-        <h3>Moderação</h3>
-        <div id="moderacao-busca">
-          <input type="text" id="input-busca-moderacao" placeholder="E-mail ou apelido">
-          <button type="button" id="btn-buscar-moderacao">Buscar</button>
-        </div>
-        <div id="moderacao-resultado"></div>
+           js/auth.js) -- abre o painel de Admin (moderação + anúncios),
+           ver abrirAdmin em js/script.js. -->
+      <div id="secao-admin" class="oculto">
+        <button type="button" id="btn-abrir-admin">👑 Configurações de admin</button>
       </div>
 
       <div id="secao-pro">
@@ -548,6 +592,22 @@
         <p>Excluir sua conta apaga todo o progresso, selos, amigos, posts e fotos -- essa ação não pode ser desfeita.</p>
         <button type="button" id="btn-abrir-excluir-conta" class="btn-excluir-conta">🗑️ Excluir minha conta</button>
       </div>
+
+      <!-- Slot discreto de anúncio (Google AdSense) -- só é preenchido
+           quando o dono ativa o toggle no painel de Admin, ver
+           atualizarVisibilidadeAnuncio em js/script.js. Fica no
+           rodapé de Configurações (nunca dentro do mapa nem entre
+           raspar selos). -->
+      <div id="secao-anuncio" class="oculto">
+        <ins
+          class="adsbygoogle"
+          style="display:block"
+          data-ad-client="ca-pub-SUBSTITUA_AQUI_PELO_SEU_ID_ADSENSE"
+          data-ad-slot="SUBSTITUA_AQUI_PELO_ID_DO_SLOT"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </div>
     </div>
   </div>
 
@@ -565,6 +625,64 @@
         <span class="btn-texto">Excluir pra sempre</span>
         <span class="spinner oculto"></span>
       </button>
+    </div>
+  </div>
+
+  <!-- Cartao de progresso compartilhavel (tipo "resumo do ano"): mini-mapa
+       colorido + estatisticas, gerado num canvas (ver gerarCartaoProgresso
+       em js/script.js). -->
+  <div id="modal-cartao-progresso" class="oculto">
+    <div id="cartao-progresso-conteudo">
+      <button id="btn-fechar-cartao-progresso" aria-label="Fechar">✕</button>
+      <h2>📤 Compartilhar progresso</h2>
+      <div id="cartao-progresso-preview">
+        <div class="spinner spinner-grande"></div>
+      </div>
+      <div id="cartao-progresso-acoes">
+        <button type="button" id="btn-compartilhar-cartao">Compartilhar</button>
+        <button type="button" id="btn-baixar-cartao">Baixar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel de Admin: só existe/abre pra conta "dona" do projeto
+       (UID_DONO em js/auth.js) -- reúne moderação (banir/suspender) e
+       o controle de anúncios, tudo que é "configuração de admin" fica
+       aqui, separado das Configurações normais. -->
+  <div id="modal-admin" class="oculto">
+    <div id="admin-conteudo">
+      <button id="btn-fechar-admin" aria-label="Fechar">✕</button>
+      <h2>👑 Configurações de admin</h2>
+
+      <div id="secao-moderacao">
+        <h3>Moderação</h3>
+        <div id="moderacao-busca">
+          <input type="text" id="input-busca-moderacao" placeholder="E-mail ou apelido">
+          <button type="button" id="btn-buscar-moderacao">Buscar</button>
+        </div>
+        <div id="moderacao-resultado"></div>
+      </div>
+
+      <!-- 3 controles independentes de anúncio (Google AdSense):
+           pra mim (a própria conta dona), pra um usuário específico
+           (busca por apelido, ver o toggle dentro do resultado da
+           Moderação acima) e o padrão global -- mudar o padrão global
+           NUNCA sobrescreve quem já tem override individual (são
+           campos/documentos separados no Firestore, ver
+           definirAnuncioPorUsuario/definirAnunciosGlobalAtivados em
+           js/auth.js). -->
+      <div id="secao-anuncios-admin">
+        <h3>Anúncios</h3>
+        <label id="label-anuncios-para-mim">
+          <input type="checkbox" id="check-anuncios-para-mim">
+          Mostrar anúncio pra mim
+        </label>
+        <label id="label-anuncios-ativados">
+          <input type="checkbox" id="check-anuncios-ativados">
+          Mostrar anúncios pra todo mundo (padrão -- não afeta quem já foi ajustado individualmente)
+        </label>
+        <p id="anuncios-admin-status" class="oculto"></p>
+      </div>
     </div>
   </div>
 
