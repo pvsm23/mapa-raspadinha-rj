@@ -1020,10 +1020,9 @@ async function alternarAnunciosAdmin(evento) {
   }
 }
 
-// true assim que o script do AdSense já foi injetado uma vez --
-// evita carregar/duplicar a tag toda vez que o anúncio precisa
-// reaparecer (ex: depois de ligar o toggle em Admin).
-let scriptAdsenseInjetado = false;
+// true assim que o anúncio já foi "empurrado" pro AdSense (push) uma
+// vez -- empurrar o mesmo <ins> duas vezes dá erro no console.
+let anuncioJaEmpurrado = false;
 
 /**
  * Mostra/esconde o slot de anúncio (Google AdSense) no rodapé de
@@ -1032,32 +1031,27 @@ let scriptAdsenseInjetado = false;
  * um override individual (ligado/desligado especificamente pra ela
  * no painel de Admin), esse valor manda; senão cai no padrão global
  * (configuracoes/global, lido por todo mundo mas só escrito pela
- * conta dona). Só injeta o script do AdSense de verdade quando o
- * anúncio precisa aparecer e o placeholder do client ID já tiver
- * sido trocado pelo real -- sem isso, o slot fica escondido sem
- * gerar nenhum erro.
+ * conta dona). O script do AdSense em si já fica sempre carregado
+ * (tag fixa no `<head>` de index.html, exigida pela própria
+ * verificação de site do Google) -- aqui só decide se O ANÚNCIO
+ * aparece, e só "empurra" (`adsbygoogle.push`) quando o slot ID
+ * também já tiver sido trocado pelo real (sem isso, mostrar o `<ins>`
+ * vazio não renderiza nada e ainda pode gerar erro no console).
  */
 async function atualizarVisibilidadeAnuncio() {
   const secao = document.getElementById("secao-anuncio");
   try {
     const deveMostrar = await window.raspadinhaAuth.buscarConfigAnuncio();
-    const clientId = secao.querySelector("ins")?.dataset.adClient || "";
+    const slotId = secao.querySelector("ins")?.dataset.adSlot || "";
 
-    if (!deveMostrar || !clientId || clientId.startsWith("SUBSTITUA_AQUI")) {
+    if (!deveMostrar || !slotId || slotId.startsWith("SUBSTITUA_AQUI")) {
       secao.classList.add("oculto");
       return;
     }
 
     secao.classList.remove("oculto");
-    if (!scriptAdsenseInjetado) {
-      scriptAdsenseInjetado = true;
-      const script = document.createElement("script");
-      script.async = true;
-      script.crossOrigin = "anonymous";
-      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`;
-      script.onload = () => empurrarAnuncioAdsense();
-      document.head.appendChild(script);
-    } else {
+    if (!anuncioJaEmpurrado) {
+      anuncioJaEmpurrado = true;
       empurrarAnuncioAdsense();
     }
   } catch (erro) {

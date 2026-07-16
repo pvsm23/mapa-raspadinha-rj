@@ -17,6 +17,16 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Desbrava">
+
+  <!-- Google AdSense: script de verificação/carregamento do site,
+       precisa estar sempre presente (não condicionado a login/toggle)
+       pra o Google conseguir verificar a conexão do site e, depois de
+       aprovado, servir os anúncios de verdade. Isso sozinho NÃO
+       mostra nenhum anúncio -- só o slot dentro de Configurações
+       (controlado pelos 3 toggles do painel de Admin) de fato exibe
+       um anúncio, ver atualizarVisibilidadeAnuncio em js/script.js. -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7585588467751471"
+     crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -602,7 +612,7 @@
         <ins
           class="adsbygoogle"
           style="display:block"
-          data-ad-client="ca-pub-SUBSTITUA_AQUI_PELO_SEU_ID_ADSENSE"
+          data-ad-client="ca-pub-7585588467751471"
           data-ad-slot="SUBSTITUA_AQUI_PELO_ID_DO_SLOT"
           data-ad-format="auto"
           data-full-width-responsive="true"
