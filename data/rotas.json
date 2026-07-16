@@ -58,5 +58,65 @@
     "descricao": "O atalho que Garcia Rodrigues Paes abriu na mata pra encurtar o caminho do ouro até o Rio.",
     "historia": "No início do século XVIII, Garcia Rodrigues Paes — filho do bandeirante Fernão Dias — abriu o Caminho Novo, rasgando a serra pra encurtar bastante o trajeto do ouro de Minas Gerais até o Rio de Janeiro, em relação ao antigo caminho por Paraty. Décadas depois, essas mesmas estradas testemunhariam a repressão à Inconfidência Mineira, usadas tanto para levar tropas e ordens da Coroa quanto para prender e transportar os envolvidos na conspiração. A rota mistura pontes de pedra, ruínas de antigos pedágios reais (os \"registros de ouro\", onde o metal era fiscalizado e taxado) e o início das grandes fazendas fluminenses que se espalhariam pelo Vale do Paraíba.",
     "municipios": ["3303708", "3306008", "3300951", "3303906", "3300225"]
+  },
+  "corte-e-transformacao-urbana": {
+    "nome": "Rota da Corte e da Transformação Urbana",
+    "descricao": "A chegada de D. João VI em 1808 transformou a colônia em sede do Império da noite pro dia.",
+    "historia": "Em 1808, fugindo do avanço de Napoleão, a família real portuguesa desembarcou no Rio de Janeiro, promovendo a única inversão colonial da história: a colônia virou sede do próprio Império. A rota explora as mudanças frenéticas para abrigar milhares de nobres recém-chegados, a criação do Jardim Botânico e o desenvolvimento das cidades vizinhas. Em Itaguaí ficava a Fazenda Imperial de Santa Cruz — antiga propriedade jesuíta confiscada, depois transformada em residência de verão da família real. Do outro lado da baía, D. João VI elevou o povoado à categoria de vila, criando a Vila Real da Praia Grande — o berço da atual Niterói.",
+    "municipios": ["3304557", "3303302", "3302007"]
+  },
+  "naturalistas-darwin": {
+    "nome": "Rota dos Naturalistas e de Charles Darwin",
+    "descricao": "Os passos de um jovem Charles Darwin pelo litoral fluminense, anos antes da teoria da evolução.",
+    "historia": "Em 1832, muito antes de formular a teoria da evolução, um jovem Charles Darwin passou meses viajando a cavalo pelo litoral leste fluminense, a bordo do Beagle. A rota refaz esse trajeto, da Praia Grande (atual Niterói) até o norte do estado, destacando as anotações biológicas e geológicas pioneiras que Darwin fez nas restingas e lagoas da região. Seu diário de viagem também guarda relatos contundentes sobre a brutalidade do sistema escravocrata nas fazendas por onde passou — experiências que ajudaram a moldar seu pensamento humanista.",
+    "municipios": ["3303302", "3302700", "3305505", "3300209", "3300704", "3302403", "3304557"]
+  },
+  "california-brasileira": {
+    "nome": "Rota da \"Califórnia Brasileira\"",
+    "descricao": "Quando a Baixada Fluminense virou uma das maiores exportadoras de laranja do mundo.",
+    "historia": "Nas primeiras décadas do século XX, a Baixada Fluminense deixou de ser só rota de passagem pra virar uma potência agrícola global: a região abrigou vastos laranjais e se tornou uma das maiores exportadoras de cítricos do planeta, o que rendeu o apelido de \"Califórnia Brasileira\". A rota conta a modernização das ferrovias construídas pra escoar a fruta, os antigos galpões de empacotamento e o colapso dramático dessa economia, atingida por pragas agrícolas e pela interrupção das exportações durante a Segunda Guerra Mundial.",
+    "municipios": ["3303500", "3301702", "3300456", "3305109"]
+  },
+  "sertao-de-cantagalo": {
+    "nome": "Rota do Sertão de Cantagalo",
+    "descricao": "Garimpo clandestino fora do controle da Coroa, na fronteira que viraria a região serrana.",
+    "historia": "No final do século XVIII, enquanto a Coroa controlava rigidamente as minas de Minas Gerais, garimpeiros clandestinos passaram a explorar ouro de aluvião nos rios do que era então um sertão fora do alcance oficial, no centro-norte fluminense. A rota narra essa exploração ilegal e a expedição militar enviada pelo vice-rei pra dissolver o garimpo clandestino e anexar de vez o \"Sertão de Cantagalo\" ao controle da Coroa — um episódio que abriria caminho pra criação de vários municípios da região serrana.",
+    "municipios": ["3301108", "3302452", "3301504", "3303401", "3300506"]
+  },
+  "tropeirismo": {
+    "nome": "Rota do Tropeirismo",
+    "descricao": "Antes do café, o Vale do Paraíba vivia do gado e das tropas de mula entre três províncias.",
+    "historia": "Antes da hegemonia do café, o Vale do Paraíba do Sul foi moldado pelo ciclo do gado e pelo tropeirismo: esta região era a fronteira e o ponto de apoio das tropas de mulas que conectavam São Paulo, Minas Gerais e o litoral fluminense. A rota destaca a logística dessas antigas estradas de poeira e pedra, as pousadas de tropeiros, os primeiros núcleos urbanos às margens do rio Paraíba do Sul e as alfândegas provinciais que fiscalizavam o fluxo de animais e mercadorias.",
+    "municipios": ["3304201", "3302254", "3300407", "3304110", "3306305"]
+  },
+  "engenharia-aguas-coloniais": {
+    "nome": "Rota da Engenharia e das Águas Coloniais",
+    "descricao": "Aquedutos, represas e estradas nas escarpas: a engenharia hidráulica do Rio colonial e imperial.",
+    "historia": "Uma rota sobre a capacidade técnica de resolver problemas do Rio colonial e imperial. Pra viabilizar a ocupação de áreas difíceis, engenheiros construíram sistemas de captação e distribuição de água que desafiavam o terreno e a gravidade — como os Arcos da Lapa, erguidos originalmente como aqueduto. A rota passa por represas no meio da Mata Atlântica e estradas imperiais pavimentadas em escarpas íngremes, obras que combinaram conhecimento técnico avançado para a época com o trabalho forçado de pessoas escravizadas.",
+    "municipios": ["3304557", "3302601", "3300100"]
+  },
+  "cassinos-art-deco": {
+    "nome": "Rota dos Cassinos e do Glamour Art Déco",
+    "descricao": "Cassinos, hotéis de luxo e a era dourada do entretenimento no Rio das décadas de 1930 e 40.",
+    "historia": "Nas décadas de 1930 e 1940, o estado do Rio viveu o auge de uma era dourada movida a turismo de luxo, espetáculos internacionais e jogos de azar. A rota revive o glamour do Palácio Quitandinha, do icônico Cassino da Urca e do sofisticado Cassino Icarahy, mostrando a influência da arquitetura art déco e o ambiente cosmopolita das noites com nomes como Carmen Miranda. Essa economia do entretenimento teve um fim abrupto quando o jogo de azar foi proibido em todo o país, em 1946.",
+    "municipios": ["3303906", "3304557", "3303302"]
+  },
+  "defesa-costeira": {
+    "nome": "Rota da Defesa Costeira",
+    "descricao": "Do óleo de baleia aos canhões Krupp: séculos de fortificações protegendo a Baía de Guanabara.",
+    "historia": "Proteger a então capital federal e suas rotas navais exigiu um dos sistemas de fortificações mais robustos das Américas. A rota acompanha a evolução dessa arquitetura militar, das bases de pedra e argamassa com óleo de baleia do século XVI até os bunkers subterrâneos armados com canhões Krupp do início do século XX, como o Forte de Copacabana. É uma história sobre estratégia e balística — e sobre os momentos em que essas mesmas defesas acabaram voltadas contra as próprias cidades, durante revoltas militares da República.",
+    "municipios": ["3304557", "3303302", "3300704"]
+  },
+  "revolta-da-chibata": {
+    "nome": "Rota da Revolta da Chibata",
+    "descricao": "Em 1910, marinheiros liderados por João Cândido tomaram os maiores encouraçados do Brasil.",
+    "historia": "Em novembro de 1910, o Brasil viveu um dos levantes mais marcantes de sua história. Liderados por João Cândido, o \"Almirante Negro\", marinheiros de baixa patente — em sua maioria homens negros que ainda sofriam castigos físicos a bordo — tomaram o controle dos mais poderosos encouraçados do país, ancorados na Baía de Guanabara, ameaçando bombardear a capital caso os castigos não fossem abolidos. A rota passa por antigas bases navais e pela Ilha das Cobras, palco da repressão sombria que se seguiu à revolta, já no início da era republicana pós-abolição.",
+    "municipios": ["3304557", "3303302"]
+  },
+  "era-maua": {
+    "nome": "Rota do Pioneirismo Industrial (Era Mauá)",
+    "descricao": "A primeira ferrovia do Brasil e a aposta arrojada do Barão de Mauá na indústria.",
+    "historia": "Uma rota pela visão arrojada de Irineu Evangelista de Sousa, o Barão e Visconde de Mauá, pioneiro da infraestrutura no Brasil Império. Em vez de fazendas tradicionais, o roteiro foca nas suas inovações: a primeira estrada de ferro do Brasil, inaugurada em 1854 ligando Guia de Pacobaíba (Magé) ao sopé da serra, além de companhias de iluminação a gás, estaleiros de navios a vapor e estradas pavimentadas, como a Estrada Normal da Estrela, rumo a Petrópolis. Mauá também tinha negócios e ligações financeiras com os barões do café do Vale do Paraíba, caso de Valença — episódios do embate entre um Brasil agrário conservador e a tentativa de industrialização do país.",
+    "municipios": ["3302502", "3303906", "3306107", "3304557"]
   }
 }
