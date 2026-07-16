@@ -86,6 +86,16 @@ svg#mapa-rj {
   fill: #2563eb;
 }
 
+/* Ainda cinza (não raspado), mas o GPS já confirmou presença aqui
+   antes (ver verificarLocalizacaoAoAbrirApp/presencaConfirmadaEm em
+   js/script.js) -- contorno tracejado ciano avisa que dá pra raspar
+   sem precisar voltar no local. */
+.municipio.presenca-pendente {
+  stroke: #22d3ee;
+  stroke-width: 3;
+  stroke-dasharray: 4 3;
+}
+
 /* Município com selo brilhante (ver aplicarEstadoNoSVG) -- dourado
    em vez de verde, pro brilho valer também no mapa, não só no popup */
 .municipio.visitado.brilhante {
@@ -1439,6 +1449,178 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   border-top-color: #0f172a;
 }
 
+#moderacao-busca {
+  display: flex;
+  gap: 6px;
+}
+
+#moderacao-busca input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 0.9rem;
+}
+
+#configuracoes-conteudo #btn-buscar-moderacao {
+  width: auto;
+  white-space: nowrap;
+}
+
+#moderacao-resultado {
+  margin-top: 10px;
+}
+
+.moderacao-item {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+}
+
+.moderacao-item-nome {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.moderacao-item-email,
+.moderacao-item-status {
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+.moderacao-item-acoes {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.moderacao-item-acoes button {
+  flex: 1;
+  margin-top: 0;
+  font-size: 0.78rem;
+  padding: 8px;
+}
+
+.moderacao-item-acoes button.status-ativa {
+  background: #3b82f6;
+}
+
+#secao-zona-risco {
+  border-top: 1px solid #334155;
+  padding-top: 4px;
+}
+
+#secao-zona-risco p {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  margin: 0 0 8px;
+}
+
+.btn-excluir-conta {
+  background: transparent !important;
+  border: 1px solid #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.btn-excluir-conta:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+#modal-confirmar-exclusao {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+#modal-confirmar-exclusao.oculto {
+  display: none;
+}
+
+#confirmar-exclusao-conteudo {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  background: #1e293b;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: left;
+}
+
+#btn-fechar-confirmar-exclusao {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#confirmar-exclusao-conteudo h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+#confirmar-exclusao-conteudo p {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+
+#input-confirmar-exclusao {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 0.9rem;
+}
+
+#exclusao-erro {
+  color: #f87171;
+  font-size: 0.8rem;
+  margin: 6px 0 0;
+}
+
+#btn-excluir-de-vez {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 14px;
+}
+
+#btn-excluir-de-vez:hover {
+  background: #dc2626;
+}
+
+#btn-excluir-de-vez:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Popup de login: aparece só quando uma ação exige estar logado */
 #tela-login {
   position: fixed;
@@ -1490,6 +1672,58 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #tela-login-conteudo p {
   color: #94a3b8;
   margin-bottom: 20px;
+}
+
+#tela-conta-bloqueada {
+  position: fixed;
+  inset: 0;
+  z-index: 310;
+  background: rgba(15, 23, 42, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+#tela-conta-bloqueada.oculto {
+  display: none !important;
+}
+
+#tela-conta-bloqueada-conteudo {
+  width: 100%;
+  max-width: 340px;
+  background: #1e293b;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+#tela-conta-bloqueada-conteudo h1 {
+  font-size: 1.6rem;
+  margin-bottom: 12px;
+}
+
+#conta-bloqueada-texto {
+  color: #f1f5f9;
+  margin-bottom: 20px;
+  white-space: pre-line;
+}
+
+#btn-fechar-conta-bloqueada {
+  width: 100%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#btn-fechar-conta-bloqueada:hover {
+  background: #dc2626;
 }
 
 #form-login {

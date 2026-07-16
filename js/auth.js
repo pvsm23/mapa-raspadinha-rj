@@ -28,6 +28,9 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
   getFirestore,
@@ -41,6 +44,7 @@ import {
   arrayRemove,
   increment,
   collection,
+  collectionGroup,
   addDoc,
   query,
   where,
@@ -77,9 +81,19 @@ const CHAVE_CONVITE_PENDENTE = "desbrava_convite_pendente";
 // URL do Google Apps Script Web App que grava os relatos de bug/
 // sugestão (botão 💬) numa planilha do Google Sheets, além do
 // Firestore -- ver enviarFeedbackParaPlanilha() e PENDENCIAS.md pra
-// o passo a passo de deploy (o app da própria conta do Paulo).
+// o passo a passo de deploy (o app da própria conta do Paulo). O
+// mesmo Web App também recebe os registros de atividade suspeita e o
+// espelho de status de conta (ver enviarParaPlanilha), cada um numa
+// aba própria da planilha (ver tools/apps-script-feedback.gs).
 const URL_PLANILHA_FEEDBACK =
   "https://script.google.com/macros/s/AKfycbyYHIrhBjxGBRmUEXxrSairtxPaQVEuazj0vKvmNWYLEBiNnpr5ftc8DuW2brcoLyBj/exec";
+
+// Uid da conta "dona" do projeto -- só ela consegue mudar o status
+// (ativo/suspenso/banido) de QUALQUER outra conta (ver painel de
+// moderação em Configurações e a regra do Firestore em README.md).
+// PASSO PENDENTE: substituir pelo uid real (Firebase Console >
+// Authentication > coluna "UID" da sua própria conta).
+const UID_DONO = "c9vv4d4bPSVgbYoJYU8XF1lHKWv1";
 
 const AVISO_NAO_CONFIGURADO =
   "Login ainda não configurado. Preencha js/firebase-config.js com as chaves do seu projeto Firebase.";
@@ -167,6 +181,16 @@ window.raspadinhaAuth = {
   excluirPost: async () => {},
   buscarFotoPost: async () => null,
   buscarPost: async () => null,
+  // ---- Moderação e exclusão de conta ----
+  UID_DONO,
+  registrarAtividadeSuspeita: async () => {},
+  definirStatusDeConta: async () => {},
+  excluirConta: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
+  reautenticarEExcluirConta: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
   // TODO(PRO): trocar por uma verificação real (ex: campo no
   // Firestore ligado ao usuário logado) quando o controle de
   // assinatura PRO existir.
@@ -269,22 +293,186 @@ if (CONFIGURADO) {
    * dá pra saber aqui se deu certo (por isso é só "melhor esforço").
    */
   function enviarFeedbackParaPlanilha(tipo, texto, usuario, extras = {}) {
+    enviarParaPlanilha({
+      tipo,
+      apelido: window.raspadinhaAuth.apelido || "",
+      email: usuario.email || "",
+      texto,
+      ...extras,
+    });
+  }
+
+  /**
+   * Mesma técnica de "melhor esforço" de enviarFeedbackParaPlanilha,
+   * generalizada: um POST fire-and-forget pro Apps Script Web App
+   * (mode "no-cors", sem ler a resposta). Reaproveitada pro registro
+   * de atividade suspeita e pro espelho de status de conta na aba
+   * "Usuários" (ver tools/apps-script-feedback.gs pra cada `tipo`
+   * aceito).
+   */
+  function enviarParaPlanilha(dados) {
     if (!URL_PLANILHA_FEEDBACK || URL_PLANILHA_FEEDBACK.startsWith("SUBSTITUA")) return;
     fetch(URL_PLANILHA_FEEDBACK, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        tipo,
-        apelido: window.raspadinhaAuth.apelido || "",
-        email: usuario.email || "",
-        texto,
-        ...extras,
-      }),
-    }).catch((erro) => console.error("Falha ao enviar feedback pra planilha:", erro));
+      body: JSON.stringify(dados),
+    }).catch((erro) => console.error("Falha ao enviar pra planilha:", erro));
   }
 
   window.raspadinhaAuth.sair = () => signOut(auth);
+
+  /**
+   * Registra uma verificação de GPS "suspeita" (deslocamento
+   * implausível entre dois municípios -- ver avaliarDeslocamento em
+   * js/script.js): grava no Firestore (fonte de verdade pra contar
+   * depois) e manda pra aba "Atividades suspeitas" da planilha
+   * (visão geral pro Paulo). NUNCA bloqueia a visita em si -- só
+   * sinaliza. Se acumular 3 registros nos últimos 3 dias, suspende a
+   * própria conta sozinha (a regra do Firestore permite só esse
+   * sentido: "ativo" -> "suspenso") e desloga na hora.
+   */
+  window.raspadinhaAuth.registrarAtividadeSuspeita = async (detalhes) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return;
+
+    await addDoc(collection(db, "usuarios", usuario.uid, "atividadeSuspeita"), {
+      ...detalhes,
+      criadoEm: serverTimestamp(),
+    });
+
+    enviarParaPlanilha({
+      tipo: "atividade-suspeita",
+      apelido: window.raspadinhaAuth.apelido || "",
+      email: usuario.email || "",
+      municipioAnterior: detalhes.municipioAnteriorId,
+      municipioNovo: detalhes.municipioNovoId,
+      distanciaKm: detalhes.distanciaKm,
+      tempoMin: detalhes.tempoMin,
+      velocidadeKmh: detalhes.velocidadeKmh,
+    });
+
+    const tresDiasAtras = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const consultaRecente = query(
+      collection(db, "usuarios", usuario.uid, "atividadeSuspeita"),
+      where("criadoEm", ">=", tresDiasAtras)
+    );
+    const contagem = await getCountFromServer(consultaRecente);
+    if (contagem.data().count < 3) return;
+
+    const snap = await getDoc(doc(db, "usuarios", usuario.uid));
+    if (snap.data()?.status && snap.data().status !== "ativo") return; // já suspenso/banido
+
+    await window.raspadinhaAuth.definirStatusDeConta(usuario.uid, "suspenso");
+    document.dispatchEvent(
+      new CustomEvent("conta-bloqueada", { detail: { motivo: "suspenso", automatico: true } })
+    );
+    await signOut(auth);
+  };
+
+  /**
+   * Muda o status (ativo/suspenso/banido) de uma conta -- a regra do
+   * Firestore só deixa isso valer de verdade quando quem está
+   * logado é o UID_DONO (qualquer conta) OU a própria conta indo de
+   * "ativo" pra "suspenso" (usado só pela auto-suspensão acima).
+   * Também atualiza o espelho na aba "Usuários" da planilha.
+   */
+  window.raspadinhaAuth.definirStatusDeConta = async (uidAlvo, novoStatus) => {
+    await updateDoc(doc(db, "usuarios", uidAlvo), { status: novoStatus });
+
+    const snap = await getDoc(doc(db, "usuarios", uidAlvo));
+    enviarParaPlanilha({
+      tipo: "usuario-status",
+      apelido: snap.data()?.apelido || "",
+      email: snap.data()?.email || "",
+      status: novoStatus,
+    });
+  };
+
+  /**
+   * Apaga TODOS os dados da conta no Firestore/Storage (progresso,
+   * amigos, posts, fotos, comentários) -- tudo isso ANTES de tentar
+   * apagar a conta de autenticação em si, porque essas operações não
+   * exigem sessão "recente" (diferente de deleteUser, que exige).
+   * Chamada só depois das 3 confirmações crescentes (ver
+   * iniciarFluxoExclusaoConta em js/script.js).
+   */
+  async function apagarDadosDaConta(uid) {
+    // Remove a entrada reversa amigos/{uid} no doc de cada amigo,
+    // usando a PRÓPRIA lista antes de apagá-la (a regra permite
+    // qualquer um dos dois lados apagar essa entrada).
+    const amigosSnap = await getDocs(collection(db, "usuarios", uid, "amigos"));
+    await Promise.all(
+      amigosSnap.docs.map((d) => deleteDoc(doc(db, "usuarios", d.id, "amigos", uid)).catch(() => {}))
+    );
+
+    // Subcoleções da própria conta. Pedidos de amizade ENVIADOS pra
+    // outras contas ficam órfãos (mesma simplificação já aceita em
+    // excluirPost, que não cascateia a exclusão dos comentários).
+    const subcolecoes = ["convites", "pedidosAmizade", "amigos", "checkins", "atividadeSuspeita"];
+    for (const nome of subcolecoes) {
+      const snap = await getDocs(collection(db, "usuarios", uid, nome));
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    }
+
+    // Posts próprios + a foto de cada um no Storage.
+    const postsSnap = await getDocs(query(collection(db, "posts"), where("autorUid", "==", uid)));
+    await Promise.all(
+      postsSnap.docs.map(async (d) => {
+        const post = d.data();
+        await deleteDoc(d.ref);
+        if (post.fotoStoragePath) {
+          await deleteObject(refStorage(storage, post.fotoStoragePath)).catch(() => {});
+        }
+      })
+    );
+
+    // Comentários próprios em posts de OUTRAS pessoas (collectionGroup
+    // -- a regra de "comentarios" já libera read pra qualquer
+    // autenticado e delete pro próprio autor do comentário).
+    const comentariosSnap = await getDocs(
+      query(collectionGroup(db, "comentarios"), where("autorUid", "==", uid))
+    );
+    await Promise.all(comentariosSnap.docs.map((d) => deleteDoc(d.ref)));
+
+    // Por fim, o documento principal da conta.
+    await deleteDoc(doc(db, "usuarios", uid));
+  }
+
+  window.raspadinhaAuth.excluirConta = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+
+    await apagarDadosDaConta(usuario.uid);
+
+    try {
+      await deleteUser(usuario);
+    } catch (erro) {
+      if (erro.code === "auth/requires-recent-login") {
+        // Os DADOS já foram apagados acima -- só falta a conta de
+        // autenticação em si, que exige confirmar a senha de novo
+        // (ver reautenticarEExcluirConta, chamada por
+        // confirmarExclusaoDeVez em js/script.js quando cai aqui).
+        throw Object.assign(new Error("Por segurança, digite sua senha atual pra confirmar."), {
+          code: "auth/requires-recent-login",
+        });
+      }
+      throw erro;
+    }
+  };
+
+  /**
+   * Só usada quando excluirConta esbarra em "auth/requires-recent-
+   * login" -- os dados já foram apagados, falta só reautenticar e
+   * terminar de excluir a conta de autenticação.
+   */
+  window.raspadinhaAuth.reautenticarEExcluirConta = async (senha) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const credencial = EmailAuthProvider.credential(usuario.email, senha);
+    await reauthenticateWithCredential(usuario, credencial);
+    await deleteUser(usuario);
+  };
 
   window.raspadinhaAuth.salvarApelido = async (apelido) => {
     const usuario = auth.currentUser;
@@ -310,12 +498,22 @@ if (CONFIGURADO) {
       });
     }
 
+    const eraPrimeiroApelido = !window.raspadinhaAuth.apelido;
+
     await setDoc(
       doc(db, "usuarios", usuario.uid),
       { apelido, email: usuario.email, atualizadoEm: serverTimestamp() },
       { merge: true }
     );
     window.raspadinhaAuth.apelido = apelido;
+
+    // Espelha na aba "Usuários" da planilha só na primeira vez (conta
+    // recém-criada escolhendo o apelido) -- editar o apelido depois,
+    // em Configurações, não precisa gerar tráfego de novo à toa.
+    if (eraPrimeiroApelido) {
+      enviarParaPlanilha({ tipo: "usuario-status", apelido, email: usuario.email || "", status: "ativo" });
+    }
+
     document.dispatchEvent(
       new CustomEvent("auth-mudou", { detail: { usuario, apelido } })
     );
@@ -715,6 +913,7 @@ if (CONFIGURADO) {
       uid: encontrado.id,
       apelido: encontrado.data().apelido || "?",
       email: encontrado.data().email || "",
+      status: encontrado.data().status || "ativo",
     };
   };
 
@@ -917,6 +1116,19 @@ if (CONFIGURADO) {
 
     try {
       const snap = await getDoc(doc(db, "usuarios", usuario.uid));
+
+      // Conta suspensa (auto-detecção de GPS falso, ou revisão manual)
+      // ou banida (revisão manual, ver painel de moderação em
+      // Configurações): barra o uso na hora -- a conta continua
+      // existindo no Firebase, mas o app se recusa a fazer qualquer
+      // coisa com ela (ver "conta-bloqueada" em js/script.js).
+      const status = snap.data()?.status;
+      if (status === "suspenso" || status === "banido") {
+        await signOut(auth);
+        document.dispatchEvent(new CustomEvent("conta-bloqueada", { detail: { motivo: status } }));
+        return;
+      }
+
       const apelido = snap.exists() ? snap.data().apelido : null;
       window.raspadinhaAuth.apelido = apelido || null;
       window.raspadinhaAuth.contaEhPro = !!snap.data()?.ehPro;

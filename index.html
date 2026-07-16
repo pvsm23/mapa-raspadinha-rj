@@ -44,6 +44,20 @@
     </div>
   </div>
 
+  <!-- Conta suspensa (auto-detecção de GPS falso ou revisão manual)
+       ou banida (revisão manual, ver painel de moderação em
+       Configurações): a conta é deslogada na hora (onAuthStateChanged
+       em js/auth.js) e essa tela avisa o motivo -- não fecha sozinha,
+       só com o botão "Entendi" (a pessoa já foi deslogada de
+       verdade; fechar essa tela não desfaz o bloqueio). -->
+  <div id="tela-conta-bloqueada" class="oculto">
+    <div id="tela-conta-bloqueada-conteudo">
+      <h1 class="logo-desbrava">DESBRAVA</h1>
+      <p id="conta-bloqueada-texto"></p>
+      <button type="button" id="btn-fechar-conta-bloqueada">Entendi</button>
+    </div>
+  </div>
+
   <!-- Primeiro login: usuario escolhe um apelido antes de continuar.
        Se fechar sem confirmar, gera um "userNNNNNN" aleatorio sozinho
        (ver fecharModalApelidoComAleatorio em js/script.js) -- todo
@@ -498,6 +512,20 @@
         </button>
       </div>
 
+      <!-- Só aparece pra conta "dona" do projeto (UID_DONO em
+           js/auth.js) -- ver abrirModerador/aplicarStatusModerado em
+           js/script.js. Busca por e-mail/apelido (mesma função de
+           Amigos) e aplica Ativo/Suspenso/Banido -- a regra do
+           Firestore garante que só esse uid consegue de verdade. -->
+      <div id="secao-moderacao" class="oculto">
+        <h3>Moderação</h3>
+        <div id="moderacao-busca">
+          <input type="text" id="input-busca-moderacao" placeholder="E-mail ou apelido">
+          <button type="button" id="btn-buscar-moderacao">Buscar</button>
+        </div>
+        <div id="moderacao-resultado"></div>
+      </div>
+
       <div id="secao-pro">
         <h3>Recursos PRO</h3>
         <!--
@@ -511,6 +539,32 @@
           ⬇️ Baixar dados offline (em breve)
         </button>
       </div>
+
+      <!-- Excluir conta: 3 confirmações crescentes (2 confirm() +
+           esse ultimo passo digitando "EXCLUIR") antes de chamar
+           excluirConta -- ver abrirFluxoExclusaoConta em js/script.js. -->
+      <div id="secao-zona-risco">
+        <h3>Zona de risco</h3>
+        <p>Excluir sua conta apaga todo o progresso, selos, amigos, posts e fotos -- essa ação não pode ser desfeita.</p>
+        <button type="button" id="btn-abrir-excluir-conta" class="btn-excluir-conta">🗑️ Excluir minha conta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Última etapa da exclusão de conta: digitar "EXCLUIR" pra
+       confirmar de vez (mais difícil de clicar sem querer do que um
+       confirm() comum). -->
+  <div id="modal-confirmar-exclusao" class="oculto">
+    <div id="confirmar-exclusao-conteudo">
+      <button id="btn-fechar-confirmar-exclusao" aria-label="Fechar">✕</button>
+      <h2>Excluir conta de vez</h2>
+      <p>Essa é a última confirmação. Digite <b>EXCLUIR</b> pra apagar sua conta e todos os dados pra sempre.</p>
+      <input type="text" id="input-confirmar-exclusao" placeholder="Digite EXCLUIR" autocomplete="off">
+      <p id="exclusao-erro" class="oculto"></p>
+      <button type="button" id="btn-excluir-de-vez" disabled>
+        <span class="btn-texto">Excluir pra sempre</span>
+        <span class="spinner oculto"></span>
+      </button>
     </div>
   </div>
 

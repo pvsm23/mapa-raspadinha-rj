@@ -60,41 +60,71 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **Layout tela cheia (estilo Google Maps)**: o mapa é o único "fundo" (`position: fixed`, ocupa a tela toda); toda a UI (barra de progresso, botões de biblioteca/configurações, popups) flutua por cima, fixa, sem se mover com o pan/zoom do mapa. Nomes dos municípios aparecem direto no mapa (`tools/geojson-to-svg.js` gera um `<text>` por município). O popup do selo virou o único lugar para ver detalhes/status/data/destinos turísticos e desmarcar (atrás do menu "⋮", com confirmação) — a antiga seção `#detalhes` foi removida. Novo botão de Configurações (⚙️) reúne o reset geral do mapa.
 - **Login com e-mail/senha (opcional pra navegar, obrigatório pra interagir) + Analytics**: `js/firebase-config.js` já tem as chaves reais do projeto Firebase `mapa-raspadinha-rj`. Mexer no mapa (arrastar/zoom) não exige login; só pedir login (`exigirLogin()` em `script.js`) quando o usuário tenta abrir um município/região, a biblioteca ou as configurações. No primeiro login, um popup pede um apelido (salvo no Firestore, coleção `usuarios/{uid}`). Sessão dura 30 dias de **inatividade** (renova a cada acesso; só desloga de verdade depois de 30 dias sem abrir o app — ver `CHAVE_ULTIMA_ATIVIDADE` em `js/auth.js`). Login é por e-mail/senha (não Google) porque o domínio do GitHub Pages provavelmente não estava nos "domínios autorizados" do Firebase, exigência específica de provedores OAuth. Números de acesso aparecem em Firebase Console → Analytics (ou [analytics.google.com](https://analytics.google.com), propriedade `G-C5SBMCKN4H`).
   - **Passo pendente**: Console → Authentication → Sign-in method → **Email/senha → Enable** (sem isso, login e cadastro dão erro `auth/operation-not-allowed` — já testei e é exatamente esse o estado atual).
-  - **Regra de segurança do Firestore** (Console → Firestore Database → Regras) — sem isso, salvar o apelido (e todo o resto: ranking, amigos, check-in, convites) falha, porque o modo produção bloqueia tudo por padrão. `read` do documento principal fica liberado pra qualquer autenticado (não só o dono) porque a checagem de "apelido já em uso", o Ranking e a busca de Amigos por e-mail/apelido precisam poder consultar os dados de outros usuários; `write` do documento principal continua só no próprio dono. As subcoleções (`convites`, `pedidosAmizade`, `amigos`, `checkins`) usam a mesma ideia — cada uma explicada com um comentário na regra:
+  - **Regra de segurança do Firestore** (Console → Firestore Database → Regras) — sem isso, salvar o apelido (e todo o resto: ranking, amigos, check-in, convites) falha, porque o modo produção bloqueia tudo por padrão. `read` do documento principal fica liberado pra qualquer autenticado (não só o dono) porque a checagem de "apelido já em uso", o Ranking e a busca de Amigos por e-mail/apelido precisam poder consultar os dados de outros usuários; `write` do documento principal continua só no próprio dono, exceto o campo `status` (moderação — ver mais abaixo, seção "Anti-GPS-falso e moderação"). As subcoleções (`convites`, `pedidosAmizade`, `amigos`, `checkins`, `atividadeSuspeita`) usam a mesma ideia — cada uma explicada com um comentário na regra. A função `ehDono()` já está com o uid real da conta dona (mesmo valor de `UID_DONO` no topo de `js/auth.js`):
     ```
     rules_version = '2';
     service cloud.firestore {
       match /databases/{database}/documents {
+        // Uid da conta "dona" do projeto -- só ela consegue mudar o
+        // campo "status" de QUALQUER outra conta (ver painel de
+        // moderação em Configurações, só visível pra essa conta). Tem
+        // que ser o MESMO valor de UID_DONO no topo de js/auth.js.
+        function ehDono() {
+          return request.auth.uid == 'c9vv4d4bPSVgbYoJYU8XF1lHKWv1';
+        }
+
         match /usuarios/{uid} {
           allow read: if request.auth != null;
 
           // Escrita normal (apelido, progresso, estado de municipios/
           // regioes/conquistas, snapshot do mapa, privacidade do
-          // perfil etc): qualquer campo, EXCETO "ehPro", que so pode
-          // passar de false/inexistente para true numa escrita que
-          // tambem inclua o campo "codigoAtivacaoPro" com o valor
-          // secreto certo -- e nunca pode voltar a false depois disso
-          // (ver PENDENCIAS.md, secao "Plano PRO").
+          // perfil etc): qualquer campo, EXCETO "ehPro" e "status" (ver
+          // abaixo cada um). "ehPro" so pode passar de false/inexistente
+          // para true numa escrita que tambem inclua o campo
+          // "codigoAtivacaoPro" com o valor secreto certo -- e nunca
+          // pode voltar a false depois disso (ver PENDENCIAS.md, secao
+          // "Plano PRO").
           allow create: if request.auth != null && request.auth.uid == uid;
-          allow update: if request.auth != null && request.auth.uid == uid
+          allow update: if request.auth != null
             && (
-              request.resource.data.ehPro == resource.data.get('ehPro', false)
-              || (
-                request.resource.data.ehPro == true
-                && resource.data.get('ehPro', false) != true
-                && request.resource.data.get('codigoAtivacaoPro', '') == 'SUBSTITUA_POR_UM_CODIGO_SECRETO_SEU'
+              (
+                request.auth.uid == uid
+                && (
+                  request.resource.data.ehPro == resource.data.get('ehPro', false)
+                  || (
+                    request.resource.data.ehPro == true
+                    && resource.data.get('ehPro', false) != true
+                    && request.resource.data.get('codigoAtivacaoPro', '') == 'SUBSTITUA_POR_UM_CODIGO_SECRETO_SEU'
+                  )
+                )
+                // "status": o dono da propria conta so pode deixar
+                // igual, ou ir de "ativo" pra "suspenso" sozinho (e o
+                // que a auto-suspensao do anti-GPS-falso faz) -- nunca
+                // reverter pra "ativo" nem se auto-banir/desbanir.
+                && (
+                  request.resource.data.get('status', 'ativo') == resource.data.get('status', 'ativo')
+                  || (
+                    request.resource.data.get('status', 'ativo') == 'suspenso'
+                    && resource.data.get('status', 'ativo') == 'ativo'
+                  )
+                )
               )
+              // A conta dona pode mudar SÓ o campo "status" de
+              // qualquer conta (ativo/suspenso/banido) -- usado pelo
+              // painel de moderação em Configurações.
+              || (ehDono() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
             );
+          allow delete: if request.auth != null && request.auth.uid == uid;
 
           // Convite de amigo -> raspadinha brilhante garantida: quem
           // acabou de criar conta grava aqui (no perfil de quem
           // convidou), com o PRÓPRIO uid como id do documento -- não
           // dá pra "farmar" 2 créditos pro mesmo convidante com a
           // mesma conta. Só o dono (convidante) lê/marca como
-          // resgatado.
+          // resgatado/apaga (ex: ao excluir a própria conta).
           match /convites/{novoUid} {
             allow create: if request.auth != null && request.auth.uid == novoUid;
-            allow read, update: if request.auth != null && request.auth.uid == uid;
+            allow read, update, delete: if request.auth != null && request.auth.uid == uid;
           }
 
           // Pedido de amizade: quem envia grava na caixa de entrada
@@ -121,6 +151,13 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
           // Check-in semanal: só o dono lê/escreve os próprios dias.
           match /checkins/{semanaId} {
             allow read, write: if request.auth != null && request.auth.uid == uid;
+          }
+
+          // Atividade suspeita do anti-GPS-falso (ver
+          // registrarAtividadeSuspeita em js/auth.js): só o próprio
+          // dono grava/lê/apaga (apaga só ao excluir a conta inteira).
+          match /atividadeSuspeita/{id} {
+            allow read, create, delete: if request.auth != null && request.auth.uid == uid;
           }
         }
 
@@ -238,7 +275,13 @@ Perfil, Ranking, Amigos, Conquistas, Check-in e Mapa do Brasil abrem a partir de
 - **Curiosidade do município, com janela "Saiba mais" pra história mais longa** (`mostrarCuriosidade`/`abrirHistoriaMunicipio` em `js/script.js`, dados em `data/curiosidades.json`): só aparece **depois** de raspar o selo daquele município. Cada município tem um `resumo` curto (1-3 frases, mostrado direto no popup do selo) e, opcionalmente, uma `historiaCompleta` (lista de parágrafos) — quando ela existe, um botão "📖 Saiba mais" abre uma janela separada (`#modal-historia-municipio`) só com esse texto mais longo (linha do tempo, curiosidades extras etc.), sem lotar o popup principal do selo. Ver [PENDENCIAS.md](PENDENCIAS.md) pra estrutura exata do JSON. Todo município sempre tem um `resumo` de verdade (nunca vazio/undefined) — os que ainda não têm texto próprio usam um texto padrão ("Em breve, uma curiosidade sobre este município.", constante `CURIOSIDADE_TEXTO_PADRAO`), reconhecido por `mostrarCuriosidade` pra manter o estilo de "ainda não preenchido" (itálico).
   - **Bug real corrigido**: `abrirModalRaspadinha` (abre a raspadinha de um município **ainda não** raspado) nunca limpava a caixa de curiosidade (`#modal-curiosidade`) — só `visualizarSeloRevelado` (município **já** raspado) a preenchia. Resultado: depois de ver a curiosidade de um município já raspado (ex: Niterói), abrir a raspadinha de **qualquer outro** município ainda não raspado deixava esse texto "grudado" na tela, por trás do selo novo — parecendo que todos os municípios tinham a mesma curiosidade do último visto. `abrirModalRaspadinha` agora limpa essa caixa também.
 - **Verificação por localização (GPS)**: raspar um município é sempre permitido, mas só conta de verdade (contador, Ranking, Conquistas, região completa) depois que a geolocalização do navegador confirmar que a pessoa está mesmo dentro dele — comparando as coordenadas contra o contorno geográfico real do IBGE (`data/rj-municipios.geojson`), com um teste de "ponto dentro do polígono" (`pontoDentroDoPoligono`, ray casting clássico). Municípios costeiros têm partes desconectadas (ilhas + continente) gravadas como vários anéis dentro do mesmo Polygon (em vez de um MultiPolygon de verdade); `pontoDentroDoPoligono` trata cada anel como um pedaço separado do território (não como buraco) — conta como dentro se cair em **qualquer** um deles. Enquanto não verificado, o município fica **vermelho** no mapa (não verde), e a biblioteca marca o item com ⚠️. No popup aparece um botão "📍 Verificar agora que estou aqui" pra tentar de novo sem raspar outra vez. Município já verificado nunca perde a confirmação. Municípios raspados antes dessa funcionalidade existir começam como "não verificados" até confirmar.
+- **Presença confirmada antes de raspar** (`presencaConfirmadaEm` em cada município de `estadoMapa`, gravado em `verificarLocalizacaoAoAbrirApp` e consumido em `abrirModalRaspadinha`/`atualizarVerificacaoMunicipio`, ambos em `js/script.js`): antes, se o GPS detectasse a pessoa num município ainda não raspado mas ela não parasse pra raspar na hora, essa detecção se perdia — raspar depois, de outro lugar, exigia estar fisicamente lá de novo. Agora a detecção por si só já grava a prova de presença (com data), mesmo sem raspar; ela fica marcada no mapa com um contorno tracejado ciano (`.municipio.presenca-pendente`) e, ao abrir o selo desse município (de onde for), o popup avisa que a presença já foi confirmada antes e libera a raspagem sem checar o GPS de novo — a prova é consumida (removida) assim que vira uma visita de verdade. Sem expiração: a presença já foi real uma vez, não tem por que "vencer".
 - **"Onde estou" (📍 localização atual no mapa)**: botão 🧭 no canto inferior direito (acima da busca) pega a localização do navegador, descobre em que município a pessoa está (`encontrarMunicipioPorCoordenada`, reaproveitando o mesmo contorno geográfico da verificação por GPS) e anima o mapa até centralizar e ampliar o local (`window.controleMapa.focarEmMunicipio`), colocando um marcador pulsante (bolinha azul, `colocarMarcadorLocalAtual`) em cima do município — só um "você está aqui", não conta como visita nem abre o selo. Se a pessoa estiver fora do estado do RJ, avisa e não deixa marcador nenhum.
+- **Anti-GPS-falso e moderação de contas**: nenhum navegador enxerga a flag de "localização simulada" do sistema operacional (`isFromMockProvider`, só visível pra apps nativos) — então em vez disso, toda verificação de GPS bem-sucedida (`verificarPresencaNoMunicipio`/`verificarLocalizacaoAoAbrirApp`, `js/script.js`) passa por `avaliarDeslocamento`: compara a distância (haversine, `distanciaEmKm`) e o tempo desde a última verificação da mesma conta; se a velocidade implícita passar de 130 km/h (`LIMITE_VELOCIDADE_KMH`), é fisicamente impossível entre dois municípios do RJ — pega apenas os casos óbvios (quem usa um app de GPS falso "de boas"), não um adversário determinado a burlar o próprio cliente. **A visita nunca é bloqueada** por isso — só é registrada (`registrarAtividadeSuspeita`, `js/auth.js`) em `usuarios/{uid}/atividadeSuspeita` (Firestore, fonte de verdade) e na aba **"Atividades suspeitas"** de uma planilha do Google Sheets (mesmo Apps Script do botão 💬 de feedback, `tools/apps-script-feedback.gs`, tipo `"atividade-suspeita"`), com distância/tempo/velocidade pra julgar se foi falso positivo. **3 registros em 3 dias** suspendem a conta sozinha (`status: "suspenso"`, a regra do Firestore só permite esse sentido — nunca reverter sozinho) e deslogam na hora.
+  - **Bloqueio de conta suspensa/banida**: ao logar, `onAuthStateChanged` (`js/auth.js`) checa o campo `status`; se `"suspenso"` ou `"banido"`, desloga na hora e mostra uma tela de bloqueio não-dispensável explicando o motivo (`#tela-conta-bloqueada`, evento `"conta-bloqueada"`). É um bloqueio **dentro do app** (a conta continua existindo no Firebase) — desativar de verdade no nível do login exigiria Cloud Functions + o plano pago Blaze, que o projeto não tem.
+  - **Painel de moderação** (Configurações → Moderação, só visível pra `UID_DONO` em `js/auth.js`): busca uma conta por e-mail/apelido (reaproveita `buscarUsuario`, já usado em Amigos) e aplica Ativo/Suspenso/Banido (`definirStatusDeConta`) — a regra do Firestore garante que só esse uid consegue mudar o `status` de qualquer OUTRA conta; a própria conta só pode se auto-suspender (nunca se reverter/banir sozinha). Há também uma aba **"Usuários"** na planilha (Apelido/E-mail/Status) só de **consulta** — é o app quem decide o status de verdade, editar a planilha não faz nada sozinho.
+  - **Limitação real, assumida**: como não existe backend, nada impede alguém de adulterar o próprio JavaScript no navegador pra pular a checagem de deslocamento ou o auto-suspenso — isso pega quem usa um app de GPS falso normalmente, não alguém decidido a burlar o cliente. Suficiente pro escopo de um app hobby.
+- **Excluir conta** (Configurações → Zona de risco → 🗑️ Excluir minha conta, `js/script.js`/`excluirConta` em `js/auth.js`): apaga de vez o progresso, selos, amigos, check-ins, atividade suspeita, posts (+ fotos no Storage) e comentários da conta, e por fim a própria conta de autenticação (`deleteUser`). Exige **3 confirmações crescentes** antes de executar: 2 `confirm()` simples e, por último, digitar a palavra **"EXCLUIR"** num campo de texto (mais difícil de confirmar sem querer). Se a sessão estiver "velha" demais pra uma operação sensível como excluir a conta, o Firebase pede senha de novo (`auth/requires-recent-login`) — os dados já foram apagados nesse ponto, só falta reautenticar (`reautenticarEExcluirConta`) pra terminar. **Limitação aceita**: pedidos de amizade **enviados** pra outras contas não são limpos (ficam órfãos, inofensivos — mesmo espírito de simplificação já usado em `excluirPost`, que não cascateia a exclusão dos comentários de outros posts).
 - **Detecção automática ao abrir/reabrir o app** (`verificarLocalizacaoAoAbrirApp` em `js/script.js`): toda vez que o app é aberto (ou volta a ficar visível depois de minimizado/trocar de app, no máximo 1x a cada 2 minutos), confere **silenciosamente** — só se a permissão de localização já tinha sido concedida antes, sem pedir de novo do nada — se a pessoa está dentro de algum município agora. Se estiver num município já raspado mas ainda não confirmado, confirma sozinho; se nunca raspou, mostra um aviso flutuante "📍 Detectamos que você está em X!" com um botão "Raspar selo" que abre o selo direto. **Limitação real da plataforma web, não só deste app**: não existe geofencing em segundo plano pra PWA — nenhum navegador executa JS com o app totalmente fechado (isso exigiria um app nativo com APIs de localização do sistema operacional). Então isso aqui **não** detecta um município por onde a pessoa passou horas atrás enquanto o app estava fechado; só confere a localização atual no exato momento em que o app é aberto/reaberto.
 - **Biblioteca de selos completa**: além dos 92 municípios, a biblioteca agora também lista os selos de **região** (mega-selos, cadeado até a região estar completa) e das **conquistas** (cadeado até a meta ser atingida) em seções próprias.
 - **Perfil público** (`abrirPerfil` em `js/script.js`, `buscarPerfilPublico`/`definirPerfilPublico` em `js/auth.js`): clicar num nome no Ranking ou na lista de Amigos abre o perfil dessa pessoa — um mini-mapa (verde/vermelho/cinza por município) e a grade de selos dela (com a arte dourada nos brilhantes). O botão 👤 na lateral esquerda abre o **próprio** perfil da mesma forma. Cada usuário pode marcar o próprio perfil como privado em Configurações → Conta (`#check-perfil-publico`); por padrão é público. **Limitação conhecida**: a privacidade é só de exibição no app — o documento em si já é legível por qualquer autenticado (necessário pro Ranking/busca de Amigos), então sem um Cloud Function não dá pra esconder o campo no nível do servidor. Suficiente pra um app hobby.

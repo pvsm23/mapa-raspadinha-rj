@@ -300,6 +300,22 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-salvar-apelido-config")
     .addEventListener("click", salvarApelidoConfig);
 
+  // ---- Moderação (só aparece pra conta dona do projeto) ----
+  document.getElementById("btn-buscar-moderacao").addEventListener("click", buscarContaParaModerar);
+  document.getElementById("input-busca-moderacao").addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") buscarContaParaModerar();
+  });
+
+  // ---- Excluir conta ----
+  document.getElementById("btn-abrir-excluir-conta").addEventListener("click", iniciarFluxoExclusaoConta);
+  document
+    .getElementById("btn-fechar-confirmar-exclusao")
+    .addEventListener("click", () => document.getElementById("modal-confirmar-exclusao").classList.add("oculto"));
+  document.getElementById("input-confirmar-exclusao").addEventListener("input", (evento) => {
+    document.getElementById("btn-excluir-de-vez").disabled = evento.target.value.trim() !== "EXCLUIR";
+  });
+  document.getElementById("btn-excluir-de-vez").addEventListener("click", confirmarExclusaoDeVez);
+
   document
     .getElementById("btn-fechar-regiao")
     .addEventListener("click", fecharPopupRegiao);
@@ -310,6 +326,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
   document.addEventListener("auth-mudou", (evento) => abrirPostDoLinkSeExistir(evento.detail?.usuario));
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
+  document.addEventListener("conta-bloqueada", (evento) => mostrarTelaContaBloqueada(evento.detail));
+  document
+    .getElementById("btn-fechar-conta-bloqueada")
+    .addEventListener("click", () => document.getElementById("tela-conta-bloqueada").classList.add("oculto"));
   document.addEventListener("boosts-brilhantes-mudou", atualizarAvisoBrilhantePendente);
 
   // ---- Meu perfil ----
@@ -715,6 +735,25 @@ function sairDaConta() {
 }
 
 /**
+ * Mostra a tela de bloqueio quando a conta é suspensa (auto-detecção
+ * de GPS falso, ou revisão manual) ou banida (revisão manual) -- ver
+ * evento "conta-bloqueada" disparado por js/auth.js. A conta já foi
+ * deslogada de verdade antes desse evento chegar; essa tela só
+ * explica o motivo.
+ */
+function mostrarTelaContaBloqueada({ motivo, automatico } = {}) {
+  const texto =
+    motivo === "banido"
+      ? "Sua conta foi banida e não pode mais ser usada no Desbrava.\n\nSe achar que foi um engano, entre em contato com quem administra o Desbrava."
+      : automatico
+      ? "Detectamos atividade suspeita (deslocamento entre municípios incompatível com uma visita real) e sua conta foi suspensa automaticamente enquanto isso é revisado.\n\nSe foi um engano, entre em contato com quem administra o Desbrava."
+      : "Sua conta foi suspensa enquanto uma atividade é revisada.\n\nSe achar que foi um engano, entre em contato com quem administra o Desbrava.";
+
+  document.getElementById("conta-bloqueada-texto").textContent = texto;
+  document.getElementById("tela-conta-bloqueada").classList.remove("oculto");
+}
+
+/**
  * Atualiza a UI (popup de login, seção "Conta" nas configurações) de
  * acordo com o login atual. `detalhe` é null (deslogado) ou
  * { usuario, apelido }. Navegar no mapa não exige login — por isso,
@@ -747,10 +786,19 @@ async function atualizarUiDeConta(detalhe) {
     window.raspadinhaAuth.buscarPerfilPublico(usuario.uid).then((perfil) => {
       document.getElementById("check-perfil-publico").checked = perfil?.perfilPublico !== false;
     });
+
+    // Painel de moderação: só existe pra a conta "dona" do projeto
+    // (UID_DONO em js/auth.js) -- a regra do Firestore é quem
+    // realmente impede qualquer outra conta de mudar status alheio,
+    // isso aqui é só a UI não aparecer à toa pra ninguém mais.
+    document
+      .getElementById("secao-moderacao")
+      .classList.toggle("oculto", usuario.uid !== window.raspadinhaAuth.UID_DONO);
   } else {
     status.textContent = "Você não está conectado.";
     document.getElementById("dados-email").textContent = "";
     document.getElementById("input-apelido-config").value = "";
+    document.getElementById("secao-moderacao").classList.add("oculto");
     voltarParaEstadoAnonimo();
     atualizarAvisoBrilhantePendente();
   }
@@ -823,6 +871,132 @@ function salvarApelidoConfig() {
       botao.querySelector(".spinner").classList.add("oculto");
       botao.querySelector(".btn-texto").classList.remove("oculto");
     });
+}
+
+/* ============================================================
+   Moderação (só visível pra conta dona do projeto, ver UID_DONO em
+   js/auth.js e o toggle de #secao-moderacao em atualizarUiDeConta).
+   ============================================================ */
+
+/**
+ * Busca por e-mail/apelido (reaproveita buscarUsuario, mesma função
+ * usada em Amigos) e mostra o resultado com 3 botões de status. A
+ * regra do Firestore é quem realmente garante que só o dono consegue
+ * aplicar de verdade -- isso aqui só monta a UI.
+ */
+async function buscarContaParaModerar() {
+  const texto = document.getElementById("input-busca-moderacao").value.trim();
+  const resultado = document.getElementById("moderacao-resultado");
+  if (!texto) return;
+
+  resultado.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    const encontrado = await window.raspadinhaAuth.buscarUsuario(texto);
+    if (!encontrado) {
+      resultado.innerHTML = "<p>Ninguém encontrado com esse e-mail/apelido.</p>";
+      return;
+    }
+
+    renderizarItemModeracao(resultado, { ...encontrado, status: encontrado.status || "ativo" });
+  } catch (erro) {
+    console.error("Falha ao buscar conta pra moderar:", erro);
+    resultado.innerHTML = "<p>Não foi possível buscar agora.</p>";
+  }
+}
+
+function renderizarItemModeracao(container, conta) {
+  container.innerHTML = `
+    <div class="moderacao-item">
+      <div class="moderacao-item-nome">${escaparHtml(conta.apelido)}</div>
+      <div class="moderacao-item-email">${escaparHtml(conta.email)}</div>
+      <div class="moderacao-item-status">Status atual: ${escaparHtml(conta.status)}</div>
+      <div class="moderacao-item-acoes">
+        <button type="button" data-status="ativo">Ativo</button>
+        <button type="button" data-status="suspenso">Suspenso</button>
+        <button type="button" data-status="banido">Banido</button>
+      </div>
+    </div>
+  `;
+  container.querySelectorAll(".moderacao-item-acoes button").forEach((botao) => {
+    botao.classList.toggle("status-ativa", botao.dataset.status === conta.status);
+    botao.addEventListener("click", async () => {
+      botao.disabled = true;
+      try {
+        await window.raspadinhaAuth.definirStatusDeConta(conta.uid, botao.dataset.status);
+        renderizarItemModeracao(container, { ...conta, status: botao.dataset.status });
+      } catch (erro) {
+        alert(erro?.message || "Não foi possível mudar o status agora.");
+        botao.disabled = false;
+      }
+    });
+  });
+}
+
+/* ============================================================
+   Excluir conta: 3 confirmações crescentes antes de apagar tudo de
+   vez (progresso, selos, amigos, posts, fotos, a própria conta).
+   ============================================================ */
+
+function iniciarFluxoExclusaoConta() {
+  if (!confirm("Tem certeza que quer excluir sua conta? Essa ação não pode ser desfeita.")) return;
+  if (
+    !confirm(
+      "Isso vai apagar TUDO: progresso no mapa, selos, amigos, posts e fotos da Comunidade Desbrava. Confirma mesmo?"
+    )
+  )
+    return;
+
+  document.getElementById("input-confirmar-exclusao").value = "";
+  document.getElementById("btn-excluir-de-vez").disabled = true;
+  document.getElementById("exclusao-erro").classList.add("oculto");
+  document.getElementById("modal-confirmar-exclusao").classList.remove("oculto");
+  document.getElementById("input-confirmar-exclusao").focus();
+}
+
+async function confirmarExclusaoDeVez() {
+  const botao = document.getElementById("btn-excluir-de-vez");
+  const erroEl = document.getElementById("exclusao-erro");
+  erroEl.classList.add("oculto");
+
+  botao.disabled = true;
+  botao.querySelector(".spinner").classList.remove("oculto");
+  botao.querySelector(".btn-texto").classList.add("oculto");
+
+  try {
+    await window.raspadinhaAuth.excluirConta();
+    document.getElementById("modal-confirmar-exclusao").classList.add("oculto");
+    fecharConfiguracoes();
+  } catch (erro) {
+    if (erro?.code === "auth/requires-recent-login") {
+      // Os dados já foram apagados (ver excluirConta em js/auth.js) --
+      // só falta confirmar a senha de novo pra terminar de excluir a
+      // conta de autenticação em si.
+      const senha = prompt("Por segurança, digite sua senha atual pra confirmar a exclusão:");
+      if (senha) {
+        try {
+          await window.raspadinhaAuth.reautenticarEExcluirConta(senha);
+          document.getElementById("modal-confirmar-exclusao").classList.add("oculto");
+          fecharConfiguracoes();
+          botao.querySelector(".spinner").classList.add("oculto");
+          botao.querySelector(".btn-texto").classList.remove("oculto");
+          return;
+        } catch (erro2) {
+          console.error("Falha ao reautenticar e excluir conta:", erro2);
+          erroEl.textContent = traduzirErroAuth(erro2);
+        }
+      } else {
+        erroEl.textContent = "Precisa confirmar a senha pra terminar de excluir a conta.";
+      }
+    } else {
+      console.error("Falha ao excluir conta:", erro);
+      erroEl.textContent = erro?.message || "Não foi possível excluir agora. Tente de novo.";
+    }
+    erroEl.classList.remove("oculto");
+    botao.disabled = false;
+  } finally {
+    botao.querySelector(".spinner").classList.add("oculto");
+    botao.querySelector(".btn-texto").classList.remove("oculto");
+  }
 }
 
 /**
@@ -1386,6 +1560,81 @@ function pontoDentroDoPoligono(lon, lat, aneis) {
   return aneis.some((anel) => pontoDentroDoAnel(lon, lat, anel));
 }
 
+const LIMITE_VELOCIDADE_KMH = 130; // cobre estrada + margem de erro do GPS
+
+/**
+ * Distância em linha reta (km) entre duas coordenadas -- haversine
+ * clássico. Não é a distância real de estrada, mas já é uma cota
+ * inferior boa o bastante pra flagrar deslocamento impossível.
+ */
+function distanciaEmKm(lat1, lon1, lat2, lon2) {
+  const raioTerraKm = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return raioTerraKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Detector simples de GPS falso: nenhum navegador enxerga a flag de
+ * "localização simulada" do sistema operacional (isFromMockProvider,
+ * só visível pra apps nativos) -- então em vez disso, comparamos a
+ * distância entre duas verificações consecutivas com o tempo que
+ * passou entre elas. Ninguém se desloca entre dois municípios do RJ
+ * a mais de LIMITE_VELOCIDADE_KMH de verdade, então isso pega os
+ * casos óbvios (quem usa um app de GPS falso "de boas"), não um
+ * adversário determinado a burlar o próprio cliente -- suficiente pro
+ * escopo de um app hobby (ver PENDENCIAS/README).
+ *
+ * NUNCA bloqueia a visita em si -- ela conta normalmente mesmo quando
+ * suspeita, só dispara o registro (evita punir falso positivo, tipo
+ * alguém de barco entre dois municípios litorâneos vizinhos). Sempre
+ * atualiza o "último ponto confirmado" no final, mesmo quando
+ * suspeito, pra próxima checagem comparar contra a leitura mais
+ * recente.
+ */
+function avaliarDeslocamento(id, lat, lon) {
+  const chave = chaveComUid("scratchMapRJ_ultima_verificacao_geo_v1");
+  const agora = Date.now();
+  let resultado = { suspeito: false, detalhes: null };
+
+  try {
+    const anterior = JSON.parse(localStorage.getItem(chave) || "null");
+    if (anterior && anterior.municipioId !== id) {
+      const distanciaKm = distanciaEmKm(anterior.lat, anterior.lon, lat, lon);
+      const tempoHoras = (agora - anterior.timestampMs) / 3600000;
+      const velocidadeKmh = tempoHoras > 0 ? distanciaKm / tempoHoras : Infinity;
+
+      if (velocidadeKmh > LIMITE_VELOCIDADE_KMH) {
+        resultado = {
+          suspeito: true,
+          detalhes: {
+            municipioAnteriorId: anterior.municipioId,
+            municipioNovoId: id,
+            distanciaKm: Math.round(distanciaKm * 10) / 10,
+            tempoMin: Math.round((agora - anterior.timestampMs) / 60000),
+            velocidadeKmh: Math.round(velocidadeKmh),
+          },
+        };
+      }
+    }
+  } catch (erro) {
+    console.error("Falha ao avaliar deslocamento entre verificações:", erro);
+  }
+
+  localStorage.setItem(chave, JSON.stringify({ lat, lon, timestampMs: agora, municipioId: id }));
+
+  if (resultado.suspeito) {
+    window.raspadinhaAuth?.registrarAtividadeSuspeita(resultado.detalhes).catch((erro) => {
+      console.error("Falha ao registrar atividade suspeita:", erro);
+    });
+  }
+
+  return resultado;
+}
+
 /**
  * Confirma (ou não) que a pessoa está fisicamente dentro do
  * município `id` agora, usando a localização do navegador contra o
@@ -1403,9 +1652,11 @@ async function verificarPresencaNoMunicipio(id) {
         motivo: "Não foi possível confirmar o limite geográfico deste município.",
       };
     }
-    return pontoDentroDoPoligono(lon, lat, poligono)
-      ? { verificado: true, motivo: "" }
-      : { verificado: false, motivo: "Parece que você não está dentro deste município agora." };
+    if (!pontoDentroDoPoligono(lon, lat, poligono)) {
+      return { verificado: false, motivo: "Parece que você não está dentro deste município agora." };
+    }
+    avaliarDeslocamento(id, lat, lon);
+    return { verificado: true, motivo: "" };
   } catch (erro) {
     return { verificado: false, motivo: erro.message };
   }
@@ -1419,6 +1670,10 @@ function atualizarVerificacaoMunicipio(id, verificado, motivo) {
   if (!estadoMapa[id]) return;
   estadoMapa[id].verificado = verificado;
   estadoMapa[id].motivoNaoVerificado = verificado ? "" : motivo || "";
+  // Consome a presença pré-confirmada assim que ela vira uma
+  // verificação de verdade (ou quando uma nova verificação ao vivo
+  // dá certo) -- não faz sentido mais um pendente depois disso.
+  if (verificado) delete estadoMapa[id].presencaConfirmadaEm;
   salvarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
@@ -1676,6 +1931,7 @@ async function verificarLocalizacaoAoAbrirApp() {
     const dados = estadoMapa[id];
     if (dados?.visitado) {
       if (!dados.verificado) {
+        avaliarDeslocamento(id, lat, lon);
         atualizarVerificacaoMunicipio(id, true, "");
         mostrarAvisoMunicipioDetectado(nome, null);
       }
@@ -1683,7 +1939,17 @@ async function verificarLocalizacaoAoAbrirApp() {
     }
 
     // Só chega aqui se o município NUNCA foi raspado -- aí sim faz
-    // sentido convidar a raspar.
+    // sentido convidar a raspar. Salva a presença confirmada AGORA
+    // (presencaConfirmadaEm), mesmo que a pessoa ignore o convite e só
+    // vá raspar depois, de outro lugar -- sem isso, quem passa por um
+    // município mas não para pra raspar na hora perdia a prova de
+    // presença, e teria que voltar ali fisicamente só pra conseguir
+    // raspar (ver uso desse campo em abrirModalRaspadinha).
+    avaliarDeslocamento(id, lat, lon);
+    estadoMapa[id] = { ...estadoMapa[id], presencaConfirmadaEm: new Date().toISOString() };
+    salvarEstado();
+    aplicarEstadoNoSVG();
+
     mostrarAvisoMunicipioDetectado(nome, () => {
       exigirLogin(() => {
         window.controleMapa?.focarEmMunicipio(id);
@@ -1783,8 +2049,9 @@ function prepararModal(nome) {
 function abrirModalRaspadinha(id, nome) {
   prepararModal(nome);
   document.getElementById("modal-status").textContent = "";
-  document.getElementById("modal-instrucao").textContent =
-    "Raspe com o dedo ou o mouse para revelar!";
+  document.getElementById("modal-instrucao").textContent = estadoMapa[id]?.presencaConfirmadaEm
+    ? "Raspe com o dedo ou o mouse para revelar! (sua presença aqui já foi confirmada antes por GPS -- não precisa estar no local agora)"
+    : "Raspe com o dedo ou o mouse para revelar!";
   document.getElementById("modal-selo-estatistica").textContent = "";
   // IMPORTANTE: limpa a curiosidade -- ela só é preenchida por
   // mostrarCuriosidade(), chamada só em visualizarSeloRevelado (selo
@@ -1820,11 +2087,23 @@ function abrirModalRaspadinha(id, nome) {
         // verdade depois que a localizacao confirmar que a pessoa
         // esta no municipio.
         marcarComoVisitado(id, nome, brilhante, false);
+
+        // Se o GPS já confirmou presença aqui antes (passou pelo
+        // município e o app detectou sozinho, mesmo sem raspar na
+        // hora -- ver verificarLocalizacaoAoAbrirApp), essa prova já
+        // é válida: não exige estar no local de novo só pra raspar
+        // depois. Sem expiração de propósito -- a presença já foi
+        // real uma vez, não tem por que "vencer".
+        const presencaJaConfirmada = !!estadoMapa[id]?.presencaConfirmadaEm;
         document.getElementById("modal-status").textContent = brilhante
           ? "✨ Raspadinha BRILHANTE! Confirmando sua localização..."
           : "📍 Confirmando sua localização...";
 
-        verificarPresencaNoMunicipio(id).then(({ verificado, motivo }) => {
+        const promessaVerificacao = presencaJaConfirmada
+          ? Promise.resolve({ verificado: true, motivo: "" })
+          : verificarPresencaNoMunicipio(id);
+
+        promessaVerificacao.then(({ verificado, motivo }) => {
           atualizarVerificacaoMunicipio(id, verificado, motivo);
           const aindaAberto =
             municipioSelecionadoId === id &&
@@ -3592,6 +3871,9 @@ function aplicarEstadoNoSVG() {
       path.classList.toggle("nao-verificado", !!dados?.visitado && !dados?.verificado);
       // Selo brilhante também vale no mapa (dourado), não só no popup
       path.classList.toggle("brilhante", !!dados?.visitado && !!dados?.brilhante);
+      // Ainda não raspado, mas o GPS já confirmou presença aqui antes
+      // -- dá pra raspar sem precisar voltar (ver abrirModalRaspadinha).
+      path.classList.toggle("presenca-pendente", !dados?.visitado && !!dados?.presencaConfirmadaEm);
     }
   });
 }
