@@ -264,6 +264,9 @@
       <p id="progresso">Visitados: <span id="contador">0</span> / <span id="total">3</span></p>
     </div>
     <div id="botoes-topo">
+      <button id="btn-social" aria-label="Comunidade Desbrava" title="Comunidade Desbrava">
+        <img src="assets/icons/desbrava-icone.png" alt="" class="icone-botao-topo">
+      </button>
       <button id="btn-feedback" aria-label="Feedback e colaboração" title="Feedback e colaboração">💬</button>
       <button id="btn-compartilhar" aria-label="Compartilhar" title="Compartilhar">🔗</button>
       <button id="btn-biblioteca" aria-label="Biblioteca de selos" title="Biblioteca de selos">📖</button>
@@ -287,6 +290,60 @@
       <button type="button" id="btn-brasil-colaborar" class="btn-colaborar-em-breve">
         💛 Ajudar o Desbrava a chegar mais rápido nos outros estados
       </button>
+    </div>
+  </div>
+
+  <!-- Comunidade Desbrava: painel lateral direito com posts (foto +
+       legenda + município/pessoas marcadas), abas Global/Amigos, e o
+       filtro por município (aberto pelo botão @ no popup, ver
+       abrirPainelSocial em js/script.js). -->
+  <div id="modal-social" class="oculto">
+    <div id="social-conteudo">
+      <button id="btn-fechar-social" aria-label="Fechar">✕</button>
+      <h2>Comunidade Desbrava</h2>
+
+      <!-- So aparece quando o painel foi aberto filtrado por um municipio -->
+      <div id="social-filtro-municipio" class="oculto">
+        <span id="social-filtro-municipio-nome"></span>
+        <button type="button" id="btn-limpar-filtro-municipio">Ver todos ✕</button>
+      </div>
+
+      <div id="social-abas">
+        <button type="button" id="btn-social-global" class="social-aba social-aba-ativa">Global</button>
+        <button type="button" id="btn-social-amigos" class="social-aba">Amigos</button>
+      </div>
+
+      <button type="button" id="btn-abrir-criar-post">📷 Postar uma foto</button>
+
+      <div id="social-form-post" class="oculto">
+        <label for="input-foto-post">Foto</label>
+        <input type="file" id="input-foto-post" accept="image/*">
+        <img id="preview-foto-post" class="oculto" alt="Prévia da foto">
+
+        <textarea id="input-legenda-post" rows="3" maxlength="500" placeholder="Escreva uma legenda..."></textarea>
+
+        <label for="select-municipio-post">Marcar município (opcional)</label>
+        <select id="select-municipio-post">
+          <option value="">Nenhum</option>
+        </select>
+
+        <label for="input-marcar-pessoa">Marcar pessoas (opcional)</label>
+        <div id="social-marcar-pessoas">
+          <input type="text" id="input-marcar-pessoa" placeholder="Apelido de quem marcar">
+          <button type="button" id="btn-marcar-pessoa">Adicionar</button>
+        </div>
+        <div id="lista-pessoas-marcadas"></div>
+        <p id="social-form-erro" class="oculto"></p>
+
+        <button type="button" id="btn-publicar-post">
+          <span class="btn-texto">Publicar</span>
+          <span class="spinner oculto"></span>
+        </button>
+        <p id="social-form-status" class="oculto"></p>
+      </div>
+
+      <div id="social-feed"></div>
+      <button type="button" id="btn-social-carregar-mais" class="oculto">Carregar mais</button>
     </div>
   </div>
 
@@ -348,6 +405,8 @@
       <div id="modal-menu" class="oculto">
         <button id="btn-reset-um">Desmarcar este município</button>
       </div>
+      <!-- Abre a rede social já filtrada pelos posts marcados nesse município -->
+      <button id="btn-posts-municipio" aria-label="Ver posts desse município" title="Ver posts desse município">@</button>
       <button id="btn-fechar-modal" aria-label="Fechar">✕</button>
       <h2 id="modal-municipio-nome"></h2>
       <p id="modal-status"></p>

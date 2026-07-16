@@ -52,7 +52,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
 - **Etapa 1**: mapa de teste com 3 municípios como formas geométricas, clique alterna estado visitado/não visitado, progresso salvo no `localStorage`.
 - **Etapa 2**: mapa oficial do IBGE com os 92 municípios do RJ, cada um com seu código IBGE real.
 - **Etapa 3** (atual): clique num município não visitado abre um modal com a raspadinha real (`scratch-card.js`); só marca como visitado depois de raspar quase tudo (limiar de 92%). A capa raspável usa a arte real em preto e branco (`assets/img/selos/<id>fundo.png`) quando existe, com fallback pro placeholder gerado na hora. A raspadinha em si é estática (sem zoom/mover) — quem ganhou zoom e mover foi o **mapa principal**: ocupa a tela toda, arrasta com o mouse/dedo pra mover e dá zoom com a roda do mouse ou pinça de 2 dedos (duplo clique/toque reseta). Clicar num município já visitado mostra o selo revelado de novo (sem raspar). Botão "Biblioteca de selos" abre uma grade com todos os 92 municípios, cinza os não visitados e coloridos os já raspados.
-- **Selos reais**: colocar `assets/img/selos/<código-ibge>.png` (colorido) e `assets/img/selos/<código-ibge>fundo.png` (preto e branco, capa raspável) — sem precisar mexer em código.
+- **Selos reais**: colocar `assets/img/selos/<código-ibge>.png` (colorido) e `assets/img/selos/<código-ibge>fundo.png` (preto e branco, capa raspável) — sem precisar mexer em código. Padrão de resolução: **1024×1024** (os dourados chegavam em 2048×2048, pesando 6-10MB cada; `tools/redimensionar-selos.ps1` corrige isso em lote, redimensionando pra 1024 sem trocar de formato — importante porque parte dos dourados tem transparência de verdade e parte não, então virar JPEG quebraria a transparência de alguns). Rodar esse script de novo sempre que uma leva nova de selos entrar maior que 1024px.
 - **Item 4**: `data/destinos.json` cobre os 92 municípios com nomes de pontos turísticos, todos já com uma `descricao` curta preenchida (460 pontos no total). Falta só o `textoCompleto` (história/curiosidade mais longa, mostrada ao clicar no destino) e o `linkMaps` de cada um — ver `PENDENCIAS.md`.
 - **Etapa 4**: publicação no GitHub Pages.
 - **PWA (instalável)**: `manifest.json` + `sw.js` deixam o site instalável como app no celular (Android/iOS, "Adicionar à tela inicial") e no PC (Chrome/Edge mostram um botão de instalar), usando o ícone real do "Desbrava" (`assets/icons/desbrava-icone.png`). O viewport trava o zoom nativo da página (`user-scalable=no`) para não conflitar com o zoom próprio do mapa. O service worker usa estratégia "network-first" (busca a versão mais nova sempre que online, só cai no cache offline) — se precisar forçar uma limpeza de cache antigo em algum dispositivo, é só desinstalar/reinstalar o app ou limpar dados do site.
@@ -151,6 +151,54 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
             && request.resource.data.texto.size() <= 2000;
           allow read, update, delete: if false;
         }
+
+        // Comunidade Desbrava (posts com foto): qualquer autenticado
+        // le (feed Global/Amigos); so o autor cria/apaga; curtir e
+        // comentar sao os UNICOS jeitos de outra pessoa "escrever" num
+        // post que nao e dela -- por isso o update fica restrito a
+        // exatamente o campo curtidoPor (curtir/descurtir) OU
+        // numComentarios (contador, atualizado junto com o comentario
+        // em si). Ver a decisao Storage x Drive logo abaixo.
+        match /posts/{postId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null
+            && request.resource.data.autorUid == request.auth.uid;
+          allow update: if request.auth != null
+            && (
+              request.auth.uid == resource.data.autorUid
+              || request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['curtidoPor'])
+              || request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['numComentarios'])
+            );
+          allow delete: if request.auth != null
+            && request.auth.uid == resource.data.autorUid;
+
+          // Comentario: qualquer autenticado le/cria; só o autor do
+          // proprio comentario (nao do post) pode apagar o dele.
+          match /comentarios/{comentarioId} {
+            allow read: if request.auth != null;
+            allow create: if request.auth != null
+              && request.resource.data.autorUid == request.auth.uid;
+            allow delete: if request.auth != null
+              && request.auth.uid == resource.data.autorUid;
+          }
+        }
+      }
+    }
+    ```
+  - **Índice composto pendente**: filtrar `posts` por `municipioId` E ordenar por `criadoEm` ao mesmo tempo (feed do botão "@" no popup do município) exige um índice composto — o Firestore recusa a query na primeira vez com um link direto pra criar o índice em 1 clique (Console → Firestore Database → Índices, ou só clicar no link que aparece no erro do console do navegador na hora que isso acontecer).
+  - **Regra do Storage** (Console → Storage → Regras) — sem isso, publicar/ver fotos falha (modo produção bloqueia tudo por padrão, igual ao Firestore):
+    ```
+    rules_version = '2';
+    service firebase.storage {
+      match /b/{bucket}/o {
+        match /posts/{uid}/{arquivo} {
+          allow read: if request.auth != null;
+          allow write: if request.auth != null && request.auth.uid == uid
+            && request.resource.size < 8 * 1024 * 1024
+            && request.resource.contentType.matches('image/.*');
+        }
       }
     }
     ```
@@ -198,6 +246,10 @@ Perfil, Ranking, Amigos, Conquistas, Check-in e Mapa do Brasil abrem a partir de
 - **Contagem de pessoas por selo**: ao ver um selo de município ou o mega-selo de uma região já revelado, aparece quantas contas têm aquele selo e a % em relação ao total de contas criadas (`contarPessoasComMunicipioVerificado`/`contarPessoasComRegiao`/`contarTotalContas` em `js/auth.js`, calculado na hora via `getCountFromServer` — não mantém contadores separados, então não tem risco de ficar dessincronizado). Não aparece na grade da biblioteca inteira (só no detalhe de cada selo), pra não disparar dezenas de consultas de uma vez.
 - **Busca de município/ponto turístico** (`abrirBuscaLocal`/`filtrarBuscaLocal` em `js/script.js`): botão 🔍 no canto inferior direito busca por nome de município ou de ponto turístico; ao escolher um resultado, o mapa anima até centralizar e ampliar o local (`window.controleMapa.focarEmMunicipio`, dentro de `inicializarPanZoomDoMapa`) e, ao terminar a animação, abre o selo — como se tivesse clicado nele direto no mapa.
 - **Modo regiões com contorno real**: com o mapa afastado, além de colorir por região, as bordas de cada município individual ficam escondidas (`svg.modo-regioes .municipio { stroke: none }`) e só o contorno de fato de cada região aparece por cima (`construirContornosDeRegiao` em `js/script.js`). Funciona sem nenhuma biblioteca de geometria: lê os vértices reais de cada `<path>` (só retas, formato `M x y L x y ... Z`) e usa um índice espacial pra achar, aresta por aresta, se algum OUTRO município da MESMA região tem vértices bem próximos dos dois extremos dela — se tiver, é fronteira interna (escondida); senão, é litoral, limite do estado ou fronteira com outra região (sempre visível). Substitui uma primeira tentativa por fecho convexo, que "estourava" pra fora da forma real em regiões alongadas/côncavas e cruzava o mapa inteiro com linhas erradas.
+- **Comunidade Desbrava (rede social de posts com foto)**: botão com a logo do Desbrava (barra de topo) abre um painel lateral **direito** (`#modal-social`, único modal do app com `justify-content: flex-end` em vez de centralizado) com abas **Global**/**Amigos** (mesmo padrão de filtro client-side já usado na aba Amigos do Ranking — ver `carregarFeedSocial` em `js/script.js`) e um formulário de postar foto + legenda, marcando opcionalmente um **município** (select, não texto livre — evita erro de digitação) e **pessoas** (busca por apelido, reaproveitando `buscarUsuario`). Cada município já tem uma @menção implícita no formato `municipio<NomeSemAcento>` (`slugMunicipio`/`construirSlugsDeMunicipios`, gerado sozinho a partir do próprio SVG do mapa) — por isso `salvarApelido` (`js/auth.js`) agora **rejeita** qualquer apelido de pessoa que comece com "municipio" (case-insensitive, `comecaComPrefixoReservado`, não retroativo), pra nunca colidir com a @menção de um município. Dá pra curtir, comentar, compartilhar (mesmo padrão de link do botão 🔗, com `?post=<id>` — abrir esse link detecta o parâmetro e abre o post direto, ver `abrirPostDoLinkSeExistir`) e excluir (só o autor). Cada popup de município tem um botão "@" que abre o mesmo painel já filtrado só pelos posts daquele lugar.
+  - **Fotos ficam no Firebase Storage, não no Google Drive**: pra exibir uma foto do Drive num `<img>`, ela precisa estar "Qualquer pessoa com o link" — tecnicamente pública pra quem tiver o link. Em vez disso, a foto é buscada via SDK do Storage (`getBytes` + `URL.createObjectURL`, **nunca** `getDownloadURL()`, que gera um link-com-token igualmente pegável por qualquer um) — só carrega pra quem estiver **logado de verdade** no Desbrava, validado pelo próprio Firebase, sem precisar de nenhum servidor/Cloud Function extra (`buscarFotoPost` em `js/auth.js`). Fica dentro do plano gratuito Spark (5GB armazenados, 1GB/dia de download).
+  - **Foto comprimida antes de subir** (`comprimirFotoPost` em `js/script.js`, chamada no início de `publicarPost`): redesenha a foto escolhida num `<canvas>` (lado maior no máximo 1600px) e reexporta como JPEG qualidade 0.72 antes do upload — perde um pouco de nitidez, mas o arquivo fica bem mais leve (testado: uma imagem de ~4.3MB virou ~14KB). Solução simples pra já ter algum controle de peso; se quiser mais qualidade/controle depois, dá pra ajustar `ladoMaximo`/`qualidade` ali mesmo. Se a compressão falhar por algum motivo, sobe a foto original em vez de travar o post.
+  - **Passos pendentes** (Console do Firebase): habilitar o Storage (Build → Storage → Get started, se ainda não estiver ativo neste projeto); colar a regra do Firestore e do Storage documentadas acima; na primeira vez que alguém abrir o filtro "@" de um município, o Firestore vai recusar a query e mostrar um link direto pra criar o índice composto necessário (`posts` filtrado por `municipioId` + ordenado por `criadoEm`) — só clicar nesse link uma vez.
 
 ## Rodando localmente
 

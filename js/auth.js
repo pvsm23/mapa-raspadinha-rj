@@ -38,17 +38,27 @@ import {
   deleteDoc,
   serverTimestamp,
   arrayUnion,
+  arrayRemove,
+  increment,
   collection,
   addDoc,
   query,
   where,
   orderBy,
   limit,
+  startAfter,
   getDocs,
   getCountFromServer,
   onSnapshot,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import {
+  getStorage,
+  ref as refStorage,
+  uploadBytes,
+  getBytes,
+  deleteObject,
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
 const CONFIGURADO = firebaseConfig.apiKey !== "SUBSTITUA_AQUI";
 
@@ -81,6 +91,20 @@ const AVISO_NAO_CONFIGURADO =
  */
 function pareceEmail(texto) {
   return /\S+@\S+\.\S+/.test(texto);
+}
+
+/**
+ * "municipio" é prefixo reservado pras menções @municipioNomeDoLugar
+ * da rede social (ver slugMunicipio em js/script.js) -- se alguém
+ * pudesse ter um apelido "municipioSaoGoncalo", a menção @municipio-
+ * SaoGoncalo ficaria ambígua entre "marcou o município" e "marcou essa
+ * pessoa". Só vale pra apelidos salvos daqui pra frente (mesmo
+ * critério já usado quando a checagem de e-mail-como-apelido foi
+ * adicionada -- não afeta retroativamente quem já tinha um apelido
+ * assim).
+ */
+function comecaComPrefixoReservado(texto) {
+  return /^municipio/i.test(texto);
 }
 
 window.raspadinhaAuth = {
@@ -132,6 +156,17 @@ window.raspadinhaAuth = {
   contarPessoasComRegiao: async () => 0,
   contarTotalContas: async () => 0,
   resetarEstadoPublico: async () => {},
+  // ---- Rede social (posts com foto) ----
+  criarPost: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
+  buscarFeedGlobal: async () => ({ posts: [], proximoCursor: null }),
+  curtirPost: async () => {},
+  comentarPost: async () => {},
+  listarComentarios: async () => [],
+  excluirPost: async () => {},
+  buscarFotoPost: async () => null,
+  buscarPost: async () => null,
   // TODO(PRO): trocar por uma verificação real (ex: campo no
   // Firestore ligado ao usuário logado) quando o controle de
   // assinatura PRO existir.
@@ -143,6 +178,7 @@ if (CONFIGURADO) {
   getAnalytics(app); // conta acessos automaticamente (ver Firebase Console > Analytics)
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const storage = getStorage(app);
   window.raspadinhaAuth.db = db;
 
   window.raspadinhaAuth.entrarComEmail = (email, senha) =>
@@ -258,6 +294,13 @@ if (CONFIGURADO) {
       throw Object.assign(new Error("O apelido não pode ter formato de e-mail."), {
         code: "apelido/formato-invalido",
       });
+    }
+
+    if (comecaComPrefixoReservado(apelido)) {
+      throw Object.assign(
+        new Error('O apelido não pode começar com "município" (esse prefixo é reservado).'),
+        { code: "apelido/prefixo-invalido" }
+      );
     }
 
     const disponivel = await apelidoEstaDisponivel(apelido, usuario.uid);
@@ -414,6 +457,167 @@ if (CONFIGURADO) {
       { mapaSnapshot: dataUrl, mapaSnapshotData: dataDoSnapshot },
       { merge: true }
     ).catch((erro) => console.error("Falha ao salvar snapshot do mapa:", erro));
+  };
+
+  /* ---------- Rede social (posts com foto) ----------
+     Primeira vez que o app lida com upload de arquivo (até aqui só
+     havia imagens estáticas do repo + o snapshot do mapa, gerado
+     localmente e salvo como data URL). Foto vai pro Firebase Storage
+     (bucket já existe, nunca tinha sido usado); tudo mais (legenda,
+     município marcado, pessoas marcadas, curtidas, comentários) fica
+     no Firestore, coleção "posts" (ver README.md pras regras). */
+
+  /**
+   * Cria um post: sobe a foto pro Storage em posts/{uid}/{postId}.jpg
+   * e grava os metadados no Firestore -- um único doc novo, usando o
+   * id gerado ANTES de gravar (doc(collection(...)).id) pra poder
+   * nomear o arquivo da foto com o mesmo id do post.
+   */
+  window.raspadinhaAuth.criarPost = async ({ arquivoFoto, texto, municipioId, pessoasMarcadas }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!arquivoFoto) throw new Error("Escolha uma foto pra postar.");
+
+    const novoDocRef = doc(collection(db, "posts"));
+    const postId = novoDocRef.id;
+    const caminhoFoto = `posts/${usuario.uid}/${postId}.jpg`;
+
+    await uploadBytes(refStorage(storage, caminhoFoto), arquivoFoto, {
+      contentType: arquivoFoto.type || "image/jpeg",
+    });
+
+    await setDoc(novoDocRef, {
+      autorUid: usuario.uid,
+      autorApelido: window.raspadinhaAuth.apelido || "?",
+      texto: (texto || "").slice(0, 500),
+      fotoStoragePath: caminhoFoto,
+      municipioId: municipioId || null,
+      // Guarda os dois: uids "crus" (array-contains, pra um dia dar
+      // pra consultar "posts que me marcaram") e a lista com apelido
+      // já junto (pra renderizar o card sem precisar buscar cada
+      // perfil separado).
+      pessoasMarcadasUids: (pessoasMarcadas || []).map((p) => p.uid),
+      pessoasMarcadas: pessoasMarcadas || [],
+      curtidoPor: [],
+      numComentarios: 0,
+      criadoEm: serverTimestamp(),
+    });
+
+    return postId;
+  };
+
+  /**
+   * Busca a foto de um post via SDK (respeitando a regra de
+   * segurança do Storage: só autenticado) e devolve um blob URL local
+   * -- em vez de getDownloadURL(), que gera um link com token que
+   * funciona pra QUALQUER UM que tenha a URL, autenticado ou não (ver
+   * README.md pra explicação completa). Assim a foto só carrega de
+   * verdade pra quem estiver logado no Desbrava.
+   */
+  window.raspadinhaAuth.buscarFotoPost = async (caminhoFoto) => {
+    if (!auth.currentUser) return null;
+    try {
+      const bytes = await getBytes(refStorage(storage, caminhoFoto));
+      const blob = new Blob([bytes], { type: "image/jpeg" });
+      return URL.createObjectURL(blob);
+    } catch (erro) {
+      console.error("Falha ao carregar foto do post:", erro);
+      return null;
+    }
+  };
+
+  /**
+   * Um post específico (usado pro deep-link ?post=, ver
+   * js/script.js), incluindo o filtro por município e um cursor de
+   * paginação simples (id do último post da página anterior).
+   */
+  window.raspadinhaAuth.buscarPost = async (postId) => {
+    const snap = await getDoc(doc(db, "posts", postId));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() };
+  };
+
+  /**
+   * Feed global, paginado (mais recentes primeiro). Se `municipioId`
+   * for passado, filtra só os posts marcados naquele município (usado
+   * pelo botão @ no popup do município) -- essa combinação (where +
+   * orderBy em campos diferentes) exige um índice composto, que o
+   * Firestore mesmo oferece criar (link direto no erro do console) na
+   * primeira vez que essa consulta rodar de verdade.
+   */
+  window.raspadinhaAuth.buscarFeedGlobal = async ({ municipioId, cursor, limiteN = 15 } = {}) => {
+    const clausulas = [orderBy("criadoEm", "desc"), limit(limiteN)];
+    if (municipioId) clausulas.unshift(where("municipioId", "==", municipioId));
+    if (cursor) clausulas.push(startAfter(cursor));
+
+    const consulta = query(collection(db, "posts"), ...clausulas);
+    const resultado = await getDocs(consulta);
+    const posts = resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return {
+      posts,
+      proximoCursor: resultado.docs.length === limiteN ? resultado.docs[resultado.docs.length - 1] : null,
+    };
+  };
+
+  /**
+   * Curtir/descurtir: só adiciona ou remove o PRÓPRIO uid do array
+   * `curtidoPor` -- a regra do Firestore só deixa mexer nesse campo
+   * (ou em numComentarios) se não for o autor do post.
+   */
+  window.raspadinhaAuth.curtirPost = (postId, curtir) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
+    return updateDoc(doc(db, "posts", postId), {
+      curtidoPor: curtir ? arrayUnion(usuario.uid) : arrayRemove(usuario.uid),
+    });
+  };
+
+  /**
+   * Comenta num post: grava na subcoleção e incrementa o contador
+   * denormalizado no post (duas escritas -- não dá pra fazer num
+   * batch atômico simples porque o id do comentário só existe depois
+   * de criado, mas como é só um contador de exibição, um comentário
+   * "perdido" no meio do caminho (falha de rede entre as duas
+   * escritas) não é grave).
+   */
+  window.raspadinhaAuth.comentarPost = async (postId, texto) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const textoLimpo = (texto || "").trim().slice(0, 500);
+    if (!textoLimpo) return;
+
+    await addDoc(collection(db, "posts", postId, "comentarios"), {
+      autorUid: usuario.uid,
+      autorApelido: window.raspadinhaAuth.apelido || "?",
+      texto: textoLimpo,
+      criadoEm: serverTimestamp(),
+    });
+    await updateDoc(doc(db, "posts", postId), { numComentarios: increment(1) });
+  };
+
+  window.raspadinhaAuth.listarComentarios = async (postId) => {
+    const consulta = query(collection(db, "posts", postId, "comentarios"), orderBy("criadoEm", "asc"));
+    const resultado = await getDocs(consulta);
+    return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  /**
+   * Exclui um post (só o autor, ver regra) -- apaga o doc do
+   * Firestore e a foto no Storage. Não apaga a subcoleção de
+   * comentários (Firestore não faz isso em cascata sozinho e uma
+   * Cloud Function pra isso é infraestrutura demais pra esse caso);
+   * fica órfã, mas inacessível (ninguém acha o id de um post que não
+   * existe mais pra listar os comentários dele).
+   */
+  window.raspadinhaAuth.excluirPost = async (postId, caminhoFoto) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await deleteDoc(doc(db, "posts", postId));
+    if (caminhoFoto) {
+      await deleteObject(refStorage(storage, caminhoFoto)).catch((erro) =>
+        console.error("Falha ao excluir foto do post:", erro)
+      );
+    }
   };
 
   /**

@@ -436,6 +436,418 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   background: rgba(250, 204, 21, 0.25);
 }
 
+/* =========================================================
+   Comunidade Desbrava (rede social): painel lateral DIREITO, ao
+   contrário de todos os outros modais (centralizados) -- por isso
+   usa justify-content:flex-end em vez do padrão dos outros popups.
+   ========================================================= */
+.icone-botao-topo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: block;
+}
+
+#modal-social {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+#modal-social.oculto {
+  display: none;
+}
+
+#social-conteudo {
+  position: relative;
+  background: #1e293b;
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+  text-align: left;
+}
+
+#social-conteudo h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+}
+
+#btn-fechar-social {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-social:hover {
+  color: #f1f5f9;
+}
+
+#social-filtro-municipio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
+#social-filtro-municipio.oculto {
+  display: none;
+}
+
+#btn-limpar-filtro-municipio {
+  background: transparent;
+  border: none;
+  color: #60a5fa;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+#social-abas {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.social-aba {
+  flex: 1;
+  background: #0f172a;
+  color: #94a3b8;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.social-aba-ativa {
+  background: #3b82f6;
+  color: white;
+}
+
+#btn-abrir-criar-post {
+  display: block;
+  width: 100%;
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+#btn-abrir-criar-post:hover {
+  background: #16a34a;
+}
+
+#social-form-post {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+#social-form-post.oculto {
+  display: none;
+}
+
+#social-form-post label {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  margin: 10px 0 4px;
+}
+
+#social-form-post input[type="file"],
+#social-form-post input[type="text"],
+#social-form-post textarea,
+#social-form-post select {
+  width: 100%;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+#preview-foto-post {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+#preview-foto-post.oculto {
+  display: none;
+}
+
+#social-marcar-pessoas {
+  display: flex;
+  gap: 6px;
+}
+
+#social-marcar-pessoas input {
+  flex: 1;
+}
+
+#social-marcar-pessoas button {
+  background: #334155;
+  color: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+#lista-pessoas-marcadas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chip-pessoa-marcada {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #334155;
+  color: #f1f5f9;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+
+.chip-pessoa-marcada button {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+#btn-publicar-post {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 14px;
+}
+
+#btn-publicar-post:hover {
+  background: #2563eb;
+}
+
+#btn-publicar-post:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#social-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.post-card {
+  background: #0f172a;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.post-card-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+}
+
+.post-card-autor {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.post-card-autor:hover {
+  text-decoration: underline;
+}
+
+.post-card-municipio {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.post-card-foto {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: #1e293b;
+  display: block;
+}
+
+.post-card-legenda {
+  padding: 10px 12px 0;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.post-card-marcados {
+  padding: 0 12px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.post-card-acoes {
+  display: flex;
+  gap: 14px;
+  padding: 10px 12px;
+}
+
+.post-card-acoes button {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.post-card-acoes button:hover {
+  color: #f1f5f9;
+}
+
+.post-card-curtir.curtido {
+  color: #ef4444;
+}
+
+.post-card-excluir {
+  margin-left: auto;
+  color: #ef4444 !important;
+}
+
+.post-card-comentarios {
+  padding: 0 12px 12px;
+  border-top: 1px solid #1e293b;
+}
+
+.post-card-comentarios.oculto {
+  display: none;
+}
+
+.comentario-linha {
+  font-size: 0.8rem;
+  padding: 6px 0;
+  color: #e2e8f0;
+}
+
+.comentario-linha b {
+  color: #f1f5f9;
+}
+
+.post-card-novo-comentario {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.post-card-novo-comentario input {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.post-card-novo-comentario button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+#btn-social-carregar-mais {
+  display: block;
+  width: 100%;
+  background: #334155;
+  color: #f1f5f9;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 12px;
+}
+
+#btn-social-carregar-mais.oculto {
+  display: none;
+}
+
+#btn-posts-municipio {
+  position: absolute;
+  top: 8px;
+  left: 44px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-posts-municipio:hover {
+  color: #f1f5f9;
+}
+
 #modal-instrucao {
   color: #94a3b8;
   font-size: 0.85rem;

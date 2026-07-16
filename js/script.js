@@ -87,6 +87,24 @@ let municipioSelecionadoId = null;
 let regiaoSelecionadaId = null;
 let mapaFoiArrastado = false;
 
+// ---- Comunidade Desbrava (rede social) ----
+// slug (ex: "municipioSaoGoncalo") -> codigo IBGE, construido a partir
+// do proprio SVG do mapa (ver construirSlugsDeMunicipios).
+let slugParaMunicipioId = {};
+let idParaNomeMunicipio = {};
+let abaSocialAtual = "global"; // "global" | "amigos"
+let filtroMunicipioSocialId = null; // preenchido pelo botao @ no popup do municipio
+let cursorFeedSocial = null; // ultimo doc da pagina atual, pra "carregar mais"
+let feedSocialAcabou = false;
+let blobUrlsFotosPosts = []; // URL.createObjectURL ativos, revogados ao fechar o painel
+let pessoasMarcadasForm = []; // { uid, apelido } marcados no formulario de criar post
+
+// Guarda o id do post (?post=id no link compartilhado, ver
+// compartilharPost) ate poder abrir o painel social nele -- só dá pra
+// abrir de verdade depois do login resolver (ver
+// abrirPostDoLinkSeExistir, chamado no primeiro "auth-mudou").
+let postIdPendenteDoLink = new URLSearchParams(window.location.search).get("post");
+
 // Guarda quem convidou (?convite=uid no link compartilhado) ate a
 // conta ser criada de verdade -- soh entao js/auth.js credita a
 // raspadinha brilhante garantida pra quem convidou (ver
@@ -138,6 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
   estadoStreak = carregarEstadoStreak();
   registrarAcessoDeHoje();
   construirMapaDeRegioes();
+  construirSlugsDeMunicipios();
   construirContornosDeRegiao();
   aplicarEstadoNoSVG();
   atualizarContador();
@@ -183,6 +202,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-fechar-modal")
     .addEventListener("click", fecharModalRaspadinha);
+
+  document
+    .getElementById("btn-posts-municipio")
+    .addEventListener("click", (evento) => {
+      evento.stopPropagation();
+      exigirLogin(() => abrirPainelSocial(municipioSelecionadoId));
+    });
 
   // fecha o modal ao clicar fora do cartão (no fundo escurecido)
   document
@@ -282,6 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
+  document.addEventListener("auth-mudou", (evento) => abrirPostDoLinkSeExistir(evento.detail?.usuario));
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
   document.addEventListener("boosts-brilhantes-mudou", atualizarAvisoBrilhantePendente);
 
@@ -392,6 +419,27 @@ document.addEventListener("DOMContentLoaded", () => {
     fecharMapaBrasil();
     abrirColaborar();
   });
+
+  // ---- Comunidade Desbrava (rede social) ----
+  document.getElementById("btn-social").addEventListener("click", () => exigirLogin(() => abrirPainelSocial()));
+  document.getElementById("btn-fechar-social").addEventListener("click", fecharPainelSocial);
+  document.getElementById("modal-social").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-social") fecharPainelSocial();
+  });
+  document.getElementById("btn-social-global").addEventListener("click", () => alternarAbaSocial("global"));
+  document.getElementById("btn-social-amigos").addEventListener("click", () => alternarAbaSocial("amigos"));
+  document.getElementById("btn-limpar-filtro-municipio").addEventListener("click", () => abrirPainelSocial());
+  document.getElementById("btn-abrir-criar-post").addEventListener("click", alternarFormularioCriarPost);
+  document.getElementById("input-foto-post").addEventListener("change", aoEscolherFotoPost);
+  document.getElementById("btn-marcar-pessoa").addEventListener("click", aoMarcarPessoaPost);
+  document.getElementById("input-marcar-pessoa").addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      aoMarcarPessoaPost();
+    }
+  });
+  document.getElementById("btn-publicar-post").addEventListener("click", publicarPost);
+  document.getElementById("btn-social-carregar-mais").addEventListener("click", () => carregarFeedSocial(false));
 
   // ---- Botões flutuantes da lateral esquerda (janela suspensa) ----
   document.getElementById("btn-toggle-lateral").addEventListener("click", alternarBotoesLaterais);
@@ -4012,4 +4060,513 @@ function alternarBotoesLaterais() {
   lista.classList.toggle("recolhido", !abrindo);
   botao.textContent = abrindo ? "◂" : "▸";
   botao.setAttribute("aria-expanded", abrindo ? "true" : "false");
+}
+
+/* ============================================================
+   Comunidade Desbrava: rede social com posts (foto + legenda),
+   @menção de município/pessoa, curtir, comentar, compartilhar e
+   feed Global/Amigos. Fotos ficam no Firebase Storage e só carregam
+   pra quem está logado (getBytes+blob, nunca getDownloadURL -- ver
+   buscarFotoPost em js/auth.js).
+   ============================================================ */
+
+/**
+ * Slug determinístico "municipioNomeSemAcento" a partir do nome real
+ * (ex: "São Gonçalo" -> "municipioSaoGoncalo", "Rio de Janeiro" ->
+ * "municipioRiodeJaneiro"), usado como @menção de município na
+ * legenda. Mesmo prefixo que comecaComPrefixoReservado (js/auth.js)
+ * proíbe em apelido de pessoa, pra não dar conflito de @.
+ */
+function slugMunicipio(nome) {
+  return (
+    "municipio" +
+    nome
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-zA-Z]/g, "")
+  );
+}
+
+/**
+ * Monta slugParaMunicipioId/idParaNomeMunicipio a partir do próprio
+ * SVG do mapa (mesmos data-municipio/data-nome já usados em
+ * construirIndiceBusca), sem precisar de nenhum arquivo novo, e
+ * preenche o <select> de marcar município do formulário de criar post.
+ */
+function construirSlugsDeMunicipios() {
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
+    const id = path.dataset.municipio;
+    const nome = path.dataset.nome;
+    if (!id || !nome) return;
+    slugParaMunicipioId[slugMunicipio(nome)] = id;
+    idParaNomeMunicipio[id] = nome;
+  });
+  preencherSelectMunicipiosPost();
+}
+
+function preencherSelectMunicipiosPost() {
+  const select = document.getElementById("select-municipio-post");
+  const opcoes = Object.entries(idParaNomeMunicipio).sort((a, b) =>
+    a[1].localeCompare(b[1], "pt-BR")
+  );
+  select.innerHTML = '<option value="">Nenhum</option>';
+  opcoes.forEach(([id, nome]) => {
+    const opcao = document.createElement("option");
+    opcao.value = id;
+    opcao.textContent = nome;
+    select.appendChild(opcao);
+  });
+}
+
+/**
+ * Abre o painel lateral, opcionalmente já filtrado por município (id
+ * do IBGE) -- usado tanto pelo botão da barra de topo (sem filtro)
+ * quanto pelo botão "@" no popup do município (com filtro).
+ */
+function abrirPainelSocial(municipioId = null) {
+  filtroMunicipioSocialId = municipioId || null;
+  const filtroEl = document.getElementById("social-filtro-municipio");
+  if (filtroMunicipioSocialId) {
+    document.getElementById("social-filtro-municipio-nome").textContent =
+      `📍 ${idParaNomeMunicipio[filtroMunicipioSocialId] || ""}`;
+    filtroEl.classList.remove("oculto");
+  } else {
+    filtroEl.classList.add("oculto");
+  }
+
+  document.getElementById("modal-social").classList.remove("oculto");
+  document.getElementById("social-form-post").classList.add("oculto");
+  carregarFeedSocial(true);
+}
+
+function fecharPainelSocial() {
+  document.getElementById("modal-social").classList.add("oculto");
+  revogarBlobsDeFotosPosts();
+}
+
+function revogarBlobsDeFotosPosts() {
+  blobUrlsFotosPosts.forEach((url) => URL.revokeObjectURL(url));
+  blobUrlsFotosPosts = [];
+}
+
+function alternarAbaSocial(aba) {
+  abaSocialAtual = aba;
+  document.getElementById("btn-social-global").classList.toggle("social-aba-ativa", aba === "global");
+  document.getElementById("btn-social-amigos").classList.toggle("social-aba-ativa", aba === "amigos");
+  carregarFeedSocial(true);
+}
+
+/**
+ * Carrega o feed (Global paginado, ou Amigos filtrado no cliente --
+ * mesmo padrão já usado na aba Amigos do Ranking, ver carregarRanking:
+ * busca listarAmigos() e cruza com os posts recentes, em vez de um
+ * "where in" no Firestore, que tem limite de 10 itens).
+ */
+async function carregarFeedSocial(resetar) {
+  const feedEl = document.getElementById("social-feed");
+  const btnMais = document.getElementById("btn-social-carregar-mais");
+
+  if (resetar) {
+    revogarBlobsDeFotosPosts();
+    cursorFeedSocial = null;
+    feedSocialAcabou = false;
+    feedEl.innerHTML = '<div class="spinner spinner-grande"></div>';
+  }
+
+  try {
+    let posts;
+    if (abaSocialAtual === "amigos") {
+      const [amigos, resultado] = await Promise.all([
+        window.raspadinhaAuth.listarAmigos(),
+        window.raspadinhaAuth.buscarFeedGlobal({ municipioId: filtroMunicipioSocialId, limiteN: 50 }),
+      ]);
+      const uidsAmigos = new Set(amigos.map((a) => a.uid));
+      const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
+      posts = resultado.posts.filter((p) => uidsAmigos.has(p.autorUid) || p.autorUid === meuUid);
+      feedSocialAcabou = true; // aba Amigos não pagina, ver comentário acima
+    } else {
+      const resultado = await window.raspadinhaAuth.buscarFeedGlobal({
+        municipioId: filtroMunicipioSocialId,
+        cursor: resetar ? null : cursorFeedSocial,
+      });
+      posts = resultado.posts;
+      cursorFeedSocial = resultado.proximoCursor;
+      feedSocialAcabou = !resultado.proximoCursor;
+    }
+
+    if (resetar) {
+      feedEl.innerHTML = posts.length ? "" : "<p>Nenhum post por aqui ainda. Seja o primeiro a postar!</p>";
+    }
+    posts.forEach((post) => feedEl.appendChild(renderizarCardPost(post)));
+    btnMais.classList.toggle("oculto", feedSocialAcabou);
+  } catch (erro) {
+    console.error("Falha ao carregar feed social:", erro);
+    if (resetar) feedEl.innerHTML = "<p>Não foi possível carregar os posts agora.</p>";
+  }
+}
+
+/**
+ * Monta o card de um post: foto carregada de forma assíncrona (via
+ * getBytes+blob, ver buscarFotoPost em js/auth.js -- só funciona
+ * logado), chip de município clicável, curtir/comentar/compartilhar
+ * e excluir (só pro autor).
+ */
+function renderizarCardPost(post) {
+  const card = document.createElement("div");
+  card.className = "post-card";
+  card.dataset.postId = post.id;
+
+  const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
+  const curtidoPor = post.curtidoPor || [];
+  const curtido = curtidoPor.includes(meuUid);
+  const souAutor = post.autorUid === meuUid;
+  const nomeMunicipio = post.municipioId ? idParaNomeMunicipio[post.municipioId] : null;
+  const marcados = post.pessoasMarcadas || [];
+
+  card.innerHTML = `
+    <div class="post-card-cabecalho">
+      <span class="post-card-autor">${escaparHtml(post.autorApelido)}</span>
+      ${nomeMunicipio ? `<button type="button" class="post-card-municipio">📍 ${escaparHtml(nomeMunicipio)}</button>` : ""}
+    </div>
+    <img class="post-card-foto" alt="Foto do post">
+    <p class="post-card-legenda">${escaparHtml(post.texto || "")}</p>
+    ${marcados.length ? `<p class="post-card-marcados">Com ${marcados.map((p) => "@" + escaparHtml(p.apelido)).join(", ")}</p>` : ""}
+    <div class="post-card-acoes">
+      <button type="button" class="post-card-curtir${curtido ? " curtido" : ""}">❤️ <span class="post-card-curtidas">${curtidoPor.length}</span></button>
+      <button type="button" class="post-card-comentar">💬 <span class="post-card-num-comentarios">${post.numComentarios || 0}</span></button>
+      <button type="button" class="post-card-compartilhar">🔗</button>
+      ${souAutor ? '<button type="button" class="post-card-excluir">Excluir</button>' : ""}
+    </div>
+    <div class="post-card-comentarios oculto">
+      <div class="post-card-lista-comentarios"></div>
+      <div class="post-card-novo-comentario">
+        <input type="text" placeholder="Escreva um comentário..." maxlength="500">
+        <button type="button">Enviar</button>
+      </div>
+    </div>
+  `;
+
+  const imgEl = card.querySelector(".post-card-foto");
+  window.raspadinhaAuth.buscarFotoPost(post.fotoStoragePath).then((url) => {
+    if (!url) return;
+    imgEl.src = url;
+    blobUrlsFotosPosts.push(url);
+  });
+
+  card.querySelector(".post-card-municipio")?.addEventListener("click", () => abrirPainelSocial(post.municipioId));
+  card.querySelector(".post-card-autor").addEventListener("click", () => {
+    fecharPainelSocial();
+    abrirPerfil(post.autorUid);
+  });
+  card.querySelector(".post-card-curtir").addEventListener("click", () => aoCurtirPost(post, card));
+  card.querySelector(".post-card-comentar").addEventListener("click", () => aoAbrirComentarios(post, card));
+  card.querySelector(".post-card-compartilhar").addEventListener("click", () => compartilharPost(post.id));
+  card.querySelector(".post-card-excluir")?.addEventListener("click", () => aoExcluirPost(post, card));
+
+  const inputComentario = card.querySelector(".post-card-novo-comentario input");
+  card.querySelector(".post-card-novo-comentario button").addEventListener("click", () =>
+    enviarComentario(post, card, inputComentario)
+  );
+  inputComentario.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") enviarComentario(post, card, inputComentario);
+  });
+
+  return card;
+}
+
+/**
+ * Curtir/descurtir com atualização otimista da UI (não espera o
+ * Firestore responder pra já mostrar o resultado), desfazendo se a
+ * chamada falhar.
+ */
+async function aoCurtirPost(post, card) {
+  const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
+  const botao = card.querySelector(".post-card-curtir");
+  const contador = card.querySelector(".post-card-curtidas");
+  const jaCurtido = botao.classList.contains("curtido");
+  const novoEstado = !jaCurtido;
+
+  botao.classList.toggle("curtido", novoEstado);
+  contador.textContent = Number(contador.textContent) + (novoEstado ? 1 : -1);
+
+  try {
+    await window.raspadinhaAuth.curtirPost(post.id, novoEstado);
+  } catch (erro) {
+    console.error("Falha ao curtir post:", erro);
+    botao.classList.toggle("curtido", jaCurtido);
+    contador.textContent = Number(contador.textContent) + (novoEstado ? -1 : 1);
+  }
+}
+
+async function aoAbrirComentarios(post, card) {
+  const painel = card.querySelector(".post-card-comentarios");
+  const abrindo = painel.classList.contains("oculto");
+  painel.classList.toggle("oculto", !abrindo);
+  if (!abrindo) return;
+
+  const lista = card.querySelector(".post-card-lista-comentarios");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    const comentarios = await window.raspadinhaAuth.listarComentarios(post.id);
+    lista.innerHTML = comentarios.length ? "" : "<p>Nenhum comentário ainda.</p>";
+    comentarios.forEach((c) => {
+      const linha = document.createElement("p");
+      linha.className = "comentario-linha";
+      linha.innerHTML = `<b>${escaparHtml(c.autorApelido)}:</b> ${escaparHtml(c.texto)}`;
+      lista.appendChild(linha);
+    });
+  } catch (erro) {
+    console.error("Falha ao carregar comentários:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar os comentários.</p>";
+  }
+}
+
+async function enviarComentario(post, card, input) {
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  input.disabled = true;
+  try {
+    await window.raspadinhaAuth.comentarPost(post.id, texto);
+    input.value = "";
+
+    post.numComentarios = (post.numComentarios || 0) + 1;
+    card.querySelector(".post-card-num-comentarios").textContent = post.numComentarios;
+
+    const lista = card.querySelector(".post-card-lista-comentarios");
+    if (lista.children.length === 1 && lista.children[0].tagName === "P" && !lista.children[0].className) {
+      lista.innerHTML = "";
+    }
+    const linha = document.createElement("p");
+    linha.className = "comentario-linha";
+    linha.innerHTML = `<b>${escaparHtml(window.raspadinhaAuth.apelido)}:</b> ${escaparHtml(texto)}`;
+    lista.appendChild(linha);
+  } catch (erro) {
+    alert(erro?.message || "Não foi possível enviar o comentário.");
+  } finally {
+    input.disabled = false;
+  }
+}
+
+async function aoExcluirPost(post, card) {
+  if (!confirm("Excluir esse post? Essa ação não pode ser desfeita.")) return;
+  try {
+    await window.raspadinhaAuth.excluirPost(post.id, post.fotoStoragePath);
+    card.remove();
+  } catch (erro) {
+    alert(erro?.message || "Não foi possível excluir o post.");
+  }
+}
+
+/**
+ * Compartilha o link direto de um post (mesmo padrão de
+ * compartilharApp, só que com "?post=" em vez de "?convite="). Abrir
+ * esse link detecta o parâmetro e abre o painel social direto nesse
+ * post (ver abrirPostDoLinkSeExistir).
+ */
+function compartilharPost(postId) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("post", postId);
+
+  const dados = {
+    title: "Desbrava",
+    text: "Olha esse post no Desbrava!",
+    url: url.toString(),
+  };
+
+  if (navigator.share) {
+    navigator.share(dados).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(dados.url)
+      .then(() => alert("Link copiado! Cole onde quiser compartilhar."))
+      .catch(() => prompt("Copie o link para compartilhar:", dados.url));
+  } else {
+    prompt("Copie o link para compartilhar:", dados.url);
+  }
+}
+
+/**
+ * Se o app foi aberto com "?post=id" (link de compartilhar) e a
+ * pessoa já está logada, abre o painel social mostrando só esse post
+ * -- consome o pendente na hora pra não reabrir de novo em trocas de
+ * conta subsequentes na mesma sessão.
+ */
+function abrirPostDoLinkSeExistir(usuario) {
+  if (!postIdPendenteDoLink || !usuario) return;
+  const postId = postIdPendenteDoLink;
+  postIdPendenteDoLink = null;
+  abrirPainelSocialComPost(postId);
+}
+
+async function abrirPainelSocialComPost(postId) {
+  filtroMunicipioSocialId = null;
+  document.getElementById("social-filtro-municipio").classList.add("oculto");
+  document.getElementById("social-form-post").classList.add("oculto");
+  document.getElementById("btn-social-carregar-mais").classList.add("oculto");
+  document.getElementById("modal-social").classList.remove("oculto");
+
+  const feedEl = document.getElementById("social-feed");
+  feedEl.innerHTML = '<div class="spinner spinner-grande"></div>';
+
+  try {
+    const post = await window.raspadinhaAuth.buscarPost(postId);
+    feedEl.innerHTML = "";
+    if (!post) {
+      feedEl.innerHTML = "<p>Esse post não existe mais.</p>";
+      return;
+    }
+    feedEl.appendChild(renderizarCardPost(post));
+  } catch (erro) {
+    console.error("Falha ao abrir post compartilhado:", erro);
+    feedEl.innerHTML = "<p>Não foi possível carregar esse post.</p>";
+  }
+}
+
+/* ---- Criar post ---- */
+
+function alternarFormularioCriarPost() {
+  document.getElementById("social-form-post").classList.toggle("oculto");
+}
+
+function aoEscolherFotoPost(evento) {
+  const arquivo = evento.target.files[0];
+  const preview = document.getElementById("preview-foto-post");
+  if (!arquivo) {
+    preview.classList.add("oculto");
+    return;
+  }
+  preview.src = URL.createObjectURL(arquivo);
+  preview.classList.remove("oculto");
+}
+
+async function aoMarcarPessoaPost() {
+  const input = document.getElementById("input-marcar-pessoa");
+  const apelido = input.value.trim();
+  if (!apelido) return;
+
+  if (pessoasMarcadasForm.some((p) => p.apelido.toLowerCase() === apelido.toLowerCase())) {
+    input.value = "";
+    return;
+  }
+
+  try {
+    const encontrado = await window.raspadinhaAuth.buscarUsuario(apelido);
+    if (!encontrado) {
+      alert("Ninguém encontrado com esse apelido.");
+      return;
+    }
+    pessoasMarcadasForm.push({ uid: encontrado.uid, apelido: encontrado.apelido });
+    input.value = "";
+    renderizarPessoasMarcadasForm();
+  } catch (erro) {
+    alert(erro?.message || "Não foi possível marcar essa pessoa.");
+  }
+}
+
+function renderizarPessoasMarcadasForm() {
+  const container = document.getElementById("lista-pessoas-marcadas");
+  container.innerHTML = "";
+  pessoasMarcadasForm.forEach((pessoa) => {
+    const chip = document.createElement("span");
+    chip.className = "chip-pessoa-marcada";
+    chip.innerHTML = `@${escaparHtml(pessoa.apelido)} <button type="button" aria-label="Remover">✕</button>`;
+    chip.querySelector("button").addEventListener("click", () => {
+      pessoasMarcadasForm = pessoasMarcadasForm.filter((p) => p.uid !== pessoa.uid);
+      renderizarPessoasMarcadasForm();
+    });
+    container.appendChild(chip);
+  });
+}
+
+/**
+ * Reduz o peso da foto antes de subir pro Storage: redesenha num
+ * <canvas> menor (lado maior no máximo 1600px) e reexporta como JPEG
+ * com qualidade 0.72 -- perde um pouco de nitidez, mas cai bastante
+ * de tamanho (importante porque o plano gratuito do Storage tem cota
+ * de download diária). Funciona assim por enquanto (solução simples);
+ * se o arquivo não puder ser lido/comprimido por algum motivo, sobe o
+ * original sem quebrar o post.
+ */
+function comprimirFotoPost(arquivo, { ladoMaximo = 1600, qualidade = 0.72 } = {}) {
+  return new Promise((resolve) => {
+    const imagem = new Image();
+    const urlTemp = URL.createObjectURL(arquivo);
+
+    imagem.onload = () => {
+      URL.revokeObjectURL(urlTemp);
+
+      let { width, height } = imagem;
+      if (width > ladoMaximo || height > ladoMaximo) {
+        const escala = ladoMaximo / Math.max(width, height);
+        width = Math.round(width * escala);
+        height = Math.round(height * escala);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(imagem, 0, 0, width, height);
+      canvas.toBlob((blob) => resolve(blob || arquivo), "image/jpeg", qualidade);
+    };
+    imagem.onerror = () => {
+      URL.revokeObjectURL(urlTemp);
+      resolve(arquivo);
+    };
+    imagem.src = urlTemp;
+  });
+}
+
+async function publicarPost() {
+  const arquivo = document.getElementById("input-foto-post").files[0];
+  const texto = document.getElementById("input-legenda-post").value.trim();
+  const municipioId = document.getElementById("select-municipio-post").value || null;
+  const erroEl = document.getElementById("social-form-erro");
+  const statusEl = document.getElementById("social-form-status");
+  const botao = document.getElementById("btn-publicar-post");
+
+  erroEl.classList.add("oculto");
+  if (!arquivo) {
+    erroEl.textContent = "Escolha uma foto pra postar.";
+    erroEl.classList.remove("oculto");
+    return;
+  }
+
+  botao.disabled = true;
+  botao.querySelector(".spinner").classList.remove("oculto");
+  statusEl.textContent = "Preparando a foto...";
+  statusEl.classList.remove("oculto");
+
+  try {
+    const fotoComprimida = await comprimirFotoPost(arquivo);
+    statusEl.textContent = "Publicando...";
+    await window.raspadinhaAuth.criarPost({
+      arquivoFoto: fotoComprimida,
+      texto,
+      municipioId,
+      pessoasMarcadas: pessoasMarcadasForm,
+    });
+    resetarFormularioCriarPost();
+    document.getElementById("social-form-post").classList.add("oculto");
+    carregarFeedSocial(true);
+  } catch (erro) {
+    console.error("Falha ao publicar post:", erro);
+    erroEl.textContent = erro?.message || "Não foi possível publicar agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.querySelector(".spinner").classList.add("oculto");
+    statusEl.classList.add("oculto");
+  }
+}
+
+function resetarFormularioCriarPost() {
+  document.getElementById("input-foto-post").value = "";
+  document.getElementById("input-legenda-post").value = "";
+  document.getElementById("select-municipio-post").value = "";
+  document.getElementById("preview-foto-post").classList.add("oculto");
+  document.getElementById("input-marcar-pessoa").value = "";
+  pessoasMarcadasForm = [];
+  renderizarPessoasMarcadasForm();
 }
