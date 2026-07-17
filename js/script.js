@@ -5940,18 +5940,43 @@ function comprimirFotoPost(arquivo, { ladoMaximo = 1600, qualidade = 0.72 } = {}
     imagem.onload = () => {
       URL.revokeObjectURL(urlTemp);
 
-      let { width, height } = imagem;
-      if (width > ladoMaximo || height > ladoMaximo) {
-        const escala = ladoMaximo / Math.max(width, height);
-        width = Math.round(width * escala);
-        height = Math.round(height * escala);
-      }
+      try {
+        let { width, height } = imagem;
+        if (width > ladoMaximo || height > ladoMaximo) {
+          const escala = ladoMaximo / Math.max(width, height);
+          width = Math.round(width * escala);
+          height = Math.round(height * escala);
+        }
 
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext("2d").drawImage(imagem, 0, 0, width, height);
-      canvas.toBlob((blob) => resolve(blob || arquivo), "image/jpeg", qualidade);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(imagem, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if (blob) return resolve(blob);
+          // Alguns navegadores de celular (em especial webviews de
+          // apps tipo Instagram/WhatsApp) retornam null no toBlob. Em
+          // vez de cair pro arquivo ORIGINAL (que pode ter vários MB e
+          // estourar a memória na hora de ler pra base64 -- era o
+          // "Não foi possível ler a foto" que aparecia), converte o
+          // canvas já reduzido via toDataURL (síncrono, bem mais
+          // suportado) de volta pra um blob pequeno.
+          try {
+            const dataUrl = canvas.toDataURL("image/jpeg", qualidade);
+            fetch(dataUrl)
+              .then((r) => r.blob())
+              .then((b) => resolve(b || arquivo))
+              .catch(() => resolve(arquivo));
+          } catch (e) {
+            resolve(arquivo);
+          }
+        }, "image/jpeg", qualidade);
+      } catch (e) {
+        // Qualquer falha no canvas (memória, drawImage etc): não trava
+        // o fluxo -- sobe o arquivo original como último recurso.
+        resolve(arquivo);
+      }
     };
     imagem.onerror = () => {
       URL.revokeObjectURL(urlTemp);
