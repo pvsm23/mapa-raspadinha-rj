@@ -33,7 +33,10 @@ button {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #262b33;
+  /* Mais escuro que os botões flutuantes (#262b33) de propósito: no
+     neumorfismo os botões têm a cor do fundo, então precisam de um
+     fundo de mapa mais escuro pra "saltarem" com o relevo. */
+  background: #191c22;
   touch-action: none;
   cursor: grab;
   z-index: 1;
