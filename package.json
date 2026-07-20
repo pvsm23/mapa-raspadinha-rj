@@ -1,0 +1,15 @@
+{
+  "name": "desbrava",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desbrava — mapa dos 92 municípios do Rio de Janeiro (PWA + app Android via Capacitor)",
+  "scripts": {
+    "guia": "node tools/gerar-guia.js",
+    "www": "node tools/montar-www.js",
+    "sync": "npm run www && npx cap sync android",
+    "abrir-android": "npx cap open android"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.3"
+  }
+}

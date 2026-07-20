@@ -4,8 +4,8 @@
    Uso:
      initScratchCard({
        containerId: "scratch-modal-body",
-       imageUrl: "assets/img/selos/3303302.png",
-       imageUrlCapa: "assets/img/selos/3303302fundo.png", // opcional
+       imageUrl: "assets/img/selos/3303302.webp",
+       imageUrlCapa: "assets/img/selos/3303302fundo.webp", // opcional
        onPrimeiroToque: () => travarSorteNaPrimeiraRaspada("3303302", brilhante), // opcional
        onComplete: () => marcarComoVisitado("3303302")
      });

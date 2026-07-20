@@ -2384,8 +2384,8 @@ function prepararModal(nome) {
  * Abre o popup com a raspadinha (canvas) para o município escolhido.
  * Ao raspar o suficiente, marca como visitado automaticamente.
  *
- * Usa o selo real em assets/img/selos/<codigo-ibge>.png (colorido) e
- * assets/img/selos/<codigo-ibge>fundo.png (capa preto-e-branco que
+ * Usa o selo real em assets/img/selos/<codigo-ibge>.webp (colorido) e
+ * assets/img/selos/<codigo-ibge>fundo.webp (capa preto-e-branco que
  * sera raspada) quando existirem; caso contrário, cai no placeholder
  * gerado na hora. Assim, basta colocar os PNGs na pasta (sem mexer
  * em código) para os selos reais passarem a valer.
@@ -2411,7 +2411,7 @@ function abrirModalRaspadinha(id, nome) {
   // carregar a arte dourada certa desde o início da raspagem, em vez
   // de trocar a imagem depois de já ter raspado a normal.
   const brilhante = decidirBrilhante(id);
-  const caminhoCapa = `assets/img/selos/${id}fundo.png`;
+  const caminhoCapa = `assets/img/selos/${id}fundo.webp`;
   mostrarSpinnerGrande(document.getElementById("scratch-modal-body"), true);
 
   const iniciar = (imageUrl, imageUrlCapa) => {
@@ -2499,9 +2499,9 @@ function travarSorteNaPrimeiraRaspada(id, brilhante) {
 
 /**
  * Resolve qual imagem colorida usar pra um selo (município, região ou
- * conquista): a versão "dourada" (`<prefixo>dourado.png`) quando
+ * conquista): a versão "dourada" (`<prefixo>dourado.webp`) quando
  * `brilhante` for true e ela existir, senão a normal
- * (`<prefixo>.png`), senão o placeholder gerado na hora. `arteReal`
+ * (`<prefixo>.webp`), senão o placeholder gerado na hora. `arteReal`
  * diz se achou algum PNG de verdade (pra saber se vale a pena tentar
  * carregar uma capa raspável combinando com a arte).
  */
@@ -2513,10 +2513,10 @@ async function resolverImagemColorida(
   tamanhoPlaceholder
 ) {
   if (brilhante) {
-    const caminhoDourado = `${prefixo}dourado.png`;
+    const caminhoDourado = `${prefixo}dourado.webp`;
     if (await carregarImagem(caminhoDourado)) return { url: caminhoDourado, arteReal: true };
   }
-  const caminhoNormal = `${prefixo}.png`;
+  const caminhoNormal = `${prefixo}.webp`;
   if (await carregarImagem(caminhoNormal)) return { url: caminhoNormal, arteReal: true };
   return {
     url: gerarSeloPlaceholder(idParaPlaceholder, nomeParaPlaceholder, tamanhoPlaceholder),
@@ -2863,8 +2863,8 @@ function carregarImagem(src) {
 function preCarregarSelos() {
   document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
     const id = path.dataset.municipio;
-    carregarImagem(`assets/img/selos/${id}.png`);
-    carregarImagem(`assets/img/selos/${id}fundo.png`);
+    carregarImagem(`assets/img/selos/${id}.webp`);
+    carregarImagem(`assets/img/selos/${id}fundo.webp`);
   });
 }
 
@@ -3109,7 +3109,7 @@ function renderizarGradeConquistasNaBiblioteca() {
     img.alt = titulo;
     img.className = revelado ? "selo-colorido" : "selo-cinza";
 
-    const caminhoColorido = `assets/img/conquistas/${chave}.png`;
+    const caminhoColorido = `assets/img/conquistas/${chave}.webp`;
     if (revelado) {
       carregarImagem(caminhoColorido).then((existeColorido) => {
         img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo);
@@ -3360,7 +3360,7 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
 
   if (estadoConquistas[chave]?.revelado) {
     instrucao.textContent = "";
-    const caminhoColorido = `assets/img/conquistas/${chave}.png`;
+    const caminhoColorido = `assets/img/conquistas/${chave}.webp`;
     carregarImagem(caminhoColorido).then((existeColorido) => {
       corpo.innerHTML = "";
       const wrapper = document.createElement("div");
@@ -3377,8 +3377,8 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
 
   instrucao.textContent = "Conquista desbloqueada! Raspe o selo.";
   mostrarSpinnerGrande(corpo, true);
-  const caminhoColorido = `assets/img/conquistas/${chave}.png`;
-  const caminhoCapa = `assets/img/conquistas/${chave}fundo.png`;
+  const caminhoColorido = `assets/img/conquistas/${chave}.webp`;
+  const caminhoCapa = `assets/img/conquistas/${chave}fundo.webp`;
   carregarImagem(caminhoColorido).then((existeColorido) => {
     const imageUrl = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 200);
     const usarCapa = existeColorido
@@ -4224,7 +4224,7 @@ function atualizarAvisoBrilhantePendente() {
  * Abre o popup de uma região: mostra quantos dos seus municípios já
  * foram visitados e, só quando TODOS estiverem completos, libera o
  * mega-selo (raspadinha bem maior) daquela região. Sem os selos de
- * região reais ainda (assets/img/regioes/<id>.png / <id>fundo.png),
+ * região reais ainda (assets/img/regioes/<id>.webp / <id>fundo.webp),
  * cai no mesmo placeholder gerado na hora que os municípios usam.
  */
 function abrirPopupRegiao(regiaoId) {
@@ -4272,7 +4272,7 @@ function abrirPopupRegiao(regiaoId) {
     // decidirBrilhante, mas com sorteio próprio (ver
     // decidirBrilhanteRegiao).
     const brilhante = decidirBrilhanteRegiao(regiaoId);
-    const caminhoCapa = `assets/img/regioes/${regiaoId}fundo.png`;
+    const caminhoCapa = `assets/img/regioes/${regiaoId}fundo.webp`;
     resolverImagemColorida(`assets/img/regioes/${regiaoId}`, brilhante, regiaoId, nomeRegiaoSelo, 400).then(
       (resultado) => {
         const usarCapa = resultado.arteReal
@@ -4487,7 +4487,7 @@ function abrirPopupRota(rotaId) {
     // Selo de rota brilhante: mesma chance do mega-selo de região
     // (10%), decidida na abertura (ver decidirBrilhanteRota).
     const brilhante = decidirBrilhanteRota(rotaId);
-    const caminhoCapa = `assets/img/rotas/${rotaId}fundo.png`;
+    const caminhoCapa = `assets/img/rotas/${rotaId}fundo.webp`;
     resolverImagemColorida(`assets/img/rotas/${rotaId}`, brilhante, rotaId, info.nome, 400).then(
       (resultado) => {
         const usarCapa = resultado.arteReal
