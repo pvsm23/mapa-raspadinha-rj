@@ -1,0 +1,30 @@
+# Configuração do deploy no Netlify (desbravaapp.netlify.app).
+#
+# O site mora na RAIZ do repositório, mas a raiz também tem coisas que
+# não são web (android/, tools/, package.json). Por isso o deploy roda
+# o mesmo script que monta o APK -- tools/montar-www.js, que copia só
+# os arquivos web pra www/ -- e publica essa pasta. Assim o site e o
+# app Android saem exatamente do mesmo conteúdo.
+[build]
+  command = "node tools/montar-www.js"
+  publish = "www"
+
+# O montar-www.js só usa módulos nativos do Node, então não precisa
+# instalar as dependências pesadas (sharp, capacitor) a cada deploy.
+[build.environment]
+  NPM_FLAGS = "--no-optional"
+  NODE_VERSION = "20"
+
+# O service worker não pode ser cacheado, senão o app fica preso numa
+# versão antiga (ver sw.js, estratégia network-first).
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Selos e imagens podem ser cacheados por bastante tempo (o nome do
+# arquivo só muda quando a arte muda).
+[[headers]]
+  for = "/assets/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

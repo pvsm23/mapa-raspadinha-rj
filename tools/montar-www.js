@@ -26,6 +26,11 @@ const INCLUIR = [
   "assets",
   "data",
   "guia",
+  // Só fazem sentido no site (o Netlify publica esta mesma pasta),
+  // mas não atrapalham dentro do APK.
+  "ads.txt",
+  "robots.txt",
+  "sitemap.xml",
 ];
 
 fs.rmSync(DESTINO, { recursive: true, force: true });
