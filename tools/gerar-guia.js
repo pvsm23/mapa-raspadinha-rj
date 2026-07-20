@@ -92,6 +92,7 @@ ${corpo}
 <footer>
   <p>Desbrava — explore os 92 municípios do Rio de Janeiro, sua história e seus pontos turísticos.</p>
   <a class="app" href="${base ? "../" : ""}index.html">🗺️ Abrir o mapa interativo</a>
+  <p style="margin-top:16px"><a href="${base ? "../" : ""}privacidade.html">Política de privacidade</a></p>
 </footer>
 </body>
 </html>
@@ -114,9 +115,60 @@ function blocoMunicipio(id) {
   return html;
 }
 
+// ---------- POLÍTICA DE PRIVACIDADE ----------
+// Exigida pela Play Store (e bem-vista pelo AdSense). Descreve o que o
+// app realmente coleta -- inclusive a ressalva honesta de que as fotos
+// ficam, provisoriamente, num link público do Google Drive.
+const privacidade = `
+<h1>Política de Privacidade — Desbrava</h1>
+<p class="lead">Esta página explica quais dados o Desbrava coleta, por que coleta e o que você pode fazer com eles. Última atualização: julho de 2026.</p>
+
+<h2>Quem somos</h2>
+<p>O Desbrava é um aplicativo web gratuito que funciona como um mapa dos 92 municípios do Rio de Janeiro, onde a pessoa registra as cidades que visita. Ele é mantido por uma pessoa física, sem fins comerciais diretos. Contato: <a href="mailto:eupaulovitorsm01@gmail.com">eupaulovitorsm01@gmail.com</a>.</p>
+
+<h2>Dados que coletamos</h2>
+<p><b>Conta.</b> Ao criar uma conta, guardamos seu e-mail e uma senha (a senha é gerenciada pelo Firebase Authentication, do Google — nós nunca temos acesso a ela). Você também escolhe um apelido, que aparece publicamente no ranking, nos posts e para seus amigos.</p>
+<p><b>Progresso no app.</b> Guardamos quais municípios, regiões e rotas você marcou, suas conquistas, seus check-ins semanais e a data de cada visita.</p>
+<p><b>Localização (GPS).</b> Quando você toca em "verificar que estou aqui", o app lê sua localização para confirmar se você está dentro do município. Guardamos o resultado dessa checagem (qual município e quando), não um histórico contínuo de onde você anda. O app só lê a localização quando você pede — nunca em segundo plano.</p>
+<p><b>Conteúdo que você publica.</b> Fotos, legendas, sugestões de lugares, comentários e curtidas ficam salvos e são visíveis para outras pessoas do app.</p>
+<p><b>Amizades.</b> Sua lista de amigos e os pedidos de amizade enviados e recebidos.</p>
+<p><b>Antifraude.</b> Se o app detectar deslocamentos impossíveis entre duas verificações (por exemplo, dois municípios distantes em poucos minutos), ele registra esse evento — município anterior, novo, distância e tempo — para coibir uso de localização falsa.</p>
+<p><b>Uso e anúncios.</b> Usamos o Google Analytics (via Firebase) para contar acessos e o Google AdSense para exibir anúncios no site. Essas ferramentas do Google podem usar cookies e identificadores para funcionar e para personalizar anúncios.</p>
+
+<h2>Onde os dados ficam</h2>
+<p>Os dados de conta, progresso e conteúdo ficam no <b>Google Firebase</b> (Authentication e Firestore). Relatos de bug, sugestões e registros antifraude também são espelhados numa planilha do <b>Google Sheets</b> de uso privado.</p>
+<p><b>Ressalva importante sobre as fotos:</b> por uma limitação técnica temporária, as fotos publicadas ficam hospedadas no <b>Google Drive</b> com o link no modo "qualquer pessoa com o link pode ver". Na prática, isso significa que alguém que descubra o endereço direto da imagem consegue abri-la mesmo sem ter conta no Desbrava. Não publique fotos que você não queira que sejam acessíveis dessa forma. Pretendemos migrar para um armazenamento com acesso restrito.</p>
+
+<h2>Com quem compartilhamos</h2>
+<p>Não vendemos seus dados e não os repassamos para terceiros com fins comerciais. Os dados transitam apenas pelos serviços do Google citados acima, que os processam em nosso nome.</p>
+<p>Parte do seu conteúdo é público dentro do app por natureza: apelido, selos, progresso, posts, sugestões e comentários. Você pode tornar seu perfil privado nas Configurações.</p>
+
+<h2>Seus direitos</h2>
+<p><b>Excluir tudo.</b> Em Configurações → Zona de risco → "Excluir minha conta", você apaga de forma permanente sua conta e todos os dados ligados a ela: progresso, selos, posts, fotos, comentários e amizades. A exclusão é definitiva e não pode ser desfeita.</p>
+<p><b>Corrigir e limitar.</b> Você pode trocar o apelido, tornar o perfil privado, apagar posts e comentários individualmente e recusar a permissão de localização e de notificações no próprio navegador — o app continua funcionando, só sem essas funções.</p>
+<p>Para qualquer pedido relacionado aos seus dados, escreva para <a href="mailto:eupaulovitorsm01@gmail.com">eupaulovitorsm01@gmail.com</a>.</p>
+
+<h2>Crianças</h2>
+<p>O Desbrava não é direcionado a menores de 13 anos e não coleta dados intencionalmente dessa faixa etária.</p>
+
+<h2>Mudanças</h2>
+<p>Se esta política mudar, atualizaremos esta página e a data no topo.</p>
+`;
+fs.writeFileSync(
+  path.join(RAIZ, "privacidade.html"),
+  pagina({
+    titulo: "Política de Privacidade — Desbrava",
+    descricao:
+      "Como o Desbrava coleta, usa e protege seus dados: conta, progresso, localização, fotos e anúncios. Como excluir sua conta.",
+    corpo: privacidade,
+    base: "",
+    canonicalPath: "privacidade.html",
+  })
+);
+
 // ---------- páginas de REGIÃO ----------
 fs.mkdirSync(path.join(RAIZ, "guia"), { recursive: true });
-const urls = [`${BASE}/guia.html`];
+const urls = [`${BASE}/guia.html`, `${BASE}/privacidade.html`];
 
 for (const [rid, r] of Object.entries(regioes)) {
   const corpo =
