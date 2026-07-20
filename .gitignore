@@ -11,3 +11,8 @@ Pasta de inclusão de selos/
 
 # Gerado pelo Capacitor (npm run www) -- nao versionar
 www/
+
+# Assets web copiados pelo cap sync (gerados a partir de www/)
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
