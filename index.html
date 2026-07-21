@@ -293,20 +293,32 @@
 </svg>
   </div>
 
-  <!-- Barra flutuante de topo: titulo/progresso + botoes de acao -->
+  <!-- Barra de topo: avatar (-> perfil) + titulo + busca + config, e
+       uma barra fina de progresso embaixo. -->
   <header id="barra-topo">
-    <div id="cartao-progresso">
-      <h1 class="logo-desbrava">DESBRAVA</h1>
-      <p id="progresso">Visitados: <span id="contador">0</span> / <span id="total">3</span></p>
+    <div id="topo-linha">
+      <button id="btn-topo-perfil" class="topo-avatar" aria-label="Meu perfil">PV</button>
+      <span id="topo-titulo">Desbrava</span>
+      <button id="btn-topo-busca" class="topo-icone" aria-label="Buscar">🔍</button>
+      <button id="btn-configuracoes" class="topo-icone" aria-label="Configurações">⚙️</button>
     </div>
-    <div id="botoes-topo">
-      <button id="btn-social" aria-label="Comunidade Desbrava" title="Comunidade Desbrava">
+    <div id="topo-progresso">
+      <div id="topo-prog-txt">
+        <span>Municípios</span>
+        <span><b id="contador">0</b> de <span id="total">92</span></span>
+      </div>
+      <div id="topo-prog-barra"><i id="topo-prog-preench"></i></div>
+    </div>
+
+    <!-- Botoes antigos mantidos escondidos: a barra inferior/menu os
+         aciona via .click(), entao os handlers seguem valendo. -->
+    <div id="botoes-topo" class="oculto">
+      <button id="btn-social" aria-label="Comunidade Desbrava">
         <img src="assets/icons/desbrava-icone.png" alt="" class="icone-botao-topo">
       </button>
-      <button id="btn-feedback" aria-label="Feedback e colaboração" title="Feedback e colaboração">💬</button>
-      <button id="btn-compartilhar" aria-label="Compartilhar" title="Compartilhar">🔗</button>
-      <button id="btn-biblioteca" aria-label="Biblioteca de selos" title="Biblioteca de selos">📖</button>
-      <button id="btn-configuracoes" aria-label="Configurações" title="Configurações">⚙️</button>
+      <button id="btn-feedback" aria-label="Feedback e colaboração">💬</button>
+      <button id="btn-compartilhar" aria-label="Compartilhar">🔗</button>
+      <button id="btn-biblioteca" aria-label="Biblioteca de selos">📖</button>
     </div>
   </header>
 

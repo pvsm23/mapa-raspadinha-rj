@@ -82,11 +82,11 @@ svg#mapa-rj {
    era vermelho, mas isso deixava alarmante quem só queria marcar sem
    verificar na hora; azul passa a mesma informação sem soar como erro. */
 .municipio.nao-verificado {
-  fill: #2BD576;
+  fill: #3FA9F5;
 }
 
 .municipio.nao-verificado:hover {
-  fill: #1FA85C;
+  fill: #2E8FD4;
 }
 
 /* Ainda cinza (não raspado), mas o GPS já confirmou presença aqui
@@ -94,7 +94,7 @@ svg#mapa-rj {
    js/script.js) -- contorno tracejado ciano avisa que dá pra raspar
    sem precisar voltar no local. */
 .municipio.presenca-pendente {
-  stroke: #2BD576;
+  stroke: #38C6E8;
   stroke-width: 3;
   stroke-dasharray: 4 3;
 }
@@ -4468,3 +4468,84 @@ select:focus {
   border-radius: 16px !important;
 }
 #social-feed { gap: 14px; }
+
+/* =========================================================
+   BARRA SUPERIOR MODERNA (avatar + título + busca + config
+   + barra fina de progresso), igual ao protótipo aprovado.
+   ========================================================= */
+#barra-topo {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  pointer-events: auto !important;
+  background: rgba(15, 18, 22, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--linha);
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+#topo-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topo-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  flex: none;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #06210f;
+  background: linear-gradient(135deg, var(--verde), #17a4d4);
+}
+#topo-titulo {
+  flex: 1;
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+}
+.topo-icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  border: 1px solid var(--linha);
+  background: var(--surf2);
+  color: var(--txt);
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: grid;
+  place-items: center;
+  transition: transform 0.1s, color 0.15s;
+}
+.topo-icone:active { transform: scale(0.92); color: var(--verde); }
+
+#topo-progresso { display: flex; flex-direction: column; gap: 5px; }
+#topo-prog-txt {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--fraco);
+}
+#topo-prog-txt b { color: var(--txt); font-weight: 700; }
+#topo-prog-barra {
+  height: 5px;
+  border-radius: 99px;
+  background: var(--surf2);
+  overflow: hidden;
+}
+#topo-prog-preench {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: var(--verde);
+  transition: width 0.5s ease;
+}
+
+/* Busca agora vive na barra de topo; a flutuante some. */
+#btn-buscar-local { display: none !important; }

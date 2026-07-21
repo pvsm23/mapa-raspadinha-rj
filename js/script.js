@@ -587,8 +587,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   mostrarBoasVindasSeNecessario();
   configurarNavInferior();
+  configurarBarraTopo();
   esconderTelaCarregamento();
 });
+
+/**
+ * Liga os botões novos da barra de topo (avatar -> perfil, lupa ->
+ * busca) aos botões que já existiam, e mantém as iniciais do avatar
+ * em dia com o apelido logado.
+ */
+function configurarBarraTopo() {
+  document
+    .getElementById("btn-topo-perfil")
+    ?.addEventListener("click", () => document.getElementById("btn-meu-perfil")?.click());
+  document
+    .getElementById("btn-topo-busca")
+    ?.addEventListener("click", () => document.getElementById("btn-buscar-local")?.click());
+  atualizarAvatarTopo();
+  document.addEventListener("auth-mudou", atualizarAvatarTopo);
+}
+
+/** Iniciais do avatar da barra de topo (apelido logado, ou "PV"/"?"). */
+function atualizarAvatarTopo() {
+  const el = document.getElementById("btn-topo-perfil");
+  if (!el) return;
+  const apelido = window.raspadinhaAuth?.apelido;
+  el.textContent = apelido ? iniciaisApelido(apelido) : "👤";
+  el.style.fontSize = apelido ? "" : "1rem";
+}
 
 /**
  * Liga a barra de navegação inferior (#nav-inferior) e o Menu
@@ -4921,6 +4947,10 @@ function atualizarContador() {
 
   document.getElementById("contador").textContent = visitados;
   document.getElementById("total").textContent = total;
+
+  // barra fina de progresso na barra de topo
+  const preench = document.getElementById("topo-prog-preench");
+  if (preench && total) preench.style.width = `${Math.round((visitados / total) * 100)}%`;
 }
 
 /**
