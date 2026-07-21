@@ -589,8 +589,121 @@ document.addEventListener("DOMContentLoaded", () => {
   mostrarBoasVindasSeNecessario();
   configurarNavInferior();
   configurarBarraTopo();
+  configurarRastreamentoFundo();
   esconderTelaCarregamento();
 });
+
+/* ============================================================
+   Rastreamento de municípios em SEGUNDO PLANO (só no app Android
+   instalado via Capacitor). Enquanto ligado (opt-in em
+   Configurações), o app registra os municípios por onde a pessoa
+   passa mesmo minimizado -- assim não precisa abrir o app em cada
+   cidade da viagem. Limitações honestas: exige a permissão "o tempo
+   todo", mostra uma notificação fixa (imposição do Android) e para
+   se o app for FECHADO à força (o SO mata o webview). No navegador
+   comum nada disso aparece.
+   ============================================================ */
+const CHAVE_RASTREIO_FUNDO = "desbrava_rastreio_fundo";
+let watcherFundoId = null;
+
+function ehAppNativo() {
+  return !!window.Capacitor?.isNativePlatform?.();
+}
+
+function pluginBgGeo() {
+  return (
+    window.Capacitor?.Plugins?.BackgroundGeolocation ||
+    (window.Capacitor?.registerPlugin && window.Capacitor.registerPlugin("BackgroundGeolocation")) ||
+    null
+  );
+}
+
+function configurarRastreamentoFundo() {
+  const secao = document.getElementById("secao-rastreio-fundo");
+  const check = document.getElementById("check-rastreio-fundo");
+  if (!secao || !check || !ehAppNativo() || !pluginBgGeo()) return;
+
+  secao.classList.remove("oculto");
+  const ligado = localStorage.getItem(CHAVE_RASTREIO_FUNDO) === "1";
+  check.checked = ligado;
+  if (ligado) iniciarRastreioFundo();
+
+  check.addEventListener("change", async () => {
+    if (check.checked) {
+      const ok = await iniciarRastreioFundo();
+      if (ok) localStorage.setItem(CHAVE_RASTREIO_FUNDO, "1");
+      else {
+        check.checked = false;
+        alert("Não foi possível ligar o rastreamento. Confira se você concedeu a permissão de localização 'o tempo todo' nas configurações do Android.");
+      }
+    } else {
+      await pararRastreioFundo();
+      localStorage.removeItem(CHAVE_RASTREIO_FUNDO);
+    }
+  });
+}
+
+async function iniciarRastreioFundo() {
+  if (watcherFundoId) return true;
+  const BG = pluginBgGeo();
+  if (!BG) return false;
+  try {
+    watcherFundoId = await BG.addWatcher(
+      {
+        backgroundTitle: "Desbrava",
+        backgroundMessage: "Registrando os municípios por onde você passa.",
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: 150, // só reage a cada ~150 m, pra poupar bateria
+      },
+      (location, error) => {
+        if (error || !location) return;
+        processarLocalizacaoFundo(location.latitude, location.longitude);
+      }
+    );
+    return true;
+  } catch (erro) {
+    console.error("Falha ao iniciar rastreio em segundo plano:", erro);
+    watcherFundoId = null;
+    return false;
+  }
+}
+
+async function pararRastreioFundo() {
+  const BG = pluginBgGeo();
+  if (BG && watcherFundoId != null) {
+    try {
+      await BG.removeWatcher({ id: watcherFundoId });
+    } catch (erro) {
+      console.error("Falha ao parar rastreio:", erro);
+    }
+  }
+  watcherFundoId = null;
+}
+
+/**
+ * Cada posição recebida em segundo plano: descobre o município e
+ * confirma a presença ali -- mesma lógica da bússola/abertura, mas
+ * silenciosa (sem toast). Só grava se mudou algo, pra não ficar
+ * reescrevendo/sincronizando à toa.
+ */
+function processarLocalizacaoFundo(lat, lon) {
+  const id = encontrarMunicipioPorCoordenada(lon, lat);
+  if (!id) return;
+  const dados = estadoMapa[id];
+  if (dados?.visitado) {
+    if (!dados.verificado) {
+      avaliarDeslocamento(id, lat, lon);
+      atualizarVerificacaoMunicipio(id, true, "");
+    }
+    return;
+  }
+  if (dados?.presencaConfirmadaEm) return;
+  avaliarDeslocamento(id, lat, lon);
+  estadoMapa[id] = { ...estadoMapa[id], presencaConfirmadaEm: new Date().toISOString() };
+  salvarEstado();
+  aplicarEstadoNoSVG();
+}
 
 /**
  * Liga os botões novos da barra de topo (avatar -> perfil, lupa ->

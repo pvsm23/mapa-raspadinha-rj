@@ -695,6 +695,19 @@
         <p id="notificacoes-status" class="oculto"></p>
       </div>
 
+      <!-- Só aparece no app instalado (Android/Capacitor), ver
+           configurarRastreamentoFundo em js/script.js -->
+      <div id="secao-rastreio-fundo" class="cartao-config oculto">
+        <h3>🧭 Rastrear em segundo plano</h3>
+        <label id="label-rastreio-fundo">
+          <input type="checkbox" id="check-rastreio-fundo">
+          Registrar os municípios por onde eu passar, mesmo com o app minimizado
+        </label>
+        <p id="rastreio-fundo-status">
+          Enquanto ligado, o Android mostra uma notificação fixa e a bateria é usada um pouco mais. Funciona com o app minimizado (não fechado à força).
+        </p>
+      </div>
+
       <div id="secao-pro" class="cartao-config">
         <h3>⭐ Recursos PRO</h3>
         <!--
