@@ -26,8 +26,16 @@ const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
 const STORAGE_KEY_STREAK = "scratchMapRJ_streak_v1";
 const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 
+// Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
+// a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
+// segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
+const VERSAO_APP = "0.9.0";
+
 // Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
-const CHAVE_PIX_COLABORACAO = "pvsm23@jim.com";
+// É só o PADRÃO: se a conta dona salvar uma chave nova no painel de
+// Admin (configuracoes/global.chavePix), ela é carregada por cima em
+// carregarChavePixGlobal() e passa a valer pra todo mundo.
+let CHAVE_PIX_COLABORACAO = "pvsm23@jim.com";
 
 // Dono "atual" das chaves de localStorage acima -- "anon" enquanto
 // ninguém logou nesta aba, ou o uid de quem está logado. CRÍTICO:
@@ -179,6 +187,8 @@ window.addEventListener("appinstalled", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  const versaoEl = document.getElementById("versao-app-texto");
+  if (versaoEl) versaoEl.textContent = `versão ${VERSAO_APP}`;
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
   estadoConquistas = carregarEstadoConquistas();
@@ -360,6 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("input-busca-moderacao").addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") buscarContaParaModerar();
   });
+  document.getElementById("btn-salvar-chave-pix").addEventListener("click", salvarChavePixAdmin);
   document
     .getElementById("check-anuncios-ativados")
     .addEventListener("change", alternarAnunciosAdmin);
@@ -1231,6 +1242,48 @@ function abrirAdmin() {
   document.getElementById("input-busca-moderacao").value = "";
   atualizarCheckboxAnunciosGlobal();
   atualizarCheckboxAnuncioParaMim();
+  carregarChavePixNoAdmin();
+}
+
+/**
+ * Preenche o campo de chave PIX do painel de Admin com o valor atual
+ * (o salvo em configuracoes/global.chavePix, ou o padrão local).
+ */
+async function carregarChavePixNoAdmin() {
+  const input = document.getElementById("input-chave-pix-admin");
+  if (!input) return;
+  input.value = CHAVE_PIX_COLABORACAO;
+  await carregarChavePixGlobal();
+  input.value = CHAVE_PIX_COLABORACAO;
+}
+
+async function salvarChavePixAdmin() {
+  const input = document.getElementById("input-chave-pix-admin");
+  const botao = document.getElementById("btn-salvar-chave-pix");
+  const status = document.getElementById("pix-admin-status");
+  const chave = input.value.trim();
+  if (!chave) {
+    status.textContent = "Digite uma chave antes de salvar.";
+    status.className = "feedback-status status-erro";
+    status.classList.remove("oculto");
+    return;
+  }
+  botao.disabled = true;
+  status.classList.add("oculto");
+  try {
+    await window.raspadinhaAuth.definirChavePixColaboracao(chave);
+    CHAVE_PIX_COLABORACAO = chave;
+    status.textContent = "Chave PIX atualizada! 💙";
+    status.className = "feedback-status status-sucesso";
+    status.classList.remove("oculto");
+  } catch (erro) {
+    console.error("Falha ao salvar chave PIX:", erro);
+    status.textContent = erro?.message || "Não foi possível salvar agora.";
+    status.className = "feedback-status status-erro";
+    status.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+  }
 }
 
 function fecharAdmin() {
@@ -3987,6 +4040,27 @@ function fecharCheckin() {
 function abrirFeedback() {
   document.getElementById("modal-feedback").classList.remove("oculto");
   document.getElementById("pix-chave-texto").textContent = CHAVE_PIX_COLABORACAO;
+  // Busca a chave mais recente (pode ter sido trocada no Admin) e
+  // atualiza o texto assim que chegar, sem travar a abertura do popup.
+  carregarChavePixGlobal().then(() => {
+    document.getElementById("pix-chave-texto").textContent = CHAVE_PIX_COLABORACAO;
+  });
+}
+
+/**
+ * Lê a chave PIX de colaboração salva pela conta dona em
+ * configuracoes/global.chavePix e sobrescreve o padrão local. Silencia
+ * qualquer erro (offline / Firebase não configurado): nesse caso fica
+ * valendo o padrão de CHAVE_PIX_COLABORACAO.
+ */
+async function carregarChavePixGlobal() {
+  try {
+    const config = await window.raspadinhaAuth?.buscarConfigGlobal?.();
+    const chave = (config?.chavePix || "").trim();
+    if (chave) CHAVE_PIX_COLABORACAO = chave;
+  } catch (erro) {
+    console.warn("Não foi possível carregar a chave PIX global:", erro);
+  }
 }
 
 /**
@@ -4161,13 +4235,51 @@ async function abrirPerfil(uid) {
       return;
     }
 
+    const estadoMun = perfil.estadoMunicipios || {};
+    const estadoReg = perfil.estadoRegioes || {};
+    const totalMunicipios = document.querySelectorAll("#mapa-rj .municipio").length || 92;
+    const verificados =
+      Object.values(estadoMun).filter((m) => m?.verificado).length || perfil.municipiosVisitadosCount || 0;
+    const brilhantes = Object.values(estadoMun).filter((m) => m?.brilhante).length;
+    const regioes = Object.values(estadoReg).filter((r) => r?.revelado).length;
+    const pct = totalMunicipios ? Math.round((verificados / totalMunicipios) * 100) : 0;
+
     corpo.innerHTML = `
-      <p id="perfil-contador">${perfil.municipiosVisitadosCount} municípios visitados</p>
+      <div class="perfil-cabecalho">
+        <div class="perfil-avatar" style="background:${corAvatar(perfil.apelido)}">${iniciaisApelido(perfil.apelido)}</div>
+        <div class="perfil-nome">${perfil.apelido}</div>
+        <div class="perfil-legenda">${verificados} de ${totalMunicipios} municípios · ${pct}% do RJ</div>
+      </div>
+
+      <div class="perfil-stats">
+        <div class="perfil-stat">
+          <span class="perfil-stat-num">${verificados}</span>
+          <span class="perfil-stat-rot">Municípios</span>
+        </div>
+        <div class="perfil-stat">
+          <span class="perfil-stat-num">${regioes}</span>
+          <span class="perfil-stat-rot">Regiões</span>
+        </div>
+        <div class="perfil-stat">
+          <span class="perfil-stat-num perfil-stat-ouro">${brilhantes}</span>
+          <span class="perfil-stat-rot">Brilhantes</span>
+        </div>
+      </div>
+
+      <div class="perfil-progresso" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+        <div class="perfil-progresso-preench" style="width:${pct}%"></div>
+      </div>
+
       <div id="perfil-mapa-mini"></div>
+
+      <h3 class="perfil-secao-titulo">Selos</h3>
       <div id="perfil-selos-grade"></div>
     `;
+    // O nome agora vive no cabeçalho com avatar; zera o h2 (usado só
+    // pros estados de "Carregando..."/erro/privado).
+    document.getElementById("perfil-apelido").textContent = "";
     renderizarMiniMapaPerfil(perfil.mapaSnapshot);
-    renderizarSelosPerfil(perfil.estadoMunicipios);
+    renderizarSelosPerfil(estadoMun);
   } catch (erro) {
     console.error("Falha ao carregar perfil:", erro);
     corpo.innerHTML = "<p>Não foi possível carregar esse perfil agora.</p>";

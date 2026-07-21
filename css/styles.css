@@ -2042,6 +2042,63 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   white-space: nowrap;
 }
 
+/* ---- Chave PIX no painel de Admin ---- */
+.admin-dica {
+  font-size: 0.8rem;
+  color: #8E97A3;
+  margin: 0 0 10px;
+}
+
+#input-chave-pix-admin {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0F1216;
+  color: #F2F5F7;
+  border: 1px solid #2A303A;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 0.92rem;
+  margin-bottom: 10px;
+}
+
+#input-chave-pix-admin:focus {
+  outline: none;
+  border-color: var(--verde);
+}
+
+#admin-conteudo #btn-salvar-chave-pix {
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-weight: 700;
+}
+
+#admin-conteudo #btn-salvar-chave-pix:hover {
+  filter: brightness(1.06);
+}
+
+#pix-admin-status {
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+/* ---- Sobre / versão em Configurações ---- */
+#secao-sobre .sobre-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+
+#secao-sobre .logo-desbrava {
+  font-size: 1.05rem;
+  color: var(--txt);
+}
+
+#versao-app-texto {
+  font-size: 0.85rem;
+  color: #8E97A3;
+}
+
 #moderacao-resultado {
   margin-top: 10px;
 }
@@ -3500,6 +3557,100 @@ body.modo-rota-ativo #toast-onde-estou {
   color: #8E97A3;
   font-size: 0.85rem;
   margin: 0 0 12px;
+}
+
+/* ---- Perfil no estilo do app (cabeçalho + stats + progresso) ---- */
+.perfil-cabecalho {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 4px 0 18px;
+}
+
+.perfil-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  margin-bottom: 12px;
+}
+
+.perfil-nome {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--txt);
+  line-height: 1.2;
+}
+
+.perfil-legenda {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: #8E97A3;
+}
+
+.perfil-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.perfil-stat {
+  background: #1E232B;
+  border-radius: 14px;
+  padding: 14px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.perfil-stat-num {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--verde);
+  line-height: 1;
+}
+
+.perfil-stat-num.perfil-stat-ouro {
+  color: var(--ouro);
+}
+
+.perfil-stat-rot {
+  font-size: 0.72rem;
+  color: #8E97A3;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.perfil-progresso {
+  height: 8px;
+  border-radius: 999px;
+  background: #0F1216;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.perfil-progresso-preench {
+  height: 100%;
+  background: var(--verde);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.perfil-secao-titulo {
+  font-size: 0.9rem;
+  color: #8E97A3;
+  margin: 4px 0 10px;
+  font-weight: 700;
 }
 
 #perfil-mapa-mini {

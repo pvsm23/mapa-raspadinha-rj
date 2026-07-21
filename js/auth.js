@@ -177,6 +177,7 @@ window.raspadinhaAuth = {
   sincronizarRota: async () => {},
   buscarConfigGlobal: async () => ({ anunciosAtivados: false }),
   definirAnunciosGlobalAtivados: async () => {},
+  definirChavePixColaboracao: async () => {},
   definirAnuncioPorUsuario: async () => {},
   buscarConfigAnuncio: async () => false,
   definirPerfilPublico: async () => {},
@@ -640,6 +641,21 @@ if (CONFIGURADO) {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     await setDoc(doc(db, "configuracoes", "global"), { anunciosAtivados: !!ativado }, { merge: true });
+  };
+
+  /**
+   * Salva a chave PIX de colaboração (mostrada no popup "Colaborar")
+   * em configuracoes/global.chavePix -- mesmo doc/regra dos anúncios:
+   * leitura pública, escrita só pela conta dona.
+   */
+  window.raspadinhaAuth.definirChavePixColaboracao = async (chave) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await setDoc(
+      doc(db, "configuracoes", "global"),
+      { chavePix: String(chave || "").trim() },
+      { merge: true }
+    );
   };
 
   /**

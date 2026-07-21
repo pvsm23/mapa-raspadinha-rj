@@ -298,7 +298,7 @@
   <header id="barra-topo">
     <div id="topo-linha">
       <button id="btn-topo-perfil" class="topo-avatar" aria-label="Meu perfil">PV</button>
-      <span id="topo-titulo">Desbrava</span>
+      <span id="topo-titulo" class="logo-desbrava">DESBRAVA</span>
       <button id="btn-topo-busca" class="topo-icone" aria-label="Buscar">🔍</button>
       <button id="btn-configuracoes" class="topo-icone" aria-label="Configurações">⚙️</button>
     </div>
@@ -758,6 +758,17 @@
           data-full-width-responsive="true"
         ></ins>
       </div>
+
+      <!-- Sobre: versão do app. O número sobe automaticamente a cada
+           atualização (só o último dígito), preenchido por JS a partir
+           de VERSAO_APP em js/script.js. -->
+      <div id="secao-sobre" class="cartao-config">
+        <h3>Sobre</h3>
+        <p class="sobre-linha">
+          <span class="logo-desbrava">DESBRAVA</span>
+          <span id="versao-app-texto">versão —</span>
+        </p>
+      </div>
     </div>
   </div>
 
@@ -832,6 +843,14 @@
           Mostrar anúncios pra todo mundo (padrão -- não afeta quem já foi ajustado individualmente)
         </label>
         <p id="anuncios-admin-status" class="oculto"></p>
+      </div>
+
+      <div id="secao-pix-admin">
+        <h3>Chave PIX de colaboração</h3>
+        <p class="admin-dica">A chave mostrada no popup "🤝 Colaborar" pra todo mundo.</p>
+        <input type="text" id="input-chave-pix-admin" placeholder="ex: seu-email@banco.com" autocomplete="off">
+        <button id="btn-salvar-chave-pix" class="btn-primario">Salvar chave PIX</button>
+        <p id="pix-admin-status" class="oculto"></p>
       </div>
     </div>
   </div>
