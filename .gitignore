@@ -16,3 +16,14 @@ www/
 android/app/src/main/assets/public/
 android/app/src/main/assets/capacitor.config.json
 android/app/src/main/assets/capacitor.plugins.json
+
+# Chaves do Firebase (não subir pro repositório público)
+android/app/google-services.json
+
+# Keystore de assinatura release (segredo, nunca no Git)
+*.jks
+*.keystore
+
+# Build outputs do Android
+android/app/build/
+android/app/release/
