@@ -28,9 +28,16 @@ $tag = "v$ver"
 
 Write-Host "Publicando Desbrava $tag ($apk)..."
 
-# Já existe release nessa tag? Então só substitui o arquivo (--clobber).
-& $gh release view $tag --repo $repo *> $null
-if ($LASTEXITCODE -eq 0) {
+# Já existe release nessa tag? Então só substitui o arquivo (--clobber);
+# senão, cria. O gh escreve "release not found" no stderr quando não
+# existe -- por isso baixamos o ErrorActionPreference nessa checagem, pra
+# esse aviso esperado não virar erro terminante.
+$ErrorActionPreference = "Continue"
+& $gh release view $tag --repo $repo 2>$null 1>$null
+$existe = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = "Stop"
+
+if ($existe) {
   & $gh release upload $tag $apk --repo $repo --clobber
 } else {
   & $gh release create $tag $apk --repo $repo --title "Desbrava $ver" --notes "APK do Desbrava versão $ver."
