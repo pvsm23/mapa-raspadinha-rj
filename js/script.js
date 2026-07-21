@@ -5412,6 +5412,34 @@ async function carregarFeedSocial(resetar) {
  * município clicável, curtir/comentar/compartilhar e excluir (só pro
  * autor).
  */
+/** Iniciais pro avatar (1a letra do primeiro e do último nome). */
+function iniciaisApelido(nome) {
+  const partes = String(nome || "?").trim().split(/\s+/).filter(Boolean);
+  const a = partes[0]?.[0] || "?";
+  const b = partes.length > 1 ? partes[partes.length - 1][0] : "";
+  return (a + b).toUpperCase();
+}
+
+/** Gradiente determinístico pro avatar, derivado do texto (mesma
+ *  pessoa = mesma cor sempre). */
+function corAvatar(texto) {
+  let h = 0;
+  for (const c of String(texto || "")) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `linear-gradient(135deg, hsl(${h} 58% 46%), hsl(${(h + 40) % 360} 62% 40%))`;
+}
+
+/** "agora", "5 min", "2 h", "3 d" ou a data -- pro horário do post. */
+function tempoRelativo(ts) {
+  const d = ts?.toDate?.() || (ts?.seconds ? new Date(ts.seconds * 1000) : ts instanceof Date ? ts : null);
+  if (!d) return "";
+  const s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 60) return "agora";
+  if (s < 3600) return `${Math.floor(s / 60)} min`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h`;
+  if (s < 604800) return `${Math.floor(s / 86400)} d`;
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
 function renderizarCardPost(post) {
   const card = document.createElement("div");
   card.className = "post-card";
@@ -5423,21 +5451,31 @@ function renderizarCardPost(post) {
   const souAutor = post.autorUid === meuUid;
   const nomeMunicipio = post.municipioId ? idParaNomeMunicipio[post.municipioId] : null;
   const marcados = post.pessoasMarcadas || [];
+  const tempo = tempoRelativo(post.criadoEm);
+  const nComentarios = post.numComentarios || 0;
 
   card.innerHTML = `
-    <div class="post-card-cabecalho">
-      <span class="post-card-autor">${escaparHtml(post.autorApelido)}</span>
-      ${nomeMunicipio ? `<button type="button" class="post-card-municipio">📍 ${escaparHtml(nomeMunicipio)}</button>` : ""}
+    <div class="post-topo">
+      <div class="post-avatar" style="background:${corAvatar(post.autorApelido)}">${escaparHtml(iniciaisApelido(post.autorApelido))}</div>
+      <div class="post-ident">
+        <span class="post-card-autor">${escaparHtml(post.autorApelido)}</span>
+        <span class="post-sub">
+          ${nomeMunicipio ? `<button type="button" class="post-card-municipio">📍 ${escaparHtml(nomeMunicipio)}</button>` : ""}
+          ${nomeMunicipio && tempo ? " · " : ""}
+          ${tempo ? `<span class="post-tempo">${tempo}</span>` : ""}
+        </span>
+      </div>
+      ${souAutor ? '<button type="button" class="post-card-excluir" aria-label="Opções">⋯</button>' : ""}
     </div>
     <img class="post-card-foto" alt="Foto do post">
-    <p class="post-card-legenda">${escaparHtml(post.texto || "")}</p>
-    ${marcados.length ? `<p class="post-card-marcados">Com ${marcados.map((p) => "@" + escaparHtml(p.apelido)).join(", ")}</p>` : ""}
     <div class="post-card-acoes">
       <button type="button" class="post-card-curtir${curtido ? " curtido" : ""}">❤️ <span class="post-card-curtidas">${curtidoPor.length}</span></button>
-      <button type="button" class="post-card-comentar">💬 <span class="post-card-num-comentarios">${post.numComentarios || 0}</span></button>
-      <button type="button" class="post-card-compartilhar">🔗</button>
-      ${souAutor ? '<button type="button" class="post-card-excluir">Excluir</button>' : ""}
+      <button type="button" class="post-card-comentar">💬 <span class="post-card-num-comentarios">${nComentarios}</span></button>
+      <button type="button" class="post-card-compartilhar" aria-label="Compartilhar">↗</button>
     </div>
+    <p class="post-card-legenda">${post.texto ? `<b>${escaparHtml(post.autorApelido)}</b> ${escaparHtml(post.texto)}` : ""}</p>
+    ${marcados.length ? `<p class="post-card-marcados">Com ${marcados.map((p) => "@" + escaparHtml(p.apelido)).join(", ")}</p>` : ""}
+    <button type="button" class="post-ver-comentarios${nComentarios > 0 ? "" : " oculto"}">${nComentarios === 1 ? "Ver 1 comentário" : `Ver todos os ${nComentarios} comentários`}</button>
     <div class="post-card-comentarios oculto">
       <div class="post-card-lista-comentarios"></div>
       <div class="post-card-novo-comentario">
@@ -5469,6 +5507,7 @@ function renderizarCardPost(post) {
   });
   card.querySelector(".post-card-curtir").addEventListener("click", () => aoCurtirPost(post, card));
   card.querySelector(".post-card-comentar").addEventListener("click", () => aoAbrirComentarios(post, card));
+  card.querySelector(".post-ver-comentarios")?.addEventListener("click", () => aoAbrirComentarios(post, card));
   card.querySelector(".post-card-compartilhar").addEventListener("click", () => compartilharPost(post.id));
   card.querySelector(".post-card-excluir")?.addEventListener("click", () => aoExcluirPost(post, card));
 
