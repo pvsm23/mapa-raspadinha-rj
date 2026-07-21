@@ -407,8 +407,8 @@
       <h2>🔗 Convide um amigo</h2>
       <p>
         Compartilhe o Desbrava com um amigo! Se ele criar uma conta pelo
-        seu link, você ganha uma <strong>raspadinha brilhante garantida</strong>
-        ✨ na próxima vez que raspar um selo.
+        seu link, você ganha uma <strong>raspadinha dourada garantida</strong>
+        🌟 na próxima vez que raspar um selo.
       </p>
       <button id="btn-compartilhar-de-fato">🔗 Compartilhar link</button>
     </div>
@@ -1000,8 +1000,8 @@
       <div class="boas-vindas-item">
         <span class="boas-vindas-icone">✨</span>
         <div>
-          <h3>Selo brilhante</h3>
-          <p>Uma pequena chance (5% por município, 10% por região) de o selo sair "brilhante" — uma versão rara e especial, só de bônus e diversão.</p>
+          <h3>Selo dourado</h3>
+          <p>Uma pequena chance (5% por município, 10% por região) de o selo sair "dourado" — uma versão rara e especial, só de bônus e diversão.</p>
         </div>
       </div>
 
@@ -1056,6 +1056,28 @@
         <div id="perfil-mapa-mini"></div>
         <div id="perfil-selos-grade"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Editor de foto de perfil: só abre do próprio perfil (botão 📷).
+       Envia uma foto, escolhe um selo já conquistado (dourado pra quem
+       tiver) ou volta pras iniciais. Ver abrirEditarAvatar em
+       js/script.js. -->
+  <div id="modal-editar-avatar" class="oculto">
+    <div id="editar-avatar-conteudo">
+      <button id="btn-fechar-editar-avatar" aria-label="Fechar">✕</button>
+      <h2>Foto de perfil</h2>
+
+      <div id="avatar-editor-acoes">
+        <button type="button" id="btn-avatar-enviar-foto" class="btn-primario">📷 Enviar uma foto</button>
+        <button type="button" id="btn-avatar-usar-iniciais">Usar minhas iniciais</button>
+        <input type="file" id="input-foto-avatar" accept="image/*" class="oculto">
+      </div>
+
+      <p id="avatar-editor-status" class="feedback-status oculto"></p>
+
+      <h3 class="avatar-editor-subtitulo">Ou use um selo que você já conquistou</h3>
+      <div id="avatar-selos-grade"></div>
     </div>
   </div>
 

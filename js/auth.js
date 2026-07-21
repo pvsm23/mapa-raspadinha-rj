@@ -137,6 +137,16 @@ window.raspadinhaAuth = {
   configurado: CONFIGURADO,
   usuarioAtual: null,
   apelido: null,
+  // Foto de perfil escolhida pela pessoa: null = usa as iniciais;
+  // { tipo: "selo", seloId, dourado } = um selo que ela já conquistou;
+  // { tipo: "foto", url } = uma foto enviada (Drive). Ver
+  // definirFotoPerfil/subirFotoPerfil abaixo e aplicarAvatar em
+  // js/script.js.
+  fotoPerfil: null,
+  definirFotoPerfil: async () => {},
+  subirFotoPerfil: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
   // Distintivo "PRO" no ranking (ver README.md, seção Plano PRO) --
   // booleano, não confundir com a função `ehPro()` mais abaixo neste
   // mesmo objeto (stub antigo do recurso de download offline, um
@@ -724,7 +734,38 @@ if (CONFIGURADO) {
       estadoRegioes: dados.estadoRegioes || {},
       mapaSnapshot: dados.mapaSnapshot || null,
       mapaSnapshotData: dados.mapaSnapshotData || null,
+      fotoPerfil: dados.fotoPerfil || null,
     };
+  };
+
+  /**
+   * Salva a foto de perfil escolhida (objeto {tipo,...} ou null pra
+   * voltar às iniciais) no doc do próprio usuário e atualiza o valor
+   * em memória, pra a UI refletir na hora (ver aplicarAvatar /
+   * salvarFotoPerfil em js/script.js).
+   */
+  window.raspadinhaAuth.definirFotoPerfil = async (fotoPerfil) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const valor = fotoPerfil || null;
+    await setDoc(doc(db, "usuarios", usuario.uid), { fotoPerfil: valor }, { merge: true });
+    window.raspadinhaAuth.fotoPerfil = valor;
+  };
+
+  /**
+   * Sobe uma foto de perfil pro Drive (mesmo caminho das fotos de
+   * post -- ver subirFotoPostParaDrive) e devolve a URL pública. Quem
+   * chama depois passa { tipo: "foto", url } pra definirFotoPerfil.
+   */
+  window.raspadinhaAuth.subirFotoPerfil = async (arquivoFoto) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const { fotoUrl } = await comTimeout(
+      subirFotoPostParaDrive(arquivoFoto, `perfil-${usuario.uid}-${Date.now()}.jpg`),
+      30000,
+      "A conexão está lenta demais pra subir a foto. Verifique sua internet e tente de novo."
+    );
+    return fotoUrl;
   };
 
   /**
@@ -1437,6 +1478,7 @@ if (CONFIGURADO) {
       const apelido = snap.exists() ? snap.data().apelido : null;
       window.raspadinhaAuth.apelido = apelido || null;
       window.raspadinhaAuth.contaEhPro = !!snap.data()?.ehPro;
+      window.raspadinhaAuth.fotoPerfil = snap.data()?.fotoPerfil || null;
 
       if (apelido) {
         document.dispatchEvent(

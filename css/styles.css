@@ -2939,32 +2939,9 @@ body.modo-rota-ativo #toast-onde-estou {
   isolation: isolate;
 }
 
-.selo-brilhante::before {
-  content: "";
-  position: absolute;
-  inset: -55%;
-  border-radius: 50%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    rgba(233, 185, 73, 0.65) 0deg 3deg,
-    transparent 3deg 18deg
-  );
-  animation: girar-raios 14s linear infinite, respirar-raios 2.4s ease-in-out infinite;
-  pointer-events: none;
-  z-index: -2;
-  mix-blend-mode: screen;
-}
-
-.selo-brilhante::after {
-  content: "";
-  position: absolute;
-  inset: -14%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(233, 185, 73, 0.35), transparent 70%);
-  animation: pulsar-brilho 1.8s ease-in-out infinite;
-  pointer-events: none;
-  z-index: -1;
-}
+/* Selo dourado sem animação de brilho: os raios girantes e o brilho
+   pulsante (::before/::after) foram removidos a pedido -- o selo
+   dourado agora aparece só com a arte dourada, sem efeito de luz. */
 
 @keyframes pulsar-brilho {
   0%,
@@ -4070,21 +4047,7 @@ body.modo-rota-ativo #toast-onde-estou {
   isolation: isolate;
 }
 
-.selo-item-brilhante::before {
-  content: "";
-  position: absolute;
-  inset: -25%;
-  border-radius: 50%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    rgba(233, 185, 73, 0.55) 0deg 3deg,
-    transparent 3deg 18deg
-  );
-  animation: girar-raios 14s linear infinite, respirar-raios 2.4s ease-in-out infinite;
-  pointer-events: none;
-  z-index: -1;
-  mix-blend-mode: screen;
-}
+/* (raios girantes do selo dourado na grade removidos -- ver acima) */
 
 .selo-item {
   position: relative;
@@ -4841,4 +4804,179 @@ select:focus {
   #modal-social:not(.oculto) #social-conteudo {
     animation: none !important;
   }
+}
+
+/* =========================================================
+   FOTO DE PERFIL (avatar com imagem) + editor
+   ========================================================= */
+/* Imagem dentro de qualquer avatar (topo, perfil) */
+.topo-avatar,
+.perfil-avatar,
+.post-avatar {
+  overflow: hidden;
+}
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+/* Selo como avatar: mostra o carimbo inteiro (sem cortar as bordas) */
+.avatar-img-selo {
+  object-fit: contain;
+  padding: 8%;
+  box-sizing: border-box;
+}
+
+/* Botão de editar (📷) sobre o avatar do próprio perfil */
+.perfil-avatar-wrap {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin-bottom: 12px;
+}
+.perfil-avatar-wrap .perfil-avatar {
+  margin-bottom: 0;
+}
+#btn-editar-avatar {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--surf);
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-size: 0.82rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+#btn-editar-avatar:active {
+  transform: scale(0.94);
+}
+
+/* Modal do editor de avatar */
+#modal-editar-avatar {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 110;
+  padding: 16px;
+}
+#modal-editar-avatar.oculto {
+  display: none;
+}
+#editar-avatar-conteudo {
+  position: relative;
+  background: var(--surf);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: center;
+}
+#editar-avatar-conteudo h2 {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+}
+#btn-fechar-editar-avatar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 6px;
+  line-height: 1;
+}
+#avatar-editor-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#avatar-editor-acoes button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+#btn-avatar-enviar-foto {
+  background: var(--verde);
+  color: var(--verde-tinta);
+}
+#btn-avatar-usar-iniciais {
+  background: var(--surf2);
+  color: var(--txt);
+}
+#avatar-editor-acoes button:active {
+  transform: scale(0.98);
+}
+.avatar-editor-subtitulo {
+  font-size: 0.85rem;
+  color: #8E97A3;
+  font-weight: 600;
+  margin: 20px 0 12px;
+  text-align: left;
+}
+#avatar-selos-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 10px;
+}
+.avatar-vazio {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  color: #8E97A3;
+  text-align: left;
+  margin: 0;
+}
+.avatar-selo-opcao {
+  background: #0F1216;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 6px;
+  cursor: pointer;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-selo-opcao img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.avatar-selo-opcao:hover {
+  border-color: var(--verde);
+}
+.avatar-selo-dourado {
+  border-color: var(--ouro);
+  background: #12351F;
+}
+.avatar-selo-dourado:hover {
+  border-color: var(--ouro);
+}
+
+/* Entrada animada do editor (mesmo padrão das outras janelas) */
+#modal-editar-avatar:not(.oculto) {
+  animation: janela-fade 0.2s ease;
+}
+#modal-editar-avatar:not(.oculto) #editar-avatar-conteudo {
+  animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }

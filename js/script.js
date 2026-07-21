@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.9.1";
+const VERSAO_APP = "0.9.2";
 
 // Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
 // É só o PADRÃO: se a conta dona salvar uma chave nova no painel de
@@ -504,6 +504,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (evento.target.id === "modal-perfil") fecharPerfil();
   });
 
+  // ---- Editor de foto de perfil ----
+  document.getElementById("btn-fechar-editar-avatar").addEventListener("click", fecharEditarAvatar);
+  document.getElementById("modal-editar-avatar").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-editar-avatar") fecharEditarAvatar();
+  });
+  document.getElementById("btn-avatar-usar-iniciais").addEventListener("click", () => salvarFotoPerfil(null));
+  document.getElementById("btn-avatar-enviar-foto").addEventListener("click", () => {
+    document.getElementById("input-foto-avatar").click();
+  });
+  document.getElementById("input-foto-avatar").addEventListener("change", (evento) => {
+    const arquivo = evento.target.files[0];
+    evento.target.value = "";
+    enviarFotoDePerfil(arquivo);
+  });
+
   // ---- História completa do município ----
   document
     .getElementById("btn-fechar-historia-municipio")
@@ -737,8 +752,7 @@ function atualizarAvatarTopo() {
   const el = document.getElementById("btn-topo-perfil");
   if (!el) return;
   const apelido = window.raspadinhaAuth?.apelido;
-  el.textContent = apelido ? iniciaisApelido(apelido) : "👤";
-  el.style.fontSize = apelido ? "" : "1rem";
+  aplicarAvatar(el, apelido ? window.raspadinhaAuth?.fotoPerfil : null, apelido);
 }
 
 /**
@@ -2745,7 +2759,7 @@ function abrirModalRaspadinha(id, nome) {
         // real uma vez, não tem por que "vencer".
         const presencaJaConfirmada = !!estadoMapa[id]?.presencaConfirmadaEm;
         document.getElementById("modal-status").textContent = brilhante
-          ? "✨ Raspadinha BRILHANTE! Confirmando sua localização..."
+          ? "🌟 Raspadinha DOURADA! Confirmando sua localização..."
           : "📍 Confirmando sua localização...";
 
         const promessaVerificacao = presencaJaConfirmada
@@ -2760,7 +2774,7 @@ function abrirModalRaspadinha(id, nome) {
           if (!aindaAberto) return;
 
           document.getElementById("modal-status").textContent = verificado
-            ? `${brilhante ? "✨ Raspadinha BRILHANTE! " : ""}Visitado em: ${new Date().toLocaleString("pt-BR")} ✅`
+            ? `${brilhante ? "🌟 Raspadinha DOURADA! " : ""}Visitado em: ${new Date().toLocaleString("pt-BR")} ✅`
             : `⚠️ Raspado, mas não verificado: ${motivo}`;
           setTimeout(fecharModalRaspadinha, verificado ? 1400 : 3200);
         });
@@ -3297,7 +3311,7 @@ function renderizarGradeRegioesNaBiblioteca() {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
-    item.title = brilhante ? `${nome} ✨ (mega-selo brilhante!)` : nome;
+    item.title = brilhante ? `${nome} 🌟 (mega-selo dourado!)` : nome;
 
     const img = document.createElement("img");
     img.alt = nome;
@@ -3352,7 +3366,7 @@ function renderizarGradeRotasNaBiblioteca() {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
-    item.title = brilhante ? `${nome} ✨ (selo de rota brilhante!)` : nome;
+    item.title = brilhante ? `${nome} 🌟 (selo de rota dourado!)` : nome;
 
     const img = document.createElement("img");
     img.alt = nome;
@@ -3474,28 +3488,28 @@ const DEFINICOES_CONQUISTAS = [
   { chave: "regiao-50pct", titulo: "Metade do Estado", tipo: "regioes-pct", meta: 0.5, raridade: "muito-raro", descricao: "Complete 50% das 8 regiões do RJ." },
   { chave: "regiao-100pct", titulo: "Senhor das Regiões", tipo: "regioes-pct", meta: 1, raridade: "lendario", descricao: "Complete as 8 regiões do RJ." },
 
-  { chave: "brilhante-1", titulo: "Primeira Fagulha", tipo: "brilhantes", meta: 1, raridade: "raro", descricao: "Consiga 1 selo de município brilhante (5% de chance por raspagem)." },
-  { chave: "brilhante-3", titulo: "Coleção Dourada", tipo: "brilhantes", meta: 3, raridade: "muito-raro", descricao: "Consiga 3 selos de município brilhantes." },
-  { chave: "brilhante-5", titulo: "Mão de Ouro", tipo: "brilhantes", meta: 5, raridade: "muito-raro", descricao: "Consiga 5 selos de município brilhantes." },
-  { chave: "brilhante-10", titulo: "Sortudo", tipo: "brilhantes", meta: 10, raridade: "lendario", descricao: "Consiga 10 selos de município brilhantes." },
-  { chave: "brilhante-25", titulo: "Ímã de Sorte", tipo: "brilhantes", meta: 25, raridade: "lendario", descricao: "Consiga 25 selos de município brilhantes." },
-  { chave: "brilhante-50", titulo: "Rei do Brilho", tipo: "brilhantes", meta: 50, raridade: "farmador", descricao: "Consiga 50 selos de município brilhantes." },
-  { chave: "brilhante-100pct", titulo: "Tudo Reluz", tipo: "brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Deixe os 92 selos de município brilhantes." },
+  { chave: "brilhante-1", titulo: "Primeira Fagulha", tipo: "brilhantes", meta: 1, raridade: "raro", descricao: "Consiga 1 selo de município dourado (5% de chance por raspagem)." },
+  { chave: "brilhante-3", titulo: "Coleção Dourada", tipo: "brilhantes", meta: 3, raridade: "muito-raro", descricao: "Consiga 3 selos de município dourados." },
+  { chave: "brilhante-5", titulo: "Mão de Ouro", tipo: "brilhantes", meta: 5, raridade: "muito-raro", descricao: "Consiga 5 selos de município dourados." },
+  { chave: "brilhante-10", titulo: "Sortudo", tipo: "brilhantes", meta: 10, raridade: "lendario", descricao: "Consiga 10 selos de município dourados." },
+  { chave: "brilhante-25", titulo: "Ímã de Sorte", tipo: "brilhantes", meta: 25, raridade: "lendario", descricao: "Consiga 25 selos de município dourados." },
+  { chave: "brilhante-50", titulo: "Rei do Brilho", tipo: "brilhantes", meta: 50, raridade: "farmador", descricao: "Consiga 50 selos de município dourados." },
+  { chave: "brilhante-100pct", titulo: "Tudo Reluz", tipo: "brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Deixe os 92 selos de município dourados." },
 
-  { chave: "regiao-brilhante-1", titulo: "Região Radiante", tipo: "regioes-brilhantes", meta: 1, raridade: "muito-raro", descricao: "Consiga 1 mega-selo de região brilhante (10% de chance)." },
-  { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25, raridade: "lendario", descricao: "Consiga mega-selos brilhantes em 25% das regiões." },
-  { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5, raridade: "farmador", descricao: "Consiga mega-selos brilhantes em 50% das regiões." },
-  { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Consiga mega-selos brilhantes nas 8 regiões." },
+  { chave: "regiao-brilhante-1", titulo: "Região Radiante", tipo: "regioes-brilhantes", meta: 1, raridade: "muito-raro", descricao: "Consiga 1 mega-selo de região dourado (10% de chance)." },
+  { chave: "regiao-brilhante-25pct", titulo: "Constelação Regional", tipo: "regioes-brilhantes-pct", meta: 0.25, raridade: "lendario", descricao: "Consiga mega-selos dourados em 25% das regiões." },
+  { chave: "regiao-brilhante-50pct", titulo: "Metade em Ouro", tipo: "regioes-brilhantes-pct", meta: 0.5, raridade: "farmador", descricao: "Consiga mega-selos dourados em 50% das regiões." },
+  { chave: "regiao-brilhante-100pct", titulo: "Reino Dourado", tipo: "regioes-brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Consiga mega-selos dourados nas 8 regiões." },
 
   { chave: "rota-1", titulo: "Primeira Rota", tipo: "rotas", meta: 1, raridade: "incomum", descricao: "Complete todos os municípios de 1 rota temática e raspe o selo especial." },
   { chave: "rota-25pct", titulo: "Rotas em Dobro", tipo: "rotas-pct", meta: 0.25, raridade: "raro", descricao: "Complete 25% das rotas temáticas." },
   { chave: "rota-50pct", titulo: "Metade das Rotas", tipo: "rotas-pct", meta: 0.5, raridade: "muito-raro", descricao: "Complete 50% das rotas temáticas." },
   { chave: "rota-100pct", titulo: "Mestre das Rotas", tipo: "rotas-pct", meta: 1, raridade: "lendario", descricao: "Complete todas as rotas temáticas do estado." },
 
-  { chave: "rota-brilhante-1", titulo: "Rota Radiante", tipo: "rotas-brilhantes", meta: 1, raridade: "muito-raro", descricao: "Consiga 1 selo de rota brilhante (10% de chance)." },
-  { chave: "rota-brilhante-25pct", titulo: "Trilha Dourada", tipo: "rotas-brilhantes-pct", meta: 0.25, raridade: "lendario", descricao: "Consiga selos de rota brilhantes em 25% das rotas." },
-  { chave: "rota-brilhante-50pct", titulo: "Metade Reluzente", tipo: "rotas-brilhantes-pct", meta: 0.5, raridade: "farmador", descricao: "Consiga selos de rota brilhantes em 50% das rotas." },
-  { chave: "rota-brilhante-100pct", titulo: "Todas as Rotas em Ouro", tipo: "rotas-brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Consiga selos de rota brilhantes em todas as rotas." },
+  { chave: "rota-brilhante-1", titulo: "Rota Radiante", tipo: "rotas-brilhantes", meta: 1, raridade: "muito-raro", descricao: "Consiga 1 selo de rota dourado (10% de chance)." },
+  { chave: "rota-brilhante-25pct", titulo: "Trilha Dourada", tipo: "rotas-brilhantes-pct", meta: 0.25, raridade: "lendario", descricao: "Consiga selos de rota dourados em 25% das rotas." },
+  { chave: "rota-brilhante-50pct", titulo: "Metade Reluzente", tipo: "rotas-brilhantes-pct", meta: 0.5, raridade: "farmador", descricao: "Consiga selos de rota dourados em 50% das rotas." },
+  { chave: "rota-brilhante-100pct", titulo: "Todas as Rotas em Ouro", tipo: "rotas-brilhantes-pct", meta: 1, raridade: "farmador", descricao: "Consiga selos de rota dourados em todas as rotas." },
 
   // Conquistas "históricas": cada uma exige completar UMA rota
   // específica (não uma contagem genérica) -- escolhidas pra cobrir
@@ -4246,7 +4260,10 @@ async function abrirPerfil(uid) {
 
     corpo.innerHTML = `
       <div class="perfil-cabecalho">
-        <div class="perfil-avatar" style="background:${corAvatar(perfil.apelido)}">${iniciaisApelido(perfil.apelido)}</div>
+        <div class="perfil-avatar-wrap">
+          <div class="perfil-avatar"></div>
+          ${ehOProprioPerfil ? '<button type="button" id="btn-editar-avatar" aria-label="Mudar foto de perfil">📷</button>' : ""}
+        </div>
         <div class="perfil-nome">${perfil.apelido}</div>
         <div class="perfil-legenda">${verificados} de ${totalMunicipios} municípios · ${pct}% do RJ</div>
       </div>
@@ -4262,7 +4279,7 @@ async function abrirPerfil(uid) {
         </div>
         <div class="perfil-stat">
           <span class="perfil-stat-num perfil-stat-ouro">${brilhantes}</span>
-          <span class="perfil-stat-rot">Brilhantes</span>
+          <span class="perfil-stat-rot">Dourados</span>
         </div>
       </div>
 
@@ -4278,6 +4295,13 @@ async function abrirPerfil(uid) {
     // O nome agora vive no cabeçalho com avatar; zera o h2 (usado só
     // pros estados de "Carregando..."/erro/privado).
     document.getElementById("perfil-apelido").textContent = "";
+    // Avatar: pro próprio perfil usa o valor em memória (reflete uma
+    // troca recente na hora); pros outros, o que veio do Firestore.
+    const fotoAvatar = ehOProprioPerfil ? window.raspadinhaAuth?.fotoPerfil : perfil.fotoPerfil;
+    aplicarAvatar(corpo.querySelector(".perfil-avatar"), fotoAvatar, perfil.apelido);
+    if (ehOProprioPerfil) {
+      document.getElementById("btn-editar-avatar").addEventListener("click", abrirEditarAvatar);
+    }
     renderizarMiniMapaPerfil(perfil.mapaSnapshot);
     renderizarSelosPerfil(estadoMun);
   } catch (erro) {
@@ -4288,6 +4312,96 @@ async function abrirPerfil(uid) {
 
 function fecharPerfil() {
   document.getElementById("modal-perfil").classList.add("oculto");
+}
+
+/* ============================================================
+   Editor de foto de perfil: enviar uma foto, escolher um selo já
+   conquistado (dourado pra quem tiver), ou voltar às iniciais.
+   Só é acessível a partir do PRÓPRIO perfil (ver abrirPerfil).
+   ============================================================ */
+
+function abrirEditarAvatar() {
+  document.getElementById("modal-editar-avatar").classList.remove("oculto");
+  const status = document.getElementById("avatar-editor-status");
+  status.classList.add("oculto");
+  renderizarSelosParaAvatar();
+}
+
+function fecharEditarAvatar() {
+  document.getElementById("modal-editar-avatar").classList.add("oculto");
+}
+
+/** Grade dos selos de município que a pessoa já verificou -- clicar
+ *  usa aquele selo como foto (dourado se ela o conquistou dourado). */
+function renderizarSelosParaAvatar() {
+  const grade = document.getElementById("avatar-selos-grade");
+  grade.innerHTML = "";
+
+  const municipios = Array.from(document.querySelectorAll("#mapa-rj .municipio"))
+    .map((p) => ({ id: p.dataset.municipio, nome: p.dataset.nome }))
+    .filter((m) => estaVerificado(m.id))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  if (!municipios.length) {
+    grade.innerHTML =
+      '<p class="avatar-vazio">Você ainda não tem selos verificados. Visite e confirme sua presença em um município pra poder usar o selo dele como foto.</p>';
+    return;
+  }
+
+  municipios.forEach(({ id, nome }) => {
+    const dourado = !!estadoMapa[id]?.brilhante;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "avatar-selo-opcao" + (dourado ? " avatar-selo-dourado" : "");
+    item.title = dourado ? `${nome} 🌟 (dourado)` : nome;
+
+    const img = document.createElement("img");
+    img.alt = nome;
+    resolverImagemColorida(`assets/img/selos/${id}`, dourado, id, nome).then((r) => {
+      img.src = r.url;
+    });
+
+    item.appendChild(img);
+    item.addEventListener("click", () => salvarFotoPerfil({ tipo: "selo", seloId: id, dourado }));
+    grade.appendChild(item);
+  });
+}
+
+/** Comprime e sobe a foto escolhida (Drive) e grava como avatar. */
+async function enviarFotoDePerfil(arquivo) {
+  if (!arquivo) return;
+  const status = document.getElementById("avatar-editor-status");
+  status.className = "feedback-status";
+  status.textContent = "Preparando a foto...";
+  status.classList.remove("oculto");
+  try {
+    const blob = await comprimirFotoPost(arquivo, { ladoMaximo: 256, qualidade: 0.82 });
+    status.textContent = "Enviando...";
+    const url = await window.raspadinhaAuth.subirFotoPerfil(blob);
+    await salvarFotoPerfil({ tipo: "foto", url });
+  } catch (erro) {
+    console.error("Falha ao enviar foto de perfil:", erro);
+    status.textContent = erro?.message || "Não foi possível enviar a foto agora.";
+    status.className = "feedback-status status-erro";
+    status.classList.remove("oculto");
+  }
+}
+
+/** Grava a escolha (objeto ou null p/ iniciais) e atualiza a UI. */
+async function salvarFotoPerfil(fotoPerfil) {
+  const status = document.getElementById("avatar-editor-status");
+  try {
+    await window.raspadinhaAuth.definirFotoPerfil(fotoPerfil);
+    atualizarAvatarTopo();
+    const avatarPerfil = document.querySelector("#modal-perfil .perfil-avatar");
+    if (avatarPerfil) aplicarAvatar(avatarPerfil, fotoPerfil, window.raspadinhaAuth?.apelido);
+    fecharEditarAvatar();
+  } catch (erro) {
+    console.error("Falha ao salvar foto de perfil:", erro);
+    status.className = "feedback-status status-erro";
+    status.textContent = erro?.message || "Não foi possível salvar agora.";
+    status.classList.remove("oculto");
+  }
 }
 
 /**
@@ -4576,8 +4690,8 @@ function atualizarAvisoBrilhantePendente() {
   if (pendentes > 0) {
     document.getElementById("aviso-brilhante-texto").textContent =
       pendentes === 1
-        ? "✨ Você tem uma raspadinha brilhante garantida te esperando!"
-        : `✨ Você tem ${pendentes} raspadinhas brilhantes garantidas te esperando!`;
+        ? "🌟 Você tem uma raspadinha dourada garantida te esperando!"
+        : `🌟 Você tem ${pendentes} raspadinhas douradas garantidas te esperando!`;
     aviso.classList.remove("oculto");
   } else {
     aviso.classList.add("oculto");
@@ -5708,6 +5822,45 @@ function corAvatar(texto) {
   let h = 0;
   for (const c of String(texto || "")) h = (h * 31 + c.charCodeAt(0)) % 360;
   return `linear-gradient(135deg, hsl(${h} 58% 46%), hsl(${(h + 40) % 360} 62% 40%))`;
+}
+
+/**
+ * Preenche um elemento de avatar (topo, perfil, etc.) com a foto de
+ * perfil escolhida: uma foto enviada (tipo "foto"), um selo já
+ * conquistado (tipo "selo", com a arte dourada se dourado:true), ou,
+ * na ausência de escolha, as iniciais sobre o gradiente de sempre.
+ */
+function aplicarAvatar(el, fotoPerfil, apelido) {
+  if (!el) return;
+  const nome = apelido || "";
+
+  if (fotoPerfil && fotoPerfil.tipo === "foto" && fotoPerfil.url) {
+    el.style.background = "";
+    el.style.fontSize = "";
+    el.innerHTML = `<img class="avatar-img" alt="Foto de perfil" src="${escaparHtml(fotoPerfil.url)}">`;
+    return;
+  }
+
+  if (fotoPerfil && fotoPerfil.tipo === "selo" && fotoPerfil.seloId) {
+    el.style.background = fotoPerfil.dourado ? "#12351F" : "#0F1216";
+    el.style.fontSize = "";
+    el.innerHTML = `<img class="avatar-img avatar-img-selo" alt="Selo de perfil">`;
+    const img = el.querySelector("img");
+    const nomeSelo =
+      document.querySelector(`#mapa-rj .municipio[data-municipio="${fotoPerfil.seloId}"]`)?.dataset.nome || "";
+    resolverImagemColorida(`assets/img/selos/${fotoPerfil.seloId}`, !!fotoPerfil.dourado, fotoPerfil.seloId, nomeSelo).then(
+      (r) => {
+        if (img) img.src = r.url;
+      }
+    );
+    return;
+  }
+
+  // Padrão: iniciais sobre gradiente determinístico.
+  el.innerHTML = "";
+  el.textContent = nome ? iniciaisApelido(nome) : "👤";
+  el.style.background = nome ? corAvatar(nome) : "";
+  el.style.fontSize = nome ? "" : "1rem";
 }
 
 /** "agora", "5 min", "2 h", "3 d" ou a data -- pro horário do post. */
