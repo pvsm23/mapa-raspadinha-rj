@@ -4720,3 +4720,125 @@ select:focus {
   transition: transform 0.1s;
 }
 #btn-atalho-sugestoes:active { transform: scale(0.98); }
+
+/* =========================================================
+   ANIMAÇÕES DE ABERTURA DAS JANELAS
+   Deixa o app menos estático: toda janela entra com movimento.
+   Cada regra é presa no estado :not(.oculto) do overlay -- assim
+   a animação RE-dispara toda vez que a janela abre (a regra volta
+   a valer quando a classe .oculto sai) e, fechada, nenhum
+   transform fica preso no elemento (foi o que travava a folha
+   fora da tela quando a animação ficava solta no conteúdo).
+   Respeita quem pediu "menos movimento" no sistema.
+   ========================================================= */
+@keyframes janela-surge {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes janela-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes painel-desliza-dir {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+/* @keyframes subir-folha (translateY(100%) -> 0) já definido acima */
+
+/* --- Backdrop das janelas centralizadas: fade suave --- */
+#modal-configuracoes:not(.oculto),
+#modal-admin:not(.oculto),
+#modal-brasil:not(.oculto),
+#biblioteca-selos:not(.oculto),
+#modal-conquistas:not(.oculto),
+#modal-ranking:not(.oculto),
+#modal-amigos:not(.oculto),
+#modal-checkin:not(.oculto),
+#modal-rotas:not(.oculto),
+#modal-perfil:not(.oculto),
+#modal-sugestoes-comunidade:not(.oculto),
+#modal-cartao-progresso:not(.oculto),
+#modal-selo-lightbox:not(.oculto),
+#modal-busca-local:not(.oculto),
+#modal-feedback:not(.oculto),
+#modal-apelido:not(.oculto),
+#modal-confirmar-exclusao:not(.oculto),
+#modal-historia-municipio:not(.oculto),
+#modal-compartilhar:not(.oculto),
+#modal-social:not(.oculto),
+#menu-sheet:not(.oculto) {
+  animation: janela-fade 0.2s ease;
+}
+
+/* --- Conteúdo das janelas centralizadas: sobe e aparece --- */
+#modal-configuracoes:not(.oculto) #configuracoes-conteudo,
+#modal-admin:not(.oculto) #admin-conteudo,
+#modal-brasil:not(.oculto) #brasil-conteudo,
+#biblioteca-selos:not(.oculto) #biblioteca-conteudo,
+#modal-conquistas:not(.oculto) #conquistas-conteudo,
+#modal-ranking:not(.oculto) #ranking-conteudo,
+#modal-amigos:not(.oculto) #amigos-conteudo,
+#modal-checkin:not(.oculto) #checkin-conteudo,
+#modal-rotas:not(.oculto) #rotas-conteudo,
+#modal-perfil:not(.oculto) #perfil-conteudo,
+#modal-sugestoes-comunidade:not(.oculto) #sugestoes-comunidade-conteudo,
+#modal-cartao-progresso:not(.oculto) #cartao-progresso-conteudo,
+#modal-selo-lightbox:not(.oculto) #selo-lightbox-conteudo,
+#modal-busca-local:not(.oculto) #busca-local-conteudo,
+#modal-feedback:not(.oculto) #feedback-conteudo,
+#modal-apelido:not(.oculto) #apelido-conteudo,
+#modal-confirmar-exclusao:not(.oculto) #confirmar-exclusao-conteudo,
+#modal-historia-municipio:not(.oculto) #historia-municipio-conteudo,
+#modal-compartilhar:not(.oculto) #compartilhar-conteudo {
+  animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --- Folhas de baixo (município, região, rota, menu): sobem --- */
+#modal-raspadinha:not(.oculto) #modal-conteudo,
+#modal-regiao:not(.oculto) #regiao-conteudo,
+#modal-rota-detalhe:not(.oculto) #rota-detalhe-conteudo,
+#menu-sheet:not(.oculto) #menu-sheet-conteudo {
+  animation: subir-folha 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --- Rede social: painel desliza da direita --- */
+#modal-social:not(.oculto) #social-conteudo {
+  animation: painel-desliza-dir 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #modal-configuracoes:not(.oculto), #modal-admin:not(.oculto), #modal-brasil:not(.oculto),
+  #biblioteca-selos:not(.oculto), #modal-conquistas:not(.oculto), #modal-ranking:not(.oculto),
+  #modal-amigos:not(.oculto), #modal-checkin:not(.oculto), #modal-rotas:not(.oculto),
+  #modal-perfil:not(.oculto), #modal-sugestoes-comunidade:not(.oculto),
+  #modal-cartao-progresso:not(.oculto), #modal-selo-lightbox:not(.oculto),
+  #modal-busca-local:not(.oculto), #modal-feedback:not(.oculto), #modal-apelido:not(.oculto),
+  #modal-confirmar-exclusao:not(.oculto), #modal-historia-municipio:not(.oculto),
+  #modal-compartilhar:not(.oculto), #modal-social:not(.oculto), #menu-sheet:not(.oculto),
+  #modal-configuracoes:not(.oculto) #configuracoes-conteudo,
+  #modal-admin:not(.oculto) #admin-conteudo,
+  #modal-brasil:not(.oculto) #brasil-conteudo,
+  #biblioteca-selos:not(.oculto) #biblioteca-conteudo,
+  #modal-conquistas:not(.oculto) #conquistas-conteudo,
+  #modal-ranking:not(.oculto) #ranking-conteudo,
+  #modal-amigos:not(.oculto) #amigos-conteudo,
+  #modal-checkin:not(.oculto) #checkin-conteudo,
+  #modal-rotas:not(.oculto) #rotas-conteudo,
+  #modal-perfil:not(.oculto) #perfil-conteudo,
+  #modal-sugestoes-comunidade:not(.oculto) #sugestoes-comunidade-conteudo,
+  #modal-cartao-progresso:not(.oculto) #cartao-progresso-conteudo,
+  #modal-selo-lightbox:not(.oculto) #selo-lightbox-conteudo,
+  #modal-busca-local:not(.oculto) #busca-local-conteudo,
+  #modal-feedback:not(.oculto) #feedback-conteudo,
+  #modal-apelido:not(.oculto) #apelido-conteudo,
+  #modal-confirmar-exclusao:not(.oculto) #confirmar-exclusao-conteudo,
+  #modal-historia-municipio:not(.oculto) #historia-municipio-conteudo,
+  #modal-compartilhar:not(.oculto) #compartilhar-conteudo,
+  #modal-raspadinha:not(.oculto) #modal-conteudo,
+  #modal-regiao:not(.oculto) #regiao-conteudo,
+  #modal-rota-detalhe:not(.oculto) #rota-detalhe-conteudo,
+  #menu-sheet:not(.oculto) #menu-sheet-conteudo,
+  #modal-social:not(.oculto) #social-conteudo {
+    animation: none !important;
+  }
+}

@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.9.0";
+const VERSAO_APP = "0.9.1";
 
 // Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
 // É só o PADRÃO: se a conta dona salvar uma chave nova no painel de
