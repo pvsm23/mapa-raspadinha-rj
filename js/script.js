@@ -586,8 +586,94 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(mostrarAvisoInstalarPwa, 1200);
 
   mostrarBoasVindasSeNecessario();
+  configurarNavInferior();
   esconderTelaCarregamento();
 });
+
+/**
+ * Liga a barra de navegação inferior (#nav-inferior) e o Menu
+ * (#menu-sheet) aos botões que já existiam -- cada item só dá um
+ * .click() no botão antigo correspondente (que agora fica escondido
+ * via CSS), então nenhum handler precisou ser reescrito. O realce da
+ * aba ativa é só visual: acende ao tocar, e volta pra "Mapa" quando
+ * todos os modais estão fechados.
+ */
+// Painéis de tela cheia (overlays) que a barra inferior gerencia. Só
+// os de verdade -- NÃO os elementos internos tipo #modal-conteudo,
+// #modal-status etc., que ficam sempre presentes dentro do popup do
+// selo.
+const OVERLAYS_APP = [
+  "modal-social", "modal-configuracoes", "modal-admin", "modal-brasil",
+  "modal-raspadinha", "biblioteca-selos", "modal-conquistas", "modal-ranking",
+  "modal-amigos", "modal-checkin", "modal-rotas", "modal-rota-detalhe",
+  "modal-perfil", "modal-sugestoes-comunidade", "modal-cartao-progresso",
+  "modal-selo-lightbox", "modal-busca-local", "modal-confirmar-exclusao",
+  "menu-sheet",
+];
+
+function algumOverlayAberto() {
+  return OVERLAYS_APP.some((id) => {
+    const el = document.getElementById(id);
+    return el && !el.classList.contains("oculto");
+  });
+}
+
+function configurarNavInferior() {
+  const nav = document.getElementById("nav-inferior");
+  const menu = document.getElementById("menu-sheet");
+  if (!nav) return;
+
+  const acender = (botao) => {
+    nav.querySelectorAll("button").forEach((b) => b.classList.remove("nav-ativa"));
+    if (botao) botao.classList.add("nav-ativa");
+  };
+  const abaMapa = () => nav.querySelector('[data-nav="mapa"]');
+
+  nav.querySelectorAll("button").forEach((botao) => {
+    botao.addEventListener("click", () => {
+      const tipo = botao.dataset.nav;
+      if (tipo === "mapa") {
+        fecharTodosOsModais();
+        acender(botao);
+      } else if (tipo === "menu") {
+        menu.classList.remove("oculto");
+      } else if (tipo === "alvo") {
+        acender(botao);
+        document.getElementById(botao.dataset.alvo)?.click();
+      }
+    });
+  });
+
+  // Itens do Menu: aciona o botão antigo e fecha a folha.
+  menu.querySelectorAll(".menu-op").forEach((op) => {
+    op.addEventListener("click", () => {
+      menu.classList.add("oculto");
+      document.getElementById(op.dataset.alvo)?.click();
+    });
+  });
+  // Toca fora da folha pra fechar.
+  menu.addEventListener("click", (e) => {
+    if (e.target === menu) menu.classList.add("oculto");
+  });
+
+  // Sempre que nenhum modal estiver aberto, a aba "Mapa" fica acesa.
+  // Um observer barato: checa a cada clique em qualquer botão de fechar.
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[id^='btn-fechar']")) {
+      setTimeout(() => {
+        if (!algumOverlayAberto()) acender(abaMapa());
+      }, 50);
+    }
+  });
+}
+
+/**
+ * Fecha qualquer painel/modal aberto -- usado pela aba "Mapa" da barra
+ * inferior pra voltar ao mapa limpo de onde estiver.
+ */
+function fecharTodosOsModais() {
+  OVERLAYS_APP.forEach((id) => document.getElementById(id)?.classList.add("oculto"));
+}
 
 /**
  * Esconde a tela de carregamento (splash preta com o logo, ver

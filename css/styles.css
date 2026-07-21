@@ -4257,3 +4257,97 @@ select:focus {
   border: none !important;
   font-weight: 700 !important;
 }
+
+/* =========================================================
+   NAVEGAÇÃO INFERIOR + MENU (etapa 2 da UI moderna)
+   ========================================================= */
+
+/* Esconde os agrupamentos flutuantes antigos -- suas funções agora
+   vivem na barra de baixo e no Menu. Os botões continuam no DOM
+   (escondidos) porque a barra os aciona via .click(). */
+#botoes-lateral-esquerda { display: none !important; }
+#botoes-topo #btn-social,
+#botoes-topo #btn-feedback,
+#botoes-topo #btn-compartilhar,
+#botoes-topo #btn-biblioteca { display: none !important; }
+
+/* Barra inferior */
+#nav-inferior {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 90;
+  display: flex;
+  background: rgba(15, 18, 22, 0.96);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--linha);
+  padding: 7px 4px calc(9px + env(safe-area-inset-bottom, 0px));
+}
+#nav-inferior .nav-item, #nav-inferior button {
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fraco);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+#nav-inferior .nav-ico { font-size: 1.25rem; line-height: 1; }
+#nav-inferior .nav-txt { font-size: 0.6rem; letter-spacing: 0.02em; }
+#nav-inferior button.nav-ativa { color: var(--verde); }
+
+/* Sobe os botões flutuantes de mapa (busca/onde estou) e a dica pra
+   não ficarem atrás da barra nova. */
+#btn-buscar-local { bottom: 82px !important; }
+#btn-onde-estou { bottom: 138px !important; }
+#dica-mapa { bottom: 78px !important; }
+
+/* Folha do Menu */
+#menu-sheet {
+  position: fixed; inset: 0; z-index: 95;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex; align-items: flex-end;
+}
+#menu-sheet-conteudo {
+  width: 100%;
+  background: var(--surf);
+  border-radius: 22px 22px 0 0;
+  border-top: 1px solid var(--linha);
+  padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.5);
+}
+.menu-puxador {
+  width: 38px; height: 4px; border-radius: 99px;
+  background: #39404a; margin: 2px auto 12px;
+}
+#menu-sheet-conteudo h2 { margin: 0 0 14px; font-size: 1.05rem; }
+#menu-sheet-grade {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.menu-op {
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  color: var(--txt);
+  cursor: pointer;
+  padding: 14px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  font-size: 0.68rem;
+  transition: transform 0.1s, border-color 0.15s;
+}
+.menu-op span { font-size: 1.35rem; line-height: 1; }
+.menu-op:active { transform: scale(0.95); border-color: var(--verde); }
+
+/* Modais e painéis precisam ficar ACIMA da barra inferior */
+#modal-social, #modal-configuracoes, #modal-admin, #modal-brasil,
+#modal-raspadinha, #biblioteca-selos, #modal-conquistas, #modal-ranking,
+#modal-amigos, #modal-checkin, #modal-rotas, #modal-rota-detalhe,
+#modal-perfil, #modal-sugestoes-comunidade, #modal-cartao-progresso,
+#modal-selo-lightbox, #modal-busca-local {
+  z-index: 100;
+}

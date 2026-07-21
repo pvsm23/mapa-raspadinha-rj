@@ -415,6 +415,47 @@
 
   <p id="dica-mapa">Arraste para mover · pinça ou roda do mouse para zoom</p>
 
+  <!-- Navegação inferior: as 4 áreas principais + "Menu" (o resto).
+       Cada botão só aciona o botão antigo correspondente (que agora
+       fica escondido), pra reaproveitar os handlers já existentes sem
+       reescrever nada. Ver configurarNavInferior em js/script.js. -->
+  <nav id="nav-inferior">
+    <button type="button" data-nav="mapa" class="nav-item nav-ativa">
+      <span class="nav-ico">🗺️</span><span class="nav-txt">Mapa</span>
+    </button>
+    <button type="button" data-nav="alvo" data-alvo="btn-social">
+      <span class="nav-ico">👥</span><span class="nav-txt">Comunidade</span>
+    </button>
+    <button type="button" data-nav="alvo" data-alvo="btn-abrir-conquistas">
+      <span class="nav-ico">🎖️</span><span class="nav-txt">Conquistas</span>
+    </button>
+    <button type="button" data-nav="alvo" data-alvo="btn-meu-perfil">
+      <span class="nav-ico">👤</span><span class="nav-txt">Perfil</span>
+    </button>
+    <button type="button" data-nav="menu">
+      <span class="nav-ico">☰</span><span class="nav-txt">Menu</span>
+    </button>
+  </nav>
+
+  <!-- Folha do "Menu": tudo que não coube na barra. Cada item aciona
+       o botão antigo correspondente. -->
+  <div id="menu-sheet" class="oculto">
+    <div id="menu-sheet-conteudo">
+      <div class="menu-puxador"></div>
+      <h2>Menu</h2>
+      <div id="menu-sheet-grade">
+        <button type="button" class="menu-op" data-alvo="btn-abrir-ranking"><span>🏆</span>Ranking</button>
+        <button type="button" class="menu-op" data-alvo="btn-abrir-amigos"><span>👥</span>Amigos</button>
+        <button type="button" class="menu-op" data-alvo="btn-abrir-rotas"><span>🧭</span>Rotas</button>
+        <button type="button" class="menu-op" data-alvo="btn-abrir-checkin"><span>📅</span>Check-in</button>
+        <button type="button" class="menu-op" data-alvo="btn-biblioteca"><span>📖</span>Biblioteca</button>
+        <button type="button" class="menu-op" data-alvo="btn-mapa-brasil"><span>🇧🇷</span>Mapa do Brasil</button>
+        <button type="button" class="menu-op" data-alvo="btn-compartilhar"><span>🔗</span>Compartilhar</button>
+        <button type="button" class="menu-op" data-alvo="btn-feedback"><span>💬</span>Feedback</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Busca de municipio/ponto turistico, canto inferior direito --
        ao escolher um resultado, anima o zoom ate o local e abre o
        selo como se tivesse clicado nele -->
