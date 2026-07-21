@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.9.4";
+const VERSAO_APP = "0.9.5";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.9.4";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.9.5", itens: ["Download do app mais confiável.", "Correções e melhorias."] },
   { versao: "0.9.4", itens: ["Quem já tem o app instalado agora tem o botão 'Atualizar app' no menu, com aviso quando sai versão nova.", "Correções e melhorias."] },
   { versao: "0.9.3", itens: ["Agora dá pra ver o que mudou tocando na versão.", "Correções e melhorias de estabilidade."] },
   { versao: "0.9.2", itens: ["Você pode usar uma foto ou um selo dourado como foto de perfil.", "Ajustes visuais e correções."] },
@@ -259,16 +260,20 @@ async function verificarAtualizacaoApp(item) {
   }
 }
 
-/** Dispara o download do APK (funciona no navegador e no app web). */
+/**
+ * Dispara o download do APK. IMPORTANTE: nada de nova aba/target=_blank
+ * -- em navegador in-app ou "aba personalizada" (Custom Tab) o download
+ * do APK trava em 100% sem finalizar. Como o servidor manda o arquivo
+ * com "Content-Disposition: attachment", navegar direto pra ele baixa
+ * sem sair da página. No app instalado, abre no navegador do sistema
+ * (dentro da WebView o download/instalação do APK não conclui).
+ */
 function baixarApk() {
-  const a = document.createElement("a");
-  a.href = URL_APK;
-  a.setAttribute("download", "Desbrava.apk");
-  a.rel = "noopener";
-  a.target = "_blank";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  if (ehAppNativo()) {
+    window.open(URL_APK, "_system");
+  } else {
+    window.location.href = URL_APK;
+  }
 }
 
 window.addEventListener("beforeinstallprompt", (evento) => {
