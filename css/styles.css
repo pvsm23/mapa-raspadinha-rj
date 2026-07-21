@@ -4351,3 +4351,77 @@ select:focus {
 #modal-selo-lightbox, #modal-busca-local {
   z-index: 100;
 }
+
+/* =========================================================
+   FOLHA DESLIZANTE (etapa 3) — os popups "sobre o mapa"
+   (município, região, rota) sobem de baixo em vez de abrir
+   uma janela centralizada, deixando o mapa visível em cima.
+   ========================================================= */
+#modal-raspadinha,
+#modal-regiao,
+#modal-rota-detalhe {
+  align-items: flex-end !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  /* fundo mais leve: dá pra ver o mapa através do topo */
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.35) 40%,
+    rgba(0, 0, 0, 0) 100%
+  ) !important;
+}
+
+#modal-conteudo,
+#regiao-conteudo,
+#rota-detalhe-conteudo {
+  width: 100% !important;
+  max-width: 520px !important;
+  border-radius: 22px 22px 0 0 !important;
+  max-height: 82vh !important;
+  overflow-y: auto !important;
+  padding: 8px 20px calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+  box-shadow: 0 -16px 44px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Entrada deslizante: a animação vai no OVERLAY (que só existe no DOM
+   renderizado quando .oculto sai), não no conteúdo -- animar o
+   conteúdo, que fica sempre no DOM dentro de um pai display:none,
+   deixava ele travado no primeiro frame em alguns navegadores. */
+#modal-raspadinha:not(.oculto),
+#modal-regiao:not(.oculto),
+#modal-rota-detalhe:not(.oculto) {
+  animation: surgir-folha 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes surgir-folha {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Puxador no topo da folha (aquela barrinha de "arraste pra fechar") */
+#modal-conteudo::before,
+#regiao-conteudo::before,
+#rota-detalhe-conteudo::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 4px;
+  border-radius: 99px;
+  background: #39404a;
+  margin: 2px auto 10px;
+}
+
+@keyframes subir-folha {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* O botão de fechar (✕) fica flutuando no canto da folha */
+#modal-conteudo #btn-fechar-modal,
+#regiao-conteudo [id^="btn-fechar"],
+#rota-detalhe-conteudo [id^="btn-fechar"] {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+}
