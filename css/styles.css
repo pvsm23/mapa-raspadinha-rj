@@ -3994,10 +3994,14 @@ body.modo-rota-ativo #toast-onde-estou {
 
 #aviso-brilhante-pendente {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 96px);
+  /* Fica acima da barra inferior, não mais no topo (onde encostava na
+     barra superior nova). E NUNCA bloqueia toque -- é só um aviso. */
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  top: auto;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 390;
+  z-index: 60;
+  pointer-events: none;
   background: rgba(23, 27, 33, 0.95);
   border: 1px solid #E9B949;
   border-radius: 16px;
@@ -4549,3 +4553,19 @@ select:focus {
 
 /* Busca agora vive na barra de topo; a flutuante some. */
 #btn-buscar-local { display: none !important; }
+
+/* Atalho pras Sugestões dentro da Comunidade */
+#btn-atalho-sugestoes {
+  width: 100%;
+  margin: 10px 0 4px;
+  padding: 11px 14px;
+  background: var(--verde-esc);
+  color: var(--verde);
+  border: 1px solid rgba(43, 213, 118, 0.3);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+#btn-atalho-sugestoes:active { transform: scale(0.98); }

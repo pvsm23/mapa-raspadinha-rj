@@ -528,6 +528,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btn-social-global").addEventListener("click", () => alternarAbaSocial("global"));
   document.getElementById("btn-social-amigos").addEventListener("click", () => alternarAbaSocial("amigos"));
+  document.getElementById("btn-atalho-sugestoes").addEventListener("click", abrirSugestoesPeloAtalho);
   document.getElementById("btn-limpar-filtro-municipio").addEventListener("click", () => abrirPainelSocial());
   document.getElementById("btn-abrir-criar-post").addEventListener("click", alternarFormularioCriarPost);
   document.getElementById("input-foto-post").addEventListener("change", aoEscolherFotoPost);
@@ -2177,7 +2178,33 @@ async function mostrarOndeEstou() {
     const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
     window.controleMapa?.focarEmMunicipio(id);
     setTimeout(() => colocarMarcadorLocalAtual(path), 650);
-    mostrarToastOndeEstou(`Você está em ${path?.dataset.nome || "um município do RJ"}.`);
+
+    // Além de mostrar onde está, CONFIRMA a presença aqui -- assim dá
+    // pra raspar este município mesmo saindo do local depois (a bússola
+    // vira um "check-in" confiável, sem depender do check silencioso de
+    // abertura, que exige a permissão de GPS já concedida de antes).
+    const dados = estadoMapa[id];
+    let confirmou = false;
+    if (dados?.visitado) {
+      if (!dados.verificado) {
+        avaliarDeslocamento(id, lat, lon);
+        atualizarVerificacaoMunicipio(id, true, "");
+        confirmou = true;
+      }
+    } else {
+      avaliarDeslocamento(id, lat, lon);
+      estadoMapa[id] = { ...estadoMapa[id], presencaConfirmadaEm: new Date().toISOString() };
+      salvarEstado();
+      aplicarEstadoNoSVG();
+      confirmou = true;
+    }
+
+    const nomeMun = path?.dataset.nome || "um município do RJ";
+    mostrarToastOndeEstou(
+      confirmou
+        ? `📍 Você está em ${nomeMun}! Presença confirmada — já pode raspar o selo.`
+        : `Você está em ${nomeMun}.`
+    );
   } catch (erro) {
     mostrarToastOndeEstou(erro.message);
   } finally {
@@ -5652,6 +5679,20 @@ let sugestoesCarregadas = [];
  * Comunidade. Chamado tanto pelo botão no popup do município quanto
  * pelo próprio select de trocar município lá dentro.
  */
+/**
+ * Atalho pras Sugestões a partir da Comunidade: como as sugestões são
+ * por município, abre no município do filtro atual (se houver) ou no
+ * primeiro da lista -- dentro do modal dá pra trocar pelo seletor.
+ */
+function abrirSugestoesPeloAtalho() {
+  const municipioId =
+    filtroMunicipioSocialId ||
+    Object.entries(idParaNomeMunicipio).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"))[0]?.[0];
+  if (!municipioId) return;
+  fecharPainelSocial();
+  abrirSugestoesComunidade(municipioId);
+}
+
 function abrirSugestoesComunidade(municipioId) {
   if (!municipioId) return;
   municipioAtualSugestoes = municipioId;

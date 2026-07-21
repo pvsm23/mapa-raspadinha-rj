@@ -62,6 +62,10 @@ function initScratchCard({
     c.style.top = "0";
     c.style.left = "0";
     c.style.borderRadius = "50%";
+    // Sem isso, arrastar o dedo pra raspar dentro de um painel que
+    // rola (a folha deslizante do popup) vira ROLAGEM em vez de
+    // raspagem no celular -- era o que fazia "raspar não funcionar".
+    c.style.touchAction = "none";
   });
 
   wrapper.appendChild(canvasImagem);
