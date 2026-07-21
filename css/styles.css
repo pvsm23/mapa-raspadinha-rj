@@ -4295,7 +4295,8 @@ select:focus {
   padding: 4px 0;
   transition: color 0.15s;
 }
-#nav-inferior .nav-ico { font-size: 1.25rem; line-height: 1; }
+#nav-inferior .nav-ico { line-height: 0; }
+#nav-inferior .nav-ico svg { width: 23px; height: 23px; display: block; }
 #nav-inferior .nav-txt { font-size: 0.6rem; letter-spacing: 0.02em; }
 #nav-inferior button.nav-ativa { color: var(--verde); }
 
