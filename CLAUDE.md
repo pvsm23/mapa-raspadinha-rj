@@ -66,6 +66,20 @@ arquitetura e regras do Firestore em `README.md`.
   Pendente o Paulo criar a conta e adicionar o domínio nos
   "Authorized domains" do Firebase Auth.
 
+## Login com Google (só no APK) — pendente config do Firebase
+
+Código pronto: plugin `@capacitor-firebase/authentication` (skipNativeAuth),
+botão "Entrar com o Google" na tela de login (só aparece no app nativo),
+`entrarComGoogle` (js/script.js) → `entrarComCredencialGoogle` (js/auth.js,
+usa `signInWithCredential` do SDK web). **Não funciona até:**
+1. Firebase Console → Authentication → Sign-in method → **habilitar Google**.
+2. Project Settings → Adicionar app **Android**, package
+   `io.github.pvsm23.desbrava`, com o **SHA-1 de debug**
+   `85:1D:F4:D0:9C:09:B6:0C:7F:69:7A:0B:AA:6F:28:EE:AF:31:E6:2E`
+   (release/Play App Signing têm SHA-1 diferentes — adicionar depois).
+3. Baixar o `google-services.json` → colocar em `android/app/`.
+4. Rebuild do APK. O plugin lê o client ID do próprio google-services.json.
+
 ## Como gerar o APK (Capacitor)
 
 Sempre nesta ordem, a partir da raiz do projeto:

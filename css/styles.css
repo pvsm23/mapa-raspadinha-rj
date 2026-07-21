@@ -5066,3 +5066,55 @@ select:focus {
   font-weight: 700;
 }
 .menu-op.menu-op-destaque span { filter: none; }
+
+/* =========================================================
+   Login com Google (só no app nativo)
+   ========================================================= */
+#login-ou {
+  text-align: center;
+  color: #8E97A3;
+  font-size: 0.8rem;
+  margin: 14px 0 10px;
+  position: relative;
+}
+#login-ou::before,
+#login-ou::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 38%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+#login-ou::before { left: 0; }
+#login-ou::after { right: 0; }
+
+#btn-entrar-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  color: #1f2328;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+#btn-entrar-google:active { transform: scale(0.98); }
+#btn-entrar-google .google-g {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: conic-gradient(from -45deg, #ea4335 0 25%, #fbbc05 0 50%, #34a853 0 75%, #4285f4 0);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.8rem;
+  line-height: 1;
+}

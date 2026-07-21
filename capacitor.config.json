@@ -10,6 +10,10 @@
       "backgroundColor": "#000000",
       "showSpinner": false,
       "launchAutoHide": true
+    },
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": ["google.com"]
     }
   }
 }

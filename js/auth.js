@@ -31,6 +31,8 @@ import {
   deleteUser,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  GoogleAuthProvider,
+  signInWithCredential,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
   getFirestore,
@@ -164,6 +166,9 @@ window.raspadinhaAuth = {
   criarContaComEmail: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
+  entrarComCredencialGoogle: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
   enviarEmailProprio: async () => {},
   enviarFeedback: async () => {},
   sair: () => {},
@@ -244,6 +249,24 @@ if (CONFIGURADO) {
 
   window.raspadinhaAuth.entrarComEmail = (email, senha) =>
     signInWithEmailAndPassword(auth, email, senha);
+
+  /**
+   * Login com Google no app nativo: o plugin
+   * (@capacitor-firebase/authentication, skipNativeAuth) abre o seletor
+   * de conta do Google e devolve um idToken; aqui a gente troca esse
+   * token por uma sessão do Firebase usando o MESMO SDK web que o resto
+   * do app usa (Firestore etc.), pra não ter duas fontes de verdade.
+   * Ver entrarComGoogle em js/script.js (é lá que o plugin é chamado).
+   */
+  window.raspadinhaAuth.entrarComCredencialGoogle = async (idToken) => {
+    if (!idToken) throw new Error("Não recebi o token do Google.");
+    const credencial = GoogleAuthProvider.credential(idToken);
+    const resultado = await signInWithCredential(auth, credencial);
+    // Se for a 1a vez desse Google, credita convite pendente (mesma
+    // regra do cadastro por e-mail).
+    await creditarConviteSeExistir(resultado.user.uid);
+    return resultado;
+  };
 
   window.raspadinhaAuth.criarContaComEmail = async (email, senha) => {
     const resultado = await createUserWithEmailAndPassword(auth, email, senha);
