@@ -22,6 +22,13 @@ allprojects {
         google()
         mavenCentral()
     }
+
+    // O projeto vive dentro do OneDrive, que fica sincronizando os
+    // arquivos de build e trava o empacotamento ("Failed to delete
+    // some children"). Mandar TODO o build pra fora do OneDrive
+    // (AppData\Local) resolve de vez -- o APK sai lá em
+    // .../DesbravaBuild/app/outputs/apk/debug/app-debug.apk
+    buildDir = "${System.env.LOCALAPPDATA}/DesbravaBuild/${project.name}"
 }
 
 task clean(type: Delete) {
