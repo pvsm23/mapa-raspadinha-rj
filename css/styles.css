@@ -5058,3 +5058,11 @@ select:focus {
 #modal-novidades:not(.oculto) #novidades-conteudo {
   animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Item "Atualizar app" quando há versão nova publicada */
+.menu-op.menu-op-destaque {
+  color: var(--verde-tinta);
+  background: var(--verde);
+  font-weight: 700;
+}
+.menu-op.menu-op-destaque span { filter: none; }

@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.9.3";
+const VERSAO_APP = "0.9.4";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.9.3";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.9.4", itens: ["Quem já tem o app instalado agora tem o botão 'Atualizar app' no menu, com aviso quando sai versão nova.", "Correções e melhorias."] },
   { versao: "0.9.3", itens: ["Agora dá pra ver o que mudou tocando na versão.", "Correções e melhorias de estabilidade."] },
   { versao: "0.9.2", itens: ["Você pode usar uma foto ou um selo dourado como foto de perfil.", "Ajustes visuais e correções."] },
   { versao: "0.9.1", itens: ["As janelas do app agora abrem com animação.", "Pequenas melhorias."] },
@@ -221,6 +222,41 @@ function renderizarNovidades() {
     bloco.append(cabecalho, ul);
     lista.appendChild(bloco);
   });
+}
+
+/** Compara "x.y.z": true se `a` for MAIOR que `b`. */
+function ehVersaoMaior(a, b) {
+  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return true;
+    if ((pa[i] || 0) < (pb[i] || 0)) return false;
+  }
+  return false;
+}
+
+/**
+ * Só no app instalado: consulta o último release no GitHub e, se a
+ * versão publicada for maior que a instalada (VERSAO_APP), destaca o
+ * item de menu "Atualizar app" com o aviso da nova versão. Falha
+ * silenciosa (offline / GitHub fora do ar) -- nunca trava nada.
+ */
+async function verificarAtualizacaoApp(item) {
+  try {
+    const resposta = await fetch(
+      "https://api.github.com/repos/pvsm23/mapa-raspadinha-rj/releases/latest",
+      { headers: { Accept: "application/vnd.github+json" } }
+    );
+    if (!resposta.ok) return;
+    const dados = await resposta.json();
+    const versaoNova = (dados.tag_name || "").replace(/^v/, "").trim();
+    if (versaoNova && ehVersaoMaior(versaoNova, VERSAO_APP)) {
+      item.innerHTML = `<span>🔄</span>Atualizar app · ${versaoNova} nova!`;
+      item.classList.add("menu-op-destaque");
+    }
+  } catch {
+    /* sem internet ou GitHub indisponível: mantém "Atualizar app" normal */
+  }
 }
 
 /** Dispara o download do APK (funciona no navegador e no app web). */
@@ -677,18 +713,19 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-fechar-aviso-pwa")
     .addEventListener("click", fecharAvisoInstalarPwa);
 
-  // Item "📥 Baixar app" no menu -- funciona mesmo se a pessoa já
-  // fechou o aviso. Escondido dentro do próprio app nativo (lá não faz
-  // sentido baixar o APK).
+  // Item de download no menu -- funciona mesmo se a pessoa já fechou o
+  // aviso. Na WEB é "Baixar app"; dentro do APK vira "Atualizar app"
+  // (baixa a versão mais recente pra instalar por cima) e, se houver
+  // versão nova publicada, mostra o aviso.
   const itemBaixarApk = document.getElementById("menu-baixar-apk");
-  if (ehAppNativo()) {
-    itemBaixarApk.classList.add("oculto");
-  } else {
-    itemBaixarApk.addEventListener("click", () => {
-      document.getElementById("menu-sheet").classList.add("oculto");
-      baixarApk();
-    });
-  }
+  itemBaixarApk.innerHTML = ehAppNativo()
+    ? "<span>🔄</span>Atualizar app"
+    : "<span>📥</span>Baixar app";
+  itemBaixarApk.addEventListener("click", () => {
+    document.getElementById("menu-sheet").classList.add("oculto");
+    baixarApk();
+  });
+  if (ehAppNativo()) verificarAtualizacaoApp(itemBaixarApk);
 
   // Pequeno atraso pra não competir com o resto da tela carregando.
   setTimeout(mostrarAvisoInstalarPwa, 1200);
