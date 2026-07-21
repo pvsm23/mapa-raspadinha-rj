@@ -90,9 +90,9 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
               (
                 request.auth.uid == uid
                 && (
-                  request.resource.data.ehPro == resource.data.get('ehPro', false)
+                  request.resource.data.get('ehPro', false) == resource.data.get('ehPro', false)
                   || (
-                    request.resource.data.ehPro == true
+                    request.resource.data.get('ehPro', false) == true
                     && resource.data.get('ehPro', false) != true
                     && request.resource.data.get('codigoAtivacaoPro', '') == 'SUBSTITUA_POR_UM_CODIGO_SECRETO_SEU'
                   )

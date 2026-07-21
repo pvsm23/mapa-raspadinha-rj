@@ -4980,3 +4980,81 @@ select:focus {
 #modal-editar-avatar:not(.oculto) #editar-avatar-conteudo {
   animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* =========================================================
+   "O QUE MUDOU" (histórico de versões) + versão clicável
+   ========================================================= */
+#btn-ver-novidades.sobre-linha {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+  text-align: left;
+}
+#btn-ver-novidades .sobre-seta {
+  margin-left: auto;
+  color: var(--verde);
+  font-size: 0.82rem;
+  font-weight: 600;
+  align-self: center;
+}
+#btn-ver-novidades:active { opacity: 0.7; }
+
+#modal-novidades {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 110;
+  padding: 16px;
+}
+#modal-novidades.oculto { display: none; }
+#novidades-conteudo {
+  position: relative;
+  background: var(--surf);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 82vh;
+  overflow-y: auto;
+  text-align: left;
+}
+#novidades-conteudo h2 { margin: 0 0 16px; font-size: 1.15rem; text-align: center; }
+#btn-fechar-novidades {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: transparent; border: none;
+  color: #8E97A3; font-size: 1.2rem; cursor: pointer; padding: 6px; line-height: 1;
+}
+.novidade-item {
+  padding: 14px 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.novidade-item:first-child { border-top: none; }
+.novidade-versao {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--fraco);
+  margin-bottom: 8px;
+}
+.novidade-atual .novidade-versao { color: var(--verde); }
+.novidade-item ul { margin: 0; padding-left: 18px; }
+.novidade-item li {
+  font-size: 0.9rem;
+  color: var(--txt);
+  margin: 4px 0;
+  line-height: 1.35;
+}
+
+#modal-novidades:not(.oculto) { animation: janela-fade 0.2s ease; }
+#modal-novidades:not(.oculto) #novidades-conteudo {
+  animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}

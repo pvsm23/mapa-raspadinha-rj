@@ -29,7 +29,19 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.9.2";
+const VERSAO_APP = "0.9.3";
+
+// Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
+// mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
+// SEMPRE amigáveis e genéricas -- nada sensível/crítico aqui (correções
+// de segurança, regras, limites etc. entram como "melhorias" ou
+// "correções", ver renderizarNovidades).
+const HISTORICO_VERSOES = [
+  { versao: "0.9.3", itens: ["Agora dá pra ver o que mudou tocando na versão.", "Correções e melhorias de estabilidade."] },
+  { versao: "0.9.2", itens: ["Você pode usar uma foto ou um selo dourado como foto de perfil.", "Ajustes visuais e correções."] },
+  { versao: "0.9.1", itens: ["As janelas do app agora abrem com animação.", "Pequenas melhorias."] },
+  { versao: "0.9.0", itens: ["Novo visual do perfil, ícone novo e vários ajustes."] },
+];
 
 // Chave PIX mostrada no botão 💬 → "Colaborar" (ver PENDENCIAS.md).
 // É só o PADRÃO: se a conta dona salvar uma chave nova no painel de
@@ -173,6 +185,56 @@ let promptInstalacaoPwa = null;
 // comum em vez do app instalado.
 const CHAVE_PWA_INSTALADO = "desbrava_pwa_instalado";
 
+// Link de download do APK (sempre a versão mais recente). Publicado
+// como "release" no GitHub -- a URL /releases/latest/download/... sempre
+// aponta pro APK do último release, então NÃO precisa trocar a cada
+// versão (ver CLAUDE.md, "APK no Drive/online"). Trocar aqui se um dia
+// mudar o host do arquivo.
+const URL_APK = "https://github.com/pvsm23/mapa-raspadinha-rj/releases/latest/download/Desbrava.apk";
+
+function abrirNovidades() {
+  renderizarNovidades();
+  document.getElementById("modal-novidades").classList.remove("oculto");
+}
+
+function fecharNovidades() {
+  document.getElementById("modal-novidades").classList.add("oculto");
+}
+
+/** Lista as últimas 10 versões (HISTORICO_VERSOES) com descrições
+ *  amigáveis -- a mais recente em destaque no topo. */
+function renderizarNovidades() {
+  const lista = document.getElementById("novidades-lista");
+  lista.innerHTML = "";
+  HISTORICO_VERSOES.slice(0, 10).forEach((v, i) => {
+    const bloco = document.createElement("div");
+    bloco.className = "novidade-item" + (i === 0 ? " novidade-atual" : "");
+    const cabecalho = document.createElement("div");
+    cabecalho.className = "novidade-versao";
+    cabecalho.textContent = i === 0 ? `Versão ${v.versao} · atual` : `Versão ${v.versao}`;
+    const ul = document.createElement("ul");
+    (v.itens || []).forEach((texto) => {
+      const li = document.createElement("li");
+      li.textContent = texto;
+      ul.appendChild(li);
+    });
+    bloco.append(cabecalho, ul);
+    lista.appendChild(bloco);
+  });
+}
+
+/** Dispara o download do APK (funciona no navegador e no app web). */
+function baixarApk() {
+  const a = document.createElement("a");
+  a.href = URL_APK;
+  a.setAttribute("download", "Desbrava.apk");
+  a.rel = "noopener";
+  a.target = "_blank";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 window.addEventListener("beforeinstallprompt", (evento) => {
   evento.preventDefault();
   promptInstalacaoPwa = evento;
@@ -189,6 +251,11 @@ window.addEventListener("appinstalled", () => {
 document.addEventListener("DOMContentLoaded", () => {
   const versaoEl = document.getElementById("versao-app-texto");
   if (versaoEl) versaoEl.textContent = `versão ${VERSAO_APP}`;
+  document.getElementById("btn-ver-novidades")?.addEventListener("click", abrirNovidades);
+  document.getElementById("btn-fechar-novidades")?.addEventListener("click", fecharNovidades);
+  document.getElementById("modal-novidades")?.addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-novidades") fecharNovidades();
+  });
   estadoMapa = carregarEstado();
   estadoRegioes = carregarEstadoRegioes();
   estadoConquistas = carregarEstadoConquistas();
@@ -601,13 +668,27 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---- "Onde estou": localizar no mapa via GPS ----
   document.getElementById("btn-onde-estou").addEventListener("click", mostrarOndeEstou);
 
-  document.getElementById("btn-instalar-pwa").addEventListener("click", instalarPwa);
+  // O aviso e o item de menu agora BAIXAM o APK (antes era instalar PWA).
+  document.getElementById("btn-instalar-pwa").addEventListener("click", baixarApk);
   document
     .getElementById("btn-como-instalar-pwa")
     .addEventListener("click", alternarInstrucoesInstalarPwa);
   document
     .getElementById("btn-fechar-aviso-pwa")
     .addEventListener("click", fecharAvisoInstalarPwa);
+
+  // Item "📥 Baixar app" no menu -- funciona mesmo se a pessoa já
+  // fechou o aviso. Escondido dentro do próprio app nativo (lá não faz
+  // sentido baixar o APK).
+  const itemBaixarApk = document.getElementById("menu-baixar-apk");
+  if (ehAppNativo()) {
+    itemBaixarApk.classList.add("oculto");
+  } else {
+    itemBaixarApk.addEventListener("click", () => {
+      document.getElementById("menu-sheet").classList.add("oculto");
+      baixarApk();
+    });
+  }
 
   // Pequeno atraso pra não competir com o resto da tela carregando.
   setTimeout(mostrarAvisoInstalarPwa, 1200);
@@ -940,6 +1021,8 @@ function ehIOS() {
  * no Safari/iOS não existe forma de checar isso pela web).
  */
 async function mostrarAvisoInstalarPwa() {
+  // Dentro do app nativo não faz sentido oferecer o download do APK.
+  if (ehAppNativo()) return;
   if (pwaJaInstalado()) return;
   if (localStorage.getItem(CHAVE_PWA_INSTALADO) === "true") return;
 

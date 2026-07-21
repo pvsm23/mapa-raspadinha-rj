@@ -467,6 +467,7 @@
         <button type="button" class="menu-op" data-alvo="btn-biblioteca"><span>📖</span>Biblioteca</button>
         <button type="button" class="menu-op" data-alvo="btn-mapa-brasil"><span>🇧🇷</span>Mapa do Brasil</button>
         <button type="button" class="menu-op" data-alvo="btn-compartilhar"><span>🔗</span>Compartilhar</button>
+        <button type="button" class="menu-op" id="menu-baixar-apk"><span>📥</span>Baixar app</button>
         <button type="button" class="menu-op" data-alvo="btn-feedback"><span>💬</span>Feedback</button>
       </div>
     </div>
@@ -764,10 +765,11 @@
            de VERSAO_APP em js/script.js. -->
       <div id="secao-sobre" class="cartao-config">
         <h3>Sobre</h3>
-        <p class="sobre-linha">
+        <button type="button" id="btn-ver-novidades" class="sobre-linha">
           <span class="logo-desbrava">DESBRAVA</span>
           <span id="versao-app-texto">versão —</span>
-        </p>
+          <span class="sobre-seta">O que mudou ›</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1106,17 +1108,27 @@
     <span id="toast-login-texto">Login sendo efetuado...</span>
   </div>
 
-  <!-- Aviso flutuante: sugestao de instalar o app (PWA) -->
+  <!-- "O que mudou": histórico das últimas versões (abre ao tocar na
+       versão em Configurações → Sobre). Ver renderizarNovidades. -->
+  <div id="modal-novidades" class="oculto">
+    <div id="novidades-conteudo">
+      <button id="btn-fechar-novidades" aria-label="Fechar">✕</button>
+      <h2>O que mudou</h2>
+      <div id="novidades-lista"></div>
+    </div>
+  </div>
+
+  <!-- Aviso flutuante: sugestao de baixar o app (APK) -->
   <div id="aviso-instalar-pwa" class="oculto">
     <div id="aviso-instalar-linha">
       <span class="aviso-instalar-icone">📲</span>
-      <span id="aviso-instalar-texto">Instale o Desbrava e acesse como um aplicativo, direto da tela inicial!</span>
+      <span id="aviso-instalar-texto">Baixe o app do Desbrava (APK) e use como um aplicativo no seu Android!</span>
       <button id="btn-fechar-aviso-pwa" aria-label="Fechar aviso">✕</button>
     </div>
     <div id="aviso-instalar-instrucoes" class="oculto"></div>
     <div id="aviso-instalar-acoes">
-      <button id="btn-instalar-pwa" class="oculto">⬇️ Instalar</button>
-      <button id="btn-como-instalar-pwa">Como instalar</button>
+      <button id="btn-instalar-pwa">⬇️ Baixar app</button>
+      <button id="btn-como-instalar-pwa" class="oculto">Como instalar</button>
     </div>
   </div>
 
