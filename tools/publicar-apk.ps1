@@ -26,6 +26,14 @@ if ($gradle -notmatch 'versionName\s+"([^"]+)"') { throw "Não achei versionName
 $ver = $Matches[1]
 $tag = "v$ver"
 
+# Guarda também uma cópia versionada em Downloads (Desbrava-v<ver>.apk),
+# do mesmo jeito que o .aab já é salvo versionado. O Desbrava.apk "cru"
+# continua existindo (é o que sobe pro release e o que o link "latest"
+# serve); esta cópia é só pra ter o histórico local por versão à mão.
+$apkVersionado = "$env:USERPROFILE\Downloads\Desbrava-$tag.apk"
+Copy-Item $apk $apkVersionado -Force
+Write-Host "Cópia versionada salva em: $apkVersionado"
+
 Write-Host "Publicando Desbrava $tag ($apk)..."
 
 # Já existe release nessa tag? Então só substitui o arquivo (--clobber);

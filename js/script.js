@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.1";
+const VERSAO_APP = "0.10.2";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.1";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.2", itens: ["O mapa de São Paulo agora abre mais rápido e sem travar.", "Melhorias no login com o Google."] },
   { versao: "0.10.1", itens: ["Mapa do Brasil maior e mais fácil de usar: toque num estado pra selecionar e confirme no botão."] },
   { versao: "0.10.0", itens: ["São Paulo já apareceu no mapa do Brasil! 🟡 Ainda em desenvolvimento, mas dá pra ver os 645 municípios."] },
   { versao: "0.9.6", itens: ["Agora dá pra entrar com a conta do Google no aplicativo.", "Correções e melhorias."] },
@@ -1192,6 +1193,19 @@ function aoEnviarFormLogin(evento) {
 }
 
 /**
+ * Corre uma promise contra um relógio: se ela não resolver/rejeitar em
+ * `ms`, rejeita com `mensagem`. Usado pra não deixar o login com Google
+ * pendurado eternamente quando o lado nativo trava.
+ */
+function comTempoLimite(promessa, ms, mensagem) {
+  let timer;
+  const relogio = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(mensagem)), ms);
+  });
+  return Promise.race([promessa, relogio]).finally(() => clearTimeout(timer));
+}
+
+/**
  * Login com Google — funciona no app nativo (APK, via plugin Capacitor)
  * e na web (via signInWithPopup do Firebase).
  */
@@ -1204,7 +1218,15 @@ async function entrarComGoogle() {
     if (ehAppNativo()) {
       const plugin = window.Capacitor?.Plugins?.FirebaseAuthentication;
       if (!plugin) throw new Error("Plugin do Google não disponível.");
-      const resultado = await plugin.signInWithGoogle();
+      // Corta o login se travar (ex: google-services.json sem o cliente
+      // OAuth de Android -> o seletor de conta abre mas nunca conclui o
+      // handshake). Sem esse teto, o toast fica preso em "Entrando com o
+      // Google..." pra sempre. 45s cobre até uma rede bem lenta.
+      const resultado = await comTempoLimite(
+        plugin.signInWithGoogle(),
+        45000,
+        "O login com o Google demorou demais. Tente de novo."
+      );
       const idToken = resultado?.credential?.idToken;
       if (!idToken) throw new Error("Não recebi o token do Google. Tente de novo.");
       await window.raspadinhaAuth.entrarComCredencialGoogle(idToken);
@@ -5887,24 +5909,42 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla) {
 
   if (!svgMapaEstadoCache[siglaLower]) {
     container.innerHTML = '<div class="spinner spinner-grande"></div>';
+    // Dá um "respiro" pro spinner realmente PINTAR antes da injeção
+    // pesada do SVG (645 municípios ~800 KB). Sem isso, num celular mais
+    // simples a tela fica congelada por 1-2s sem nada na tela e parece
+    // que "não abriu". Ver relato do Paulo (SP não abre no APK).
+    // Usa setTimeout puro (não requestAnimationFrame): rAF NÃO dispara
+    // quando a página está em segundo plano/oculta, o que penduraria a
+    // função pra sempre; setTimeout sempre dispara.
+    await new Promise((r) => setTimeout(r, 30));
     try {
       const resposta = await fetch(`assets/svg/${siglaLower}-municipios.svg`);
+      if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
       svgMapaEstadoCache[siglaLower] = await resposta.text();
     } catch (erro) {
       console.error(`Falha ao carregar o mapa de ${sigla}:`, erro);
-      container.innerHTML = "<p>Não foi possível carregar o mapa agora.</p>";
+      container.innerHTML =
+        '<p style="padding:16px">Não foi possível carregar o mapa agora. ' +
+        "Tente fechar e abrir de novo.</p>";
       return;
     }
+    // Mais um respiro antes de injetar o SVG grande, pelo mesmo motivo.
+    await new Promise((r) => setTimeout(r, 30));
   }
 
   container.innerHTML = svgMapaEstadoCache[siglaLower];
-  container.querySelectorAll(".municipio").forEach((path) => {
-    path.addEventListener("click", () => {
-      const nome = path.dataset.nome;
-      document.getElementById("sp-status").textContent =
-        `${nome} — em desenvolvimento. Em breve dá pra raspar!`;
-    });
-  });
+
+  // Delegação de evento: UM listener no container em vez de 645 (um por
+  // município). Além de mais leve na hora de montar, sobrevive a
+  // reaberturas sem empilhar handlers. O clique num <path.municipio>
+  // borbulha até aqui; o <text> do rótulo tem pointer-events:none, então
+  // o alvo real é sempre o path.
+  container.onclick = (evento) => {
+    const alvo = evento.target.closest(".municipio");
+    if (!alvo) return;
+    document.getElementById("sp-status").textContent =
+      `${alvo.dataset.nome} — em desenvolvimento. Em breve dá pra raspar!`;
+  };
 }
 
 function fecharMapaSP() {
