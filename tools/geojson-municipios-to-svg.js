@@ -143,8 +143,8 @@ function projetar([lon, lat]) {
   ];
 }
 
-function anelParaPathD(anel) {
-  const projetados = anel.map(projetar);
+// Constrói o `d` de um anel JÁ projetado, simplificando com Douglas-Peucker.
+function anelParaPathDeProjetado(projetados) {
   pontosAntes += projetados.length;
   const pontos = douglasPeucker(projetados, EPS_SIMPLIFICACAO);
   pontosDepois += pontos.length;
@@ -154,6 +154,49 @@ function anelParaPathD(anel) {
     d += `L ${pontos[i][0]} ${pontos[i][1]} `;
   }
   return d + "Z";
+}
+
+/* ---- Contornos de região (divisas), calculados no BUILD ----
+   Uma aresta (par de vértices vizinhos de um município) é INTERNA a uma
+   região se dois municípios DA MESMA região a compartilham -- nesse caso
+   não é divisa. As demais (entre regiões diferentes, ou na borda do
+   estado) são desenhadas. Usa a geometria COMPLETA (antes do
+   Douglas-Peucker) e casamento EXATO de vértices: na malha do IBGE os
+   municípios vizinhos compartilham vértices idênticos, então depois de
+   projetar+arredondar as arestas batem exatamente -- o que NÃO valeria
+   se a gente casasse a geometria já simplificada (o DP move/remove
+   vértices de forma diferente em cada lado). Resultado embutido no SVG
+   como <g class="contornos-regioes">, mostrado só no modo regiões. */
+const arestasContorno = new Map(); // chave "ax,ay;bx,by" -> { p1, p2, regioes: [] }
+
+function coletarArestasDeAnel(projetados, regiao) {
+  const n = projetados.length;
+  for (let i = 0; i < n; i++) {
+    const a = projetados[i];
+    const b = projetados[(i + 1) % n];
+    const ka = `${a[0]},${a[1]}`;
+    const kb = `${b[0]},${b[1]}`;
+    if (ka === kb) continue;
+    const chave = ka < kb ? `${ka};${kb}` : `${kb};${ka}`;
+    let e = arestasContorno.get(chave);
+    if (!e) { e = { p1: a, p2: b, regioes: [] }; arestasContorno.set(chave, e); }
+    e.regioes.push(regiao);
+  }
+}
+
+function construirPathDeContornos() {
+  const segmentos = [];
+  for (const e of arestasContorno.values()) {
+    const contagem = {};
+    let interna = false;
+    for (const r of e.regioes) {
+      contagem[r] = (contagem[r] || 0) + 1;
+      if (contagem[r] >= 2) { interna = true; break; }
+    }
+    if (interna) continue;
+    segmentos.push(`M ${e.p1[0]} ${e.p1[1]} L ${e.p2[0]} ${e.p2[1]}`);
+  }
+  return segmentos;
 }
 
 function escaparAtributo(texto) {
@@ -196,7 +239,16 @@ const paths = featuresOrdenadas
     const cor = idParaCor[codigoIbge];
     const dRegiao = regiaoId ? ` data-regiao="${regiaoId}"` : "";
     const dCor = cor !== undefined ? ` data-cor="${cor}"` : "";
-    const d = poligonosDaFeature(feature).flat().map(anelParaPathD).join(" ");
+    const d = poligonosDaFeature(feature)
+      .flat()
+      .map((anel) => {
+        const projetados = anel.map(projetar);
+        // Coleta arestas da geometria COMPLETA (pros contornos de região),
+        // antes de simplificar o preenchimento.
+        if (regiaoId) coletarArestasDeAnel(projetados, regiaoId);
+        return anelParaPathDeProjetado(projetados);
+      })
+      .join(" ");
     return (
       `  <path id="mun-${codigoIbge}" data-municipio="${codigoIbge}" ` +
       `data-nome="${escaparAtributo(nome)}"${dRegiao}${dCor} class="municipio" d="${d}" />`
@@ -263,9 +315,16 @@ const grupoRegioes = rotulosRegioes
   ? `\n  <g id="rotulos-regioes">\n${rotulosRegioes}\n  </g>`
   : "";
 
+// Contornos de região (divisas): um único <path> com todos os segmentos
+// de divisa, por cima dos preenchimentos. Visível só no modo regiões (CSS).
+const segmentosContorno = temRegioes ? construirPathDeContornos() : [];
+const grupoContornos = segmentosContorno.length
+  ? `\n  <g class="contornos-regioes"><path class="contorno-regiao-segmento" d="${segmentosContorno.join(" ")}" /></g>`
+  : "";
+
 const svg =
   `<svg id="mapa-${sigla}" viewBox="0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}" ` +
-  `xmlns="http://www.w3.org/2000/svg">\n${paths}\n${rotulos}${grupoRegioes}\n</svg>\n`;
+  `xmlns="http://www.w3.org/2000/svg">\n${paths}${grupoContornos}\n${rotulos}${grupoRegioes}\n</svg>\n`;
 
 fs.mkdirSync(path.dirname(SAIDA), { recursive: true });
 fs.writeFileSync(SAIDA, svg, "utf8");
@@ -273,6 +332,6 @@ fs.writeFileSync(SAIDA, svg, "utf8");
 const reducao = pontosAntes ? (100 * (1 - pontosDepois / pontosAntes)).toFixed(1) : "0";
 console.log(`OK: ${geojson.features.length} municípios -> ${SAIDA}`);
 console.log(`viewBox: 0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}`);
-console.log(`regiões: ${Object.keys(regioesInfo).length} (rótulos: ${rotulosRegioes ? "sim" : "não"})`);
+console.log(`regiões: ${Object.keys(regioesInfo).length} (rótulos: ${rotulosRegioes ? "sim" : "não"}, contornos: ${segmentosContorno.length} segmentos)`);
 console.log(`simplificação (eps=${EPS_SIMPLIFICACAO}): ${pontosAntes} -> ${pontosDepois} pontos (-${reducao}%)`);
 console.log(`tamanho do arquivo: ${(svg.length / 1024).toFixed(1)} KB`);

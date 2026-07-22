@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.9";
+const VERSAO_APP = "0.10.10";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.9";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.10", itens: ["Em São Paulo: as regiões agora aparecem com as divisas desenhadas (afastado), o zoom vai bem mais longe (dá pra achar os municípios minúsculos) e as linhas ficaram mais finas."] },
   { versao: "0.10.9", itens: ["Dá pra dar mais zoom no mapa de São Paulo."] },
   { versao: "0.10.8", itens: ["Nomes das regiões agora aparecem no mapa do Rio (afastado). Em São Paulo, os nomes dos municípios ficaram menores pra não embolar nas áreas concentradas."] },
   { versao: "0.10.7", itens: ["Mapa de São Paulo mais leve e organizado: afastado mostra as 15 regiões; aproximando, os municípios com bordas mais nítidas e nomes só bem no zoom. Corrigido o botão 🇧🇷 de troca de estado."] },
@@ -6089,7 +6090,7 @@ function mostrarToastSP(nome) {
  */
 function inicializarPanZoomSP() {
   const viewport = document.getElementById("sp-viewport");
-  const ESCALA_MAXIMA = 40;
+  const ESCALA_MAXIMA = 80;
   const LIMIAR_ARRASTO = 5;
   const FRACAO_MINIMA_VISIVEL = 0.1;
   // Abaixo disto (mapa afastado) mostra as 15 mesorregiões coloridas

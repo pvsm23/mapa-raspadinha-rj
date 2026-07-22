@@ -141,15 +141,21 @@ svg#mapa-rj.modo-regioes .municipio {
   stroke: none;
 }
 
-#contornos-regioes {
+/* Grupo de contornos: no RJ é #contornos-regioes (montado por JS), no SP
+   é .contornos-regioes (embutido no SVG pelo tool). Escondido por padrão,
+   aparece só no modo regiões de cada mapa. */
+#contornos-regioes,
+svg#mapa-sp .contornos-regioes {
   display: none;
 }
 
-svg#mapa-rj.modo-regioes #contornos-regioes {
+svg#mapa-rj.modo-regioes #contornos-regioes,
+svg#mapa-sp.modo-regioes .contornos-regioes {
   display: block;
 }
 
 .contorno-regiao-segmento {
+  fill: none;
   stroke: #0F1216;
   stroke-width: 1.4;
   stroke-linecap: round;
@@ -611,7 +617,7 @@ svg#mapa-sp {
    precisas em qualquer aproximação -- diferente do RJ, onde a borda
    engrossa junto com o mapa. */
 svg#mapa-sp .municipio {
-  stroke-width: 0.5;
+  stroke-width: 0.35;
   vector-effect: non-scaling-stroke;
 }
 
@@ -628,6 +634,13 @@ svg#mapa-sp.mostrar-rotulos .rotulo-municipio {
    mesorregiões, cada uma de uma cor, com o nome no meio. Some a borda de
    cada município (os da mesma região viram um bloco só) e aparece o nome
    da região. Ver atualizarModoDeVisualizacaoSP em js/script.js. */
+/* No modo regiões do SP, esconde as bordas dos municípios (fica o
+   preenchimento cinza contínuo) e deixa só os contornos de região por
+   cima -- igual ao RJ. */
+svg#mapa-sp.modo-regioes .municipio {
+  stroke: none;
+}
+
 /* Rótulo de região (mesorregião no SP): escondido por padrão, aparece
    só no modo regiões (mapa afastado). Vale pro SP E pro RJ -- texto
    claro com contorninho escuro pra ler sobre o mapa. No RJ os rótulos
