@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.9.6";
+const VERSAO_APP = "0.10.0";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.9.6";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.0", itens: ["São Paulo já apareceu no mapa do Brasil! 🟡 Ainda em desenvolvimento, mas dá pra ver os 645 municípios."] },
   { versao: "0.9.6", itens: ["Agora dá pra entrar com a conta do Google no aplicativo.", "Correções e melhorias."] },
   { versao: "0.9.5", itens: ["Download do app mais confiável.", "Correções e melhorias."] },
   { versao: "0.9.4", itens: ["Quem já tem o app instalado agora tem o botão 'Atualizar app' no menu, com aviso quando sai versão nova.", "Correções e melhorias."] },
@@ -656,6 +657,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btn-brasil-colaborar").addEventListener("click", () => {
     fecharMapaBrasil();
+    abrirColaborar();
+  });
+
+  // ---- Visualizador do estado de SP (em desenvolvimento) ----
+  document.getElementById("btn-fechar-sp").addEventListener("click", fecharMapaSP);
+  document.getElementById("modal-sp").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-sp") fecharMapaSP();
+  });
+  document.getElementById("btn-sp-colaborar").addEventListener("click", () => {
+    fecharMapaSP();
     abrirColaborar();
   });
 
@@ -5789,8 +5800,18 @@ async function abrirMapaBrasil() {
   container.querySelectorAll(".estado").forEach((path) => {
     path.addEventListener("click", () => {
       const nome = path.dataset.nome;
+      const sigla = path.dataset.sigla;
       if (path.classList.contains("estado-liberado")) {
+        // Estado já pronto (RJ) -- fecha essa visão e volta pro mapa
+        // detalhado do estado (que É o app principal).
         fecharMapaBrasil();
+        return;
+      }
+      if (path.classList.contains("estado-em-desenvolvimento")) {
+        // Estado com a malha pronta mas ainda sem conteúdo pra raspar
+        // (SP, no momento) -- abre um visualizador dedicado por sigla.
+        fecharMapaBrasil();
+        abrirMapaEstadoEmDesenvolvimento(sigla);
         return;
       }
       document.getElementById("brasil-status").textContent = `${nome} chega em breve!`;
@@ -5800,6 +5821,57 @@ async function abrirMapaBrasil() {
 
 function fecharMapaBrasil() {
   document.getElementById("modal-brasil").classList.add("oculto");
+}
+
+/* ============================================================
+   Visualizador de estado "em desenvolvimento": mostra a malha dos
+   municípios só como prévia (não dá pra raspar ainda). Hoje só o SP
+   usa isso. Se no futuro entrar outro estado nesse estágio, é só
+   marcar emDesenvolvimento: true em data/estados.json e criar o par
+   assets/svg/<sigla>-municipios.svg + os arquivos data/<sigla>-*.json
+   vazios (ver tools/geojson-municipios-to-svg.js).
+   ============================================================ */
+
+const svgMapaEstadoCache = {};
+
+async function abrirMapaEstadoEmDesenvolvimento(sigla) {
+  const siglaLower = String(sigla || "").toLowerCase();
+  // Por enquanto o único visualizador implementado é o de SP; se
+  // outro estado for adicionado depois, só precisa duplicar o
+  // modal-sp no HTML com id modal-<sigla> (e este switch aponta pra
+  // ele). Manter simples até isso ser um problema real.
+  if (siglaLower !== "sp") {
+    alert(`Visualizador de ${sigla} ainda não implementado.`);
+    return;
+  }
+  document.getElementById("modal-sp").classList.remove("oculto");
+  document.getElementById("sp-status").textContent = "";
+  const container = document.getElementById("sp-mapa-container");
+
+  if (!svgMapaEstadoCache[siglaLower]) {
+    container.innerHTML = '<div class="spinner spinner-grande"></div>';
+    try {
+      const resposta = await fetch(`assets/svg/${siglaLower}-municipios.svg`);
+      svgMapaEstadoCache[siglaLower] = await resposta.text();
+    } catch (erro) {
+      console.error(`Falha ao carregar o mapa de ${sigla}:`, erro);
+      container.innerHTML = "<p>Não foi possível carregar o mapa agora.</p>";
+      return;
+    }
+  }
+
+  container.innerHTML = svgMapaEstadoCache[siglaLower];
+  container.querySelectorAll(".municipio").forEach((path) => {
+    path.addEventListener("click", () => {
+      const nome = path.dataset.nome;
+      document.getElementById("sp-status").textContent =
+        `${nome} — em desenvolvimento. Em breve dá pra raspar!`;
+    });
+  });
+}
+
+function fecharMapaSP() {
+  document.getElementById("modal-sp").classList.add("oculto");
 }
 
 /**

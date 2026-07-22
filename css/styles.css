@@ -388,6 +388,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #biblioteca-conteudo,
 #configuracoes-conteudo,
 #admin-conteudo,
+#sp-conteudo,
 #brasil-conteudo {
   position: relative;
   background: #171B21;
@@ -409,6 +410,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   overflow-y: auto;
 }
 
+#sp-conteudo,
 #brasil-conteudo {
   max-width: 720px;
   max-height: 85vh;
@@ -419,7 +421,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #biblioteca-conteudo h2,
 #configuracoes-conteudo h2,
 #admin-conteudo h2,
-#brasil-conteudo h2 {
+#brasil-conteudo h2,
+#sp-conteudo h2 {
   margin-top: 0;
   font-size: 1.1rem;
 }
@@ -428,7 +431,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-biblioteca,
 #btn-fechar-configuracoes,
 #btn-fechar-admin,
-#btn-fechar-brasil {
+#btn-fechar-brasil,
+#btn-fechar-sp {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -445,7 +449,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-biblioteca:hover,
 #btn-fechar-configuracoes:hover,
 #btn-fechar-admin:hover,
-#btn-fechar-brasil:hover {
+#btn-fechar-brasil:hover,
+#btn-fechar-sp:hover {
   color: #F2F5F7;
 }
 
@@ -485,6 +490,75 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #brasil-mapa-container .estado-liberado:hover {
   fill: #1FA85C;
+}
+
+/* Estado em desenvolvimento (SP, no momento): visualmente distinto
+   do liberado (verde) e do bloqueado (cinza borrado). Amarelo indica
+   "chegou mas ainda cozinhando". Clicável -- abre o visualizador
+   próprio do estado (ver abrirMapaSP em js/script.js). */
+#brasil-mapa-container .estado-em-desenvolvimento {
+  fill: #E9B949;
+  cursor: pointer;
+  transition: fill 0.2s ease;
+}
+
+#brasil-mapa-container .estado-em-desenvolvimento:hover {
+  fill: #C99A2E;
+}
+
+/* Visualizador do estado de SP (aberto do mapa do Brasil, quando o
+   estado tem emDesenvolvimento: true em data/estados.json). Só mostra
+   a malha dos municípios como prévia -- clicar em qualquer um só
+   dispara o aviso, não abre raspadinha. Ver abrirMapaSP em js/script.js. */
+#sp-aviso-dev {
+  background: rgba(233, 185, 73, 0.15);
+  color: #E9B949;
+  border: 1px solid rgba(233, 185, 73, 0.4);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+  text-align: left;
+}
+
+#sp-mapa-container {
+  max-height: 60vh;
+  overflow: auto;
+  border-radius: 8px;
+  background: #0F1216;
+}
+
+#sp-mapa-container svg {
+  width: 100%;
+  min-width: 700px;
+  height: auto;
+  display: block;
+}
+
+#sp-mapa-container .municipio {
+  fill: #262C35;
+  stroke: #0F1216;
+  stroke-width: 0.3;
+  cursor: pointer;
+  transition: fill 0.15s ease;
+}
+
+#sp-mapa-container .municipio:hover {
+  fill: #3A424D;
+}
+
+#sp-mapa-container .rotulo-municipio {
+  fill: #8E97A3;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+#sp-status {
+  min-height: 1.2em;
+  color: #E9B949;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+  text-align: center;
 }
 
 #brasil-mapa-container .rotulo-estado {

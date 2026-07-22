@@ -1,47 +1,62 @@
 /**
- * Converte data/br-estados.geojson (GeoJSON, WGS84, malha de UFs da
- * API oficial do IBGE) em um <svg> com um <path> por estado, usando o
- * código UF (2 dígitos) como id/data-estado. Cada path também ganha
- * data-sigla (ver data/estados.json).
+ * Converte um geojson de municípios (WGS84) em um <svg> com um <path>
+ * por município, usando o código IBGE como id/data-municipio. Mesma
+ * projeção equiretangular com correção de cos(lat média) usada em
+ * geojson-to-svg.js (o gerador original do RJ) — só que aqui é
+ * parametrizado por sigla de estado, pra rodar pro RJ, SP ou qualquer
+ * outro que a gente for adicionando depois.
  *
- * Mesma projeção usada em geojson-to-svg.js (equiretangular simples
- * com correção de cos(latitude média)) -- aqui a área é o Brasil
- * inteiro, então essa aproximação é mais grosseira que no mapa do RJ,
- * mas é suficiente pro propósito desta visão (contorno "em breve",
- * não navegação de precisão).
+ * Diferenças do gerador do RJ:
+ * - Aceita Polygon E MultiPolygon (SP tem municípios com ilhas).
+ * - data-regiao é opcional: se o arquivo de regiões estiver vazio ou
+ *   não cobrir o município, o atributo simplesmente não sai.
+ * - Não trava se algum município não estiver em nenhuma região (o RJ
+ *   travava porque as 8 regiões cobrem os 92 munícípios; SP começa
+ *   sem regiões preenchidas).
  *
- * Trata tanto Polygon quanto MultiPolygon (estados com ilhas, como
- * Pernambuco/Fernando de Noronha, vêm como MultiPolygon na malha do
- * IBGE -- o conversor do RJ não precisava disso pois nenhum
- * município do RJ tem geometria assim).
+ * Uso: node tools/geojson-municipios-to-svg.js <sigla>
+ *      Ex: node tools/geojson-municipios-to-svg.js sp
  *
- * Uso: node tools/br-estados-to-svg.js
- * Gera: assets/svg/br-estados.svg
+ * Lê:   data/<sigla>-municipios.geojson
+ *       data/<sigla>-regioes.json (opcional; se {} ou não existir, ignora)
+ * Gera: assets/svg/<sigla>-municipios.svg
  */
 
 const fs = require("fs");
 const path = require("path");
 
-const ENTRADA = path.join(__dirname, "..", "data", "br-estados.geojson");
-const ESTADOS = path.join(__dirname, "..", "data", "estados.json");
-const SAIDA = path.join(__dirname, "..", "assets", "svg", "br-estados.svg");
+const sigla = (process.argv[2] || "").toLowerCase();
+if (!sigla) {
+  console.error("Uso: node tools/geojson-municipios-to-svg.js <sigla>");
+  process.exit(1);
+}
+
+const RAIZ = path.join(__dirname, "..");
+const ENTRADA = path.join(RAIZ, "data", `${sigla}-municipios.geojson`);
+const REGIOES = path.join(RAIZ, "data", `${sigla}-regioes.json`);
+const SAIDA = path.join(RAIZ, "assets", "svg", `${sigla}-municipios.svg`);
 
 const LARGURA_SVG = 800;
 const CASAS_DECIMAIS = 2;
 
 const geojson = JSON.parse(fs.readFileSync(ENTRADA, "utf8"));
-const estados = JSON.parse(fs.readFileSync(ESTADOS, "utf8"));
 
-// Normaliza pra sempre um array de poligonos, cada um um array de aneis:
-// Polygon: coordinates = [anel, anel, ...] -> [[anel, anel, ...]]
-// MultiPolygon: coordinates = [poligono, poligono, ...] (já nesse formato)
+let idParaRegiao = {};
+if (fs.existsSync(REGIOES)) {
+  const regioesJson = JSON.parse(fs.readFileSync(REGIOES, "utf8"));
+  for (const [regiaoId, dados] of Object.entries(regioesJson)) {
+    (dados.municipios || []).forEach((codigoIbge) => {
+      idParaRegiao[codigoIbge] = regiaoId;
+    });
+  }
+}
+
 function poligonosDaFeature(feature) {
   if (feature.geometry.type === "Polygon") return [feature.geometry.coordinates];
   if (feature.geometry.type === "MultiPolygon") return feature.geometry.coordinates;
   throw new Error(`Tipo de geometria inesperado: ${feature.geometry.type}`);
 }
 
-// 1. Bounding box em lon/lat
 let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
 for (const feature of geojson.features) {
   for (const poligono of poligonosDaFeature(feature)) {
@@ -67,7 +82,10 @@ const alturaSvg = alturaGeo * escala;
 function projetar([lon, lat]) {
   const x = (lon - minLon) * correcaoLon * escala;
   const y = alturaSvg - (lat - minLat) * escala;
-  return [Number(x.toFixed(CASAS_DECIMAIS)), Number(y.toFixed(CASAS_DECIMAIS))];
+  return [
+    Number(x.toFixed(CASAS_DECIMAIS)),
+    Number(y.toFixed(CASAS_DECIMAIS)),
+  ];
 }
 
 function anelParaPathD(anel) {
@@ -104,49 +122,49 @@ function centroDoBoundingBox(feature) {
   return {
     x: Number(((minX + maxX) / 2).toFixed(CASAS_DECIMAIS)),
     y: Number(((minY + maxY) / 2).toFixed(CASAS_DECIMAIS)),
+    largura: maxX - minX,
   };
 }
 
 const featuresOrdenadas = geojson.features
   .slice()
-  .sort((a, b) => a.properties.codarea.localeCompare(b.properties.codarea));
+  .sort((a, b) => a.properties.name.localeCompare(b.properties.name, "pt-BR"));
 
 const paths = featuresOrdenadas
   .map((feature) => {
-    const codigoUf = feature.properties.codarea;
-    const info = estados[codigoUf];
-    if (!info) throw new Error(`UF sem cadastro em estados.json: ${codigoUf}`);
+    const codigoIbge = feature.properties.id;
+    const nome = feature.properties.name;
+    const regiaoId = idParaRegiao[codigoIbge];
+    const dRegiao = regiaoId ? ` data-regiao="${regiaoId}"` : "";
     const d = poligonosDaFeature(feature).flat().map(anelParaPathD).join(" ");
-    let classes = "estado";
-    if (info.liberado && info.emDesenvolvimento) classes += " estado-em-desenvolvimento";
-    else if (info.liberado) classes += " estado-liberado";
-    else classes += " estado-bloqueado";
     return (
-      `  <path id="uf-${codigoUf}" data-estado="${codigoUf}" data-sigla="${info.sigla}" ` +
-      `data-nome="${escaparAtributo(info.nome)}" class="${classes}" d="${d}" />`
+      `  <path id="mun-${codigoIbge}" data-municipio="${codigoIbge}" ` +
+      `data-nome="${escaparAtributo(nome)}"${dRegiao} class="municipio" d="${d}" />`
     );
   })
   .join("\n");
 
 const rotulos = featuresOrdenadas
   .map((feature) => {
-    const codigoUf = feature.properties.codarea;
-    const info = estados[codigoUf];
-    const { x, y } = centroDoBoundingBox(feature);
+    const codigoIbge = feature.properties.id;
+    const nome = feature.properties.name;
+    const { x, y, largura } = centroDoBoundingBox(feature);
+    const fonte = Math.max(3.5, Math.min(6, largura / 8));
     return (
-      `  <text class="rotulo-estado" x="${x}" y="${y}" pointer-events="none">` +
-      `${escaparAtributo(info.sigla)}</text>`
+      `  <text class="rotulo-municipio" x="${x}" y="${y}" ` +
+      `font-size="${fonte.toFixed(1)}" pointer-events="none">` +
+      `${escaparAtributo(nome)}</text>`
     );
   })
   .join("\n");
 
 const svg =
-  `<svg id="mapa-brasil" viewBox="0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}" ` +
+  `<svg id="mapa-${sigla}" viewBox="0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}" ` +
   `xmlns="http://www.w3.org/2000/svg">\n${paths}\n${rotulos}\n</svg>\n`;
 
 fs.mkdirSync(path.dirname(SAIDA), { recursive: true });
 fs.writeFileSync(SAIDA, svg, "utf8");
 
-console.log(`OK: ${geojson.features.length} estados -> ${SAIDA}`);
+console.log(`OK: ${geojson.features.length} municípios -> ${SAIDA}`);
 console.log(`viewBox: 0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}`);
 console.log(`tamanho do arquivo: ${(svg.length / 1024).toFixed(1)} KB`);

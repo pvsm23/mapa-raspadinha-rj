@@ -18,7 +18,7 @@
   "31": { "sigla": "MG", "nome": "Minas Gerais" },
   "32": { "sigla": "ES", "nome": "Espírito Santo" },
   "33": { "sigla": "RJ", "nome": "Rio de Janeiro", "liberado": true },
-  "35": { "sigla": "SP", "nome": "São Paulo" },
+  "35": { "sigla": "SP", "nome": "São Paulo", "liberado": true, "emDesenvolvimento": true },
   "41": { "sigla": "PR", "nome": "Paraná" },
   "42": { "sigla": "SC", "nome": "Santa Catarina" },
   "43": { "sigla": "RS", "nome": "Rio Grande do Sul" },

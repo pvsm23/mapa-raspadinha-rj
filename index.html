@@ -348,6 +348,24 @@
     </div>
   </div>
 
+  <!-- Visualizador do estado de São Paulo: aberto a partir do mapa do
+       Brasil, mostra a malha dos 645 municípios só como prévia. Ainda
+       não dá pra raspar (falta conteúdo — história, pontos turísticos,
+       selos); clicar em qualquer município só exibe o aviso "em
+       desenvolvimento". Ver abrirMapaSP em js/script.js. -->
+  <div id="modal-sp" class="oculto">
+    <div id="sp-conteudo">
+      <button id="btn-fechar-sp" aria-label="Fechar">✕</button>
+      <h2>🟡 São Paulo</h2>
+      <p id="sp-aviso-dev">🚧 Estado em desenvolvimento — em breve você vai poder raspar os 645 municípios de SP!</p>
+      <div id="sp-mapa-container"></div>
+      <p id="sp-status"></p>
+      <button type="button" id="btn-sp-colaborar" class="btn-colaborar-em-breve">
+        💛 Ajudar o Desbrava a acelerar São Paulo
+      </button>
+    </div>
+  </div>
+
   <!-- Comunidade Desbrava: painel lateral direito com posts (foto +
        legenda + município/pessoas marcadas), abas Global/Amigos, e o
        filtro por município (aberto pelo botão @ no popup, ver
