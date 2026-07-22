@@ -434,13 +434,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-baixar-cartao").addEventListener("click", baixarCartaoProgresso);
   document.getElementById("form-login").addEventListener("submit", aoEnviarFormLogin);
 
-  // Login com Google: só no app instalado (no navegador o Google exige
-  // config nativa que não temos; mantém só e-mail/senha na web).
-  if (ehAppNativo()) {
-    document.getElementById("btn-entrar-google").addEventListener("click", entrarComGoogle);
-    document.getElementById("btn-entrar-google").classList.remove("oculto");
-    document.getElementById("login-ou").classList.remove("oculto");
-  }
+  document.getElementById("btn-entrar-google").addEventListener("click", entrarComGoogle);
+  document.getElementById("btn-entrar-google").classList.remove("oculto");
+  document.getElementById("login-ou").classList.remove("oculto");
   document
     .getElementById("btn-alternar-modo")
     .addEventListener("click", alternarModoLogin);
@@ -1183,34 +1179,32 @@ function aoEnviarFormLogin(evento) {
 }
 
 /**
- * Login com Google -- só no app nativo (APK). O plugin
- * FirebaseAuthentication abre o seletor de conta do Google e devolve um
- * idToken; a gente troca por uma sessão do Firebase pelo SDK web (ver
- * entrarComCredencialGoogle em js/auth.js). No navegador o botão nem
- * aparece (o Google exige plugin/config nativa; ver botão gated no init).
+ * Login com Google — funciona no app nativo (APK, via plugin Capacitor)
+ * e na web (via signInWithPopup do Firebase).
  */
 async function entrarComGoogle() {
-  const plugin = window.Capacitor?.Plugins?.FirebaseAuthentication;
-  if (!plugin) {
-    mostrarErroLogin("Login com Google só funciona no aplicativo instalado.");
-    return;
-  }
-
   esconderErroLogin();
   fecharTelaLogin();
   mostrarToastLogin("Entrando com o Google...");
 
   try {
-    const resultado = await plugin.signInWithGoogle();
-    const idToken = resultado?.credential?.idToken;
-    if (!idToken) throw new Error("Não recebi o token do Google. Tente de novo.");
-    await window.raspadinhaAuth.entrarComCredencialGoogle(idToken);
+    if (ehAppNativo()) {
+      const plugin = window.Capacitor?.Plugins?.FirebaseAuthentication;
+      if (!plugin) throw new Error("Plugin do Google não disponível.");
+      const resultado = await plugin.signInWithGoogle();
+      const idToken = resultado?.credential?.idToken;
+      if (!idToken) throw new Error("Não recebi o token do Google. Tente de novo.");
+      await window.raspadinhaAuth.entrarComCredencialGoogle(idToken);
+    } else {
+      await window.raspadinhaAuth.entrarComGoogleWeb();
+    }
     atualizarToastLogin("sucesso", "Login realizado! ✅");
     setTimeout(esconderToastLogin, 2500);
   } catch (erro) {
     console.error("Falha no login com Google:", erro);
-    if (/cancel/i.test(erro?.message || "") || erro?.code === "1") {
-      esconderToastLogin(); // cancelou o seletor: sem erro feio
+    if (/cancel/i.test(erro?.message || "") || erro?.code === "1" ||
+        erro?.code === "auth/popup-closed-by-user") {
+      esconderToastLogin();
       return;
     }
     atualizarToastLogin("erro", traduzirErroAuth(erro));

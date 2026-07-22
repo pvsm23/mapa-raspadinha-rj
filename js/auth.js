@@ -33,6 +33,7 @@ import {
   EmailAuthProvider,
   GoogleAuthProvider,
   signInWithCredential,
+  signInWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
   getFirestore,
@@ -169,6 +170,9 @@ window.raspadinhaAuth = {
   entrarComCredencialGoogle: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
+  entrarComGoogleWeb: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
   enviarEmailProprio: async () => {},
   enviarFeedback: async () => {},
   sair: () => {},
@@ -262,8 +266,13 @@ if (CONFIGURADO) {
     if (!idToken) throw new Error("Não recebi o token do Google.");
     const credencial = GoogleAuthProvider.credential(idToken);
     const resultado = await signInWithCredential(auth, credencial);
-    // Se for a 1a vez desse Google, credita convite pendente (mesma
-    // regra do cadastro por e-mail).
+    await creditarConviteSeExistir(resultado.user.uid);
+    return resultado;
+  };
+
+  window.raspadinhaAuth.entrarComGoogleWeb = async () => {
+    const provider = new GoogleAuthProvider();
+    const resultado = await signInWithPopup(auth, provider);
     await creditarConviteSeExistir(resultado.user.uid);
     return resultado;
   };

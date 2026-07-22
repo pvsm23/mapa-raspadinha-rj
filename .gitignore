@@ -20,6 +20,9 @@ android/app/src/main/assets/capacitor.plugins.json
 # Chaves do Firebase (não subir pro repositório público)
 android/app/google-services.json
 
+# Senhas da keystore (nunca no Git)
+android/keystore.properties
+
 # Keystore de assinatura release (segredo, nunca no Git)
 *.jks
 *.keystore
