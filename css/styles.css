@@ -2679,7 +2679,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   }
 }
 
-#btn-alternar-modo {
+#btn-alternar-modo,
+#btn-esqueci-senha {
   background: none;
   border: none;
   color: #8E97A3;
@@ -2689,7 +2690,14 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   text-decoration: underline;
 }
 
-#btn-alternar-modo:hover {
+#btn-esqueci-senha {
+  display: block;
+  margin: 12px auto 0;
+  font-size: 0.8rem;
+}
+
+#btn-alternar-modo:hover,
+#btn-esqueci-senha:hover {
   color: #F2F5F7;
 }
 

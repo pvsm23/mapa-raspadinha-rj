@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.2";
+const VERSAO_APP = "0.10.3";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.2";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.3", itens: ["Agora tem 'Esqueci minha senha' na tela de login."] },
   { versao: "0.10.2", itens: ["O mapa de São Paulo agora abre mais rápido e sem travar.", "Melhorias no login com o Google."] },
   { versao: "0.10.1", itens: ["Mapa do Brasil maior e mais fácil de usar: toque num estado pra selecionar e confirme no botão."] },
   { versao: "0.10.0", itens: ["São Paulo já apareceu no mapa do Brasil! 🟡 Ainda em desenvolvimento, mas dá pra ver os 645 municípios."] },
@@ -436,6 +437,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", compartilharCartaoProgresso);
   document.getElementById("btn-baixar-cartao").addEventListener("click", baixarCartaoProgresso);
   document.getElementById("form-login").addEventListener("submit", aoEnviarFormLogin);
+  document.getElementById("btn-esqueci-senha").addEventListener("click", pedirRedefinicaoSenha);
 
   document.getElementById("btn-entrar-google").addEventListener("click", entrarComGoogle);
   document.getElementById("btn-entrar-google").classList.remove("oculto");
@@ -1147,6 +1149,8 @@ function alternarModoLogin() {
   document.getElementById("btn-alternar-modo").textContent = modoCadastro
     ? "Já tem conta? Entrar"
     : "Não tem conta? Criar conta";
+  // "Esqueci minha senha" só faz sentido no modo Entrar.
+  document.getElementById("btn-esqueci-senha").classList.toggle("oculto", modoCadastro);
   esconderErroLogin();
 }
 
@@ -1282,6 +1286,51 @@ function esconderErroLogin() {
  * Traduz os códigos de erro mais comuns do Firebase Auth pra
  * mensagens em português que fazem sentido pro usuário.
  */
+/**
+ * "Esqueci minha senha": envia o e-mail de redefinição (recurso nativo
+ * do Firebase, funciona no plano grátis). Usa o e-mail já digitado no
+ * campo, se houver; senão pergunta. Por segurança (evitar que alguém
+ * descubra quais e-mails têm conta), a mensagem de sucesso é a mesma
+ * exista ou não a conta -- e num e-mail que só tem login pelo Google não
+ * chega nada, porque não há senha pra redefinir.
+ */
+async function pedirRedefinicaoSenha() {
+  if (!window.raspadinhaAuth) {
+    mostrarErroLogin("O login ainda não carregou. Espere alguns segundos e tente de novo.");
+    return;
+  }
+  esconderErroLogin();
+  const campo = document.getElementById("input-email").value.trim();
+  const email = campo || (prompt("Digite o e-mail da sua conta para redefinir a senha:") || "").trim();
+  if (!email) return;
+
+  try {
+    await window.raspadinhaAuth.redefinirSenha(email);
+    fecharTelaLogin();
+    mostrarToastLogin("");
+    atualizarToastLogin(
+      "sucesso",
+      `Se existir uma conta com ${email}, enviamos um link pra criar uma senha nova. Confira também a caixa de spam. 📧`
+    );
+    setTimeout(esconderToastLogin, 6000);
+  } catch (erro) {
+    console.error("Falha ao enviar redefinição de senha:", erro);
+    // auth/user-not-found: não revela que o e-mail não existe (mesma
+    // mensagem de sucesso). Outros erros (e-mail inválido etc.) aí sim
+    // mostram o motivo real.
+    if (erro?.code === "auth/user-not-found") {
+      fecharTelaLogin();
+      atualizarToastLogin(
+        "sucesso",
+        `Se existir uma conta com ${email}, enviamos um link pra criar uma senha nova. Confira também a caixa de spam. 📧`
+      );
+      setTimeout(esconderToastLogin, 6000);
+      return;
+    }
+    mostrarErroLogin(traduzirErroAuth(erro));
+  }
+}
+
 function traduzirErroAuth(erro) {
   const mensagens = {
     "auth/invalid-email": "E-mail inválido.",

@@ -26,6 +26,7 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   deleteUser,
@@ -253,6 +254,18 @@ if (CONFIGURADO) {
 
   window.raspadinhaAuth.entrarComEmail = (email, senha) =>
     signInWithEmailAndPassword(auth, email, senha);
+
+  /**
+   * Envia o e-mail de redefinição de senha. IMPORTANTE: isso é um
+   * recurso NATIVO do Firebase Auth -- o e-mail sai dos servidores do
+   * Google (remetente noreply@<projeto>.firebaseapp.com), NÃO depende da
+   * extensão Trigger Email nem do plano Blaze (diferente do e-mail de
+   * boas-vindas). Por isso funciona mesmo no plano grátis (Spark).
+   * Só existe senha pra redefinir se a conta foi criada com e-mail/senha;
+   * numa conta que só tem Google, não há o que redefinir.
+   */
+  window.raspadinhaAuth.redefinirSenha = (email) =>
+    sendPasswordResetEmail(auth, email);
 
   /**
    * Login com Google no app nativo: o plugin
