@@ -373,8 +373,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #biblioteca-selos,
 #modal-configuracoes,
 #modal-admin,
-#modal-brasil,
-#modal-sp {
+#modal-brasil {
   position: fixed;
   inset: 0;
   background: rgba(15, 18, 22, 0.85);
@@ -389,7 +388,6 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #biblioteca-conteudo,
 #configuracoes-conteudo,
 #admin-conteudo,
-#sp-conteudo,
 #brasil-conteudo {
   position: relative;
   background: #171B21;
@@ -411,7 +409,6 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   overflow-y: auto;
 }
 
-#sp-conteudo,
 #brasil-conteudo {
   max-width: 720px;
   max-height: 85vh;
@@ -431,8 +428,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #biblioteca-conteudo h2,
 #configuracoes-conteudo h2,
 #admin-conteudo h2,
-#brasil-conteudo h2,
-#sp-conteudo h2 {
+#brasil-conteudo h2 {
   margin-top: 0;
   font-size: 1.1rem;
 }
@@ -441,8 +437,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-biblioteca,
 #btn-fechar-configuracoes,
 #btn-fechar-admin,
-#btn-fechar-brasil,
-#btn-fechar-sp {
+#btn-fechar-brasil {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -459,8 +454,7 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #btn-fechar-biblioteca:hover,
 #btn-fechar-configuracoes:hover,
 #btn-fechar-admin:hover,
-#btn-fechar-brasil:hover,
-#btn-fechar-sp:hover {
+#btn-fechar-brasil:hover {
   color: #F2F5F7;
 }
 
@@ -572,59 +566,135 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   opacity: 0.7;
 }
 
-/* Visualizador do estado de SP (aberto do mapa do Brasil, quando o
-   estado tem emDesenvolvimento: true em data/estados.json). Só mostra
-   a malha dos municípios como prévia -- clicar em qualquer um só
-   dispara o aviso, não abre raspadinha. Ver abrirMapaSP em js/script.js. */
-#sp-aviso-dev {
-  background: rgba(233, 185, 73, 0.15);
-  color: #E9B949;
-  border: 1px solid rgba(233, 185, 73, 0.4);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  margin: 0 0 12px;
-  text-align: left;
+/* ============================================================
+   Mapa de São Paulo em TELA CHEIA (como o do RJ): pan/zoom próprio,
+   nomes dos municípios aparecem ao dar zoom, mas é só visualização --
+   tocar num município mostra um aviso, não abre raspadinha. Espelha o
+   #mapa-viewport/#mapa-rj. Ver abrirMapaEstadoEmDesenvolvimento e
+   inicializarPanZoomSP em js/script.js.
+   ============================================================ */
+
+/* Não é mais uma janela centralizada (foi tirado do grupo do
+   #modal-brasil): agora é o próprio mapa ocupando a tela toda. */
+#modal-sp {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #191c22;
 }
 
-#sp-mapa-container {
-  max-height: 60vh;
-  overflow: auto;
-  border-radius: 8px;
-  background: #0F1216;
+#sp-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #191c22;
+  touch-action: none;
+  cursor: grab;
 }
 
-#sp-mapa-container svg {
+#sp-viewport.arrastando {
+  cursor: grabbing;
+}
+
+svg#mapa-sp {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  min-width: 700px;
-  height: auto;
+  height: 100%;
+  transform-origin: center center;
+}
+
+/* Os municípios do SP herdam o visual cinza de ".municipio" (global).
+   Os nomes (.rotulo-municipio) já vêm com display:none por padrão e só
+   aparecem quando o SVG ganha .mostrar-rotulos (zoom suficiente), igual
+   ao RJ. */
+svg#mapa-sp.mostrar-rotulos .rotulo-municipio {
   display: block;
 }
 
-#sp-mapa-container .municipio {
-  fill: #262C35;
-  stroke: #0F1216;
-  stroke-width: 0.3;
-  cursor: pointer;
-  transition: fill 0.15s ease;
-}
-
-#sp-mapa-container .municipio:hover {
-  fill: #3A424D;
-}
-
-#sp-mapa-container .rotulo-municipio {
-  fill: #8E97A3;
-  text-anchor: middle;
-  pointer-events: none;
-}
-
-#sp-status {
-  min-height: 1.2em;
+/* Aviso pequeno de "em desenvolvimento" no topo da tela de SP. */
+#sp-popup-dev {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 420px);
+  background: rgba(23, 27, 33, 0.95);
   color: #E9B949;
+  border: 1px solid rgba(233, 185, 73, 0.5);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+#sp-popup-dev strong {
+  color: #F2C94C;
+}
+
+#btn-sp-popup-fechar {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+#btn-sp-popup-fechar:hover {
+  color: #F2F5F7;
+}
+
+/* Botão flutuante pra abrir o mapa do Brasil (trocar de estado / voltar
+   pro RJ). Fica no canto, como um controle de mapa. */
+#btn-sp-brasil {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  z-index: 20;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: #171B21;
+  color: #F2F5F7;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#btn-sp-brasil:hover {
+  background: #22272F;
+}
+
+/* Aviso flutuante ao tocar num município do SP. */
+#sp-toast {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: min(88vw, 360px);
+  background: rgba(23, 27, 33, 0.96);
+  color: #F2F5F7;
+  border: 1px solid rgba(233, 185, 73, 0.4);
+  border-radius: 10px;
+  padding: 10px 14px;
   font-size: 0.85rem;
-  margin: 10px 0 0;
   text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.2s ease;
 }
 
 #brasil-mapa-container .rotulo-estado {

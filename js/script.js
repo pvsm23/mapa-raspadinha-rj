@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.5";
+const VERSAO_APP = "0.10.6";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.5";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.6", itens: ["São Paulo agora abre em tela cheia, com zoom e nomes dos municípios — igual ao mapa do Rio! Pra voltar pro Rio, toque no 🇧🇷 e escolha o RJ."] },
   { versao: "0.10.5", itens: ["Corrigido: o mapa de São Paulo agora abre de verdade. 🗺️"] },
   { versao: "0.10.4", itens: ["Login com o Google no aplicativo agora funciona de verdade. 🎉"] },
   { versao: "0.10.3", itens: ["Agora tem 'Esqueci minha senha' na tela de login."] },
@@ -667,15 +668,14 @@ document.addEventListener("DOMContentLoaded", () => {
     abrirColaborar();
   });
 
-  // ---- Visualizador do estado de SP (em desenvolvimento) ----
-  document.getElementById("btn-fechar-sp").addEventListener("click", fecharMapaSP);
-  document.getElementById("modal-sp").addEventListener("click", (evento) => {
-    if (evento.target.id === "modal-sp") fecharMapaSP();
-  });
-  document.getElementById("btn-sp-colaborar").addEventListener("click", () => {
-    fecharMapaSP();
-    abrirColaborar();
-  });
+  // ---- Mapa de SP em tela cheia (em desenvolvimento) ----
+  // Abre o mapa do Brasil por cima do SP pra trocar de estado / voltar
+  // pro RJ (selecionar RJ lá fecha o SP, ver confirmarEstadoNoMapaBrasil).
+  document.getElementById("btn-sp-brasil").addEventListener("click", abrirMapaBrasil);
+  document.getElementById("btn-sp-popup-fechar").addEventListener("click", esconderPopupDevSP);
+  // Pan/zoom próprio do SP: anexa os listeners ao #sp-viewport uma vez
+  // só (o SVG lá dentro é trocado a cada abertura, mas o viewport é fixo).
+  inicializarPanZoomSP();
 
   // ---- Comunidade Desbrava (rede social) ----
   document.getElementById("btn-social").addEventListener("click", () => exigirLogin(() => abrirPainelSocial()));
@@ -5914,14 +5914,16 @@ function confirmarEstadoNoMapaBrasil() {
   const nome = path.dataset.nome;
   const sigla = path.dataset.sigla;
   if (path.classList.contains("estado-liberado")) {
-    // Estado já pronto (RJ) -- fecha essa visão e volta pro mapa
-    // detalhado do estado (que É o app principal).
+    // Estado já pronto (RJ) -- fecha o mapa do Brasil E o mapa de SP (se
+    // estava aberto por cima), revelando o mapa detalhado do RJ, que É o
+    // app principal.
     fecharMapaBrasil();
+    fecharMapaSP();
     return;
   }
   if (path.classList.contains("estado-em-desenvolvimento")) {
     // Estado com a malha pronta mas ainda sem conteúdo pra raspar
-    // (SP, no momento) -- abre um visualizador dedicado por sigla.
+    // (SP, no momento) -- abre o mapa dele em tela cheia.
     fecharMapaBrasil();
     abrirMapaEstadoEmDesenvolvimento(sigla);
     return;
@@ -5943,30 +5945,28 @@ function fecharMapaBrasil() {
    ============================================================ */
 
 const svgMapaEstadoCache = {};
+// Reseta o zoom/posição do mapa de SP na próxima abertura -- definido
+// por inicializarPanZoomSP(), chamado por abrirMapaEstadoEmDesenvolvimento.
+let resetarZoomSP = () => {};
 
 async function abrirMapaEstadoEmDesenvolvimento(sigla) {
   const siglaLower = String(sigla || "").toLowerCase();
-  // Por enquanto o único visualizador implementado é o de SP; se
-  // outro estado for adicionado depois, só precisa duplicar o
-  // modal-sp no HTML com id modal-<sigla> (e este switch aponta pra
-  // ele). Manter simples até isso ser um problema real.
+  // Por enquanto o único mapa em desenvolvimento é o de SP. Se outro
+  // estado entrar nesse estágio depois, dá pra generalizar isto (o
+  // #sp-viewport/#mapa-sp viraria genérico por sigla). Manter simples
+  // até virar um problema real.
   if (siglaLower !== "sp") {
-    alert(`Visualizador de ${sigla} ainda não implementado.`);
+    alert(`Mapa de ${sigla} ainda não implementado.`);
     return;
   }
+  const viewport = document.getElementById("sp-viewport");
   document.getElementById("modal-sp").classList.remove("oculto");
-  document.getElementById("sp-status").textContent = "";
-  const container = document.getElementById("sp-mapa-container");
 
   if (!svgMapaEstadoCache[siglaLower]) {
-    container.innerHTML = '<div class="spinner spinner-grande"></div>';
-    // Dá um "respiro" pro spinner realmente PINTAR antes da injeção
-    // pesada do SVG (645 municípios ~800 KB). Sem isso, num celular mais
-    // simples a tela fica congelada por 1-2s sem nada na tela e parece
-    // que "não abriu". Ver relato do Paulo (SP não abre no APK).
-    // Usa setTimeout puro (não requestAnimationFrame): rAF NÃO dispara
-    // quando a página está em segundo plano/oculta, o que penduraria a
-    // função pra sempre; setTimeout sempre dispara.
+    viewport.innerHTML = '<div class="spinner spinner-grande"></div>';
+    // "Respiro" pro spinner PINTAR antes da injeção pesada do SVG (645
+    // municípios ~800 KB). setTimeout puro (não requestAnimationFrame,
+    // que não dispara com a página em segundo plano e penduraria tudo).
     await new Promise((r) => setTimeout(r, 30));
     try {
       const resposta = await fetch(`assets/svg/${siglaLower}-municipios.svg`);
@@ -5974,32 +5974,212 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla) {
       svgMapaEstadoCache[siglaLower] = await resposta.text();
     } catch (erro) {
       console.error(`Falha ao carregar o mapa de ${sigla}:`, erro);
-      container.innerHTML =
-        '<p style="padding:16px">Não foi possível carregar o mapa agora. ' +
-        "Tente fechar e abrir de novo.</p>";
+      viewport.innerHTML =
+        '<p style="padding:16px;color:#F2F5F7">Não foi possível carregar o mapa agora. ' +
+        "Toque no 🇧🇷 e tente de novo.</p>";
       return;
     }
-    // Mais um respiro antes de injetar o SVG grande, pelo mesmo motivo.
     await new Promise((r) => setTimeout(r, 30));
   }
 
-  container.innerHTML = svgMapaEstadoCache[siglaLower];
-
-  // Delegação de evento: UM listener no container em vez de 645 (um por
-  // município). Além de mais leve na hora de montar, sobrevive a
-  // reaberturas sem empilhar handlers. O clique num <path.municipio>
-  // borbulha até aqui; o <text> do rótulo tem pointer-events:none, então
-  // o alvo real é sempre o path.
-  container.onclick = (evento) => {
-    const alvo = evento.target.closest(".municipio");
-    if (!alvo) return;
-    document.getElementById("sp-status").textContent =
-      `${alvo.dataset.nome} — em desenvolvimento. Em breve dá pra raspar!`;
-  };
+  viewport.innerHTML = svgMapaEstadoCache[siglaLower];
+  resetarZoomSP();
+  mostrarPopupDevSP();
 }
 
 function fecharMapaSP() {
   document.getElementById("modal-sp").classList.add("oculto");
+}
+
+/* Aviso pequeno de "em desenvolvimento": aparece ao abrir o mapa de SP
+   e some sozinho depois de alguns segundos (ou no ✕). */
+let timerPopupDevSP = null;
+function mostrarPopupDevSP() {
+  const popup = document.getElementById("sp-popup-dev");
+  popup.classList.remove("oculto");
+  clearTimeout(timerPopupDevSP);
+  timerPopupDevSP = setTimeout(esconderPopupDevSP, 6000);
+}
+function esconderPopupDevSP() {
+  clearTimeout(timerPopupDevSP);
+  document.getElementById("sp-popup-dev").classList.add("oculto");
+}
+
+/* Aviso flutuante ao tocar num município do SP (some sozinho). */
+let timerToastSP = null;
+function mostrarToastSP(nome) {
+  const toast = document.getElementById("sp-toast");
+  toast.textContent = `${nome} — em desenvolvimento. Em breve dá pra raspar!`;
+  toast.classList.remove("oculto");
+  clearTimeout(timerToastSP);
+  timerToastSP = setTimeout(() => toast.classList.add("oculto"), 2600);
+}
+
+/**
+ * Pan/zoom PRÓPRIO do mapa de SP -- independente do motor do RJ
+ * (inicializarPanZoomDoMapa), que é acoplado ao #mapa-rj e a toda a
+ * lógica de raspar/colorir/regiões. Aqui é só um mapa navegável de
+ * visualização: arrastar move, roda/pinça dá zoom, os nomes aparecem
+ * ao aproximar (classe .mostrar-rotulos, igual ao RJ) e tocar num
+ * município mostra um aviso -- nunca abre raspadinha.
+ *
+ * Os listeners são anexados ao #sp-viewport UMA vez (o SVG lá dentro é
+ * trocado a cada abertura; a gente sempre consulta o #mapa-sp vivo).
+ */
+function inicializarPanZoomSP() {
+  const viewport = document.getElementById("sp-viewport");
+  const ESCALA_MAXIMA = 12;
+  const LIMIAR_ARRASTO = 5;
+  const FRACAO_MINIMA_VISIVEL = 0.1;
+  // A partir daqui os nomes dos municípios aparecem.
+  const LIMIAR_ROTULOS = 3;
+
+  let escala = 1;
+  let deslocX = 0;
+  let deslocY = 0;
+  let arrastouSP = false;
+
+  const svgAtual = () => viewport.querySelector("svg#mapa-sp");
+
+  function limitarDesloc() {
+    const rect = viewport.getBoundingClientRect();
+    const mapaLargura = rect.width * escala;
+    const mapaAltura = rect.height * escala;
+    const limiteX = rect.width / 2 + mapaLargura * (0.5 - FRACAO_MINIMA_VISIVEL);
+    const limiteY = rect.height / 2 + mapaAltura * (0.5 - FRACAO_MINIMA_VISIVEL);
+    deslocX = Math.max(-limiteX, Math.min(limiteX, deslocX));
+    deslocY = Math.max(-limiteY, Math.min(limiteY, deslocY));
+  }
+
+  function aplicarTransform() {
+    limitarDesloc();
+    const svg = svgAtual();
+    if (!svg) return;
+    svg.style.transform = `translate(${deslocX}px, ${deslocY}px) scale(${escala})`;
+    svg.classList.toggle("mostrar-rotulos", escala >= LIMIAR_ROTULOS);
+  }
+
+  function aplicarZoomAncorado(novaEscala, ancoraX, ancoraY) {
+    const rect = viewport.getBoundingClientRect();
+    const origemX = rect.width / 2;
+    const origemY = rect.height / 2;
+    const fator = novaEscala / escala;
+    deslocX = ancoraX - origemX - fator * (ancoraX - deslocX - origemX);
+    deslocY = ancoraY - origemY - fator * (ancoraY - deslocY - origemY);
+    escala = novaEscala;
+  }
+
+  function distanciaEMeio(touches) {
+    const [a, b] = touches;
+    return {
+      distancia: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY),
+      meioX: (a.clientX + b.clientX) / 2,
+      meioY: (a.clientY + b.clientY) / 2,
+    };
+  }
+
+  // Chamado a cada abertura pra começar sempre "de longe", centralizado.
+  resetarZoomSP = () => {
+    escala = 1;
+    deslocX = 0;
+    deslocY = 0;
+    aplicarTransform();
+  };
+
+  // ---- Mouse ----
+  let arrastando = false;
+  let inicioX = 0, inicioY = 0, deslocXIni = 0, deslocYIni = 0;
+
+  viewport.addEventListener("mousedown", (evento) => {
+    arrastando = true;
+    arrastouSP = false;
+    inicioX = evento.clientX;
+    inicioY = evento.clientY;
+    deslocXIni = deslocX;
+    deslocYIni = deslocY;
+    viewport.classList.add("arrastando");
+  });
+  window.addEventListener("mousemove", (evento) => {
+    if (!arrastando) return;
+    const dx = evento.clientX - inicioX;
+    const dy = evento.clientY - inicioY;
+    if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) arrastouSP = true;
+    deslocX = deslocXIni + dx;
+    deslocY = deslocYIni + dy;
+    aplicarTransform();
+  });
+  window.addEventListener("mouseup", () => {
+    arrastando = false;
+    viewport.classList.remove("arrastando");
+  });
+
+  viewport.addEventListener(
+    "wheel",
+    (evento) => {
+      evento.preventDefault();
+      const fator = evento.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const novaEscala = Math.min(ESCALA_MAXIMA, Math.max(1, escala * fator));
+      const rect = viewport.getBoundingClientRect();
+      aplicarZoomAncorado(novaEscala, evento.clientX - rect.left, evento.clientY - rect.top);
+      aplicarTransform();
+    },
+    { passive: false }
+  );
+
+  // ---- Toque ----
+  let toqueDist = 0;
+  viewport.addEventListener("touchstart", (evento) => {
+    if (evento.touches.length === 1) {
+      arrastando = true;
+      arrastouSP = false;
+      inicioX = evento.touches[0].clientX;
+      inicioY = evento.touches[0].clientY;
+      deslocXIni = deslocX;
+      deslocYIni = deslocY;
+    } else if (evento.touches.length === 2) {
+      arrastando = false;
+      toqueDist = distanciaEMeio([...evento.touches]).distancia;
+    }
+  }, { passive: true });
+
+  viewport.addEventListener("touchmove", (evento) => {
+    if (evento.touches.length === 1 && arrastando) {
+      const dx = evento.touches[0].clientX - inicioX;
+      const dy = evento.touches[0].clientY - inicioY;
+      if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) arrastouSP = true;
+      deslocX = deslocXIni + dx;
+      deslocY = deslocYIni + dy;
+      aplicarTransform();
+    } else if (evento.touches.length === 2) {
+      evento.preventDefault();
+      const { distancia, meioX, meioY } = distanciaEMeio([...evento.touches]);
+      if (toqueDist > 0) {
+        const novaEscala = Math.min(ESCALA_MAXIMA, Math.max(1, escala * (distancia / toqueDist)));
+        const rect = viewport.getBoundingClientRect();
+        aplicarZoomAncorado(novaEscala, meioX - rect.left, meioY - rect.top);
+        aplicarTransform();
+      }
+      toqueDist = distancia;
+      arrastouSP = true;
+    }
+  }, { passive: false });
+
+  viewport.addEventListener("touchend", (evento) => {
+    if (evento.touches.length === 0) arrastando = false;
+    toqueDist = 0;
+  });
+
+  // Duplo clique/toque reseta o zoom.
+  viewport.addEventListener("dblclick", () => resetarZoomSP());
+
+  // Clique num município (delegação): mostra o aviso, nunca raspa. Se o
+  // gesto foi um arrasto, ignora (não é um toque de seleção).
+  viewport.addEventListener("click", (evento) => {
+    if (arrastouSP) return;
+    const alvo = evento.target.closest(".municipio");
+    if (!alvo) return;
+    mostrarToastSP(alvo.dataset.nome);
+  });
 }
 
 /**

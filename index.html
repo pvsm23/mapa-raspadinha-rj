@@ -361,16 +361,26 @@
        selos); clicar em qualquer município só exibe o aviso "em
        desenvolvimento". Ver abrirMapaSP em js/script.js. -->
   <div id="modal-sp" class="oculto">
-    <div id="sp-conteudo">
-      <button id="btn-fechar-sp" aria-label="Fechar">✕</button>
-      <h2>🟡 São Paulo</h2>
-      <p id="sp-aviso-dev">🚧 Estado em desenvolvimento — em breve você vai poder raspar os 645 municípios de SP!</p>
-      <div id="sp-mapa-container"></div>
-      <p id="sp-status"></p>
-      <button type="button" id="btn-sp-colaborar" class="btn-colaborar-em-breve">
-        💛 Ajudar o Desbrava a acelerar São Paulo
-      </button>
+    <!-- Área de pan/zoom, espelha o #mapa-viewport do RJ. O SVG do SP
+         (#mapa-sp, 645 municípios) é injetado aqui em runtime. Ver
+         abrirMapaEstadoEmDesenvolvimento/inicializarPanZoomSP em
+         js/script.js. É um mapa navegável (arrastar + zoom), não uma
+         raspadinha -- tocar num município só mostra um aviso. -->
+    <div id="sp-viewport"></div>
+
+    <!-- Aviso pequeno de "em desenvolvimento", aparece ao abrir SP e
+         some sozinho (ou no ✕). -->
+    <div id="sp-popup-dev" class="oculto">
+      <span>🚧 São Paulo está <strong>em desenvolvimento</strong>. Dá pra explorar o mapa, mas ainda não dá pra raspar.</span>
+      <button id="btn-sp-popup-fechar" aria-label="Fechar aviso">✕</button>
     </div>
+
+    <!-- Abre o mapa do Brasil por cima, pra trocar de estado / voltar
+         pro Rio (selecionar RJ lá fecha esta tela). -->
+    <button id="btn-sp-brasil" aria-label="Trocar de estado (mapa do Brasil)">🇧🇷</button>
+
+    <!-- Aviso flutuante ao tocar num município (nome + "em desenvolvimento"). -->
+    <div id="sp-toast" class="oculto"></div>
   </div>
 
   <!-- Comunidade Desbrava: painel lateral direito com posts (foto +
