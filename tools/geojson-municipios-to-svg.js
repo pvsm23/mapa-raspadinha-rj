@@ -245,7 +245,12 @@ const rotulos = featuresOrdenadas
     const codigoIbge = feature.properties.id;
     const nome = feature.properties.name;
     const { x, y, largura } = centroDoBoundingBox(feature);
-    const fonte = Math.max(3.5, Math.min(6, largura / 8));
+    // Fonte PROPORCIONAL ao tamanho do município: em áreas concentradas
+    // (região metropolitana) os municípios são minúsculos, então a letra
+    // fica bem pequena e não embola com a vizinha. Piso baixo (1.2) só pra
+    // não sumir de vez -- quem quiser ler dá mais zoom (a letra cresce
+    // junto com o mapa). Antes o piso era 3.5, gigante pros pequenos.
+    const fonte = Math.max(1.2, Math.min(4, largura / 11));
     return (
       `  <text class="rotulo-municipio" x="${x}" y="${y}" ` +
       `font-size="${fonte.toFixed(1)}" pointer-events="none">` +

@@ -628,13 +628,14 @@ svg#mapa-sp.mostrar-rotulos .rotulo-municipio {
    mesorregiões, cada uma de uma cor, com o nome no meio. Some a borda de
    cada município (os da mesma região viram um bloco só) e aparece o nome
    da região. Ver atualizarModoDeVisualizacaoSP em js/script.js. */
-svg#mapa-sp.modo-regioes .municipio {
-  stroke: none;
-}
-
-/* Rótulo de cada mesorregião: escondido por padrão, aparece só no modo
-   regiões. Texto claro com contorninho escuro pra ler sobre qualquer cor. */
-svg#mapa-sp .rotulo-regiao {
+/* Rótulo de região (mesorregião no SP): escondido por padrão, aparece
+   só no modo regiões (mapa afastado). Vale pro SP E pro RJ -- texto
+   claro com contorninho escuro pra ler sobre o mapa. No RJ os rótulos
+   são injetados por JS (ver renderizarRotulosRegioes), no SP vêm do SVG.
+   Os municípios ficam CINZA (herdam ".municipio"); a cor no mapa é
+   reservada pro progresso, então aqui não se pinta por região. */
+svg#mapa-sp .rotulo-regiao,
+svg#mapa-rj .rotulo-regiao {
   display: none;
   fill: #F2F5F7;
   font-weight: 700;
@@ -642,33 +643,16 @@ svg#mapa-sp .rotulo-regiao {
   text-anchor: middle;
   dominant-baseline: middle;
   paint-order: stroke;
-  stroke: rgba(15, 18, 22, 0.75);
+  stroke: rgba(15, 18, 22, 0.8);
   stroke-width: 1.6px;
   user-select: none;
+  pointer-events: none;
 }
 
-svg#mapa-sp.modo-regioes .rotulo-regiao {
+svg#mapa-sp.modo-regioes .rotulo-regiao,
+svg#mapa-rj.modo-regioes .rotulo-regiao {
   display: block;
 }
-
-/* As 15 cores das mesorregiões (índice data-cor 0..14, ver
-   data/sp-regioes.json). Tons dessaturados, "de mapa", distinguíveis
-   entre regiões vizinhas. Só valem no modo regiões. */
-svg#mapa-sp.modo-regioes .municipio[data-cor="0"]  { fill: #6B8E9E; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="1"]  { fill: #7FA679; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="2"]  { fill: #B79A6B; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="3"]  { fill: #9E7B8E; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="4"]  { fill: #6E9E97; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="5"]  { fill: #A6857F; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="6"]  { fill: #8891B0; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="7"]  { fill: #A9A66B; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="8"]  { fill: #7E9EB8; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="9"]  { fill: #B0857A; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="10"] { fill: #7B9E86; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="11"] { fill: #9E92B0; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="12"] { fill: #B0A17B; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="13"] { fill: #6F9EA6; }
-svg#mapa-sp.modo-regioes .municipio[data-cor="14"] { fill: #A67F97; }
 
 /* Aviso pequeno de "em desenvolvimento" no topo da tela de SP. */
 #sp-popup-dev {

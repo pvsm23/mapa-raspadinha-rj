@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.7";
+const VERSAO_APP = "0.10.8";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,7 +37,8 @@ const VERSAO_APP = "0.10.7";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
-  { versao: "0.10.7", itens: ["Mapa de São Paulo mais leve e organizado: afastado mostra as 15 regiões coloridas; aproximando, os municípios com bordas mais nítidas e nomes só bem no zoom. Corrigido o botão 🇧🇷 de troca de estado."] },
+  { versao: "0.10.8", itens: ["Nomes das regiões agora aparecem no mapa do Rio (afastado). Em São Paulo, os nomes dos municípios ficaram menores pra não embolar nas áreas concentradas."] },
+  { versao: "0.10.7", itens: ["Mapa de São Paulo mais leve e organizado: afastado mostra as 15 regiões; aproximando, os municípios com bordas mais nítidas e nomes só bem no zoom. Corrigido o botão 🇧🇷 de troca de estado."] },
   { versao: "0.10.6", itens: ["São Paulo agora abre em tela cheia, com zoom e nomes dos municípios — igual ao mapa do Rio! Pra voltar pro Rio, toque no 🇧🇷 e escolha o RJ."] },
   { versao: "0.10.5", itens: ["Corrigido: o mapa de São Paulo agora abre de verdade. 🗺️"] },
   { versao: "0.10.4", itens: ["Login com o Google no aplicativo agora funciona de verdade. 🎉"] },
@@ -1947,6 +1948,9 @@ function carregarRegioesInfo() {
     .then((resposta) => (resposta.ok ? resposta.json() : {}))
     .then((dados) => {
       regioesInfo = dados;
+      // Os rótulos de região no mapa podem ter sido montados antes disto
+      // (com o slug); agora que os nomes chegaram, reconstrói com eles.
+      renderizarRotulosRegioes();
     })
     .catch((erro) => {
       console.error("Não foi possível carregar data/regioes.json:", erro);
@@ -5481,6 +5485,27 @@ function construirContornosDeRegiao() {
     aneis: extrairAneisDoPath(path.getAttribute("d")),
   }));
 
+  // Centro do bounding box de cada região (pros rótulos de nome no
+  // mapa, ver renderizarRotulosRegioes). Calculado aqui porque a
+  // geometria de todos os municípios já está à mão.
+  const bboxRegiao = {};
+  municipios.forEach((m) => {
+    if (!m.regiao) return;
+    const bb = (bboxRegiao[m.regiao] = bboxRegiao[m.regiao] || {
+      minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity,
+    });
+    m.aneis.forEach((anel) => anel.forEach(([x, y]) => {
+      if (x < bb.minX) bb.minX = x;
+      if (x > bb.maxX) bb.maxX = x;
+      if (y < bb.minY) bb.minY = y;
+      if (y > bb.maxY) bb.maxY = y;
+    }));
+  });
+  centroidesRegioesRJ = {};
+  for (const [slug, bb] of Object.entries(bboxRegiao)) {
+    centroidesRegioesRJ[slug] = { x: (bb.minX + bb.maxX) / 2, y: (bb.minY + bb.maxY) / 2 };
+  }
+
   // Indice espacial de vertices: celula -> [{x, y, indiceMunicipio}]
   const grade = new Map();
   municipios.forEach((municipio, indiceMunicipio) => {
@@ -5545,6 +5570,40 @@ function construirContornosDeRegiao() {
     });
   });
 
+  svg.appendChild(grupo);
+  renderizarRotulosRegioes();
+}
+
+// Centro de cada região do RJ (preenchido por construirContornosDeRegiao).
+let centroidesRegioesRJ = {};
+
+/**
+ * Injeta no #mapa-rj um rótulo com o NOME de cada região, no centro
+ * dela -- aparece só quando o mapa está afastado (modo-regioes, ver
+ * CSS), igual aos nomes de mesorregião do SP. É reconstruído quando os
+ * nomes chegam (data/regioes.json é assíncrono, ver carregarRegioesInfo);
+ * até lá cai no slug. Tira o prefixo "Região ..." pra encurtar.
+ */
+function renderizarRotulosRegioes() {
+  const svg = document.getElementById("mapa-rj");
+  if (!svg) return;
+  document.getElementById("rotulos-regioes-rj")?.remove();
+  const slugs = Object.keys(centroidesRegioesRJ);
+  if (!slugs.length) return;
+
+  const grupo = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  grupo.id = "rotulos-regioes-rj";
+  slugs.forEach((slug) => {
+    const c = centroidesRegioesRJ[slug];
+    const nomeBruto = regioesInfo[slug]?.nome || slug;
+    const nome = nomeBruto.replace(/^Regi[ãa]o\s+(d[aeo]s?\s+)?/i, "");
+    const texto = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    texto.setAttribute("class", "rotulo-regiao");
+    texto.setAttribute("x", c.x.toFixed(2));
+    texto.setAttribute("y", c.y.toFixed(2));
+    texto.textContent = nome;
+    grupo.appendChild(texto);
+  });
   svg.appendChild(grupo);
 }
 
