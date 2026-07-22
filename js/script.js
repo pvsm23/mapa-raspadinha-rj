@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.0";
+const VERSAO_APP = "0.10.1";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.0";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.1", itens: ["Mapa do Brasil maior e mais fácil de usar: toque num estado pra selecionar e confirme no botão."] },
   { versao: "0.10.0", itens: ["São Paulo já apareceu no mapa do Brasil! 🟡 Ainda em desenvolvimento, mas dá pra ver os 645 municípios."] },
   { versao: "0.9.6", itens: ["Agora dá pra entrar com a conta do Google no aplicativo.", "Correções e melhorias."] },
   { versao: "0.9.5", itens: ["Download do app mais confiável.", "Correções e melhorias."] },
@@ -655,6 +656,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-brasil").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-brasil") fecharMapaBrasil();
   });
+  document.getElementById("btn-confirmar-estado").addEventListener("click", confirmarEstadoNoMapaBrasil);
   document.getElementById("btn-brasil-colaborar").addEventListener("click", () => {
     fecharMapaBrasil();
     abrirColaborar();
@@ -5797,26 +5799,61 @@ async function abrirMapaBrasil() {
   }
 
   container.innerHTML = svgMapaBrasilCache;
+  estadoSelecionadoNoMapaBrasil = null;
+  atualizarBotaoConfirmarEstado();
   container.querySelectorAll(".estado").forEach((path) => {
-    path.addEventListener("click", () => {
-      const nome = path.dataset.nome;
-      const sigla = path.dataset.sigla;
-      if (path.classList.contains("estado-liberado")) {
-        // Estado já pronto (RJ) -- fecha essa visão e volta pro mapa
-        // detalhado do estado (que É o app principal).
-        fecharMapaBrasil();
-        return;
-      }
-      if (path.classList.contains("estado-em-desenvolvimento")) {
-        // Estado com a malha pronta mas ainda sem conteúdo pra raspar
-        // (SP, no momento) -- abre um visualizador dedicado por sigla.
-        fecharMapaBrasil();
-        abrirMapaEstadoEmDesenvolvimento(sigla);
-        return;
-      }
-      document.getElementById("brasil-status").textContent = `${nome} chega em breve!`;
-    });
+    path.addEventListener("click", () => selecionarEstadoNoMapaBrasil(path));
   });
+}
+
+// Referência ao <path> do estado atualmente destacado. Uma seleção só
+// existe enquanto o modal está aberto -- reabrir zera (ver o reset no
+// começo de abrirMapaBrasil).
+let estadoSelecionadoNoMapaBrasil = null;
+
+function selecionarEstadoNoMapaBrasil(path) {
+  const container = document.getElementById("brasil-mapa-container");
+  // Desmarca o anterior, se houver.
+  container.querySelectorAll(".estado[data-selecionado='true']").forEach((el) => {
+    el.removeAttribute("data-selecionado");
+  });
+  path.setAttribute("data-selecionado", "true");
+  estadoSelecionadoNoMapaBrasil = path;
+  document.getElementById("brasil-status").textContent = `Selecionado: ${path.dataset.nome}`;
+  atualizarBotaoConfirmarEstado();
+}
+
+function atualizarBotaoConfirmarEstado() {
+  const botao = document.getElementById("btn-confirmar-estado");
+  const path = estadoSelecionadoNoMapaBrasil;
+  if (!path) {
+    botao.disabled = true;
+    botao.textContent = "Selecione um estado no mapa";
+    return;
+  }
+  botao.disabled = false;
+  botao.textContent = `Confirmar ${path.dataset.nome}`;
+}
+
+function confirmarEstadoNoMapaBrasil() {
+  const path = estadoSelecionadoNoMapaBrasil;
+  if (!path) return;
+  const nome = path.dataset.nome;
+  const sigla = path.dataset.sigla;
+  if (path.classList.contains("estado-liberado")) {
+    // Estado já pronto (RJ) -- fecha essa visão e volta pro mapa
+    // detalhado do estado (que É o app principal).
+    fecharMapaBrasil();
+    return;
+  }
+  if (path.classList.contains("estado-em-desenvolvimento")) {
+    // Estado com a malha pronta mas ainda sem conteúdo pra raspar
+    // (SP, no momento) -- abre um visualizador dedicado por sigla.
+    fecharMapaBrasil();
+    abrirMapaEstadoEmDesenvolvimento(sigla);
+    return;
+  }
+  document.getElementById("brasil-status").textContent = `${nome} chega em breve!`;
 }
 
 function fecharMapaBrasil() {

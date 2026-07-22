@@ -339,6 +339,12 @@
       <p id="brasil-intro">O Desbrava começou pelo Rio de Janeiro. Conforme cada estado ficar pronto, ele desbloqueia aqui.</p>
       <div id="brasil-mapa-container"></div>
       <p id="brasil-status"></p>
+      <!-- Fluxo em duas etapas (tocar seleciona, botão confirma):
+           antes o toque abria direto, o que ficava difícil de acertar em
+           estados pequenos (ES, SE, AL, DF...). Agora um toque em cima
+           só destaca o estado (data-selecionado="true" no path) e libera
+           o "Confirmar" pra abrir. Ver abrirMapaBrasil em js/script.js. -->
+      <button type="button" id="btn-confirmar-estado" disabled>Selecione um estado no mapa</button>
       <!-- Reaproveitado em qualquer tela com conteúdo "em breve" (ver
            .btn-colaborar-em-breve em css/styles.css e abrirColaborar
            em js/script.js) -- estimula quem quiser ajudar a acelerar. -->

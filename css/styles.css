@@ -417,6 +417,15 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   overflow-y: auto;
 }
 
+/* Mapa do Brasil especificamente: modal maior pra os estados pequenos
+   (ES, SE, AL, DF, RJ) ficarem visíveis o suficiente pra tocar. Em
+   desktop chega perto de fullscreen (94vw). Em mobile aproveita a
+   largura toda -- o padding do #modal-brasil já dá o respiro. */
+#brasil-conteudo {
+  max-width: min(94vw, 900px);
+  max-height: 92vh;
+}
+
 #modal-conteudo h2,
 #biblioteca-conteudo h2,
 #configuracoes-conteudo h2,
@@ -469,6 +478,17 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
   width: 100%;
   height: auto;
   display: block;
+  /* Piso de largura: em telas estreitas o SVG passa a rolar
+     horizontalmente dentro do container (ver overflow abaixo), pra os
+     estados pequenos não virarem toques impossíveis num aparelho de
+     360-400px de largura. */
+  min-width: 520px;
+}
+
+#brasil-mapa-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  background: #0F1216;
 }
 
 #brasil-mapa-container .estado {
@@ -504,6 +524,51 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 
 #brasil-mapa-container .estado-em-desenvolvimento:hover {
   fill: #C99A2E;
+}
+
+/* Todos os estados são "clicáveis" agora (mesmo os bloqueados podem ser
+   selecionados pra confirmar -- e aí sai o "chega em breve"). Isso
+   melhora o alvo tátil dos estados pequenos, e o toque errado não abre
+   nada por acidente porque o "Confirmar" é uma segunda etapa. */
+#brasil-mapa-container .estado-bloqueado {
+  cursor: pointer;
+}
+
+/* Estado selecionado no mapa (data-selecionado="true", ver
+   selecionarEstadoNoMapaBrasil em js/script.js). Fica visualmente
+   destacado com um contorno branco grosso e a mesma cor de fill do
+   liberado, pra a pessoa ver claramente qual escolheu antes de
+   apertar o "Confirmar". */
+#brasil-mapa-container .estado[data-selecionado="true"] {
+  stroke: #F2F5F7;
+  stroke-width: 2;
+  filter: none;
+}
+
+#btn-confirmar-estado {
+  display: block;
+  width: 100%;
+  background: #2BD576;
+  color: #0F1216;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 12px 0 0;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+#btn-confirmar-estado:hover:not(:disabled) {
+  background: #1FA85C;
+}
+
+#btn-confirmar-estado:disabled {
+  background: #262C35;
+  color: #8E97A3;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* Visualizador do estado de SP (aberto do mapa do Brasil, quando o
