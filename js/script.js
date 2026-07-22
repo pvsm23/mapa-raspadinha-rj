@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.6";
+const VERSAO_APP = "0.10.7";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.6";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.7", itens: ["Mapa de São Paulo mais leve e organizado: afastado mostra as 15 regiões coloridas; aproximando, os municípios com bordas mais nítidas e nomes só bem no zoom. Corrigido o botão 🇧🇷 de troca de estado."] },
   { versao: "0.10.6", itens: ["São Paulo agora abre em tela cheia, com zoom e nomes dos municípios — igual ao mapa do Rio! Pra voltar pro Rio, toque no 🇧🇷 e escolha o RJ."] },
   { versao: "0.10.5", itens: ["Corrigido: o mapa de São Paulo agora abre de verdade. 🗺️"] },
   { versao: "0.10.4", itens: ["Login com o Google no aplicativo agora funciona de verdade. 🎉"] },
@@ -6028,11 +6029,16 @@ function mostrarToastSP(nome) {
  */
 function inicializarPanZoomSP() {
   const viewport = document.getElementById("sp-viewport");
-  const ESCALA_MAXIMA = 12;
+  const ESCALA_MAXIMA = 20;
   const LIMIAR_ARRASTO = 5;
   const FRACAO_MINIMA_VISIVEL = 0.1;
-  // A partir daqui os nomes dos municípios aparecem.
-  const LIMIAR_ROTULOS = 3;
+  // Abaixo disto (mapa afastado) mostra as 15 mesorregiões coloridas
+  // com o nome; acima, os municípios cinza individualmente.
+  const LIMIAR_REGIOES = 2.4;
+  // Só bem no zoom os nomes dos municípios aparecem -- assim tem poucos
+  // na tela por vez (menos poluição e mais leve). São 645, então esse
+  // limiar é bem mais alto que o do RJ.
+  const LIMIAR_ROTULOS = 7;
 
   let escala = 1;
   let deslocX = 0;
@@ -6056,6 +6062,9 @@ function inicializarPanZoomSP() {
     const svg = svgAtual();
     if (!svg) return;
     svg.style.transform = `translate(${deslocX}px, ${deslocY}px) scale(${escala})`;
+    // Afastado -> mesorregiões coloridas; aproximado -> municípios.
+    svg.classList.toggle("modo-regioes", escala < LIMIAR_REGIOES);
+    // Nomes dos municípios só bem no zoom.
     svg.classList.toggle("mostrar-rotulos", escala >= LIMIAR_ROTULOS);
   }
 

@@ -605,13 +605,70 @@ svg#mapa-sp {
   transform-origin: center center;
 }
 
-/* Os municípios do SP herdam o visual cinza de ".municipio" (global).
-   Os nomes (.rotulo-municipio) já vêm com display:none por padrão e só
-   aparecem quando o SVG ganha .mostrar-rotulos (zoom suficiente), igual
-   ao RJ. */
+/* Os municípios do SP herdam o cinza de ".municipio" (global), mas com
+   a borda mais FINA e NÍTIDA: vector-effect não deixa a linha engrossar
+   ao dar zoom (fica sempre ~0.5px na tela), então as divisas ficam
+   precisas em qualquer aproximação -- diferente do RJ, onde a borda
+   engrossa junto com o mapa. */
+svg#mapa-sp .municipio {
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Os nomes dos municípios (.rotulo-municipio) já vêm com display:none e
+   só aparecem quando o SVG ganha .mostrar-rotulos -- e no SP isso só
+   acontece bem no zoom (ver LIMIAR_ROTULOS em js/script.js), pra ter
+   poucos nomes na tela por vez. */
 svg#mapa-sp.mostrar-rotulos .rotulo-municipio {
   display: block;
 }
+
+/* ---- Modo regiões (mapa afastado) ----
+   Com o mapa longe, em vez de 645 municípios cinza a gente mostra as 15
+   mesorregiões, cada uma de uma cor, com o nome no meio. Some a borda de
+   cada município (os da mesma região viram um bloco só) e aparece o nome
+   da região. Ver atualizarModoDeVisualizacaoSP em js/script.js. */
+svg#mapa-sp.modo-regioes .municipio {
+  stroke: none;
+}
+
+/* Rótulo de cada mesorregião: escondido por padrão, aparece só no modo
+   regiões. Texto claro com contorninho escuro pra ler sobre qualquer cor. */
+svg#mapa-sp .rotulo-regiao {
+  display: none;
+  fill: #F2F5F7;
+  font-weight: 700;
+  font-size: 8px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: rgba(15, 18, 22, 0.75);
+  stroke-width: 1.6px;
+  user-select: none;
+}
+
+svg#mapa-sp.modo-regioes .rotulo-regiao {
+  display: block;
+}
+
+/* As 15 cores das mesorregiões (índice data-cor 0..14, ver
+   data/sp-regioes.json). Tons dessaturados, "de mapa", distinguíveis
+   entre regiões vizinhas. Só valem no modo regiões. */
+svg#mapa-sp.modo-regioes .municipio[data-cor="0"]  { fill: #6B8E9E; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="1"]  { fill: #7FA679; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="2"]  { fill: #B79A6B; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="3"]  { fill: #9E7B8E; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="4"]  { fill: #6E9E97; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="5"]  { fill: #A6857F; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="6"]  { fill: #8891B0; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="7"]  { fill: #A9A66B; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="8"]  { fill: #7E9EB8; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="9"]  { fill: #B0857A; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="10"] { fill: #7B9E86; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="11"] { fill: #9E92B0; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="12"] { fill: #B0A17B; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="13"] { fill: #6F9EA6; }
+svg#mapa-sp.modo-regioes .municipio[data-cor="14"] { fill: #A67F97; }
 
 /* Aviso pequeno de "em desenvolvimento" no topo da tela de SP. */
 #sp-popup-dev {
@@ -4721,6 +4778,15 @@ select:focus {
 #modal-perfil, #modal-sugestoes-comunidade, #modal-cartao-progresso,
 #modal-selo-lightbox, #modal-busca-local {
   z-index: 100;
+}
+
+/* O mapa do Brasil precisa ficar ACIMA do mapa de SP (#modal-sp, z-index
+   100) porque é aberto POR CIMA dele pra trocar de estado / voltar pro
+   Rio. Regra dedicada e DEPOIS da de cima (que o punha em 100 junto com
+   os outros) -- senão o SP, mais abaixo no HTML, cobria o Brasil e o
+   botão 🇧🇷 parecia "não abrir". */
+#modal-brasil {
+  z-index: 200;
 }
 
 /* =========================================================
