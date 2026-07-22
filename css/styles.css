@@ -373,7 +373,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes {
 #biblioteca-selos,
 #modal-configuracoes,
 #modal-admin,
-#modal-brasil {
+#modal-brasil,
+#modal-sp {
   position: fixed;
   inset: 0;
   background: rgba(15, 18, 22, 0.85);
