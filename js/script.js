@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.10";
+const VERSAO_APP = "0.10.11";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.10";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.11", itens: ["Todos os 92 municípios do Rio agora têm curiosidade e história! E agora dá pra ler mesmo sem raspar — é só tocar no município."] },
   { versao: "0.10.10", itens: ["Em São Paulo: as regiões agora aparecem com as divisas desenhadas (afastado), o zoom vai bem mais longe (dá pra achar os municípios minúsculos) e as linhas ficaram mais finas."] },
   { versao: "0.10.9", itens: ["Dá pra dar mais zoom no mapa de São Paulo."] },
   { versao: "0.10.8", itens: ["Nomes das regiões agora aparecem no mapa do Rio (afastado). Em São Paulo, os nomes dos municípios ficaram menores pra não embolar nas áreas concentradas."] },
@@ -2972,14 +2973,12 @@ function abrirModalRaspadinha(id, nome) {
     ? "Raspe com o dedo ou o mouse para revelar! (sua presença aqui já foi confirmada antes por GPS -- não precisa estar no local agora)"
     : "Raspe com o dedo ou o mouse para revelar!";
   document.getElementById("modal-selo-estatistica").textContent = "";
-  // IMPORTANTE: limpa a curiosidade -- ela só é preenchida por
-  // mostrarCuriosidade(), chamada só em visualizarSeloRevelado (selo
-  // já raspado). Sem essa limpeza aqui, abrir um município AINDA NÃO
-  // raspado depois de ter visto outro (já raspado, com curiosidade
-  // de verdade) deixava o texto do município ANTERIOR "grudado" na
-  // tela, por trás da raspadinha nova -- essa era a causa real do
-  // "resumo/história de um município aparecendo em outro".
-  document.getElementById("modal-curiosidade").innerHTML = "";
+  // A curiosidade/história do município aparece SEMPRE -- mesmo antes de
+  // raspar (a pedido do Paulo). mostrarCuriosidade() reescreve todo o
+  // conteúdo do #modal-curiosidade com o texto DESTE município, então
+  // também resolve o antigo bug de o texto do município anterior ficar
+  // "grudado" atrás da raspadinha nova (por isso aqui era limpo antes).
+  mostrarCuriosidade(id, nome);
   mostrarDestinos(id);
 
   // Decide a sorte JÁ na abertura (não na conclusão): assim dá pra

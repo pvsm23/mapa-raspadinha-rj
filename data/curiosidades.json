@@ -247,9 +247,30 @@
 
 
 },
-  "3302056": { "resumo": "", "historiaCompleta": [] },
-  "3302106": { "resumo": "", "historiaCompleta": [] },
-  "3302205": { "resumo": "", "historiaCompleta": [] },
+  "3302056": {
+  "resumo": "Italva, localizada no Noroeste Fluminense, é famosa por ser a \"Capital do Quibe\" no estado do Rio de Janeiro, herança da forte imigração sírio-libanesa. Banhada pelo Rio Muriaé, a cidade emancipou-se de Campos dos Goytacazes em 1986 e destaca-se na agropecuária e extração mineral.",
+  "historiaCompleta": [
+    "A história de Italva começou a se consolidar no final do século XIX, em terras banhadas pelo Rio Muriaé. O povoamento ganhou força com a expansão da cultura cafeeira e a chegada de imigrantes, destacando-se a expressiva comunidade sírio-libanesa, que se instalou na região para explorar o comércio. Originalmente, o núcleo urbano era conhecido como \"São Pedro de Alcântara\".",
+    "No início do século XX, a chegada dos trilhos da Estrada de Ferro Leopoldina impulsionou o desenvolvimento do então distrito, facilitando o escoamento da produção. A forte presença árabe moldou a identidade cultural e gastronômica local, rendendo a Italva o famoso título de \"Capital do Quibe\". Com o tempo, a economia diversificou-se, abrindo espaço para a pecuária leiteira e a extração de rochas carbonáticas, como o calcário e o mármore.",
+    "Após décadas de desenvolvimento como distrito de Campos dos Goytacazes, o desejo por autonomia política culminou em um plebiscito vitorioso. Em 12 de junho de 1986, Italva conquistou sua emancipação político-administrativa. Hoje, a acolhedora cidade preserva suas tradições culturais e gastronômicas, mantendo o charme do interior aliado ao desenvolvimento de seus recursos naturais e agrícolas."
+  ]
+},
+  "3302106": {
+  "resumo": "Itaocara, cujo nome de origem tupi significa \"Casa de Pedra\", localiza-se às margens do Rio Paraíba do Sul. Nascida de uma missão capuchinha no início do século XIX, a cidade destaca-se hoje por sua tranquilidade, produção agropecuária e belas paisagens ribeirinhas.",
+  "historiaCompleta": [
+    "A história de Itaocara teve início por volta de 1809, quando o frei capuchinho italiano Ângelo Maria de Lucca fundou a Aldeia de São José de Marcos da Pedra (também conhecida apenas como Aldeia da Pedra). O assentamento tinha como objetivo catequizar os indígenas puris e coroados que habitavam a região. O nome atual do município deriva do tupi-guarani e significa \"Casa de Pedra\" (ita = pedra; oca = casa).",
+    "Durante o século XIX, o pequeno povoado prosperou graças à extrema fertilidade do vale do Rio Paraíba do Sul, impulsionado primeiramente pelo cultivo da cana-de-açúcar e, logo em seguida, pela rica expansão do Ciclo do Café. Esse expressivo crescimento econômico e demográfico levou à elevação do núcleo urbano à categoria de vila e à sua emancipação política em 28 de fevereiro de 1890, quando se desmembrou definitivamente de São Fidélis.",
+    "Com o declínio da economia cafeeira no decorrer do século XX, Itaocara precisou diversificar suas atividades, voltando-se com sucesso para a pecuária leiteira, a agricultura de subsistência e o setor industrial, como a fabricação de papel. Hoje, a \"Cidade Poema\" (como é carinhosamente chamada por seus moradores) atrai visitantes pelo seu clima pacato de interior, sua centenária Igreja Matriz de São José e a exuberante beleza do Rio Paraíba do Sul."
+  ]
+},
+  "3302205": {
+  "resumo": "Itaperuna, a maior cidade do Noroeste Fluminense, é o principal polo econômico, educacional e de saúde da região. Nascida às margens do Rio Muriaé e emancipada em 1889, já chegou a ser a maior produtora de café do Brasil e hoje destaca-se pela força de seu comércio e serviços.",
+  "historiaCompleta": [
+    "A colonização de Itaperuna ganhou força na primeira metade do século XIX, quando exploradores e fazendeiros começaram a ocupar as férteis margens do Rio Muriaé, uma região originalmente habitada por indígenas puris. O primeiro assentamento se desenvolveu em torno de uma pequena capela, sendo inicialmente conhecido como Porto Alegre e, mais tarde, elevado à categoria de freguesia com o nome de São José do Avaí.",
+    "Entre o final do século XIX e as primeiras décadas do século XX, o município viveu seu grande apogeu graças ao Ciclo do Café. As ricas lavouras atraíram levas de imigrantes europeus e sírio-libaneses, e a produção foi tão expressiva que Itaperuna chegou a deter o título de maior município produtor de café do Brasil. O vertiginoso crescimento resultou em sua emancipação política em 10 de maio de 1889, quando se desmembrou de Campos dos Goytacazes e adotou o nome Itaperuna (que do tupi significa \"caminho da pedra preta\").",
+    "Com a forte crise mundial de 1929 e o declínio da cafeicultura, a cidade soube reinventar sua matriz econômica. As antigas fazendas cederam espaço para uma forte pecuária leiteira e de corte, e mais tarde, para o surgimento de pólos de confecção. Hoje, Itaperuna é a grande capital regional do Noroeste Fluminense, oferecendo infraestrutura de ponta em saúde e ensino universitário, e orgulha-se de marcos como o seu monumento ao Cristo Redentor, inaugurado em 1939, sendo um dos pioneiros no país."
+  ]
+},
   "3302254": {
 "resumo": "Itatiaia, conhecida por abrigar o primeiro Parque Nacional do Brasil, é um destino de montanha icônico. Situada na Serra da Mantiqueira, a cidade é famosa pelo Pico das Agulhas Negras, pelo clima frio de Penedo e por sua rica biodiversidade.",
 "historiaCompleta": 
@@ -270,10 +291,38 @@
 
 
 },
-  "3302304": { "resumo": "", "historiaCompleta": [] },
-  "3302403": { "resumo": "", "historiaCompleta": [] },
-  "3302452": { "resumo": "", "historiaCompleta": [] },
-  "3302502": { "resumo": "", "historiaCompleta": [] },
+  "3302304": {
+  "resumo": "Laje do Muriaé, localizada no Noroeste Fluminense, originou-se às margens do rio que lhe dá nome. Com forte tradição agropecuária, a cidade, emancipada de Itaperuna em 1962, preserva o charme e a tranquilidade do interior fluminense.",
+  "historiaCompleta": [
+    "A colonização da área onde hoje se encontra Laje do Muriaé teve início no século XIX, impulsionada pela expansão das fazendas de café e cana-de-açúcar ao longo do fértil vale do Rio Muriaé. O povoado original formou-se em torno de uma corredeira natural do rio, onde uma grande formação rochosa (a \"laje\") facilitava a travessia de tropeiros e viajantes, dando origem ao nome da localidade.",
+    "Durante o final do século XIX e início do século XX, a chegada dos trilhos da Estrada de Ferro Leopoldina trouxe um novo fôlego à economia local. O então distrito de Itaperuna consolidou-se como um importante entreposto comercial para o escoamento da produção agrícola da região, atraindo imigrantes e impulsionando o crescimento do núcleo urbano ao redor da estação ferroviária.",
+    "O desejo de autonomia política e administrativa cresceu entre os moradores ao longo do século XX. Após mobilizações locais, Laje do Muriaé conquistou sua emancipação em 1962, desmembrando-se de Itaperuna. Atualmente, a cidade mantém sua base econômica ancorada na agropecuária, destacando-se pela pecuária leiteira, e atrai visitantes por suas belezas naturais e clima pacato."
+  ]
+},
+  "3302403": {
+  "resumo": "Macaé, mundialmente conhecida como a \"Capital Nacional do Petróleo\", é o principal polo da indústria offshore do Brasil devido à sua proximidade com a Bacia de Campos. Elevada a vila em 1813, a cidade transformou-se de um tranquilo polo agropecuário em uma potência econômica a partir da década de 1970.",
+  "historiaCompleta": [
+    "A história de Macaé remonta ao início do século XVII, quando os primeiros colonizadores e missionários jesuítas chegaram à região, enfrentando a forte resistência dos indígenas goitacazes que habitavam o litoral. A economia inicial da localidade girava em torno da extração de madeira e, posteriormente, do estabelecimento de grandes engenhos de cana-de-açúcar, que impulsionaram a consolidação do povoado.",
+    "Graças ao progresso contínuo e à importância estratégica de seu porto e hidrovias para o escoamento da produção agrícola, a localidade foi elevada à categoria de vila em 15 de abril de 1813, sob o nome de Vila de São João de Macaé. Durante o século XIX, o município viveu um período de grande riqueza e desenvolvimento estrutural impulsionado pelos ciclos do açúcar e do café, culminando em sua elevação oficial à categoria de cidade no ano de 1846.",
+    "A maior e mais drástica virada na história macaense, no entanto, ocorreu na década de 1970 com a descoberta de vastas reservas de petróleo na Bacia de Campos. A escolha da cidade para sediar as bases de operações da Petrobras atraiu centenas de empresas multinacionais, gerando um boom demográfico e econômico sem precedentes. Hoje, Macaé ostenta com orgulho o título de \"Capital Nacional do Petróleo\", sendo um motor essencial para a economia do estado do Rio de Janeiro e do Brasil."
+  ]
+},
+  "3302452": {
+  "resumo": "Macuco, conhecida carinhosamente como a \"Capital do Leite\" do estado do Rio de Janeiro, é famosa por sua forte vocação agropecuária e indústria de laticínios. Emancipada de Cordeiro em 1995, a cidade desenvolveu-se ao redor dos trilhos e mantém o charme pacato do interior fluminense.",
+  "historiaCompleta": [
+    "A história do povoamento de Macuco tem raízes no século XIX, impulsionada pelos fazendeiros e trabalhadores que começaram a desbravar as matas da região central fluminense. O nome da localidade é uma homenagem e referência direta ao pássaro macuco (Tinamus solitarius), uma ave silvestre que era extremamente abundante nas densas florestas da região antes da grande expansão agrícola.",
+    "O grande marco de desenvolvimento do núcleo urbano ocorreu no final do século XIX, com a inauguração de sua estação ferroviária (que viria a integrar a Estrada de Ferro Leopoldina). A chegada dos trilhos facilitou o escoamento inicial do café e, em seguida, impulsionou de forma definitiva a transição econômica da região para a pecuária leiteira, consolidando o comércio e atraindo novos moradores para os arredores da estação.",
+    "Durante a maior parte do século XX, Macuco figurou como um importante distrito do município de Cordeiro, ganhando renome em todo o estado pela excelência de sua bacia leiteira e pelo fortalecimento de sua cooperativa. Após intensa mobilização da comunidade local, a emancipação política foi conquistada oficialmente em 28 de dezembro de 1995. Hoje, ostentando com orgulho o título de \"Capital do Leite\", a cidade destaca-se como um polo essencial para a agroindústria do Rio de Janeiro."
+  ]
+},
+  "3302502": {
+  "resumo": "Magé, um dos municípios mais antigos do estado, abriga um marco histórico nacional: a primeira ferrovia do Brasil, inaugurada em 1854. Localizada na Baixada Fluminense, a cidade também é célebre por ser a terra natal do lendário jogador de futebol Mané Garrincha.",
+  "historiaCompleta": [
+    "A ocupação de Magé remonta a 1566, quando colonos se estabeleceram na região impulsionados pela fertilidade do solo e pela proximidade com a Baía de Guanabara. O povoado cresceu ao redor da agricultura e das atividades portuárias, sendo elevado à categoria de vila em 1789 e, finalmente, à condição de cidade em 1857. O nome tem origem tupi, possivelmente derivado de \"magem\" (que significa \"pajé\" ou \"feiticeiro\").",
+    "Durante o século XIX, os portos de Magé, especialmente o Porto da Estrela, tornaram-se os mais importantes do império para o escoamento do café vindo do Vale do Paraíba. Esse dinamismo culminou em um feito pioneiro: em 30 de abril de 1854, o empresário Irineu Evangelista de Sousa, o Barão de Mauá, inaugurou no município a Estrada de Ferro Mauá, a primeira ferrovia do Brasil, com a presença do imperador Dom Pedro II.",
+    "Com a expansão da malha rodoviária no século XX, o movimento portuário e ferroviário da cidade diminuiu, mas Magé manteve sua forte identidade na Baixada Fluminense. O município ganhou fama internacional por ser o berço de Manuel Francisco dos Santos, o \"Mané Garrincha\", nascido no distrito de Pau Grande. Hoje, a cidade guarda um rico patrimônio histórico, como a primeira ferrovia e a histórica Igreja Matriz de Nossa Senhora da Piedade."
+  ]
+},
   "3302601": {
 "resumo": "Mangaratiba, o portal da Costa Verde fluminense, une praias paradisíacas e ilhas deslumbrantes a um rico passado histórico imperial. Emancipada em 1831, a cidade abriga as ruínas do antigo porto de escoamento de café, a primeira estrada pavimentada do país e, hoje, destaca-se pelo turismo de luxo e ecológico, além do importante setor portuário.",
 "historiaCompleta": 
@@ -292,7 +341,14 @@
 "No século XXI, Maricá vivenciou uma transformação econômica sem precedentes, impulsionada pelo recebimento de royalties da exploração de petróleo do pré-sal. A cidade ganhou projeção mundial ao reverter esses recursos em políticas públicas de economia solidária, sendo a criadora da \"Mumbuca\" — a moeda social de maior sucesso no Brasil — e implementando o programa \"Tarifa Zero\", que oferece transporte público em ônibus vermelhinhos de graça para toda a população."
 ]
 },
-  "3302809": { "resumo": "", "historiaCompleta": [] },
+  "3302809": {
+  "resumo": "Mendes, famosa por possuir o \"quarto melhor clima do mundo\", teve sua origem como ponto de parada para tropeiros no século XVIII. Emancipada em 1952, a cidade destacou-se na transição do ciclo do café para um forte polo industrial no Centro-Sul Fluminense.",
+  "historiaCompleta": [
+    "A história de Mendes iniciou-se no século XVIII, quando a família Mendes construiu um rancho para abrigar os tropeiros que percorriam o Caminho Novo em direção às ricas minas de ouro de Minas Gerais. O pequeno povoado cresceu ao redor desse ponto de parada, impulsionado posteriormente pela expansão das imensas fazendas do Ciclo do Café ao longo do século XIX.",
+    "Com o declínio da economia cafeeira e a chegada dos trilhos da Estrada de Ferro D. Pedro II, Mendes transformou-se em um pioneiro polo industrial. No início do século XX, a instalação de grandes indústrias, como fábricas de papel, de fósforos e o imenso Frigorífico Anglo, modificou drasticamente a paisagem e a economia local, atraindo centenas de operários.",
+    "Após décadas de desenvolvimento como distrito, o movimento emancipacionista ganhou força, culminando na criação do município em 11 de julho de 1952, desmembrado de Barra do Piraí. Hoje, a acolhedora cidade serrana aposta no turismo ecológico e histórico, orgulhando-se de seu famoso título de \"quarto melhor clima do mundo\", que atrai visitantes em busca de tranquilidade e ar puro."
+  ]
+},
   "3302858": {
 "resumo": "Mesquita, a \"caçula\" da Baixada Fluminense, destaca-se por ser o município mais jovem do estado do Rio de Janeiro, emancipado de Nova Iguaçu em 1999. Com forte herança ferroviária e agrícola, a cidade preserva tesouros da Mata Atlântica e a memória de seus antigos barões.",
 "historiaCompleta": 
@@ -303,9 +359,30 @@
 
 
 },
-  "3302908": { "resumo": "", "historiaCompleta": [] },
-  "3303005": { "resumo": "", "historiaCompleta": [] },
-  "3303104": { "resumo": "", "historiaCompleta": [] },
+  "3302908": {
+  "resumo": "Miguel Pereira, famosa por abrigar o que já foi considerado o \"3º melhor clima do mundo\", é um charmoso refúgio na serra fluminense. Emancipada em 1955, a cidade hoje se destaca como um dos destinos turísticos que mais crescem no estado.",
+  "historiaCompleta": [
+    "A ocupação da região teve início no século XIX, impulsionada pelas imensas fazendas do Ciclo do Café. O núcleo urbano original começou a se formar ao redor da Fazenda da Estiva e da Fazenda Barreiros, numa época em que o território ainda pertencia à opulenta cidade de Vassouras.",
+    "A virada no desenvolvimento ocorreu com a chegada dos trilhos da Linha Auxiliar da Estrada de Ferro Central do Brasil. O município ganhou seu nome em homenagem ao médico Dr. Miguel Pereira, que, encantado com a qualidade do ar, popularizou a região como um dos melhores climas do mundo para o tratamento de doenças respiratórias, dando início a uma era de ouro do turismo de \"veraneio e saúde\".",
+    "Com o crescimento da população e do comércio local, Miguel Pereira conquistou sua emancipação política em 25 de outubro de 1955. Atualmente, a cidade vive um intenso renascimento turístico, atraindo visitantes para cartões-postais como o Lago do Javary, o histórico Viaduto Paulo de Frontin e o inovador parque \"Terra dos Dinos\"."
+  ]
+},
+  "3303005": {
+  "resumo": "Miracema, conhecida como a \"Princesinha do Norte\" Fluminense, destaca-se por seu belíssimo e preservado conjunto arquitetônico histórico. Emancipada em 1935, a cidade construiu sua riqueza no apogeu do ciclo do café e hoje preserva uma forte tradição agropecuária e cultural.",
+  "historiaCompleta": [
+    "A ocupação da região de Miracema intensificou-se na primeira metade do século XIX, impulsionada pela expansão das lavouras de café que avançavam pelo interior fluminense. O povoado original desenvolveu-se em terras férteis cortadas pelo Ribeirão Santo Antônio, crescendo no entorno de uma capela erguida pelos pioneiros, atraindo rapidamente fazendeiros e tropeiros.",
+    "Durante as décadas seguintes, a localidade, que inicialmente pertencia ao município de Santo Antônio de Pádua, experimentou um extraordinário apogeu econômico graças ao Ciclo do Café. A riqueza gerada pelos imensos cafezais financiou a construção de elegantes casarões e palacetes ecléticos que até hoje formam o centro histórico da cidade, além de impulsionar a chegada de imigrantes, especialmente sírios, libaneses e italianos, que diversificaram o comércio.",
+    "Com o contínuo progresso urbano e econômico, o forte desejo de autonomia da população culminou na emancipação política em 3 de maio de 1935, adotando-se em definitivo o nome Miracema (que no idioma tupi significa \"pau de onde brota água\"). Atualmente, a pacata e charmosa cidade mantém viva a sua herança histórica, destacando-se na pecuária leiteira e nas suas vibrantes tradições populares, como as centenárias Folias de Reis."
+  ]
+},
+  "3303104": {
+  "resumo": "Natividade, localizada no Noroeste Fluminense, é famosa por seu preservado patrimônio histórico e pelo forte turismo religioso, sendo considerada um verdadeiro \"santuário a céu aberto\". Elevada a cidade em 1947, possui um dos conjuntos arquitetônicos mais charmosos do estado, tombado pelo IPHAN.",
+  "historiaCompleta": [
+    "A ocupação de Natividade remonta à primeira metade do século XIX, quando exploradores e fazendeiros, atraídos pela fertilidade do solo, estabeleceram-se na região outrora habitada pelos indígenas puris. O povoado original cresceu rapidamente às margens do rio Carangola, impulsionado pelas primeiras lavouras e pela introdução do cultivo do café, que ditaria os rumos da economia local.",
+    "Durante o final do século XIX e início do século XX, a localidade viveu seu grande apogeu econômico com o Ciclo do Café. A riqueza gerada pelos imensos cafezais financiou a construção de um belíssimo casario eclético e neoclássico, que hoje compõe o seu Sítio Histórico. A chegada dos trilhos da Estrada de Ferro Leopoldina fortaleceu o escoamento da produção e conectou a então vila aos grandes centros.",
+    "Após décadas de subordinação a Itaperuna, Natividade conquistou sua definitiva emancipação político-administrativa em 20 de junho de 1947. Atualmente, a cidade destaca-se no cenário estadual pelo turismo religioso, atraindo milhares de fiéis ao Santuário de Nossa Senhora da Natividade, e orgulha-se de seu patrimônio arquitetônico nacionalmente reconhecido e protegido pelo IPHAN."
+  ]
+},
   "3303203": {
 "resumo": "Nilópolis, a terra da Beija-Flor, destaca-se por ser o menor município em área territorial do estado do Rio de Janeiro. Emancipada de Nova Iguaçu em 1947, a cidade recebeu forte imigração judaica e sírio-libanesa e é mundialmente famosa por sua vitoriosa escola de samba.",
 "historiaCompleta": 
@@ -353,7 +430,14 @@
 
 
 },
-  "3303708": { "resumo": "", "historiaCompleta": [] },
+  "3303708": {
+  "resumo": "Paraíba do Sul, localizada no Centro-Sul Fluminense, nasceu como um ponto estratégico no histórico Caminho Novo do Ouro. Elevada a vila em 1833, a cidade foi um grande polo cafeeiro no século XIX e é conhecida por abrigar os restos mortais de Tiradentes e pelas famosas águas minerais de Salutaris.",
+  "historiaCompleta": [
+    "A história de Paraíba do Sul remonta a 1681, quando o bandeirante Garcia Rodrigues Paes desbravou a região durante a abertura do Caminho Novo, uma rota fundamental que ligava as minas de ouro de Minas Gerais ao porto do Rio de Janeiro. Às margens do rio que dá nome à cidade, formou-se um importante ponto de travessia e descanso para tropeiros e viajantes.",
+    "No século XIX, o povoado transformou-se em uma das áreas mais ricas do Império devido ao apogeu do Ciclo do Café. A imensa riqueza gerada pelos \"barões do café\" impulsionou o desenvolvimento arquitetônico e econômico local, culminando na elevação da localidade à categoria de vila em 1833 e na posterior chegada dos trilhos da ferrovia para facilitar o escoamento das safras.",
+    "Além da rica herança cafeeira, Paraíba do Sul possui uma profunda relevância nacional: é o município onde foi exposto e secretamente sepultado um dos membros de Joaquim José da Silva Xavier, o Tiradentes, após a Inconfidência Mineira. Atualmente, a pacata cidade atrai visitantes em busca de seu preservado patrimônio histórico, turismo religioso e da tradição de seu Parque das Águas Minerais de Salutaris."
+  ]
+},
   "3303807": {
   "resumo": "Paraty, joia da Costa Verde fluminense, une um dos centros históricos coloniais mais preservados do mundo à exuberante Mata Atlântica. Primeiro sítio misto do Brasil reconhecido como Patrimônio Mundial da UNESCO, a cidade respira cultura com a FLIP e encanta por suas praias e herança da Estrada Real.",
   "historiaCompleta": [
@@ -362,7 +446,14 @@
     "A partir da década de 1970, a inauguração da rodovia BR-101 (Rio-Santos) tirou Paraty do isolamento, revelando seu tesouro arquitetônico e natural para o turismo nacional e internacional. Atualmente, o município é um vibrante polo cultural, famoso mundialmente por sediar a Festa Literária Internacional de Paraty (FLIP) e por sua tradicional produção de cachaça artesanal de alambique. Em 2019, a UNESCO concedeu à cidade e à Ilha Grande o título inédito de Patrimônio Mundial da Humanidade sob a categoria de sítio misto, celebrando a perfeita harmonia entre o seu riquíssimo patrimônio histórico-cultural e a preservação ambiental da Mata Atlântica e de sua deslumbrante baía."
   ]
 },
-  "3303856": { "resumo": "", "historiaCompleta": [] },
+  "3303856": {
+  "resumo": "Paty do Alferes, localizada no Centro-Sul Fluminense, é famosa por seu clima ameno e por ser a capital do tomate no estado. Com fortes raízes no Caminho Novo e no ciclo do café, a cidade emancipou-se em 1987 e destaca-se pela preservação de seu patrimônio histórico.",
+  "historiaCompleta": [
+    "A origem de Paty do Alferes remonta ao início do século XVIII, ligada à abertura do Caminho Novo, uma rota essencial para o escoamento do ouro de Minas Gerais até o Rio de Janeiro. O nome da localidade homenageia o alferes Francisco Tavares, um dos primeiros proprietários de terras da região, e faz referência à palmeira nativa conhecida como \"pati\".",
+    "Durante o século XIX, a região vivenciou o apogeu do Ciclo do Café, abrigando fazendas imponentes que geraram imensa riqueza para o Império. Em 1838, o território foi palco da maior rebelião de escravizados do Vale do Paraíba, a famosa \"Revolta de Manuel Congo\". A herança dessa época ainda é visível em locais como a Aldeia de Arcozelo, antiga fazenda que mais tarde se transformou no maior centro cultural da América Latina em área contínua.",
+    "Após pertencer por muito tempo a Vassouras e, posteriormente, a Miguel Pereira, a população patyense mobilizou-se por autonomia, conquistando a emancipação política em 15 de dezembro de 1987. Hoje, além do turismo em seus casarões coloniais, a cidade é nacionalmente reconhecida pela sua agricultura, sediando anualmente a tradicional \"Festa do Tomate\" e mantendo viva a sua essência rural e histórica."
+  ]
+},
   "3303906": {
 "resumo": "Petrópolis, conhecida como a \"Cidade Imperial\", foi fundada em 1843 por Dom Pedro II. Refúgio de verão da corte e colonizada por alemães, chegou a ser a capital do estado do Rio de Janeiro entre 1894 e 1903 e hoje é um dos maiores polos turísticos do país.",
 "historiaCompleta": [
@@ -371,11 +462,46 @@
 "Hoje, Petrópolis é um verdadeiro museu a céu aberto e um dos destinos mais procurados da Região Serrana Fluminense. A \"Cidade Imperial\" abriga tesouros arquitetônicos como o Museu Imperial, o Palácio Quitandinha, o Palácio de Cristal e a Catedral de São Pedro de Alcântara. Além do turismo histórico e ecológico, a cidade destaca-se pela forte indústria cervejeira, pela alta gastronomia e pelo famoso polo de moda da Rua Teresa."
 ]
 },
-  "3303955": { "resumo": "", "historiaCompleta": [] },
-  "3304003": { "resumo": "", "historiaCompleta": [] },
-  "3304102": { "resumo": "", "historiaCompleta": [] },
-  "3304110": { "resumo": "", "historiaCompleta": [] },
-  "3304128": { "resumo": "", "historiaCompleta": [] },
+  "3303955": {
+  "resumo": "Pinheiral, localizada no Vale do Paraíba Fluminense, surgiu a partir de uma das mais ricas fazendas de café do Brasil Império. Emancipada de Piraí em 1995, a cidade destaca-se hoje por sua tranquilidade, patrimônio histórico e forte vocação para o ensino agrícola.",
+  "historiaCompleta": [
+    "A história de Pinheiral está profundamente ligada ao Ciclo do Café no século XIX. O núcleo urbano desenvolveu-se ao redor da imponente Fazenda do Pinheiro, propriedade da família Breves, que ostentava o título de \"Reis do Café\". A riqueza gerada pelos imensos cafezais dessa propriedade tornou a região uma das mais prósperas e influentes de todo o Império.",
+    "O grande marco de desenvolvimento do povoado ocorreu em 1871, com a inauguração da estação da Estrada de Ferro D. Pedro II, que facilitou o escoamento da colossal produção cafeeira para o Rio de Janeiro. Com o declínio do café no início do século XX, a histórica fazenda foi adquirida pelo governo federal e transformada em um pioneiro centro de ensino agropecuário, moldando de forma definitiva a identidade educacional e agrícola da localidade.",
+    "Durante grande parte do século XX, Pinheiral desenvolveu-se como um importante e populoso distrito do município de Piraí. Após um longo movimento popular em busca de autonomia administrativa, a cidade conquistou sua emancipação política em 13 de junho de 1995. Atualmente, a pacata e arborizada cidade atrai visitantes e estudantes, preservando marcos históricos importantes como a sua antiga estação ferroviária e as centenárias palmeiras-imperiais."
+  ]
+},
+  "3304003": {
+  "resumo": "Piraí, localizada no Vale do Paraíba Fluminense, é conhecida por sua transição histórica do rico ciclo do café para a era da energia e tecnologia. Emancipada em 1837, a cidade abriga o complexo hidrelétrico de Ribeirão das Lajes e é pioneira em projetos de inclusão digital.",
+  "historiaCompleta": [
+    "A história de Piraí (nome de origem tupi que significa \"rio dos peixes\") começou no final do século XVIII, por volta de 1772, com a construção de uma pequena capela dedicada a Sant'Ana. O povoado cresceu às margens do rio Piraí, impulsionado inicialmente pela agricultura de subsistência e pelo intenso trânsito de tropeiros.",
+    "Durante o século XIX, a localidade vivenciou um extraordinário crescimento econômico graças ao apogeu do Ciclo do Café. As ricas fazendas cafeeiras transformaram a região, culminando na elevação do povoado à categoria de vila e na sua emancipação política em 17 de outubro de 1837. A implantação da ferrovia facilitou o escoamento das safras e consolidou a importância da cidade para o Império.",
+    "No início do século XX, com o declínio da cafeicultura, Piraí reinventou-se ao sediar a construção da Represa de Ribeirão das Lajes, um marco na geração de energia elétrica no Brasil impulsionado pela Light. Mais recentemente, a cidade ganhou destaque internacional com o premiado projeto \"Piraí Digital\", unindo o seu vasto patrimônio histórico à inovação e democratização do acesso à internet."
+  ]
+},
+  "3304102": {
+  "resumo": "Porciúncula, o município mais setentrional do estado do Rio de Janeiro, é famoso por sua forte vocação cafeeira e pelas montanhas propícias ao voo livre. Emancipada de Itaperuna em 1947, a cidade preserva seu charme rural e a herança da era das ferrovias.",
+  "historiaCompleta": [
+    "A colonização de Porciúncula teve início na primeira metade do século XIX, quando as terras às margens do rio Carangola, antes habitadas por indígenas puris, começaram a ser desbravadas. Atraídos pela fertilidade do solo, fazendeiros se estabeleceram na região, formando um povoado que inicialmente recebeu o nome de \"Santo Antônio do Carangola\".",
+    "O grande salto de desenvolvimento ocorreu no final do século XIX, impulsionado pelo apogeu do Ciclo do Café e pela inauguração da estação da Estrada de Ferro Leopoldina, em 1886. Em 1893, o então distrito adotou o nome de Porciúncula, uma justa homenagem ao governador fluminense José Tomás da Porciúncula, responsável por viabilizar a chegada dos trilhos.",
+    "Após décadas de crescimento e fortalecimento de sua identidade agrícola, a população mobilizou-se por autonomia e conquistou a emancipação política em 21 de agosto de 1947, desmembrando-se de Itaperuna. Atualmente, a pacata cidade destaca-se como grande produtora de café de qualidade e pelo seu potencial no ecoturismo, sendo um destino muito procurado para a prática de voo livre na rampa da \"Pedra Eleutério\"."
+  ]
+},
+  "3304110": {
+  "resumo": "Porto Real, situada no Vale do Paraíba Fluminense, é historicamente reconhecida como a primeira colônia italiana do Brasil, fundada em 1875. Emancipada de Resende em 1995, a cidade transformou-se de um núcleo agrícola em um poderoso e moderno polo automotivo e industrial.",
+  "historiaCompleta": [
+    "A história de Porto Real começou a ganhar contornos únicos em 1875, quando recebeu dezenas de famílias de imigrantes oriundos do norte da Itália. Com o incentivo do imperador Dom Pedro II, eles se instalaram nas terras da antiga Fazenda Porto Real para impulsionar a agricultura, marcando o local como a primeira colônia italiana oficialmente estabelecida no Brasil.",
+    "Durante o final do século XIX e boa parte do século XX, a economia da colônia girou em torno da produção de cana-de-açúcar e da instalação da Usina Açucareira de Porto Real, que foi o principal motor de desenvolvimento da região por décadas. Com o tempo, a tradição agrícola cedeu espaço para os trilhos da ferrovia e, posteriormente, para a modernização da infraestrutura local.",
+    "O forte crescimento econômico e o desejo de autonomia levaram à emancipação político-administrativa do município em 5 de novembro de 1995, desmembrando-se de Resende. Hoje, Porto Real abriga um dos maiores polos industriais e automotivos do estado do Rio de Janeiro, sem deixar de celebrar anualmente suas ricas raízes culturais através da tradicional \"Festa Italiana\"."
+  ]
+},
+  "3304128": {
+  "resumo": "Quatis, situada no Vale do Paraíba Fluminense, é carinhosamente conhecida como a \"Capital do Interior\". Com forte herança do ciclo do café e da pecuária leiteira, a cidade emancipou-se de Barra Mansa em 1991 e destaca-se por sua tranquilidade e pela tradicional Feira da Roça.",
+  "historiaCompleta": [
+    "A origem de Quatis remonta ao início do século XIX, quando a região começou a ser desbravada por fazendeiros atraídos pelas terras férteis do Vale do Paraíba. O nome do povoado foi inspirado na grande quantidade de quatis, pequenos mamíferos que habitavam as matas ao redor do núcleo original, consolidando-se à medida que a agricultura de subsistência ganhava força.",
+    "Durante a segunda metade do século XIX, o povoado experimentou um expressivo crescimento impulsionado pelo apogeu do Ciclo do Café. As ricas fazendas cafeeiras trouxeram desenvolvimento para a região, que mais tarde, com o declínio da cafeicultura, soube reinventar sua economia voltando-se para a pecuária leiteira e de corte, tornando-se um importante e produtivo distrito do município de Barra Mansa.",
+    "O forte sentimento de identidade local e o desejo de desenvolvimento autônomo levaram os moradores a organizar um movimento emancipacionista. Em 9 de janeiro de 1991, Quatis conquistou oficialmente sua emancipação política. Hoje, a acolhedora cidade preserva suas ricas tradições rurais, celebradas semanalmente na famosa \"Feira da Roça\", que atrai visitantes em busca de artesanato, música e culinária típica do interior fluminense."
+  ]
+},
   "3304144": {
 "resumo": "Queimados, importante polo industrial da Baixada Fluminense, destaca-se por sua história profundamente ligada à expansão ferroviária do século XIX. Emancipada de Nova Iguaçu em 1990, a cidade abriga um dos distritos industriais mais dinâmicos do estado e guarda lendas intrigantes sobre a origem de seu nome.",
 "historiaCompleta": 
@@ -386,7 +512,14 @@
 
 
 },
-  "3304151": { "resumo": "", "historiaCompleta": [] },
+  "3304151": {
+  "resumo": "Quissamã, localizada no Norte Fluminense, é famosa por abrigar o primeiro engenho central da América Latina e o exuberante Parque Nacional da Restinga de Jurubatiba. Emancipada de Macaé em 1989, a cidade mistura um rico patrimônio histórico do ciclo do açúcar com forte vocação para o ecoturismo.",
+  "historiaCompleta": [
+    "A colonização das terras de Quissamã, inicialmente habitadas por indígenas goitacazes, ganhou força no século XVII com a doação de sesmarias na antiga Capitania de São Tomé. O povoado cresceu em torno da produção agropecuária e, especialmente, do cultivo da cana-de-açúcar, que se tornaria a grande força motriz de sua economia.",
+    "O auge do desenvolvimento ocorreu no século XIX, período em que a região foi dominada pelos poderosos \"Barões do Açúcar\". Em 1877, esse poderio econômico culminou na inauguração do Engenho Central de Quissamã, o primeiro complexo do tipo na América Latina, representando um imenso marco tecnológico e industrial para o Brasil Império.",
+    "Após um longo período como distrito de Macaé, o município conquistou sua emancipação política em 4 de janeiro de 1989. Hoje, Quissamã destaca-se pela preservação de seus imponentes casarões históricos e pelas riquezas naturais do Parque Nacional da Restinga de Jurubatiba, além de ser um importante polo econômico beneficiado pela vizinha indústria do petróleo."
+  ]
+},
   "3304201": {
 "resumo": "Resende, conhecida como a capital militar e industrial do Sul Fluminense, une a herança histórica do café com a imponência da Academia Militar das Agulhas Negras. Situada no coração do Vale do Paraíba, a cidade é um polo estratégico cercado pelas belezas naturais da Serra da Mantiqueira, como Visconde de Mauá.",
 "historiaCompleta": 
@@ -405,9 +538,30 @@
     "No decorrer do século XX, o desenvolvimento da região foi alavancado pela chegada da ferrovia, consolidando a cidade como um expressivo polo agrícola, com destaque para a produção de citros, bananas e para a pecuária leiteira. Hoje, estrategicamente cortada pela BR-101, Rio Bonito destaca-se como um elo de conexão vital entre a Região Metropolitana e a Região dos Lagos. Preservando sua essência acolhedora de cidade de interior, o município atrai visitantes por seu forte potencial de turismo rural e ecoturismo, com destaque para as trilhas, cachoeiras e mirantes da exuberante Serra do Sambê."
   ]
 },
-  "3304409": { "resumo": "", "historiaCompleta": [] },
-  "3304508": { "resumo": "", "historiaCompleta": [] },
-  "3304524": { "resumo": "", "historiaCompleta": [] },
+  "3304409": {
+  "resumo": "Rio Claro, localizada no Sul Fluminense, vivenciou seu grande apogeu econômico durante o faustoso Ciclo do Café no século XIX. Elevada à vila em 1849, a cidade hoje atrai visitantes por seu riquíssimo circuito de fazendas históricas, turismo ecológico e cachoeiras.",
+  "historiaCompleta": [
+    "A colonização de Rio Claro teve início no final do século XVIII, quando desbravadores começaram a explorar as terras férteis banhadas pelo rio que dá nome ao município, uma região antes habitada por indígenas puris. O núcleo urbano original se desenvolveu ao redor de uma pequena capela erguida em louvor a Nossa Senhora da Piedade, padroeira da cidade.",
+    "Durante o século XIX, a localidade experimentou um extraordinário crescimento impulsionado pelo Ciclo do Café. As terras rioclarenses foram tomadas por imensas plantações e por majestosas fazendas construídas pelos chamados \"Barões do Café\". Toda essa riqueza e importância estratégica culminaram na elevação do povoado à categoria de vila e na sua consequente emancipação política em 19 de maio de 1849.",
+    "Com a drástica queda das exportações de café no início do século XX, a economia de Rio Claro encontrou uma nova vocação na pecuária leiteira e de corte. Atualmente, a pacata e charmosa cidade aposta fortemente no turismo rural e histórico, além de abrigar o singular distrito de Lídice — rebatizado em 1944 em uma comovente homenagem à aldeia tcheca homônima que foi destruída durante a Segunda Guerra Mundial."
+  ]
+},
+  "3304508": {
+  "resumo": "Rio das Flores, localizada no Vale do Paraíba Fluminense, viveu seu grande apogeu durante o Ciclo do Café no século XIX. Emancipada de Valença em 1890, a cidade destaca-se hoje por preservar um dos mais ricos conjuntos de fazendas históricas do Brasil, sendo um charmoso refúgio de turismo rural e cultural.",
+  "historiaCompleta": [
+    "A história de Rio das Flores começou a ganhar forma no início do século XIX, quando a região, inicialmente conhecida como Santa Teresa de Valença, passou a ser povoada em torno de uma pequena capela dedicada à santa. A ocupação do território foi fortemente impulsionada pela doação de sesmarias e pela chegada de fazendeiros atraídos pela alta fertilidade das terras banhadas pelo rio das Flores.",
+    "Durante a segunda metade do século XIX, a localidade transformou-se em uma das maiores potências produtoras de café do Império. A imensa riqueza gerada pelos \"barões do café\" financiou a construção de suntuosas sedes de fazendas, muitas das quais importavam materiais diretamente da Europa. Esse notável progresso econômico e estrutural culminou na emancipação política em 17 de março de 1890, desmembrando-se definitivamente do município de Valença.",
+    "Em 1943, o município adotou oficialmente o nome atual, Rio das Flores. Com o declínio da era cafeeira no século XX, a economia local precisou se reinventar, voltando-se com sucesso para a pecuária leiteira e de corte. Atualmente, a pacata cidade aposta fortemente no turismo histórico, convidando os visitantes a uma verdadeira viagem no tempo através de suas imponentes e bem preservadas fazendas centenárias."
+  ]
+},
+  "3304524": {
+  "resumo": "Rio das Ostras, localizada na Região dos Lagos fluminense, destacou-se nas últimas décadas pelo rápido crescimento impulsionado pela indústria do petróleo. Emancipada em 1992, a cidade é hoje um dos principais polos turísticos do estado, famosa por suas belas praias e pelo aclamado Festival de Jazz e Blues.",
+  "historiaCompleta": [
+    "A ocupação da região remonta ao século XVI, quando as terras eram habitadas por indígenas e começaram a ser exploradas pelos colonizadores portugueses e padres jesuítas. O antigo povoado, erguido ao redor de uma capela dedicada a Nossa Senhora da Conceição, desenvolveu-se lentamente ao longo dos séculos como uma pacata vila de pescadores e um ponto de parada para viajantes.",
+    "Durante grande parte do século XX, Rio das Ostras figurou como um próspero distrito do município de Casimiro de Abreu. O cenário começou a mudar a partir da década de 1950, com a pavimentação da Rodovia Amaral Peixoto, que facilitou o acesso e impulsionou as primeiras grandes ondas de turistas e veranistas. O constante desenvolvimento e o forte anseio por autonomia culminaram na emancipação política do município em 10 de abril de 1992.",
+    "Nas décadas seguintes à sua emancipação, a cidade viveu uma explosão demográfica e econômica sem precedentes, impulsionada pelo recebimento de \"royalties\" provenientes da exploração de petróleo na Bacia de Campos. Atualmente, Rio das Ostras equilibra sua importância no setor offshore com uma fortíssima vocação para o turismo, atraindo milhares de visitantes para suas praias, como Costazul, e consolidando-se no cenário cultural internacional com o seu tradicional Rio das Ostras Jazz & Blues Festival."
+  ]
+},
   "3304557": { 
   "resumo": "O Rio de Janeiro, a \"Cidade Maravilhosa\", foi a única cidade fora da Europa a sediar a capital de um império europeu. Foi o grande centro político do Brasil, servindo como capital de 1763 até 1960, e é dona de uma paisagem cultural que é Patrimônio Mundial da UNESCO.",
   "historiaCompleta": [
@@ -415,10 +569,38 @@
     "Em 1763, virou a capital do Estado do Brasil (substituindo Salvador); em 1822, tornou-se o centro do Império e, em 1889, consagrou-se como a capital da República. Palco de intensas transformações e revoltas, como a Revolta da Vacina em 1904, a cidade perdeu o posto de capital federal para Brasília em 1960, sendo transformada no Estado da Guanabara. Com a fusão dos estados da Guanabara e do Rio de Janeiro em 1975, o Rio assumiu definitivamente o status de capital do atual estado fluminense.",
     "O Cristo Redentor, inaugurado em 1931, tem 30 metros de altura (além dos 8 de pedestal) no topo do Corcovado e é considerado uma das Novas Sete Maravilhas do Mundo. O apelido \"Cidade Maravilhosa\", popularizado na década de 1930, celebra a harmonia singular entre o povo carioca e a beleza estonteante do encontro da floresta com o mar — hoje a cidade também ostenta o título inédito de Patrimônio Mundial da Humanidade na categoria Paisagem Cultural Urbana, concedido pela UNESCO."
   ] },
-  "3304607": { "resumo": "", "historiaCompleta": [] },
-  "3304706": { "resumo": "", "historiaCompleta": [] },
-  "3304755": { "resumo": "", "historiaCompleta": [] },
-  "3304805": { "resumo": "", "historiaCompleta": [] },
+  "3304607": {
+  "resumo": "Santa Maria Madalena, reconhecida internacionalmente como a \"Capital das Estrelas\" e berço da atriz Dercy Gonçalves, é um refúgio ecológico na região serrana fluminense. Emancipada em 1862, a cidade destaca-se por abrigar o Parque Estadual do Desengano e por sua rica herança do ciclo do café.",
+  "historiaCompleta": [
+    "A história de Santa Maria Madalena teve início na primeira metade do século XIX, impulsionada pelo desbravamento de matas promovido pelo padre português Felippe Barreto e pela subsequente expansão das imensas fazendas de café. O povoado original cresceu rapidamente ao redor da capela erguida em devoção a Santa Maria Madalena, atraindo trabalhadores e fazendeiros.",
+    "Com o vertiginoso sucesso da economia cafeeira, a localidade prosperou e ganhou grande importância regional. Esse desenvolvimento estrutural e econômico culminou em sua emancipação política em 8 de junho de 1862, quando foi definitivamente desmembrada do município de Cantagalo. Durante décadas, a cidade ostentou a riqueza dos \"barões do café\", que ainda hoje se reflete em seus casarões coloniais preservados.",
+    "No cenário contemporâneo, após o declínio da era cafeeira e a transição para a agropecuária, o município encontrou uma forte vocação no ecoturismo. Além de celebrar sua filha mais ilustre com o Museu Dercy Gonçalves, a cidade ganhou notoriedade mundial através do Parque Estadual do Desengano, reconhecido como o primeiro \"Parque Internacional de Céu Escuro\" da América Latina, atraindo astrônomos e amantes da natureza."
+  ]
+},
+  "3304706": {
+  "resumo": "Santo Antônio de Pádua, localizada no Noroeste Fluminense, surgiu a partir de uma missão capuchinha para catequizar os indígenas em 1833. Elevada a cidade em 1882, prosperou durante o ciclo do café e hoje é conhecida por suas águas minerais e pela extração de pedras ornamentais.",
+  "historiaCompleta": [
+    "A origem do município remonta a 1833, quando o frei capuchinho italiano Bento de Gênova fundou um aldeamento com o objetivo de catequizar os indígenas puris e coroados que habitavam a região. Às margens do rio Pomba, o religioso ergueu uma pequena capela dedicada a Santo Antônio de Pádua, estabelecendo o núcleo do futuro povoado.",
+    "Nas décadas seguintes, o vilarejo atraiu colonos e fazendeiros, crescendo rapidamente graças à introdução e expansão da lavoura cafeeira. A imensa riqueza gerada pelo \"ouro verde\" trouxe infraestrutura e impulsionou o desenvolvimento local, o que culminou na sua emancipação política e elevação à categoria de cidade em 2 de janeiro de 1882, desmembrando-se de São Fidélis.",
+    "Com a posterior decadência do ciclo do café no século XX, a economia paduana precisou se reinventar, encontrando nova força na pecuária leiteira, na indústria papeleira e, sobretudo, na extração da famosa \"Pedra de Pádua\". Hoje, a pacata cidade preserva seu patrimônio histórico e atrai visitantes em busca do turismo ecológico e de suas fontes de águas minerais."
+  ]
+},
+  "3304755": {
+  "resumo": "São Francisco de Itabapoana, localizado no extremo norte do estado, é famoso por suas extensas praias e forte vocação agrícola. Emancipada de São João da Barra em 1995, a cidade abriga grandes belezas naturais e possui a segunda maior área territorial do Rio de Janeiro.",
+  "historiaCompleta": [
+    "A história de São Francisco de Itabapoana está profundamente ligada à colonização da foz do rio Paraíba do Sul e às antigas terras habitadas pelos temidos indígenas Goitacazes. Durante os séculos de colonização e império, a região desenvolveu-se de forma pacata como um polo agrícola focado no cultivo da cana-de-açúcar e da mandioca, pertencendo administrativamente à tradicional cidade de São João da Barra.",
+    "Com o passar das décadas, o crescimento de suas comunidades rurais e costeiras fez surgir um forte anseio por autonomia política e administrativa. Após intensa mobilização popular e a realização de um plebiscito, o município conquistou sua emancipação oficial em 18 de janeiro de 1995, iniciando um novo capítulo em sua história voltado para o desenvolvimento local e a valorização de seu vasto território.",
+    "Atualmente, São Francisco de Itabapoana destaca-se como um refúgio de tranquilidade, atraindo visitantes para as suas belas praias, como Guaxindiba, Manguinhos e Santa Clara, além de abrigar marcos históricos como as ruínas da Tipografia de Macuco. O município consolida-se como uma importante força agrícola do Norte Fluminense, equilibrando perfeitamente suas fortes raízes rurais com o crescente turismo litorâneo."
+  ]
+},
+  "3304805": {
+  "resumo": "São Fidélis, carinhosamente conhecida como a \"Cidade Poema\", foi fundada em 1780 por frades capuchinhos italianos. Cortada pelo rio Paraíba do Sul, no Norte Fluminense, a cidade abriga uma rica herança arquitetônica e emancipou-se em 1870, prosperando com os ciclos da cana-de-açúcar e do café.",
+  "historiaCompleta": [
+    "A origem de São Fidélis remonta a 1780, quando os freis capuchinhos italianos Ângelo de Lucca e Vitório de Cambiasca chegaram à região com a missão de catequizar os indígenas puris e coroados. Às margens do rio Paraíba do Sul, eles fundaram a aldeia que deu origem ao município, iniciando um núcleo populacional que se desenvolveu rapidamente em torno da fé e da agricultura.",
+    "O grande símbolo desse período de fundação é a imponente Igreja Matriz de São Fidélis de Sigmaringa, construída entre 1799 e 1809 sob a orientação dos freis. Com uma arquitetura singular e uma cúpula majestosa, a igreja é um verdadeiro marco do Norte Fluminense. Durante o século XIX, o povoado experimentou um forte crescimento econômico, impulsionado pelas ricas lavouras de cana-de-açúcar e pelo auge do Ciclo do Café.",
+    "Graças ao seu notável desenvolvimento e à sua importância estratégica para o escoamento da produção agrícola através do rio Paraíba do Sul, a localidade foi elevada à categoria de cidade em 3 de dezembro de 1870. Atualmente, São Fidélis orgulha-se do título de \"Cidade Poema\", mantendo vivas suas fortes tradições literárias e culturais, sua vocação agropecuária e seu charme histórico preservado."
+  ]
+},
   "3304904": {
 "resumo": "São Gonçalo, a histórica \"Manchester Fluminense\", é o segundo município mais populoso do Rio de Janeiro. Fundada em 1579 pelo português Gonçalo Gonçalves, emancipou-se em 1890 e destacou-se pelo forte polo industrial no século XX.",
 "historiaCompleta": [
@@ -427,7 +609,14 @@
 "No decorrer do século XX, a cidade vivenciou um intenso processo de industrialização, o que lhe rendeu o apelido de \"Manchester Fluminense\", em alusão à famosa cidade industrial inglesa. Hoje, São Gonçalo é o segundo município mais populoso do estado, destacando-se por seu comércio vibrante, sua rica cultura popular e a força de seu povo trabalhador."
 ]
 },
-  "3305000": { "resumo": "", "historiaCompleta": [] },
+  "3305000": {
+  "resumo": "São João da Barra, localizada na foz do rio Paraíba do Sul, foi um dos portos fluviais mais importantes do país no período imperial. Elevada a cidade em 1850, hoje contrasta sua rica herança histórica com o gigantesco e moderno complexo portuário do Porto do Açu.",
+  "historiaCompleta": [
+    "A origem de São João da Barra remonta a 1622, quando pescadores liderados por Lourenço do Espírito Santo fundaram um pequeno povoado na foz do rio Paraíba do Sul. Em 1630, devido ao seu rápido crescimento e localização estratégica, o povoado foi elevado à categoria de vila com o nome de São João Batista da Paraíba do Sul.",
+    "Durante os séculos XVIII e XIX, a vila viveu o seu grande apogeu econômico. Transformou-se em um dos portos mais dinâmicos do país, sendo o principal escoadouro da produção de açúcar e, posteriormente, do café cultivado na região. Essa imensa prosperidade comercial justificou a visita do Imperador Dom Pedro II e a elevação da vila à categoria de cidade em 17 de junho de 1850, recebendo o nome definitivo de São João da Barra.",
+    "Com o declínio do uso das vias fluviais e a crise do setor açucareiro no século XX, a cidade precisou reinventar sua economia. Nas últimas décadas, São João da Barra ressurgiu com grande força no cenário nacional com a instalação do Porto do Açu, um dos maiores complexos portuário-industriais da América Latina. Hoje, o município equilibra seu perfil industrial de ponta com o turismo, suas festas tradicionais e o curioso e desafiador fenômeno do avanço do mar na praia de Atafona."
+  ]
+},
   "3305109": {
 "resumo": "São João de Meriti, o \"Formigueiro das Américas\", destaca-se por possuir a maior densidade demográfica do estado do Rio de Janeiro. Emancipada definitivamente em 1947, a cidade tem uma forte vocação de comércio e serviços, sendo historicamente famosa pelo polo de moda de Vilar dos Teles.",
 "historiaCompleta": 
@@ -438,11 +627,46 @@
 
 
 },
-  "3305133": { "resumo": "", "historiaCompleta": [] },
-  "3305158": { "resumo": "", "historiaCompleta": [] },
-  "3305208": { "resumo": "", "historiaCompleta": [] },
-  "3305307": { "resumo": "", "historiaCompleta": [] },
-  "3305406": { "resumo": "", "historiaCompleta": [] },
+  "3305133": {
+  "resumo": "São José de Ubá, localizada no Noroeste Fluminense, é uma cidade jovem de forte tradição agrícola, destacando-se como uma das maiores produtoras de tomate do estado do Rio de Janeiro. Emancipada de Cambuci em 1995, a pacata cidade preserva o charme rural e a hospitalidade típica do interior.",
+  "historiaCompleta": [
+    "A história de São José de Ubá começou a se desenhar em meados do século XIX, com a chegada de desbravadores e fazendeiros atraídos pela fertilidade das terras na região do Noroeste Fluminense. O núcleo urbano original formou-se ao redor de uma pequena capela erguida em louvor a São José, padroeiro que inspirou a primeira parte do nome da cidade. O termo \"Ubá\" foi adicionado em referência a uma espécie de cana ou gramínea que era muito abundante nas margens dos rios locais.",
+    "Durante muitas décadas, a localidade figurou como um pacato distrito do município de Cambuci. O povoado cresceu lentamente, sustentado pela pecuária de leite e pelas lavouras de subsistência. A verdadeira virada econômica ocorreu com a introdução e expansão do cultivo do tomate, que revolucionou a economia local e transformou a região em um dos principais e mais prósperos polos produtores agrícolas do estado.",
+    "Impulsionados pelo fortalecimento financeiro e pelo forte desejo de autonomia política e administrativa, os moradores organizaram um grande movimento emancipacionista na década de 1990. Esse esforço popular culminou na emancipação oficial do município em 28 de dezembro de 1995. Atualmente, São José de Ubá mantém vivas as suas raízes rurais e tradições religiosas, oferecendo tranquilidade e qualidade de vida no interior fluminense."
+  ]
+},
+  "3305158": {
+  "resumo": "São José do Vale do Rio Preto, localizada na Região Serrana fluminense, é reconhecida como a \"Capital Estadual da Avicultura\". Emancipada em 1987, a cidade mescla seu rico passado ligado ao ciclo do café com uma pujante tradição agropecuária e clima ameno.",
+  "historiaCompleta": [
+    "A colonização da região ganhou força no século XIX, impulsionada pelo expansivo e lucrativo Ciclo do Café. Atraídos pela fertilidade das terras banhadas pelo rio Preto, fazendeiros estabeleceram imensas propriedades agrícolas, formando o núcleo original do povoado que cresceu ao redor de uma pequena capela dedicada a São José.",
+    "O desenvolvimento local foi fortemente acelerado pela chegada dos trilhos da Estrada de Ferro Leopoldina, que facilitaram o escoamento das safras para a capital do Império. Ao longo de sua complexa história administrativa, a próspera localidade já pertenceu aos municípios de Paraíba do Sul, Petrópolis e, posteriormente, Três Rios.",
+    "Após intensa mobilização popular por autonomia, o município conquistou sua emancipação política definitiva em 15 de dezembro de 1987. Atualmente, São José do Vale do Rio Preto destaca-se como a maior produtora de aves do estado do Rio de Janeiro, equilibrando a força de seu setor agroindustrial com a tranquilidade da vida no interior e o turismo rural ecológico."
+  ]
+},
+  "3305208": {
+  "resumo": "São Pedro da Aldeia, localizada na Região dos Lagos, é uma das cidades mais antigas do estado, fundada por jesuítas em 1617. Conhecida como a \"Capital Nacional do Sal\" no passado, hoje abriga a única Base Aérea Naval do Brasil e destaca-se por seu turismo histórico e águas tranquilas da Lagoa de Araruama.",
+  "historiaCompleta": [
+    "A história de São Pedro da Aldeia teve início em 16 de maio de 1617, quando padres da Companhia de Jesus fundaram a Aldeia de São Pedro. O aldeamento foi criado para abrigar e catequizar cerca de 500 indígenas tupinambás aliados dos portugueses, tornando-se um dos primeiros núcleos urbanos do atual estado do Rio de Janeiro e erguendo a imponente e histórica Igreja Matriz de São Pedro.",
+    "Durante muito tempo, a economia do município foi fortemente baseada na pesca e, principalmente, na extração de sal, impulsionada pelos ventos constantes e pela alta salinidade da Lagoa de Araruama. Esse longo e rico período econômico rendeu à cidade o título de \"Capital Nacional do Sal\" até o declínio da atividade salineira no final do século XX, quando a economia local começou a se diversificar em direção ao comércio e ao turismo.",
+    "Após ser elevada à categoria de cidade e ganhar emancipação político-administrativa em 1892, São Pedro da Aldeia consolidou sua importância estratégica em 1961 com a inauguração da Base Aérea Naval, a única estrutura de aviação mantida pela Marinha do Brasil. Atualmente, a charmosa cidade atrai visitantes que buscam esportes náuticos, praias lagunares calmas e patrimônios culturais únicos, como a icônica \"Casa da Flor\"."
+  ]
+},
+  "3305307": {
+  "resumo": "São Sebastião do Alto, localizada na região Centro-Norte Fluminense, é uma das cidades com maior altitude do estado. Com origens ligadas ao desbravamento de terras no século XIX e ao ciclo do café, o município emancipou-se em 1891 e preserva até hoje sua forte vocação agropecuária e clima ameno.",
+  "historiaCompleta": [
+    "A história de São Sebastião do Alto teve início em meados do século XIX, quando fazendeiros e colonos começaram a desbravar a região montanhosa em busca de terras férteis. O núcleo original desenvolveu-se ao redor de uma capela erguida em devoção a São Sebastião, construída em uma área de grande elevação topográfica, característica que acabou inspirando o nome definitivo da localidade.",
+    "Durante a segunda metade do século XIX, o povoado prosperou impulsionado pelo auge do Ciclo do Café, atraindo mais moradores e consolidando sua importância regional. O constante crescimento econômico e o desejo de autonomia administrativa motivaram os moradores locais a buscar a emancipação política, conquista que foi oficializada em 17 de abril de 1891, quando o território foi desmembrado de Itaocara.",
+    "Com o declínio da era cafeeira ao longo do século XX, a economia altense soube se adaptar, encontrando na pecuária leiteira e na agricultura familiar as suas novas bases de sustentação. Atualmente, São Sebastião do Alto destaca-se por ser um autêntico refúgio de tranquilidade no interior fluminense, encantando visitantes com suas paisagens montanhosas, clima frio e pela calorosa preservação de suas tradicionais festas rurais e religiosas."
+  ]
+},
+  "3305406": {
+  "resumo": "Sapucaia, localizada no Centro-Sul Fluminense na divisa com Minas Gerais, desenvolveu-se às margens do rio Paraíba do Sul durante o Ciclo do Café. Emancipada em 1874, a cidade preserva um forte legado rural e atrai visitantes por seu patrimônio ferroviário e turismo ecológico.",
+  "historiaCompleta": [
+    "A colonização da região de Sapucaia teve início no princípio do século XIX, quando as matas às margens do rio Paraíba do Sul, originalmente habitadas por indígenas puris e coroados, começaram a ser desbravadas. O nome do município tem origem tupi e faz uma referência direta à sapucaia, uma frondosa árvore nativa da Mata Atlântica cujos frutos em formato de urna eram muito abundantes na região.",
+    "Durante a segunda metade do século XIX, o povoado experimentou um expressivo crescimento econômico impulsionado pelo apogeu do Ciclo do Café. Sua posição estratégica na divisa com a província de Minas Gerais e a posterior chegada dos trilhos da Estrada de Ferro D. Pedro II transformaram o local em um importante e dinâmico entreposto comercial, culminando em sua emancipação política em dezembro de 1874, ao desmembrar-se de Paraíba do Sul.",
+    "Com a crise e o declínio da cafeicultura nas primeiras décadas do século XX, a economia sapucaiense adaptou-se, encontrando na pecuária leiteira e de corte a sua nova vocação. Hoje, o município, que abriga distritos movimentados como Jamapará e Anta, aposta na preservação do seu charme interiorano, na valorização de antigos casarões e estações ferroviárias históricas, e no potencial do turismo rural."
+  ]
+},
   "3305505": {
 "resumo": "Saquarema, a \"Capital Nacional do Surfe\", encanta por suas belas praias de mar aberto e sua imensa lagoa. Famosa por sediar grandes campeonatos mundiais na Praia de Itaúna, a cidade abriga a histórica Igreja de Nossa Senhora de Nazareth e preserva um rico legado cultural e natural.",
 "historiaCompleta": 
@@ -471,7 +695,14 @@
 "No decorrer do século XX, Silva Jardim redefiniu sua vocação socioeconômica e ambiental, transformando-se em uma grande vitrine ecológica global. Em 1974, foi criada em seu território a Reserva Biológica de Poço das Antas, a primeiríssima reserva biológica do Brasil, estabelecida para salvar da extinção o ameaçado mico-leão-dourado. Hoje, a imensa cobertura florestal de Mata Atlântica que protege a região, aliada às águas da imensa Lagoa de Juturnaíba e ao charme rústico do distrito turístico de Aldeia Velha, consolida o município como um polo de excelência para o ecoturismo, a pesquisa científica e o turismo de aventura e bem-estar."
 ]
 },
-  "3305703": { "resumo": "", "historiaCompleta": [] },
+  "3305703": {
+  "resumo": "Sumidouro, localizada na Região Serrana fluminense, deve seu nome a um impressionante fenômeno natural onde o rio Paquequer desaparece sob as rochas. Emancipada em 1890, a cidade destaca-se hoje por sua forte tradição agrícola e por abrigar a majestosa Cascata Conde d'Eu.",
+  "historiaCompleta": [
+    "A história de Sumidouro teve início nas primeiras décadas do século XIX, quando colonizadores de origem suíça, francesa e portuguesa começaram a desbravar a região montanhosa. O curioso nome do município originou-se de um fascinante capricho da natureza: um trecho específico onde as águas do rio Paquequer somem misteriosamente por debaixo de um grande maciço de pedras, formando um verdadeiro \"sumidouro\" natural.",
+    "Durante a segunda metade do século XIX, a localidade vivenciou um período de extraordinária prosperidade impulsionado pela expansão das lavouras do Ciclo do Café. A expressiva riqueza gerada atraiu a construção de ramais ferroviários e acelerou o desenvolvimento do núcleo urbano, o que culminou na sua emancipação político-administrativa em 10 de junho de 1890, quando desmembrou-se de Nova Friburgo e de Carmo.",
+    "Com o declínio da era cafeeira no século seguinte, a economia sumidourense reinventou-se, apoiando-se firmemente na agricultura familiar, na olericultura e na pecuária leiteira. Atualmente, a pacata cidade é um destino muito procurado por amantes do ecoturismo, tendo como seu maior e mais famoso cartão-postal a imponente Cascata Conde d'Eu, que, com seus 127 metros, é a maior queda d'água contínua do estado do Rio de Janeiro."
+  ]
+},
   "3305752": {
 "resumo": "Tanguá, emancipada de Itaboraí em 1995, tem fortes raízes ligadas à agricultura e à mineração. Hoje, a cidade fluminense mescla a tranquilidade do interior com a proximidade da capital, buscando desenvolver seu potencial ecoturístico.",
 "historiaCompleta": [
@@ -488,9 +719,30 @@
 "Hoje, Teresópolis é oficialmente reconhecida como a \"Capital Nacional do Montanhismo\", abrigando a sede principal do Parque Nacional da Serra dos Órgãos, um paraíso de trilhas e picos imponentes. Além da famosa Feirinha do Alto e de sua rica gastronomia, a cidade ostenta imenso orgulho por ser a casa da Granja Comary, o icônico centro de treinamento da Seleção Brasileira de Futebol, que atrai os olhares do mundo esportivo."
 ]
 },
-  "3305901": { "resumo": "", "historiaCompleta": [] },
-  "3306008": { "resumo": "", "historiaCompleta": [] },
-  "3306107": { "resumo": "", "historiaCompleta": [] },
+  "3305901": {
+  "resumo": "Trajano de Moraes, localizada na Região Serrana fluminense, tem suas raízes no rico período do Ciclo do Café. Emancipada em 1891, a cidade mescla hoje o charme e a tranquilidade de seu clima de montanha com uma forte vocação para o ecoturismo e a preservação de seu patrimônio histórico.",
+  "historiaCompleta": [
+    "A história de Trajano de Moraes começou nas primeiras décadas do século XIX, quando fazendeiros e colonos começaram a desbravar as matas da região serrana em busca de terras férteis. O povoado original cresceu de forma constante ao redor de uma pequena capela, recebendo inicialmente o nome de São Francisco de Paula, padroeiro da localidade.",
+    "Durante a segunda metade do século XIX, o núcleo urbano experimentou um grande salto de desenvolvimento graças ao apogeu do Ciclo do Café e à chegada dos trilhos da Estrada de Ferro Leopoldina. Esse próspero cenário econômico justificou a elevação do povoado à categoria de vila e sua consequente emancipação política em 25 de abril de 1891. O nome atual, adotado definitivamente em 1938, é uma homenagem ao comendador Trajano de Moraes, importante político e líder local que impulsionou a passagem da ferrovia pela região.",
+    "Com a crise da economia cafeeira no século XX, o município soube adaptar-se, voltando suas forças para a agropecuária e, mais recentemente, para o turismo rural. Hoje, a pacata e charmosa cidade de Trajano de Moraes atrai visitantes encantados com suas cachoeiras, seu clima ameno de serra e com os preservados casarões e antigas estações de trem que contam a história do interior fluminense."
+  ]
+},
+  "3306008": {
+  "resumo": "Três Rios, localizada no Centro-Sul Fluminense, recebe este nome pelo encontro dos rios Paraíba do Sul, Piabanha e Paraibuna. Nascida como um estratégico ponto de parada no Caminho Novo da Estrada Real, a cidade emancipou-se em 1938 e hoje é um importante entroncamento rodoviário e polo industrial do estado.",
+  "historiaCompleta": [
+    "A história de Três Rios remonta ao início do século XVIII, com a abertura do Caminho Novo da Estrada Real por Garcia Rodrigues Paes. O local, que ficou inicialmente conhecido como \"Entre-Rios\", tornou-se um ponto vital de travessia e descanso para tropeiros e viajantes que transportavam o ouro das Minas Gerais até o Rio de Janeiro, aproveitando a confluência dos rios Paraíba do Sul, Piabanha e Paraibuna.",
+    "Durante o século XIX, o apogeu do Ciclo do Café trouxe grande desenvolvimento para a região. A figura da Condessa do Rio Novo foi fundamental nesse processo: uma grande benemérita cujas terras e a doação para a construção da capela de Nossa Senhora da Piedade formaram a base do núcleo urbano original. O progresso foi consolidado com a chegada das ferrovias, transformando a vila em um dos mais importantes centros de escoamento de mercadorias do Império.",
+    "O contínuo crescimento econômico e populacional culminou na emancipação política em 14 de dezembro de 1938, quando o território foi desmembrado do município de Paraíba do Sul, passando a se chamar oficialmente Três Rios a partir de 1943. Atualmente, a cidade é reconhecida como um pujante polo industrial e comercial no interior fluminense, além de atrair entusiastas do ecoturismo com a famosa prática de rafting nas corredeiras do rio Paraíba do Sul."
+  ]
+},
+  "3306107": {
+  "resumo": "Valença, localizada no Sul Fluminense, viveu seu grande apogeu no século XIX como uma das mais prósperas potências do Ciclo do Café. Elevada à vila em 1823, a cidade hoje atrai visitantes por seu riquíssimo conjunto de fazendas históricas, forte vocação universitária e pelo famoso distrito de Conservatória, a \"Capital da Seresta\".",
+  "historiaCompleta": [
+    "A colonização de Valença teve início no final do século XVIII, com o estabelecimento de um aldeamento patrocinado pela Coroa para catequizar os indígenas puris e coroados que habitavam a região. O nome do município é uma homenagem a Dom Estêvão Ribeiro de Resende, o Marquês de Valença, que desempenhou um papel fundamental no desenvolvimento do núcleo original e na proteção do território.",
+    "Durante o século XIX, a cidade vivenciou um período de riqueza e desenvolvimento extraordinários impulsionados pelo Ciclo do Café. As terras férteis do Vale do Paraíba foram tomadas por imensas plantações e suntuosas sedes de fazendas erguidas pelos \"Barões do Café\". Essa imensa prosperidade econômica culminou na elevação do povoado à categoria de vila em 1823 e, posteriormente, a cidade em 1857, figurando entre as localidades mais importantes e ricas do Império.",
+    "Com o declínio da era cafeeira e a abolição da escravatura, a economia valenciana precisou se reinventar ao longo do século XX, baseando-se com sucesso na pecuária leiteira e na indústria têxtil. Atualmente, Valença destaca-se como um importante e tradicional polo universitário e um grande destino de turismo histórico-cultural, com destaque especial para o distrito de Conservatória, nacionalmente reconhecido pelas suas tradicionais noites musicais nas ruas de paralelepípedo."
+  ]
+},
   "3306156": {
 "resumo": "Varre-Sai, localizado no extremo noroeste fluminense, é o município mais alto do estado e o maior produtor de café do Rio de Janeiro. Emancipada em 1990, a cidade tem forte herança da imigração italiana e é famosa por sua tradicional Festa do Vinho.",
 "historiaCompleta": [
@@ -499,6 +751,20 @@
 "Durante muitas décadas, a localidade foi apenas um distrito pertencente ao município de Natividade, conquistando sua emancipação político-administrativa em 21 de dezembro de 1990. Atualmente, o município atrai visitantes em busca do seu clima ameno de altitude, do turismo rural e da sua famosa Festa do Vinho, um evento anual que celebra as raízes italianas com muita música, gastronomia típica e a produção local de vinhos de uva e jabuticaba."
 ]
 },
-  "3306206": { "resumo": "", "historiaCompleta": [] },
-  "3306305": { "resumo": "", "historiaCompleta": [] }
+  "3306206": {
+  "resumo": "Vassouras, localizada no Vale do Paraíba Fluminense, é célebre como a \"Cidade dos Barões\" por seu imenso protagonismo durante o Ciclo do Café no século XIX. Elevada a cidade em 1857, hoje destaca-se por preservar seu riquíssimo conjunto arquitetônico imperial e por ser um vibrante polo universitário.",
+  "historiaCompleta": [
+    "A origem de Vassouras remonta ao final do século XVIII e início do século XIX, quando a região era ponto de parada ao longo do Caminho Novo, que ligava o Rio de Janeiro a Minas Gerais. O povoado começou a se formar ao redor de uma capela dedicada a Nossa Senhora da Conceição. O nome peculiar da cidade deve-se à abundância de um arbusto na região, conhecido como \"tupeiçava\" ou vassourinha, que era amplamente utilizado para a fabricação de vassouras rústicas.",
+    "Durante o século XIX, o município viveu seu grande apogeu econômico, transformando-se em uma das maiores potências mundiais na produção de café. A imensa riqueza gerada por essa monocultura financiou a construção de suntuosos palacetes, casarões e fazendas, o que rendeu a Vassouras o título de \"Cidade dos Barões\". O progresso estrutural e financeiro foi tão expressivo que a localidade foi elevada à categoria de vila em 1833 e, posteriormente, à de cidade em 1857.",
+    "Com a exaustão do solo e o fim da escravidão, a economia cafeeira entrou em rápido declínio, forçando a cidade a se readaptar no século XX através da pecuária leiteira. O grande renascimento de Vassouras ocorreu a partir da década de 1960, com a fundação de suas primeiras instituições de ensino superior. Hoje, a cidade equilibra perfeitamente a energia de um forte centro universitário com o turismo histórico de excelência, encantando os visitantes com marcos como a imponente Praça Barão de Campo Belo."
+  ]
+},
+  "3306305": {
+  "resumo": "Volta Redonda, nacionalmente conhecida como a \"Cidade do Aço\", é o grande coração industrial do Sul Fluminense. Emancipada em 1954, a cidade desenvolveu-se ao redor da Companhia Siderúrgica Nacional (CSN) e destaca-se por sua força econômica e urbanismo planejado.",
+  "historiaCompleta": [
+    "A história da região remonta ao século XIX, quando a área que hoje compõe o município era ocupada por fazendas de café e gado, pertencendo ao município de Barra Mansa. O nome peculiar \"Volta Redonda\" originou-se de uma grande e sinuosa curva feita pelo curso do rio Paraíba do Sul ao atravessar a geografia da localidade.",
+    "O grande ponto de virada na história da cidade ocorreu em 1941, quando o governo do presidente Getúlio Vargas escolheu o então pacato distrito para abrigar a Companhia Siderúrgica Nacional (CSN), o primeiro grande complexo siderúrgico da América Latina. A imensa obra atraiu milhares de trabalhadores de todas as partes do Brasil, transformando rapidamente a paisagem rural em um dinâmico núcleo urbano planejado para abrigar os operários e suas famílias.",
+    "Impulsionado pela explosão demográfica e pelo gigantesco poderio econômico gerado pela usina siderúrgica, o distrito iniciou um forte movimento autonomista. Esse processo culminou na emancipação política de Volta Redonda em 17 de julho de 1954, separando-se definitivamente de Barra Mansa. Atualmente, a \"Cidade do Aço\" mantém sua imponente vocação industrial, consolidando-se como um dos mais importantes e prósperos polos econômicos do estado do Rio de Janeiro."
+  ]
+}
 }
