@@ -467,6 +467,7 @@
       <button id="btn-abrir-conquistas" aria-label="Conquistas" title="Conquistas">🎖️</button>
       <button id="btn-abrir-rotas" aria-label="Rotas temáticas" title="Rotas temáticas">🗺️</button>
       <button id="btn-abrir-checkin" aria-label="Check-in semanal" title="Check-in semanal">📅</button>
+      <button id="btn-abrir-motoclube" aria-label="Motoclube Desbrava" title="Motoclube Desbrava">🏍️</button>
       <button id="btn-mapa-brasil" aria-label="Mapa do Brasil" title="Mapa do Brasil">🇧🇷</button>
     </div>
   </div>
@@ -487,8 +488,8 @@
     <button type="button" data-nav="alvo" data-alvo="btn-abrir-conquistas">
       <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span><span class="nav-txt">Conquistas</span>
     </button>
-    <button type="button" data-nav="alvo" data-alvo="btn-meu-perfil">
-      <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="nav-txt">Perfil</span>
+    <button type="button" data-nav="alvo" data-alvo="btn-abrir-motoclube">
+      <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 0 0 0 2h1.5l2.5 4"/><path d="M9 17.5h6.3L14 10H7l-1.5 4.5"/><path d="M9 6h4l1 3"/></svg></span><span class="nav-txt">Motoclube</span>
     </button>
     <button type="button" data-nav="menu">
       <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span><span class="nav-txt">Menu</span>
@@ -502,6 +503,7 @@
       <div class="menu-puxador"></div>
       <h2>Menu</h2>
       <div id="menu-sheet-grade">
+        <button type="button" class="menu-op" data-alvo="btn-meu-perfil"><span>👤</span>Perfil</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-ranking"><span>🏆</span>Ranking</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-amigos"><span>👥</span>Amigos</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-rotas"><span>🧭</span>Rotas</button>
@@ -657,6 +659,49 @@
       <button type="button" id="btn-cancelar-compartilhar-rota" class="btn-opcao-cancelar">
         Cancelar
       </button>
+    </div>
+  </div>
+
+  <!-- Motoclube Desbrava: dicas/sugestões de lojas de peças, oficinas
+       e afins pra motociclistas, com filtro de marca/modelo. Gratuito
+       por enquanto -- código já preparado pro plano pago futuro (ver
+       souMembroMotoclube em js/script.js), mas ninguém é bloqueado
+       hoje. Ver abrirMotoclube em js/script.js. -->
+  <div id="modal-motoclube" class="oculto">
+    <div id="motoclube-conteudo">
+      <button id="btn-fechar-motoclube" aria-label="Fechar">✕</button>
+      <h2>🏍️ Motoclube Desbrava</h2>
+      <p id="motoclube-aviso-gratis">🎉 Gratuito por enquanto! No futuro, o Motoclube passa a custar R$ 4,90/mês.</p>
+
+      <button type="button" id="btn-motoclube-adicionar" class="btn-link-amigo">+ Adicionar loja ou dica</button>
+
+      <div id="motoclube-filtros">
+        <select id="select-motoclube-marca">
+          <option value="">Todas as marcas</option>
+        </select>
+        <input type="text" id="input-motoclube-modelo" placeholder="Filtrar por modelo (ex: CG 160)">
+      </div>
+
+      <div id="motoclube-lista"></div>
+    </div>
+  </div>
+
+  <!-- Adicionar loja/dica ao Motoclube. -->
+  <div id="modal-motoclube-form" class="oculto">
+    <div id="motoclube-form-conteudo">
+      <button id="btn-fechar-motoclube-form" aria-label="Fechar">✕</button>
+      <h2>+ Adicionar ao Motoclube</h2>
+      <input type="text" id="input-motoclube-nome" maxlength="80" placeholder="Nome da loja/oficina/dica">
+      <select id="select-motoclube-categoria"></select>
+      <p class="motoclube-form-label">Marcas atendidas</p>
+      <div id="motoclube-form-marcas"></div>
+      <input type="text" id="input-motoclube-modelos" maxlength="150" placeholder="Modelos atendidos (opcional, ex: CG 160, Fazer 250...)">
+      <textarea id="input-motoclube-descricao" rows="3" maxlength="500" placeholder="Descrição (opcional)"></textarea>
+      <input type="text" id="input-motoclube-linkmaps" maxlength="300" placeholder="Link do Google Maps (opcional)">
+      <label id="motoclube-form-label-foto" for="input-motoclube-foto">📷 Adicionar foto (opcional)</label>
+      <input type="file" id="input-motoclube-foto" accept="image/*" class="oculto">
+      <p id="motoclube-form-erro" class="oculto"></p>
+      <button type="button" id="btn-salvar-motoclube">Salvar</button>
     </div>
   </div>
 

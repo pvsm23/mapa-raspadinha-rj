@@ -240,6 +240,25 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
             && request.auth.uid == resource.data.donoUid;
         }
 
+        // Motoclube Desbrava: dicas/lojas cadastradas por qualquer
+        // usuário logado (não é por município). GRATUITO por enquanto
+        // -- a regra não checa nenhum campo de "membro pago" ainda
+        // (ver souMembroMotoclube em js/script.js); quando a cobrança
+        // for ativada de verdade, endurecer aqui também. Só o autor
+        // cria/exclui; curtir é o único jeito de outra pessoa escrever.
+        match /motoclubeItens/{itemId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null
+            && request.resource.data.autorUid == request.auth.uid;
+          allow update: if request.auth != null
+            && (
+              request.auth.uid == resource.data.autorUid
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['curtidoPor'])
+            );
+          allow delete: if request.auth != null
+            && request.auth.uid == resource.data.autorUid;
+        }
+
         // Sugestões da Comunidade: uma subcoleção POR MUNICÍPIO (o id
         // do IBGE vira o id do documento pai, que nunca precisa
         // existir de verdade -- só serve pra agrupar a subcoleção

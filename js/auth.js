@@ -1003,6 +1003,77 @@ if (CONFIGURADO) {
   };
 
   /**
+   * Motoclube Desbrava: dicas/lojas (peças, oficinas, acessórios...)
+   * cadastradas pelos usuários, com filtro de marca/modelo -- coleção
+   * própria (`motoclubeItens`), não é por município (motoclube não é
+   * regional). GRATUITO por enquanto; o código já está no formato de
+   * uma feature "Pro" (ver souMembroMotoclube em js/script.js), mas
+   * ninguém é bloqueado hoje -- não cobra nada sem o Paulo pedir de
+   * novo (mesma regra do Plano PRO).
+   */
+  window.raspadinhaAuth.criarItemMotoclube = async ({
+    arquivoFoto,
+    nome,
+    categoria,
+    marcas,
+    modelos,
+    descricao,
+    linkMaps,
+  }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!nome || !nome.trim()) throw new Error("Dê um nome pra loja/dica.");
+
+    const novoDocRef = doc(collection(db, "motoclubeItens"));
+    let fotoUrl = null;
+    let fotoDriveId = null;
+    if (arquivoFoto) {
+      const resultado = await subirFotoPostParaDrive(arquivoFoto, `motoclube-${novoDocRef.id}.jpg`);
+      fotoUrl = resultado.fotoUrl;
+      fotoDriveId = resultado.fotoId;
+    }
+
+    await setDoc(novoDocRef, {
+      autorUid: usuario.uid,
+      autorApelido: window.raspadinhaAuth.apelido || "?",
+      nome: nome.trim().slice(0, 80),
+      categoria: categoria || "outro",
+      marcas: marcas || [],
+      modelos: (modelos || "").trim().slice(0, 150),
+      descricao: (descricao || "").trim().slice(0, 500),
+      linkMaps: (linkMaps || "").trim().slice(0, 300),
+      fotoUrl,
+      fotoDriveId,
+      curtidoPor: [],
+      criadoEm: serverTimestamp(),
+    });
+    return novoDocRef.id;
+  };
+
+  window.raspadinhaAuth.buscarItensMotoclube = async () => {
+    // Sem where/orderBy combinados (evita índice composto, mesmo
+    // motivo de buscarMinhasRotasPersonalizadas) -- filtro de
+    // marca/modelo é feito no cliente (script.js), a lista inteira
+    // nunca deve ficar grande o bastante pra isso pesar.
+    const snap = await getDocs(collection(db, "motoclubeItens"));
+    const itens = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    itens.sort((a, b) => (b.criadoEm?.toMillis?.() || 0) - (a.criadoEm?.toMillis?.() || 0));
+    return itens;
+  };
+
+  window.raspadinhaAuth.curtirItemMotoclube = async (itemId, curtir) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await updateDoc(doc(db, "motoclubeItens", itemId), {
+      curtidoPor: curtir ? arrayUnion(usuario.uid) : arrayRemove(usuario.uid),
+    });
+  };
+
+  window.raspadinhaAuth.excluirItemMotoclube = async (itemId) => {
+    await deleteDoc(doc(db, "motoclubeItens", itemId));
+  };
+
+  /**
    * Busca a foto de um post via SDK (respeitando a regra de
    * segurança do Storage: só autenticado) e devolve um blob URL local
    * -- em vez de getDownloadURL(), que gera um link com token que

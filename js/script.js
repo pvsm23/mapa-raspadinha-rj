@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.19";
+const VERSAO_APP = "0.11.0";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.19";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.0", itens: ["Chegou o Motoclube Desbrava! 🏍️ Dicas e lojas de peças/oficinas com filtro de marca e modelo — gratuito por enquanto.", "O botão de Perfil foi pro Menu; no lugar dele na barra de baixo agora fica o Motoclube."] },
   { versao: "0.10.19", itens: ["Novo menu ao compartilhar uma rota (link ou Comunidade).", "Rastreio em segundo plano agora confere sua localização de hora em hora, em vez de ficar o tempo todo ligado — usa bem menos bateria."] },
   { versao: "0.10.18", itens: ["Corrigido: 'Minhas rotas' agora carrega certinho."] },
   { versao: "0.10.17", itens: ["Rotas personalizadas: monte sua própria rota com os municípios que quiser, com nome e descrição, e compartilhe por link ou na Comunidade.", "Novo link \"Bora buscar esse selo?\" no popup de cada município, pra convidar alguém a raspar junto."] },
@@ -182,6 +183,28 @@ const CATEGORIAS_SUGESTAO = [
   { chave: "outro", label: "📌 Outro" },
 ];
 const LABEL_CATEGORIA_SUGESTAO = Object.fromEntries(CATEGORIAS_SUGESTAO.map((c) => [c.chave, c.label]));
+
+// Motoclube Desbrava: categorias de estabelecimento e marcas comuns no
+// Brasil (a lista de marcas alimenta tanto o filtro quanto os chips do
+// formulário de cadastro; "modelos" fica livre em texto por serem
+// numerosos demais pra uma lista fixa).
+const CATEGORIAS_MOTOCLUBE = [
+  { chave: "pecas", label: "🔧 Peças" },
+  { chave: "oficina", label: "🛠️ Oficina/Mecânico" },
+  { chave: "acessorios", label: "🎒 Acessórios" },
+  { chave: "indumentaria", label: "🧥 Indumentária (capacete, jaqueta...)" },
+  { chave: "pneus", label: "🛞 Pneus" },
+  { chave: "eletrica-som", label: "🔊 Elétrica/Som" },
+  { chave: "pintura-funilaria", label: "🎨 Pintura/Funilaria" },
+  { chave: "outro", label: "📌 Outro" },
+];
+const LABEL_CATEGORIA_MOTOCLUBE = Object.fromEntries(CATEGORIAS_MOTOCLUBE.map((c) => [c.chave, c.label]));
+
+const MARCAS_MOTOCLUBE = [
+  "Honda", "Yamaha", "Suzuki", "Kawasaki", "BMW", "Harley-Davidson",
+  "Triumph", "Ducati", "Royal Enfield", "Dafra", "Shineray", "Haojue",
+  "Kymco", "Piaggio/Vespa", "KTM", "Outra",
+];
 
 let municipioAtualSugestoes = null;
 let filtroCategoriaSugestaoAtual = "";
@@ -655,6 +678,21 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-compartilhar-rota-comunidade").addEventListener("click", compartilharRotaPersonalizadaNaComunidade);
   document.getElementById("btn-cancelar-compartilhar-rota").addEventListener("click", fecharMenuCompartilharRota);
 
+  // ---- Motoclube Desbrava ----
+  document.getElementById("btn-abrir-motoclube").addEventListener("click", () => exigirLogin(abrirMotoclube));
+  document.getElementById("btn-fechar-motoclube").addEventListener("click", fecharMotoclube);
+  document.getElementById("modal-motoclube").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-motoclube") fecharMotoclube();
+  });
+  document.getElementById("select-motoclube-marca").addEventListener("change", renderizarListaMotoclube);
+  document.getElementById("input-motoclube-modelo").addEventListener("input", renderizarListaMotoclube);
+  document.getElementById("btn-motoclube-adicionar").addEventListener("click", abrirFormMotoclube);
+  document.getElementById("btn-fechar-motoclube-form").addEventListener("click", fecharFormMotoclube);
+  document.getElementById("modal-motoclube-form").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-motoclube-form") fecharFormMotoclube();
+  });
+  document.getElementById("btn-salvar-motoclube").addEventListener("click", salvarItemMotoclube);
+
   // ---- Amigos ----
   document
     .getElementById("btn-abrir-amigos")
@@ -1052,6 +1090,8 @@ const OVERLAYS_APP = [
   "modal-amigos", "modal-checkin", "modal-rotas", "modal-rota-detalhe",
   "modal-perfil", "modal-sugestoes-comunidade", "modal-cartao-progresso",
   "modal-selo-lightbox", "modal-busca-local", "modal-confirmar-exclusao",
+  "modal-motoclube", "modal-motoclube-form", "modal-criar-rota",
+  "modal-rota-personalizada-detalhe", "modal-compartilhar-rota",
   "menu-sheet",
 ];
 
@@ -5889,6 +5929,219 @@ async function compartilharRotaPersonalizadaNaComunidade() {
   } catch (erro) {
     console.error("Falha ao compartilhar rota na comunidade:", erro);
     alert("Não foi possível compartilhar agora. Tente de novo.");
+  }
+}
+
+/* ============================================================
+   Motoclube Desbrava: dicas/lojas de peças, oficinas e afins pra
+   motociclistas, com filtro de marca/modelo. GRATUITO por enquanto --
+   souMembroMotoclube() sempre retorna true hoje; quando a cobrança
+   (R$ 4,90/mês) for ativada de verdade, é só trocar essa função pra
+   checar um campo tipo usuarios/{uid}.motoclubeAtivo (mesmo padrão do
+   Plano PRO: campo/código nunca hardcoded aqui, ativação manual via
+   Firestore). NÃO implementar checkout/cobrança sem o Paulo pedir de
+   novo -- mesma regra do Plano PRO.
+   ============================================================ */
+
+/**
+ * Hoje sempre `true` (Motoclube gratuito pra todo mundo). Todo o resto
+ * do código já trata isso como um "gate" -- é só trocar o `return`
+ * daqui quando a cobrança for ativada de verdade.
+ */
+function souMembroMotoclube() {
+  return true;
+}
+
+let itensMotoclubeCache = [];
+let motoclubeJaPopulado = false;
+
+function popularFormulariosMotoclubeSeNecessario() {
+  if (motoclubeJaPopulado) return;
+  motoclubeJaPopulado = true;
+
+  const selectMarcaFiltro = document.getElementById("select-motoclube-marca");
+  MARCAS_MOTOCLUBE.forEach((marca) => {
+    const opt = document.createElement("option");
+    opt.value = marca;
+    opt.textContent = marca;
+    selectMarcaFiltro.appendChild(opt);
+  });
+
+  const selectCategoria = document.getElementById("select-motoclube-categoria");
+  CATEGORIAS_MOTOCLUBE.forEach((cat) => {
+    const opt = document.createElement("option");
+    opt.value = cat.chave;
+    opt.textContent = cat.label;
+    selectCategoria.appendChild(opt);
+  });
+
+  const marcasForm = document.getElementById("motoclube-form-marcas");
+  MARCAS_MOTOCLUBE.forEach((marca) => {
+    const chip = document.createElement("label");
+    chip.className = "motoclube-marca-chip";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.value = marca;
+    chip.append(check, document.createTextNode(marca));
+    marcasForm.appendChild(chip);
+  });
+}
+
+async function abrirMotoclube() {
+  popularFormulariosMotoclubeSeNecessario();
+  document.getElementById("modal-motoclube").classList.remove("oculto");
+  const lista = document.getElementById("motoclube-lista");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    itensMotoclubeCache = await window.raspadinhaAuth.buscarItensMotoclube();
+    renderizarListaMotoclube();
+  } catch (erro) {
+    console.error("Falha ao buscar itens do Motoclube:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar o Motoclube agora.</p>";
+  }
+}
+
+function fecharMotoclube() {
+  document.getElementById("modal-motoclube").classList.add("oculto");
+}
+
+/** Filtra itensMotoclubeCache por marca (select) e modelo (texto livre,
+ * "contains" case-insensitive) e renderiza a lista -- tudo no cliente,
+ * sem rebuscar o Firestore a cada troca de filtro. */
+function renderizarListaMotoclube() {
+  const marcaFiltro = document.getElementById("select-motoclube-marca").value;
+  const modeloFiltro = document.getElementById("input-motoclube-modelo").value.trim().toLowerCase();
+
+  const filtrados = itensMotoclubeCache.filter((item) => {
+    if (marcaFiltro && !(item.marcas || []).includes(marcaFiltro)) return false;
+    if (modeloFiltro && !(item.modelos || "").toLowerCase().includes(modeloFiltro)) return false;
+    return true;
+  });
+
+  const lista = document.getElementById("motoclube-lista");
+  lista.innerHTML = "";
+  if (!filtrados.length) {
+    const vazio = document.createElement("p");
+    vazio.id = "motoclube-lista-vazio";
+    vazio.textContent = itensMotoclubeCache.length
+      ? "Nenhum resultado com esse filtro."
+      : "Ninguém cadastrou nada ainda. Que tal ser o primeiro?";
+    lista.appendChild(vazio);
+    return;
+  }
+  filtrados.forEach((item) => lista.appendChild(montarCardMotoclube(item)));
+}
+
+function montarCardMotoclube(item) {
+  const meuUid = window.raspadinhaAuth?.usuarioAtual?.uid;
+  const souAutor = item.autorUid === meuUid;
+  const curtido = (item.curtidoPor || []).includes(meuUid);
+
+  const card = document.createElement("div");
+  card.className = "motoclube-card";
+  card.innerHTML = `
+    <div class="motoclube-card-topo">
+      <div>
+        <p class="motoclube-card-nome">${escaparHtml(item.nome)}</p>
+        <span class="motoclube-card-categoria">${escaparHtml(LABEL_CATEGORIA_MOTOCLUBE[item.categoria] || item.categoria)}</span>
+      </div>
+    </div>
+    ${item.marcas?.length ? `<p class="motoclube-card-marcas">🏍️ ${item.marcas.map(escaparHtml).join(", ")}</p>` : ""}
+    ${item.modelos ? `<p class="motoclube-card-modelos">${escaparHtml(item.modelos)}</p>` : ""}
+    ${item.descricao ? `<p class="motoclube-card-descricao">${escaparHtml(item.descricao)}</p>` : ""}
+    ${item.fotoUrl ? `<img class="motoclube-card-foto" src="${escaparHtml(item.fotoUrl)}" alt="${escaparHtml(item.nome)}">` : ""}
+    ${item.linkMaps ? `<a class="motoclube-card-maps" href="${escaparHtml(item.linkMaps)}" target="_blank" rel="noopener">📍 Abrir no Maps</a>` : ""}
+    <div class="motoclube-card-acoes">
+      <button type="button" class="motoclube-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span>${(item.curtidoPor || []).length}</span></button>
+      ${souAutor ? '<button type="button" class="motoclube-card-excluir">🗑️ Excluir</button>' : ""}
+    </div>
+  `;
+
+  card.querySelector(".motoclube-card-curtir").addEventListener("click", () => aoCurtirItemMotoclube(item, card));
+  card.querySelector(".motoclube-card-excluir")?.addEventListener("click", () => excluirItemMotoclubeAtual(item, card));
+
+  return card;
+}
+
+async function aoCurtirItemMotoclube(item, card) {
+  const meuUid = window.raspadinhaAuth?.usuarioAtual?.uid;
+  const botao = card.querySelector(".motoclube-card-curtir");
+  const contador = botao.querySelector("span");
+  const jaCurtido = botao.classList.contains("curtido");
+  const novoEstado = !jaCurtido;
+
+  botao.classList.toggle("curtido", novoEstado);
+  contador.textContent = Number(contador.textContent) + (novoEstado ? 1 : -1);
+  if (novoEstado) dispararPopCoracao(botao);
+
+  try {
+    await window.raspadinhaAuth.curtirItemMotoclube(item.id, novoEstado);
+    item.curtidoPor = novoEstado
+      ? [...(item.curtidoPor || []), meuUid]
+      : (item.curtidoPor || []).filter((uid) => uid !== meuUid);
+  } catch (erro) {
+    console.error("Falha ao curtir item do Motoclube:", erro);
+    botao.classList.toggle("curtido", jaCurtido);
+    contador.textContent = Number(contador.textContent) + (novoEstado ? -1 : 1);
+  }
+}
+
+async function excluirItemMotoclubeAtual(item, card) {
+  if (!confirm(`Excluir "${item.nome}" do Motoclube?`)) return;
+  try {
+    await window.raspadinhaAuth.excluirItemMotoclube(item.id);
+    itensMotoclubeCache = itensMotoclubeCache.filter((i) => i.id !== item.id);
+    card.remove();
+  } catch (erro) {
+    alert("Não foi possível excluir agora.");
+  }
+}
+
+function abrirFormMotoclube() {
+  popularFormulariosMotoclubeSeNecessario();
+  document.getElementById("input-motoclube-nome").value = "";
+  document.getElementById("select-motoclube-categoria").selectedIndex = 0;
+  document.querySelectorAll("#motoclube-form-marcas input").forEach((c) => (c.checked = false));
+  document.getElementById("input-motoclube-modelos").value = "";
+  document.getElementById("input-motoclube-descricao").value = "";
+  document.getElementById("input-motoclube-linkmaps").value = "";
+  document.getElementById("input-motoclube-foto").value = "";
+  document.getElementById("motoclube-form-erro").classList.add("oculto");
+  fecharMotoclube();
+  document.getElementById("modal-motoclube-form").classList.remove("oculto");
+}
+
+function fecharFormMotoclube() {
+  document.getElementById("modal-motoclube-form").classList.add("oculto");
+}
+
+async function salvarItemMotoclube() {
+  const erroEl = document.getElementById("motoclube-form-erro");
+  erroEl.classList.add("oculto");
+
+  const nome = document.getElementById("input-motoclube-nome").value;
+  const categoria = document.getElementById("select-motoclube-categoria").value;
+  const marcas = Array.from(document.querySelectorAll("#motoclube-form-marcas input:checked")).map((c) => c.value);
+  const modelos = document.getElementById("input-motoclube-modelos").value;
+  const descricao = document.getElementById("input-motoclube-descricao").value;
+  const linkMaps = document.getElementById("input-motoclube-linkmaps").value;
+  const arquivoFoto = document.getElementById("input-motoclube-foto").files[0] || null;
+
+  const botao = document.getElementById("btn-salvar-motoclube");
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+  try {
+    await window.raspadinhaAuth.criarItemMotoclube({
+      arquivoFoto, nome, categoria, marcas, modelos, descricao, linkMaps,
+    });
+    fecharFormMotoclube();
+    abrirMotoclube();
+  } catch (erro) {
+    erroEl.textContent = erro.message || "Não foi possível salvar agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar";
   }
 }
 
