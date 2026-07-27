@@ -981,13 +981,16 @@ if (CONFIGURADO) {
   window.raspadinhaAuth.buscarMinhasRotasPersonalizadas = async () => {
     const usuario = auth.currentUser;
     if (!usuario) return [];
-    const consulta = query(
-      collection(db, "rotasPersonalizadas"),
-      where("donoUid", "==", usuario.uid),
-      orderBy("criadoEm", "desc")
-    );
+    // SEM orderBy na query -- combinar where(donoUid) + orderBy(criadoEm)
+    // exige um índice composto no Firestore (mesmo motivo documentado no
+    // README pro filtro de posts por município). Ordena no cliente
+    // depois de buscar -- lista de uma pessoa só é sempre pequena, não
+    // pesa nada ordenar em JS.
+    const consulta = query(collection(db, "rotasPersonalizadas"), where("donoUid", "==", usuario.uid));
     const snap = await getDocs(consulta);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const rotas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    rotas.sort((a, b) => (b.criadoEm?.toMillis?.() || 0) - (a.criadoEm?.toMillis?.() || 0));
+    return rotas;
   };
 
   window.raspadinhaAuth.buscarRotaPersonalizadaPorId = async (rotaId) => {
