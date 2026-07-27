@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.5";
+const VERSAO_APP = "0.11.6";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.5";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.6", itens: ["Menu reorganizado: 'Minha Jornada', 'Explorar' e 'Sistema', mais fácil de achar as coisas. Perfil saiu do Menu (já abre pelo avatar no topo) e o Check-in semanal saiu de circulação."] },
   { versao: "0.11.5", itens: ["Chegou a Loja Desbrava! 🛍️ Produtos físicos e digitais, alguns liberados só depois de desbravar certos municípios. Membro do Motoclube ganha um voucher mensal de R$ 4,90 pra usar nas compras."] },
   { versao: "0.11.4", itens: ["Garagem Virtual agora aceita até 3 motos, com abas pra Criar nova, Editar (e definir qual é a ativa) e ver Estatísticas (odômetro e viagens registradas) de cada uma."] },
   { versao: "0.11.3", itens: ["Novidades PRO do Motoclube Desbrava: Garagem Virtual (marca/modelo/apelido da sua moto, 100% privado, com odômetro somado sozinho pelo Modo Viagem), opção de salvar o trajeto de um rolê como rota personalizada, e resumo do rolê (km, tempo, municípios) com imagem pra compartilhar na Comunidade ou fora do app.", "Gratuito por enquanto, junto com o resto do Motoclube."] },
@@ -711,15 +712,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (evento.key === "Enter") buscarAmigoPorTexto();
   });
   document.getElementById("btn-link-amigo").addEventListener("click", () => exigirLogin(compartilharLinkAmigo));
-
-  // ---- Check-in semanal ----
-  document
-    .getElementById("btn-abrir-checkin")
-    .addEventListener("click", () => exigirLogin(abrirCheckin));
-  document.getElementById("btn-fechar-checkin").addEventListener("click", fecharCheckin);
-  document.getElementById("modal-checkin").addEventListener("click", (evento) => {
-    if (evento.target.id === "modal-checkin") fecharCheckin();
-  });
 
   // ---- Feedback e colaboração ----
   document.getElementById("btn-feedback").addEventListener("click", abrirFeedback);
@@ -2292,7 +2284,7 @@ function atualizarAvatarTopo() {
 const OVERLAYS_APP = [
   "modal-social", "modal-configuracoes", "modal-admin", "modal-brasil",
   "modal-raspadinha", "biblioteca-selos", "modal-conquistas", "modal-ranking",
-  "modal-amigos", "modal-checkin", "modal-rotas", "modal-rota-detalhe",
+  "modal-amigos", "modal-rotas", "modal-rota-detalhe",
   "modal-perfil", "modal-sugestoes-comunidade", "modal-cartao-progresso",
   "modal-selo-lightbox", "modal-busca-local", "modal-confirmar-exclusao",
   "modal-motoclube", "modal-motoclube-form", "modal-criar-rota",
@@ -2890,7 +2882,6 @@ async function atualizarUiDeConta(detalhe) {
     await carregarEstadoDoUsuario(usuario.uid);
 
     sincronizarProgressoOnline();
-    window.raspadinhaAuth.registrarCheckinHoje();
     gerarSnapshotMapaSeNecessario();
     window.raspadinhaAuth.buscarPerfilPublico(usuario.uid).then((perfil) => {
       document.getElementById("check-perfil-publico").checked = perfil?.perfilPublico !== false;
@@ -5815,50 +5806,6 @@ async function carregarListaAmigos() {
    acessos são poucos e espaçados, então uma semana é uma unidade de
    progresso mais realista que um mês inteiro.
    ============================================================ */
-
-const NOMES_DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-const NOMES_MESES_ABREV = [
-  "jan", "fev", "mar", "abr", "mai", "jun",
-  "jul", "ago", "set", "out", "nov", "dez",
-];
-
-async function abrirCheckin() {
-  const modal = document.getElementById("modal-checkin");
-  const calendario = document.getElementById("checkin-calendario");
-  const hoje = new Date();
-  const diaDaSemanaHoje = hoje.getDay();
-
-  const domingo = new Date(hoje);
-  domingo.setDate(hoje.getDate() - diaDaSemanaHoje);
-  const sabado = new Date(domingo);
-  sabado.setDate(domingo.getDate() + 6);
-
-  document.getElementById("checkin-semana-label").textContent =
-    `Semana de ${domingo.getDate()} ${NOMES_MESES_ABREV[domingo.getMonth()]} a ${sabado.getDate()} ${NOMES_MESES_ABREV[sabado.getMonth()]}`;
-  calendario.innerHTML = '<div class="spinner spinner-grande"></div>';
-  modal.classList.remove("oculto");
-
-  try {
-    const dias = await window.raspadinhaAuth.buscarCheckinsDaSemana();
-
-    calendario.innerHTML = "";
-    NOMES_DIAS_SEMANA.forEach((nomeDia, indiceDia) => {
-      const celula = document.createElement("div");
-      celula.className = "checkin-dia";
-      if (dias.includes(indiceDia)) celula.classList.add("checkin-feito");
-      if (indiceDia === diaDaSemanaHoje) celula.classList.add("checkin-hoje");
-      celula.textContent = nomeDia;
-      calendario.appendChild(celula);
-    });
-  } catch (erro) {
-    console.error("Falha ao carregar check-in:", erro);
-    calendario.innerHTML = "<p>Não foi possível carregar o check-in agora.</p>";
-  }
-}
-
-function fecharCheckin() {
-  document.getElementById("modal-checkin").classList.add("oculto");
-}
 
 /* ============================================================
    Feedback e colaboração: relatar bug, dar sugestão, ou colaborar

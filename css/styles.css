@@ -5115,7 +5115,6 @@ body.modo-rota-ativo #toast-onde-estou {
 #modal-ranking,
 #modal-conquistas,
 #modal-amigos,
-#modal-checkin,
 #modal-compartilhar,
 #modal-perfil,
 #modal-historia-municipio,
@@ -5133,7 +5132,6 @@ body.modo-rota-ativo #toast-onde-estou {
 #ranking-conteudo,
 #conquistas-conteudo,
 #amigos-conteudo,
-#checkin-conteudo,
 #compartilhar-conteudo,
 #perfil-conteudo,
 #historia-municipio-conteudo,
@@ -5152,7 +5150,6 @@ body.modo-rota-ativo #toast-onde-estou {
 #ranking-conteudo h2,
 #conquistas-conteudo h2,
 #amigos-conteudo h2,
-#checkin-conteudo h2,
 #compartilhar-conteudo h2,
 #perfil-conteudo h2,
 #historia-municipio-conteudo h2,
@@ -5164,7 +5161,6 @@ body.modo-rota-ativo #toast-onde-estou {
 #btn-fechar-ranking,
 #btn-fechar-conquistas,
 #btn-fechar-amigos,
-#btn-fechar-checkin,
 #btn-fechar-compartilhar,
 #btn-fechar-perfil,
 #btn-fechar-historia-municipio,
@@ -5184,7 +5180,6 @@ body.modo-rota-ativo #toast-onde-estou {
 #btn-fechar-ranking:hover,
 #btn-fechar-conquistas:hover,
 #btn-fechar-amigos:hover,
-#btn-fechar-checkin:hover,
 #btn-fechar-compartilhar:hover,
 #btn-fechar-perfil:hover,
 #btn-fechar-historia-municipio:hover,
@@ -5978,41 +5973,6 @@ body.modo-rota-ativo #toast-onde-estou {
   font-size: 0.8rem;
 }
 
-/* ---- Check-in semanal ---- */
-
-#checkin-semana-label {
-  color: #8E97A3;
-  font-size: 0.85rem;
-  margin: 0 0 12px;
-}
-
-#checkin-calendario {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-}
-
-.checkin-dia {
-  aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: #0F1216;
-  font-size: 0.8rem;
-  color: #8E97A3;
-}
-
-.checkin-dia.checkin-feito {
-  background: rgba(43, 213, 118, 0.25);
-  color: #2BD576;
-  font-weight: 600;
-}
-
-.checkin-dia.checkin-hoje {
-  border: 1px solid #F2F5F7;
-}
-
 /* ---- Marca de selo brilhante na biblioteca/perfil ---- */
 
 .selo-item-brilhante img {
@@ -6463,9 +6423,27 @@ select:focus {
   background: #39404a; margin: 2px auto 12px;
 }
 #menu-sheet-conteudo h2 { margin: 0 0 14px; font-size: 1.05rem; }
-#menu-sheet-grade {
+
+/* Seções do Menu: "Minha Jornada"/"Explorar" em grade de blocos
+   quadrados, "Sistema" em lista de linhas -- ver .menu-section-list
+   mais abaixo. */
+.menu-section {
+  margin-bottom: 20px;
+}
+.menu-section:last-of-type {
+  margin-bottom: 0;
+}
+.menu-section-titulo {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fraco);
+}
+.menu-section-grade {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   gap: 10px;
 }
 .menu-op {
@@ -6475,12 +6453,47 @@ select:focus {
   color: var(--txt);
   cursor: pointer;
   padding: 14px 6px;
-  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   font-size: 0.68rem;
-  transition: transform 0.1s, border-color 0.15s;
+  transition: transform 0.1s, border-color 0.15s, background 0.15s;
+}
+.menu-section-grade .menu-op {
+  aspect-ratio: 1;
 }
 .menu-op span { font-size: 1.35rem; line-height: 1; }
 .menu-op:active { transform: scale(0.95); border-color: var(--verde); }
+
+/* "Sistema": lista vertical de linhas (ícone pequeno + texto),
+   separadas por uma borda sutil -- nada de blocos quadrados aqui, são
+   ações utilitárias, não itens pra "explorar". */
+.menu-section-list {
+  margin-bottom: 0;
+}
+.menu-section-list .menu-op {
+  width: 100%;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--linha);
+  border-radius: 0;
+  padding: 13px 2px;
+  font-size: 0.9rem;
+  text-align: left;
+}
+.menu-section-list .menu-op:last-child {
+  border-bottom: none;
+}
+.menu-section-list .menu-op span {
+  font-size: 1rem;
+}
+.menu-section-list .menu-op:active {
+  transform: none;
+  border-color: var(--linha);
+  background: rgba(255, 255, 255, 0.04);
+}
 
 /* Ícones SVG outline (mesmo estilo dos ícones da barra inferior,
    ver .nav-ico svg) usados na barra de topo (buscar/configurações),
@@ -6502,7 +6515,7 @@ select:focus {
 /* Modais e painéis precisam ficar ACIMA da barra inferior */
 #modal-social, #modal-configuracoes, #modal-admin, #modal-brasil,
 #modal-raspadinha, #biblioteca-selos, #modal-conquistas, #modal-ranking,
-#modal-amigos, #modal-checkin, #modal-rotas, #modal-rota-detalhe,
+#modal-amigos, #modal-rotas, #modal-rota-detalhe,
 #modal-perfil, #modal-sugestoes-comunidade, #modal-cartao-progresso,
 #modal-selo-lightbox, #modal-busca-local {
   z-index: 100;
@@ -6728,7 +6741,6 @@ select:focus {
 #modal-conquistas:not(.oculto),
 #modal-ranking:not(.oculto),
 #modal-amigos:not(.oculto),
-#modal-checkin:not(.oculto),
 #modal-rotas:not(.oculto),
 #modal-perfil:not(.oculto),
 #modal-sugestoes-comunidade:not(.oculto),
@@ -6760,7 +6772,6 @@ select:focus {
 #modal-conquistas:not(.oculto) #conquistas-conteudo,
 #modal-ranking:not(.oculto) #ranking-conteudo,
 #modal-amigos:not(.oculto) #amigos-conteudo,
-#modal-checkin:not(.oculto) #checkin-conteudo,
 #modal-rotas:not(.oculto) #rotas-conteudo,
 #modal-perfil:not(.oculto) #perfil-conteudo,
 #modal-sugestoes-comunidade:not(.oculto) #sugestoes-comunidade-conteudo,
@@ -6798,7 +6809,7 @@ select:focus {
 @media (prefers-reduced-motion: reduce) {
   #modal-configuracoes:not(.oculto), #modal-admin:not(.oculto), #modal-brasil:not(.oculto),
   #biblioteca-selos:not(.oculto), #modal-conquistas:not(.oculto), #modal-ranking:not(.oculto),
-  #modal-amigos:not(.oculto), #modal-checkin:not(.oculto), #modal-rotas:not(.oculto),
+  #modal-amigos:not(.oculto), #modal-rotas:not(.oculto),
   #modal-perfil:not(.oculto), #modal-sugestoes-comunidade:not(.oculto),
   #modal-cartao-progresso:not(.oculto), #modal-selo-lightbox:not(.oculto),
   #modal-busca-local:not(.oculto), #modal-feedback:not(.oculto), #modal-apelido:not(.oculto),
@@ -6811,7 +6822,6 @@ select:focus {
   #modal-conquistas:not(.oculto) #conquistas-conteudo,
   #modal-ranking:not(.oculto) #ranking-conteudo,
   #modal-amigos:not(.oculto) #amigos-conteudo,
-  #modal-checkin:not(.oculto) #checkin-conteudo,
   #modal-rotas:not(.oculto) #rotas-conteudo,
   #modal-perfil:not(.oculto) #perfil-conteudo,
   #modal-sugestoes-comunidade:not(.oculto) #sugestoes-comunidade-conteudo,

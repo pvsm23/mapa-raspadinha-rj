@@ -456,8 +456,8 @@
     </div>
   </div>
 
-  <!-- Botoes flutuantes na lateral esquerda: ranking, amigos,
-       conquistas e check-in semanal -->
+  <!-- Botoes flutuantes na lateral esquerda: ranking, amigos e
+       conquistas -->
   <div id="botoes-lateral-esquerda">
     <button id="btn-toggle-lateral" aria-label="Mostrar mais opções" title="Mais opções" aria-expanded="false">▸</button>
     <div id="botoes-lateral-lista" class="recolhido">
@@ -466,7 +466,6 @@
       <button id="btn-abrir-amigos" aria-label="Amigos" title="Amigos">👥</button>
       <button id="btn-abrir-conquistas" aria-label="Conquistas" title="Conquistas">🎖️</button>
       <button id="btn-abrir-rotas" aria-label="Rotas temáticas" title="Rotas temáticas">🗺️</button>
-      <button id="btn-abrir-checkin" aria-label="Check-in semanal" title="Check-in semanal">📅</button>
       <button id="btn-abrir-motoclube" aria-label="Motoclube Desbrava" title="Motoclube Desbrava">🏍️</button>
       <button id="btn-mapa-brasil" aria-label="Mapa do Brasil" title="Mapa do Brasil">🇧🇷</button>
     </div>
@@ -502,19 +501,38 @@
     <div id="menu-sheet-conteudo">
       <div class="menu-puxador"></div>
       <h2>Menu</h2>
-      <div id="menu-sheet-grade">
-        <button type="button" class="menu-op" data-alvo="btn-meu-perfil"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Perfil</button>
-        <button type="button" class="menu-op oculto" id="menu-abrir-garagem" data-alvo="btn-abrir-garagem"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/></svg></span>Garagem</button>
-        <button type="button" class="menu-op" data-alvo="btn-abrir-loja"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z"/><path d="M3 7h18"/><path d="M16 11a4 4 0 0 1-8 0"/></svg></span>Loja</button>
-        <button type="button" class="menu-op" data-alvo="btn-abrir-ranking"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 4h3a2 2 0 0 1 0 4h-1M7 4H4a2 2 0 0 0 0 4h1"/></svg></span>Ranking</button>
-        <button type="button" class="menu-op" data-alvo="btn-abrir-amigos"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Amigos</button>
-        <button type="button" class="menu-op" data-alvo="btn-abrir-rotas"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span>Rotas</button>
-        <button type="button" class="menu-op" data-alvo="btn-abrir-checkin"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Check-in</button>
-        <button type="button" class="menu-op" data-alvo="btn-biblioteca"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Biblioteca</button>
-        <button type="button" class="menu-op" data-alvo="btn-mapa-brasil"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 1-1h12l-2 5 2 5H6"/></svg></span>Mapa do Brasil</button>
+      <!-- "Minha Jornada": o que a pessoa já está construindo dentro
+           do app (equipamento, trajeto, coleção). Perfil saiu do Menu
+           de propósito -- já dá pra abrir direto pelo avatar na
+           barra de topo, não precisa duplicar aqui. -->
+      <div class="menu-section">
+        <h3 class="menu-section-titulo">Minha Jornada</h3>
+        <div class="menu-section-grade">
+          <button type="button" class="menu-op oculto" id="menu-abrir-garagem" data-alvo="btn-abrir-garagem"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/></svg></span>Garagem</button>
+          <button type="button" class="menu-op" data-alvo="btn-abrir-rotas"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span>Rotas</button>
+          <button type="button" class="menu-op" data-alvo="btn-biblioteca"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Biblioteca</button>
+          <button type="button" class="menu-op" data-alvo="btn-mapa-brasil"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 1-1h12l-2 5 2 5H6"/></svg></span>Mapa do Brasil</button>
+        </div>
+      </div>
+
+      <!-- "Explorar": olhar pra fora -- o que outras pessoas fizeram
+           (ranking/amigos) e a loja. -->
+      <div class="menu-section">
+        <h3 class="menu-section-titulo">Explorar</h3>
+        <div class="menu-section-grade">
+          <button type="button" class="menu-op" data-alvo="btn-abrir-loja"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z"/><path d="M3 7h18"/><path d="M16 11a4 4 0 0 1-8 0"/></svg></span>Loja</button>
+          <button type="button" class="menu-op" data-alvo="btn-abrir-ranking"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 4h3a2 2 0 0 1 0 4h-1M7 4H4a2 2 0 0 0 0 4h1"/></svg></span>Ranking</button>
+          <button type="button" class="menu-op" data-alvo="btn-abrir-amigos"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Amigos</button>
+        </div>
+      </div>
+
+      <!-- "Sistema": ações utilitárias, sem valor de exploração --
+           ficam em lista (linhas de texto), não em blocos quadrados. -->
+      <div class="menu-section-list">
+        <h3 class="menu-section-titulo">Sistema</h3>
         <button type="button" class="menu-op" data-alvo="btn-compartilhar"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></span>Compartilhar</button>
-        <button type="button" class="menu-op" id="menu-baixar-apk"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Baixar app</button>
         <button type="button" class="menu-op" data-alvo="btn-feedback"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.68L4 19.5l1.4-4.2A7.5 7.5 0 1 1 20 11.5z"/></svg></span>Feedback</button>
+        <button type="button" class="menu-op" id="menu-baixar-apk"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Baixar app</button>
       </div>
     </div>
   </div>
@@ -1420,16 +1438,6 @@
       <p>O Desbrava ainda está em fase de testes — essa não é a versão oficial final, e no futuro o app vai estar disponível na Play Store.</p>
       <p>Ele é e sempre vai ser <strong>gratuito pra usar</strong>. Se quiser, dá pra colaborar com sugestões, relatos de bugs ou até financeiramente pelo botão 💬 no topo da tela — mas nunca é obrigatório.</p>
       <button type="button" id="btn-fechar-aviso-desenvolvimento">Entendi, vamos explorar!</button>
-    </div>
-  </div>
-
-  <!-- Check-in semanal: marca os dias da semana em que o app foi aberto -->
-  <div id="modal-checkin" class="oculto">
-    <div id="checkin-conteudo">
-      <button id="btn-fechar-checkin" aria-label="Fechar">✕</button>
-      <h2>📅 Check-in semanal</h2>
-      <p id="checkin-semana-label"></p>
-      <div id="checkin-calendario"></div>
     </div>
   </div>
 

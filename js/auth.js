@@ -190,8 +190,6 @@ window.raspadinhaAuth = {
   recusarPedidoAmizade: async () => {},
   listarAmigos: async () => [],
   removerAmigo: async () => {},
-  registrarCheckinHoje: async () => {},
-  buscarCheckinsDaSemana: async () => [],
   consumirBoostBrilhante: () => false,
   sincronizarMunicipio: async () => {},
   sincronizarRegiao: async () => {},
@@ -1857,47 +1855,6 @@ if (CONFIGURADO) {
     lote.delete(doc(db, "usuarios", usuario.uid, "amigos", amigoUid));
     lote.delete(doc(db, "usuarios", amigoUid, "amigos", usuario.uid));
     return lote.commit();
-  };
-
-  /* ---------- Check-in semanal ----------
-     App de viagem tem poucos acessos por mês (não é um app de uso
-     diário), então o check-in é por SEMANA (domingo a sábado), não
-     por mês -- mais fácil de "completar" e faz mais sentido pro
-     ritmo real de uso. */
-
-  /**
-   * Id da semana atual = data do domingo daquela semana
-   * (AAAA-MM-DD). Assim cada semana tem uma chave própria e estável,
-   * sem precisar calcular número de semana ISO.
-   */
-  function chaveSemanaAtual() {
-    const agora = new Date();
-    const domingo = new Date(agora);
-    domingo.setDate(agora.getDate() - agora.getDay());
-    const ano = domingo.getFullYear();
-    const mes = String(domingo.getMonth() + 1).padStart(2, "0");
-    const dia = String(domingo.getDate()).padStart(2, "0");
-    return `${ano}-${mes}-${dia}`;
-  }
-
-  window.raspadinhaAuth.registrarCheckinHoje = () => {
-    const usuario = auth.currentUser;
-    if (!usuario) return Promise.resolve();
-    const diaDaSemana = new Date().getDay(); // 0 (domingo) a 6 (sábado)
-    return setDoc(
-      doc(db, "usuarios", usuario.uid, "checkins", chaveSemanaAtual()),
-      { dias: arrayUnion(diaDaSemana) },
-      { merge: true }
-    ).catch((erro) => console.error("Falha ao registrar check-in:", erro));
-  };
-
-  window.raspadinhaAuth.buscarCheckinsDaSemana = async (semanaId) => {
-    const usuario = auth.currentUser;
-    if (!usuario) return [];
-    const snap = await getDoc(
-      doc(db, "usuarios", usuario.uid, "checkins", semanaId || chaveSemanaAtual())
-    );
-    return snap.exists() ? snap.data().dias || [] : [];
   };
 
   /* ---------- Convite de amigo -> raspadinha brilhante garantida ---------- */
