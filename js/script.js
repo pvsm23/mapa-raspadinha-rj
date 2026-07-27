@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.2";
+const VERSAO_APP = "0.11.3";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.2";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.3", itens: ["Novidades PRO do Motoclube Desbrava: Garagem Virtual (marca/modelo/apelido da sua moto, 100% privado, com odômetro somado sozinho pelo Modo Viagem), opção de salvar o trajeto de um rolê como rota personalizada, e resumo do rolê (km, tempo, municípios) com imagem pra compartilhar na Comunidade ou fora do app.", "Gratuito por enquanto, junto com o resto do Motoclube."] },
   { versao: "0.11.2", itens: ["Chegou o Modo Viagem! 🏍️ Botão novo acima da bússola: liga o rastreio só enquanto você estiver rodando (com notificação fixa), registra a quilometragem e deixa os municípios por onde você passar prontos pra raspar depois.", "Rastreio em segundo plano antigo (de hora em hora) saiu de circulação — o app não pede mais localização em segundo plano."] },
   { versao: "0.11.1", itens: ["Ícones de buscar, configurações, bússola e todo o Menu ficaram no mesmo estilo da barra de baixo."] },
   { versao: "0.11.0", itens: ["Chegou o Motoclube Desbrava! 🏍️ Dicas e lojas de peças/oficinas com filtro de marca e modelo — gratuito por enquanto.", "O botão de Perfil foi pro Menu; no lugar dele na barra de baixo agora fica o Motoclube."] },
@@ -894,6 +895,9 @@ document.addEventListener("DOMContentLoaded", () => {
   configurarNavInferior();
   configurarBarraTopo();
   configurarModoViagem();
+  configurarGaragem();
+  configurarResumoViagem();
+  configurarCompartilharViagem();
   esconderTelaCarregamento();
 });
 
@@ -989,6 +993,13 @@ let viagemWatcherId = null;
 let viagemKmTotal = 0;
 let viagemUltimaPosicao = null;
 let viagemMunicipiosNovos = 0;
+let viagemInicioEm = null;
+// Trilha (pontos [lat,lon] do trajeto) e o Set de TODOS os municípios
+// por onde a viagem passou (novos ou não) -- só interessam pros
+// recursos PRO (salvar como rota, resumo com compartilhamento). Ver
+// souMembroMotoclube().
+let viagemTrilha = [];
+let viagemMunicipiosPercorridos = new Set();
 
 /**
  * Liga o botão flutuante "Modo Viagem" e os dois modais dele
@@ -1055,6 +1066,9 @@ async function iniciarModoViagem() {
   viagemKmTotal = 0;
   viagemUltimaPosicao = null;
   viagemMunicipiosNovos = 0;
+  viagemInicioEm = Date.now();
+  viagemTrilha = [];
+  viagemMunicipiosPercorridos = new Set();
 
   try {
     viagemWatcherId = await plugin.addWatcher(
@@ -1083,8 +1097,17 @@ async function iniciarModoViagem() {
   }
 }
 
-/** Encerra o watcher, mostra o resumo do rolê e, se houver município
- * novo esperando raspagem, já abre a lista de pendentes. */
+/**
+ * Encerra o watcher e mostra o resultado do rolê. Quem é PRO
+ * (souMembroMotoclube) recebe o resumo completo (distância, tempo,
+ * municípios, opção de salvar o trajeto como rota e de gerar imagem
+ * pra compartilhar) e tem a quilometragem somada sozinha ao odômetro
+ * da Garagem, se houver moto cadastrada. Quem não é PRO continua
+ * vendo só o toast simples de sempre -- o Modo Viagem em si (detectar
+ * município) é gratuito pra todo mundo, só esses 3 extras é que são
+ * PRO. Em ambos os casos, a lista de pendentes de raspagem abre no
+ * final se houver algo novo.
+ */
 async function pararModoViagem() {
   const plugin = pluginBackgroundGeolocation();
   const botao = document.getElementById("btn-modo-viagem");
@@ -1100,22 +1123,41 @@ async function pararModoViagem() {
   botao?.classList.remove("viagem-ativa");
   if (botao) botao.title = "Modo Viagem";
 
+  const stats = {
+    km: viagemKmTotal,
+    duracaoMs: Date.now() - (viagemInicioEm || Date.now()),
+    municipiosNovos: viagemMunicipiosNovos,
+    municipiosPercorridos: Array.from(viagemMunicipiosPercorridos),
+    trilha: viagemTrilha,
+  };
+
   localStorage.setItem(
     CHAVE_ULTIMA_VIAGEM,
-    JSON.stringify({ km: viagemKmTotal, em: new Date().toISOString() })
+    JSON.stringify({ km: stats.km, em: new Date().toISOString() })
   );
 
-  const km = viagemKmTotal.toFixed(1);
-  mostrarToastOndeEstou(
-    viagemMunicipiosNovos > 0
-      ? `Rolê encerrado: ${km} km percorridos, ${viagemMunicipiosNovos} município(s) novo(s) detectado(s).`
-      : `Rolê encerrado: ${km} km percorridos.`
-  );
+  if (souMembroMotoclube() && stats.km > 0) {
+    abrirResumoViagem(stats);
+    window.raspadinhaAuth
+      ?.salvarResumoViagem({ km: stats.km, duracaoMs: stats.duracaoMs, municipiosNovos: stats.municipiosNovos })
+      .catch((erro) => console.error("Falha ao salvar resumo da viagem:", erro));
+    window.raspadinhaAuth
+      ?.somarOdometroGaragem(stats.km)
+      .catch((erro) => console.error("Falha ao somar odômetro da garagem:", erro));
+  } else {
+    const km = stats.km.toFixed(1);
+    mostrarToastOndeEstou(
+      stats.municipiosNovos > 0
+        ? `Rolê encerrado: ${km} km percorridos, ${stats.municipiosNovos} município(s) novo(s) detectado(s).`
+        : `Rolê encerrado: ${km} km percorridos.`
+    );
+  }
   mostrarModalPendentesSeNecessario();
 }
 
-/** Callback do watcher: acumula km (haversine) e confere se a posição
- * caiu num município ainda não raspado/confirmado. */
+/** Callback do watcher: acumula km (haversine), guarda a trilha (só
+ * usuário PRO, ver souMembroMotoclube) e confere se a posição caiu
+ * num município ainda não raspado/confirmado. */
 function processarPosicaoModoViagem(posicao) {
   const lat = posicao.latitude;
   const lon = posicao.longitude;
@@ -1125,8 +1167,13 @@ function processarPosicaoModoViagem(posicao) {
   }
   viagemUltimaPosicao = { lat, lon };
 
+  if (souMembroMotoclube()) {
+    viagemTrilha.push([Number(lat.toFixed(5)), Number(lon.toFixed(5))]);
+  }
+
   const id = encontrarMunicipioPorCoordenada(lon, lat);
   if (!id) return;
+  viagemMunicipiosPercorridos.add(id);
 
   const novo = confirmarPresencaPorId(id);
   if (!novo) return;
@@ -1182,6 +1229,354 @@ function fecharModalPendentes() {
   document.getElementById("modal-municipios-pendentes")?.classList.add("oculto");
 }
 
+/* ============================================================
+   GARAGEM VIRTUAL (recurso PRO/Motoclube): marca, modelo e apelido da
+   moto do usuário, com odômetro somado automaticamente pelo Modo
+   Viagem (ver somarOdometroGaragem em pararModoViagem). Dado
+   estritamente privado -- ver regra do Firestore no README (o id do
+   doc É o uid, só o dono lê/escreve) -- nunca é exposto em perfil
+   público, ranking ou comunidade.
+   ============================================================ */
+
+function configurarGaragem() {
+  const itemMenu = document.getElementById("menu-abrir-garagem");
+  if (souMembroMotoclube()) itemMenu?.classList.remove("oculto");
+
+  document.getElementById("btn-abrir-garagem")?.addEventListener("click", () => exigirLogin(abrirGaragem));
+  document.getElementById("btn-fechar-garagem")?.addEventListener("click", fecharGaragem);
+  document.getElementById("modal-garagem")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-garagem") fecharGaragem();
+  });
+  document.getElementById("btn-salvar-garagem")?.addEventListener("click", salvarGaragemForm);
+
+  const selectMarca = document.getElementById("select-garagem-marca");
+  if (selectMarca) {
+    MARCAS_MOTOCLUBE.forEach((marca) => {
+      const opt = document.createElement("option");
+      opt.value = marca;
+      opt.textContent = marca;
+      selectMarca.appendChild(opt);
+    });
+  }
+}
+
+async function abrirGaragem() {
+  if (!souMembroMotoclube()) return;
+  document.getElementById("garagem-erro")?.classList.add("oculto");
+  document.getElementById("modal-garagem")?.classList.remove("oculto");
+  document.getElementById("garagem-odometro-valor").textContent = "...";
+
+  try {
+    const dados = await window.raspadinhaAuth.buscarGaragem();
+    document.getElementById("select-garagem-marca").value = dados?.marca || "Honda";
+    document.getElementById("input-garagem-modelo").value = dados?.modelo || "";
+    document.getElementById("input-garagem-apelido").value = dados?.apelido || "";
+    document.getElementById("garagem-odometro-valor").textContent = `${(dados?.odometroKm || 0).toFixed(1)} km`;
+  } catch (erro) {
+    console.error("Falha ao buscar garagem:", erro);
+    document.getElementById("garagem-odometro-valor").textContent = "0 km";
+  }
+}
+
+function fecharGaragem() {
+  document.getElementById("modal-garagem")?.classList.add("oculto");
+}
+
+async function salvarGaragemForm() {
+  const erroEl = document.getElementById("garagem-erro");
+  erroEl.classList.add("oculto");
+  const botao = document.getElementById("btn-salvar-garagem");
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+  try {
+    await window.raspadinhaAuth.salvarGaragem({
+      marca: document.getElementById("select-garagem-marca").value,
+      modelo: document.getElementById("input-garagem-modelo").value,
+      apelido: document.getElementById("input-garagem-apelido").value,
+    });
+    fecharGaragem();
+  } catch (erro) {
+    erroEl.textContent = erro.message || "Não foi possível salvar agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar";
+  }
+}
+
+/* ============================================================
+   RESUMO DA VIAGEM (recurso PRO/Motoclube): tela de estatísticas ao
+   encerrar o Modo Viagem, com opção de salvar o trajeto como rota
+   personalizada e de gerar uma imagem pra compartilhar (ver bloco de
+   canvas mais abaixo). Guarda o stats da última viagem encerrada em
+   `viagemStatsAtual` -- é o que a tela de compartilhar usa pra montar
+   o texto do cartão.
+   ============================================================ */
+let viagemStatsAtual = null;
+
+function configurarResumoViagem() {
+  document.getElementById("btn-fechar-resumo-viagem")?.addEventListener("click", fecharResumoViagem);
+  document.getElementById("btn-resumo-fechar-viagem")?.addEventListener("click", fecharResumoViagem);
+  document.getElementById("modal-resumo-viagem")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-resumo-viagem") fecharResumoViagem();
+  });
+  document.getElementById("btn-resumo-salvar-rota")?.addEventListener("click", usarTrilhaNaNovaRota);
+  document.getElementById("btn-resumo-compartilhar")?.addEventListener("click", () => {
+    fecharResumoViagem();
+    abrirCompartilharViagem();
+  });
+}
+
+function formatarDuracaoViagem(ms) {
+  const min = Math.round(ms / 60000);
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const restoMin = min % 60;
+  return restoMin ? `${h}h${String(restoMin).padStart(2, "0")}` : `${h}h`;
+}
+
+function abrirResumoViagem(stats) {
+  viagemStatsAtual = stats;
+  document.getElementById("resumo-viagem-km").textContent = `${stats.km.toFixed(1)} km`;
+  document.getElementById("resumo-viagem-tempo").textContent = formatarDuracaoViagem(stats.duracaoMs);
+  document.getElementById("resumo-viagem-municipios").textContent = String(stats.municipiosNovos);
+
+  const avisoOdometro = document.getElementById("resumo-viagem-odometro-aviso");
+  avisoOdometro.textContent = "🏠 Quilometragem somada ao odômetro da sua Garagem (se você já tem uma moto cadastrada).";
+  avisoOdometro.classList.remove("oculto");
+
+  document
+    .getElementById("btn-resumo-salvar-rota")
+    .classList.toggle("oculto", stats.municipiosPercorridos.length < 2);
+
+  document.getElementById("modal-resumo-viagem").classList.remove("oculto");
+}
+
+function fecharResumoViagem() {
+  document.getElementById("modal-resumo-viagem")?.classList.add("oculto");
+}
+
+/**
+ * "Salvar trajeto como rota": pré-preenche o formulário de rota
+ * personalizada (já existente) com os municípios da viagem e anexa a
+ * trilha (coordenadas reais) num campo à parte -- ver
+ * salvarRotaPersonalizada, que lê `viagemTrilhaPendenteParaRota`.
+ * Salva como PRIVADA por padrão (o usuário decide publicar depois).
+ */
+function usarTrilhaNaNovaRota() {
+  if (!viagemStatsAtual) return;
+  fecharResumoViagem();
+  municipiosEscolhidosNaRota = new Set(viagemStatsAtual.municipiosPercorridos);
+  viagemTrilhaPendenteParaRota = viagemStatsAtual.trilha;
+  document.getElementById("input-nome-rota").value = "";
+  document.getElementById("input-descricao-rota").value = "Trajeto registrado pelo Modo Viagem.";
+  document.getElementById("input-filtro-municipios-rota").value = "";
+  document.getElementById("criar-rota-erro").classList.add("oculto");
+  renderizarListaMunicipiosParaEscolher("");
+  document.getElementById("modal-criar-rota").classList.remove("oculto");
+}
+
+/* ============================================================
+   COMPARTILHAR VIAGEM (recurso PRO/Motoclube): gera uma imagem
+   (canvas) com as estatísticas do rolê -- opção A (cartão do app) ou
+   opção B (por cima de uma foto escolhida no aparelho) -- pra postar
+   na Comunidade ou compartilhar fora do app (Web Share API).
+   Reaproveita criarPost (mesma função dos posts normais, que já sobe
+   a foto pro Drive -- ver subirFotoPostParaDrive em auth.js).
+   ============================================================ */
+let compartilharViagemOpcao = "a";
+let compartilharViagemFotoFile = null;
+
+function configurarCompartilharViagem() {
+  document.getElementById("btn-fechar-compartilhar-viagem")?.addEventListener("click", fecharCompartilharViagem);
+  document.getElementById("modal-compartilhar-viagem")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-compartilhar-viagem") fecharCompartilharViagem();
+  });
+  document.getElementById("btn-cv-opcao-a")?.addEventListener("click", () => selecionarOpcaoCompartilharViagem("a"));
+  document.getElementById("btn-cv-opcao-b")?.addEventListener("click", () => selecionarOpcaoCompartilharViagem("b"));
+  document.getElementById("input-cv-foto")?.addEventListener("change", (e) => {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    compartilharViagemFotoFile = arquivo;
+    atualizarPreviaCompartilharViagem();
+  });
+  document.getElementById("btn-cv-postar-comunidade")?.addEventListener("click", postarResumoViagemNaComunidade);
+  document
+    .getElementById("btn-cv-compartilhar-externo")
+    ?.addEventListener("click", compartilharResumoViagemExternamente);
+}
+
+function abrirCompartilharViagem() {
+  if (!viagemStatsAtual) return;
+  compartilharViagemOpcao = "a";
+  compartilharViagemFotoFile = null;
+  document.getElementById("btn-cv-opcao-a")?.classList.add("cv-opcao-ativa");
+  document.getElementById("btn-cv-opcao-b")?.classList.remove("cv-opcao-ativa");
+  document.getElementById("compartilhar-viagem-erro")?.classList.add("oculto");
+  document.getElementById("modal-compartilhar-viagem")?.classList.remove("oculto");
+  atualizarPreviaCompartilharViagem();
+}
+
+function fecharCompartilharViagem() {
+  document.getElementById("modal-compartilhar-viagem")?.classList.add("oculto");
+}
+
+/** Trocar pra "Minha foto" já abre o seletor de arquivo -- a própria
+ * escolha (evento "change") atualiza a prévia depois. */
+function selecionarOpcaoCompartilharViagem(opcao) {
+  compartilharViagemOpcao = opcao;
+  document.getElementById("btn-cv-opcao-a")?.classList.toggle("cv-opcao-ativa", opcao === "a");
+  document.getElementById("btn-cv-opcao-b")?.classList.toggle("cv-opcao-ativa", opcao === "b");
+  if (opcao === "b" && !compartilharViagemFotoFile) {
+    document.getElementById("input-cv-foto")?.click();
+    return;
+  }
+  atualizarPreviaCompartilharViagem();
+}
+
+async function atualizarPreviaCompartilharViagem() {
+  const canvas = document.getElementById("canvas-compartilhar-viagem");
+  if (!canvas || !viagemStatsAtual) return;
+  try {
+    await desenharResumoViagemNoCanvas(
+      canvas,
+      viagemStatsAtual,
+      compartilharViagemOpcao === "b" ? compartilharViagemFotoFile : null
+    );
+  } catch (erro) {
+    console.error("Falha ao gerar imagem do resumo:", erro);
+  }
+}
+
+/**
+ * Opção A: gradiente do app. Opção B: a foto escolhida (cover-fit) com
+ * um degradê escuro embaixo pra garantir contraste. Em cima, sempre o
+ * mesmo texto branco com sombra (funciona nas duas opções).
+ */
+async function desenharResumoViagemNoCanvas(canvas, stats, fotoFile) {
+  const largura = canvas.width;
+  const altura = canvas.height;
+  const ctx = canvas.getContext("2d");
+
+  if (fotoFile) {
+    const img = await carregarImagemDeArquivo(fotoFile);
+    desenharImagemCover(ctx, img, largura, altura);
+    const escurecer = ctx.createLinearGradient(0, altura * 0.35, 0, altura);
+    escurecer.addColorStop(0, "rgba(15, 18, 22, 0)");
+    escurecer.addColorStop(1, "rgba(15, 18, 22, 0.88)");
+    ctx.fillStyle = escurecer;
+    ctx.fillRect(0, 0, largura, altura);
+  } else {
+    const gradiente = ctx.createLinearGradient(0, 0, 0, altura);
+    gradiente.addColorStop(0, "#1e293b");
+    gradiente.addColorStop(1, "#0f172a");
+    ctx.fillStyle = gradiente;
+    ctx.fillRect(0, 0, largura, altura);
+  }
+
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
+  ctx.shadowBlur = 14;
+
+  ctx.fillStyle = "#2BD576";
+  ctx.font = `bold ${Math.round(largura * 0.037)}px system-ui, sans-serif`;
+  ctx.fillText("🏍️ ROLÊ DESBRAVA", largura / 2, altura * 0.7);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `bold ${Math.round(largura * 0.09)}px system-ui, sans-serif`;
+  ctx.fillText(`${stats.km.toFixed(1)} km`, largura / 2, altura * 0.79);
+
+  ctx.font = `600 ${Math.round(largura * 0.03)}px system-ui, sans-serif`;
+  ctx.fillText(
+    `${formatarDuracaoViagem(stats.duracaoMs)} · ${stats.municipiosNovos} município(s) desbravado(s)`,
+    largura / 2,
+    altura * 0.85
+  );
+
+  ctx.shadowBlur = 0;
+  ctx.font = `${Math.round(largura * 0.018)}px system-ui, sans-serif`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.fillText("Desbrava · raspe o mapa do Rio de Janeiro", largura / 2, altura * 0.95);
+}
+
+/** Lê um File escolhido no <input type=file> como um HTMLImageElement
+ * pronto pra desenhar no canvas. */
+function carregarImagemDeArquivo(arquivo) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(arquivo);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Não foi possível abrir essa foto."));
+    };
+    img.src = url;
+  });
+}
+
+/** Desenha uma imagem preenchendo todo o retângulo mantendo a
+ * proporção e cortando o excesso -- mesmo efeito de
+ * "background-size: cover" em CSS, só que no canvas. */
+function desenharImagemCover(ctx, img, largura, altura) {
+  const escala = Math.max(largura / img.width, altura / img.height);
+  const w = img.width * escala;
+  const h = img.height * escala;
+  const x = (largura - w) / 2;
+  const y = (altura - h) / 2;
+  ctx.drawImage(img, x, y, w, h);
+}
+
+/** Botão "Postar na Comunidade": gera a imagem final do canvas e
+ * reaproveita criarPost (mesmo fluxo dos posts normais, sobe a foto
+ * pro Drive). */
+async function postarResumoViagemNaComunidade() {
+  if (!viagemStatsAtual) return;
+  const botao = document.getElementById("btn-cv-postar-comunidade");
+  const erroEl = document.getElementById("compartilhar-viagem-erro");
+  erroEl.classList.add("oculto");
+  botao.disabled = true;
+  botao.textContent = "Postando...";
+  try {
+    const canvas = document.getElementById("canvas-compartilhar-viagem");
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    const arquivo = new File([blob], "role-desbrava.png", { type: "image/png" });
+    await window.raspadinhaAuth.criarPost({
+      arquivoFoto: arquivo,
+      texto: `Rolê de ${viagemStatsAtual.km.toFixed(1)} km, ${viagemStatsAtual.municipiosNovos} município(s) desbravado(s)! 🏍️`,
+    });
+    fecharCompartilharViagem();
+    alert("Rolê compartilhado na Comunidade! 🎉");
+  } catch (erro) {
+    erroEl.textContent = erro.message || "Não foi possível postar agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Postar na Comunidade";
+  }
+}
+
+/** Botão "Compartilhar": Web Share API com a imagem como arquivo
+ * (funciona direto pro WhatsApp/Instagram Stories no celular); sem
+ * suporte (ex: desktop), baixa a imagem em vez de travar. */
+async function compartilharResumoViagemExternamente() {
+  const canvas = document.getElementById("canvas-compartilhar-viagem");
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  const arquivo = new File([blob], "role-desbrava.png", { type: "image/png" });
+
+  if (navigator.canShare?.({ files: [arquivo] })) {
+    navigator.share({ files: [arquivo], title: "Desbrava", text: "Olha meu rolê no Desbrava! 🏍️" }).catch(() => {});
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = "role-desbrava.png";
+  link.click();
+}
+
 /**
  * Liga os botões novos da barra de topo (avatar -> perfil, lupa ->
  * busca) aos botões que já existiam, e mantém as iniciais do avatar
@@ -1227,6 +1622,7 @@ const OVERLAYS_APP = [
   "modal-motoclube", "modal-motoclube-form", "modal-criar-rota",
   "modal-rota-personalizada-detalhe", "modal-compartilhar-rota",
   "modal-confirmar-viagem", "modal-municipios-pendentes",
+  "modal-resumo-viagem", "modal-compartilhar-viagem", "modal-garagem",
   "menu-sheet",
 ];
 
@@ -5838,9 +6234,14 @@ function sairModoRota() {
 let municipiosEscolhidosNaRota = new Set();
 // Rota personalizada atualmente aberta no modal de detalhe.
 let rotaPersonalizadaSelecionada = null;
+// Trilha (coordenadas) de uma viagem do Modo Viagem, esperando ser
+// anexada na PRÓXIMA rota salva -- ver usarTrilhaNaNovaRota/
+// salvarRotaPersonalizada. null fora desse fluxo (criação manual normal).
+let viagemTrilhaPendenteParaRota = null;
 
 function abrirModalCriarRota() {
   municipiosEscolhidosNaRota = new Set();
+  viagemTrilhaPendenteParaRota = null;
   document.getElementById("input-nome-rota").value = "";
   document.getElementById("input-descricao-rota").value = "";
   document.getElementById("input-filtro-municipios-rota").value = "";
@@ -5908,7 +6309,14 @@ async function salvarRotaPersonalizada() {
   botao.disabled = true;
   botao.textContent = "Salvando...";
   try {
-    await window.raspadinhaAuth.criarRotaPersonalizada({ nome, descricao, municipios });
+    await window.raspadinhaAuth.criarRotaPersonalizada({
+      nome,
+      descricao,
+      municipios,
+      trilha: viagemTrilhaPendenteParaRota,
+      publica: false,
+    });
+    viagemTrilhaPendenteParaRota = null;
     fecharModalCriarRota();
     abrirRotas();
   } catch (erro) {

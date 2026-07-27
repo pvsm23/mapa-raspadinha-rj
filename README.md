@@ -240,6 +240,32 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
             && request.auth.uid == resource.data.donoUid;
         }
 
+        // Recursos PRO do Modo Viagem (Motoclube Desbrava, ver
+        // souMembroMotoclube em js/script.js) -- garagem virtual e log
+        // de viagens. IMPORTANTE, diferente de rotasPersonalizadas
+        // acima: aqui a leitura NÃO é liberada pra qualquer logado, só
+        // pro próprio dono -- marca/modelo da moto e estatísticas de
+        // viagem são dados privados de verdade, não tem link
+        // compartilhável como as rotas.
+
+        // Garagem: 1 documento por usuário (o id do doc É o uid, então
+        // a regra de "só o dono lê/escreve" fica trivial e não tem
+        // como um uid gravar no doc de outro por engano).
+        match /garagem/{uid} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+        }
+
+        // Viagens: log append-only (resumo de cada Modo Viagem
+        // encerrado -- km, duração, municípios). Sem update/delete de
+        // propósito, é histórico.
+        match /viagens/{viagemId} {
+          allow read: if request.auth != null
+            && request.auth.uid == resource.data.donoUid;
+          allow create: if request.auth != null
+            && request.resource.data.donoUid == request.auth.uid;
+          allow update, delete: if false;
+        }
+
         // Motoclube Desbrava: dicas/lojas cadastradas por qualquer
         // usuário logado (não é por município). GRATUITO por enquanto
         // -- a regra não checa nenhum campo de "membro pago" ainda

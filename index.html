@@ -504,6 +504,7 @@
       <h2>Menu</h2>
       <div id="menu-sheet-grade">
         <button type="button" class="menu-op" data-alvo="btn-meu-perfil"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Perfil</button>
+        <button type="button" class="menu-op oculto" id="menu-abrir-garagem" data-alvo="btn-abrir-garagem"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/></svg></span>Garagem</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-ranking"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 4h3a2 2 0 0 1 0 4h-1M7 4H4a2 2 0 0 0 0 4h1"/></svg></span>Ranking</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-amigos"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Amigos</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-rotas"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span>Rotas</button>
@@ -551,6 +552,80 @@
       <h2>📍 Você passou por novos municípios!</h2>
       <p>Toque num município pra raspar o selo — sua presença já foi confirmada por GPS.</p>
       <div id="municipios-pendentes-lista"></div>
+    </div>
+  </div>
+
+  <!-- Resumo do Modo Viagem (recurso PRO/Motoclube, ver
+       souMembroMotoclube em js/script.js) -- distância, tempo e
+       municípios desbravados no rolê que acabou de encerrar. -->
+  <div id="modal-resumo-viagem" class="oculto">
+    <div id="resumo-viagem-conteudo">
+      <button id="btn-fechar-resumo-viagem" aria-label="Fechar">✕</button>
+      <h2>🏁 Resumo do rolê</h2>
+      <div id="resumo-viagem-stats">
+        <div class="resumo-viagem-stat">
+          <span id="resumo-viagem-km">0 km</span>
+          <small>Distância</small>
+        </div>
+        <div class="resumo-viagem-stat">
+          <span id="resumo-viagem-tempo">0 min</span>
+          <small>Tempo</small>
+        </div>
+        <div class="resumo-viagem-stat">
+          <span id="resumo-viagem-municipios">0</span>
+          <small>Municípios</small>
+        </div>
+      </div>
+      <p id="resumo-viagem-odometro-aviso" class="oculto"></p>
+      <button type="button" id="btn-resumo-salvar-rota" class="oculto">📍 Salvar trajeto como rota</button>
+      <button type="button" id="btn-resumo-compartilhar">📸 Gerar imagem pra compartilhar</button>
+      <button type="button" id="btn-resumo-fechar-viagem">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Gera uma imagem (canvas) com as estatísticas do rolê, num cartão
+       do app ou por cima de uma foto escolhida pelo usuário, pra
+       postar na Comunidade ou compartilhar fora do app. -->
+  <div id="modal-compartilhar-viagem" class="oculto">
+    <div id="compartilhar-viagem-conteudo">
+      <button id="btn-fechar-compartilhar-viagem" aria-label="Fechar">✕</button>
+      <h2>📸 Compartilhar rolê</h2>
+      <div id="compartilhar-viagem-opcoes">
+        <button type="button" class="cv-opcao cv-opcao-ativa" id="btn-cv-opcao-a" data-opcao="a">Cartão do app</button>
+        <button type="button" class="cv-opcao" id="btn-cv-opcao-b" data-opcao="b">Minha foto</button>
+      </div>
+      <input type="file" id="input-cv-foto" accept="image/*" class="oculto">
+      <canvas id="canvas-compartilhar-viagem" width="1080" height="1080"></canvas>
+      <p id="compartilhar-viagem-erro" class="oculto"></p>
+      <div id="compartilhar-viagem-acoes">
+        <button type="button" id="btn-cv-postar-comunidade">Postar na Comunidade</button>
+        <button type="button" id="btn-cv-compartilhar-externo">↗ Compartilhar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Garagem Virtual (recurso PRO/Motoclube): marca/modelo/apelido da
+       moto + odômetro somado automaticamente pelo Modo Viagem. Dados
+       estritamente privados (ver regra no README) -- nunca aparecem
+       em perfil público, ranking ou comunidade. -->
+  <button id="btn-abrir-garagem" class="oculto" aria-label="Abrir garagem"></button>
+  <div id="modal-garagem" class="oculto">
+    <div id="garagem-conteudo">
+      <button id="btn-fechar-garagem" aria-label="Fechar">✕</button>
+      <h2>🏠 Garagem Virtual</h2>
+      <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo da sua moto nunca aparecem no seu perfil público.</p>
+      <label for="select-garagem-marca">Marca</label>
+      <select id="select-garagem-marca"></select>
+      <label for="input-garagem-modelo">Modelo</label>
+      <input type="text" id="input-garagem-modelo" maxlength="60" placeholder="Ex: Hunter 350">
+      <label for="input-garagem-apelido">Apelido (opcional)</label>
+      <input type="text" id="input-garagem-apelido" maxlength="40" placeholder="Ex: A Fera">
+      <div id="garagem-odometro">
+        <span>Odômetro (Modo Viagem)</span>
+        <strong id="garagem-odometro-valor">0 km</strong>
+      </div>
+      <p id="garagem-erro" class="oculto"></p>
+      <button type="button" id="btn-salvar-garagem">Salvar</button>
     </div>
   </div>
 

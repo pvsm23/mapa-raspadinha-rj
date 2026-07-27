@@ -972,7 +972,7 @@ if (CONFIGURADO) {
    * compartilhado ?rotaPersonalizada=<id> funciona pra quem não é o
    * dono também).
    */
-  window.raspadinhaAuth.criarRotaPersonalizada = async ({ nome, descricao, municipios }) => {
+  window.raspadinhaAuth.criarRotaPersonalizada = async ({ nome, descricao, municipios, trilha, publica }) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     if (!nome || !nome.trim()) throw new Error("Dê um nome pra rota.");
@@ -985,6 +985,15 @@ if (CONFIGURADO) {
       nome: nome.trim().slice(0, 60),
       descricao: (descricao || "").trim().slice(0, 300),
       municipios,
+      // trilha: só quando vem do Modo Viagem PRO (array de [lat,lon]
+      // do trajeto real). publica: falso por padrão -- IMPORTANTE, a
+      // leitura desta coleção continua liberada pra qualquer logado
+      // que tenha o id (é o que faz o link compartilhado funcionar,
+      // ver regra no README), então "privada" aqui quer dizer "não
+      // aparece em nenhuma listagem pública" -- não é uma trava de
+      // acesso por id. Só vira mesmo pública se o dono compartilhar.
+      ...(trilha?.length ? { trilha } : {}),
+      publica: !!publica,
       criadoEm: serverTimestamp(),
     });
     return novoDocRef.id;
@@ -1012,6 +1021,78 @@ if (CONFIGURADO) {
 
   window.raspadinhaAuth.excluirRotaPersonalizada = async (rotaId) => {
     await deleteDoc(doc(db, "rotasPersonalizadas", rotaId));
+  };
+
+  /**
+   * Garagem Virtual (recurso PRO do Motoclube, ver souMembroMotoclube
+   * em js/script.js): 1 moto por usuário hoje, guardada num doc cujo
+   * ID É o próprio uid -- assim a regra do Firestore (README) fica
+   * "só o dono lê/escreve" sem precisar checar campo nenhum. Marca e
+   * modelo NUNCA aparecem em perfil público/ranking/comunidade -- só
+   * esta função e a tela da Garagem tocam nesse documento.
+   */
+  window.raspadinhaAuth.buscarGaragem = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return null;
+    const snap = await getDoc(doc(db, "garagem", usuario.uid));
+    return snap.exists() ? snap.data() : null;
+  };
+
+  window.raspadinhaAuth.salvarGaragem = async ({ marca, modelo, apelido }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!marca || !modelo || !modelo.trim()) throw new Error("Preencha marca e modelo da moto.");
+
+    const ref = doc(db, "garagem", usuario.uid);
+    const snap = await getDoc(ref);
+    await setDoc(
+      ref,
+      {
+        marca,
+        modelo: modelo.trim().slice(0, 60),
+        apelido: (apelido || "").trim().slice(0, 40),
+        // Só inicializa o odômetro na primeira vez -- atualizações
+        // seguintes (ver somarOdometroGaragem) não podem passar por
+        // aqui de novo, senão zerariam o acumulado.
+        ...(snap.exists() ? {} : { odometroKm: 0 }),
+        atualizadoEm: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  /**
+   * Soma a quilometragem de um rolê ao odômetro da moto cadastrada --
+   * chamada automaticamente ao encerrar o Modo Viagem (usuário PRO).
+   * Fica em silêncio (sem lançar erro pro chamador tratar como falha
+   * visível) se a pessoa ainda não cadastrou moto nenhuma -- não faz
+   * sentido forçar isso na hora de fechar uma viagem.
+   */
+  window.raspadinhaAuth.somarOdometroGaragem = async (km) => {
+    const usuario = auth.currentUser;
+    if (!usuario || !km || km <= 0) return;
+    const ref = doc(db, "garagem", usuario.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    await updateDoc(ref, { odometroKm: increment(km), atualizadoEm: serverTimestamp() });
+  };
+
+  /**
+   * Log privado das viagens (recurso PRO): um doc por Modo Viagem
+   * encerrado, só pro próprio dono ler (ver regra no README) -- é
+   * estatística pessoal, não posta nada em lugar nenhum sozinho (isso
+   * é uma ação separada, ver criarPost usado na tela de compartilhar).
+   */
+  window.raspadinhaAuth.salvarResumoViagem = async ({ km, duracaoMs, municipiosNovos }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return;
+    await addDoc(collection(db, "viagens"), {
+      donoUid: usuario.uid,
+      km,
+      duracaoMs,
+      municipiosNovos,
+      criadoEm: serverTimestamp(),
+    });
   };
 
   /**

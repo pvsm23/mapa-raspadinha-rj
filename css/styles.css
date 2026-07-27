@@ -1889,6 +1889,351 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   background: #1E232B;
 }
 
+/* ---- Resumo da viagem (Modo Viagem, recurso PRO) ---- */
+
+#modal-resumo-viagem {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-resumo-viagem.oculto {
+  display: none;
+}
+
+#resumo-viagem-conteudo {
+  position: relative;
+  background: #171B21;
+  border: 2px solid #2FBE6B;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#resumo-viagem-conteudo h2 {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+}
+
+#resumo-viagem-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.resumo-viagem-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #0F1216;
+  border-radius: 10px;
+  padding: 12px 6px;
+}
+
+.resumo-viagem-stat span {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2FBE6B;
+}
+
+.resumo-viagem-stat small {
+  color: #8E97A3;
+  font-size: 0.7rem;
+}
+
+#resumo-viagem-odometro-aviso {
+  color: #8E97A3;
+  font-size: 0.8rem;
+  margin: 0 0 14px;
+}
+
+#resumo-viagem-odometro-aviso.oculto {
+  display: none;
+}
+
+#resumo-viagem-conteudo button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+#btn-resumo-salvar-rota,
+#btn-resumo-compartilhar {
+  background: #2FBE6B;
+  color: #0F1216;
+}
+
+#btn-resumo-salvar-rota:hover,
+#btn-resumo-compartilhar:hover {
+  background: #29A75E;
+}
+
+#btn-resumo-salvar-rota.oculto {
+  display: none;
+}
+
+#btn-resumo-fechar-viagem {
+  background: transparent;
+  color: #8E97A3;
+  font-weight: 500;
+}
+
+#btn-resumo-fechar-viagem:hover {
+  color: #F2F5F7;
+}
+
+/* ---- Compartilhar viagem (imagem via canvas) ---- */
+
+#modal-compartilhar-viagem {
+  position: fixed;
+  inset: 0;
+  z-index: 230;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-compartilhar-viagem.oculto {
+  display: none;
+}
+
+#compartilhar-viagem-conteudo {
+  position: relative;
+  background: #171B21;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#compartilhar-viagem-conteudo h2 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+}
+
+#compartilhar-viagem-opcoes {
+  display: flex;
+  gap: 6px;
+  background: #0F1216;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 14px;
+}
+
+.cv-opcao {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #8E97A3;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cv-opcao-ativa {
+  background: #2FBE6B;
+  color: #0F1216;
+}
+
+#canvas-compartilhar-viagem {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  background: #0F1216;
+  margin-bottom: 12px;
+}
+
+#compartilhar-viagem-erro {
+  color: #F08A94;
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+}
+
+#compartilhar-viagem-erro.oculto {
+  display: none;
+}
+
+#compartilhar-viagem-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#compartilhar-viagem-acoes button {
+  border: none;
+  border-radius: 8px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#btn-cv-postar-comunidade {
+  background: #2FBE6B;
+  color: #0F1216;
+}
+
+#btn-cv-postar-comunidade:hover {
+  background: #29A75E;
+}
+
+#btn-cv-compartilhar-externo {
+  background: #0F1216;
+  color: #F2F5F7;
+  border: 1px solid #1E232B !important;
+}
+
+#btn-cv-compartilhar-externo:hover {
+  background: #1E232B;
+}
+
+/* ---- Garagem Virtual (recurso PRO) ---- */
+
+#modal-garagem {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-garagem.oculto {
+  display: none;
+}
+
+#garagem-conteudo {
+  position: relative;
+  background: #171B21;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+#garagem-conteudo h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+#garagem-conteudo label {
+  display: block;
+  font-size: 0.8rem;
+  color: #8E97A3;
+  margin: 12px 0 4px;
+}
+
+#garagem-conteudo select,
+#garagem-conteudo input {
+  width: 100%;
+}
+
+#garagem-aviso-privacidade {
+  color: #8E97A3;
+  font-size: 0.8rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+#garagem-odometro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0F1216;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 16px;
+}
+
+#garagem-odometro span {
+  color: #8E97A3;
+  font-size: 0.82rem;
+}
+
+#garagem-odometro strong {
+  color: #2FBE6B;
+  font-size: 1rem;
+}
+
+#garagem-erro {
+  color: #F08A94;
+  font-size: 0.8rem;
+  margin: 10px 0 0;
+}
+
+#garagem-erro.oculto {
+  display: none;
+}
+
+#btn-salvar-garagem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: #2FBE6B;
+  color: #0F1216;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+#btn-salvar-garagem:hover {
+  background: #29A75E;
+}
+
+#btn-fechar-resumo-viagem,
+#btn-fechar-compartilhar-viagem,
+#btn-fechar-garagem {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#menu-abrir-garagem.oculto {
+  display: none;
+}
+
 #toast-onde-estou {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 96px);
@@ -5693,6 +6038,9 @@ select:focus {
 #modal-social:not(.oculto),
 #modal-confirmar-viagem:not(.oculto),
 #modal-municipios-pendentes:not(.oculto),
+#modal-resumo-viagem:not(.oculto),
+#modal-compartilhar-viagem:not(.oculto),
+#modal-garagem:not(.oculto),
 #menu-sheet:not(.oculto) {
   animation: janela-fade 0.2s ease;
 }
@@ -5718,7 +6066,10 @@ select:focus {
 #modal-historia-municipio:not(.oculto) #historia-municipio-conteudo,
 #modal-compartilhar:not(.oculto) #compartilhar-conteudo,
 #modal-confirmar-viagem:not(.oculto) #confirmar-viagem-conteudo,
-#modal-municipios-pendentes:not(.oculto) #municipios-pendentes-conteudo {
+#modal-municipios-pendentes:not(.oculto) #municipios-pendentes-conteudo,
+#modal-resumo-viagem:not(.oculto) #resumo-viagem-conteudo,
+#modal-compartilhar-viagem:not(.oculto) #compartilhar-viagem-conteudo,
+#modal-garagem:not(.oculto) #garagem-conteudo {
   animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
