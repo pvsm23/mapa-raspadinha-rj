@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.4";
+const VERSAO_APP = "0.11.5";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.4";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.5", itens: ["Chegou a Loja Desbrava! 🛍️ Produtos físicos e digitais, alguns liberados só depois de desbravar certos municípios. Membro do Motoclube ganha um voucher mensal de R$ 4,90 pra usar nas compras."] },
   { versao: "0.11.4", itens: ["Garagem Virtual agora aceita até 3 motos, com abas pra Criar nova, Editar (e definir qual é a ativa) e ver Estatísticas (odômetro e viagens registradas) de cada uma."] },
   { versao: "0.11.3", itens: ["Novidades PRO do Motoclube Desbrava: Garagem Virtual (marca/modelo/apelido da sua moto, 100% privado, com odômetro somado sozinho pelo Modo Viagem), opção de salvar o trajeto de um rolê como rota personalizada, e resumo do rolê (km, tempo, municípios) com imagem pra compartilhar na Comunidade ou fora do app.", "Gratuito por enquanto, junto com o resto do Motoclube."] },
   { versao: "0.11.2", itens: ["Chegou o Modo Viagem! 🏍️ Botão novo acima da bússola: liga o rastreio só enquanto você estiver rodando (com notificação fixa), registra a quilometragem e deixa os municípios por onde você passar prontos pra raspar depois.", "Rastreio em segundo plano antigo (de hora em hora) saiu de circulação — o app não pede mais localização em segundo plano."] },
@@ -899,6 +900,8 @@ document.addEventListener("DOMContentLoaded", () => {
   configurarGaragem();
   configurarResumoViagem();
   configurarCompartilharViagem();
+  configurarLoja();
+  configurarLojaAdmin();
   esconderTelaCarregamento();
 });
 
@@ -1766,6 +1769,490 @@ async function compartilharResumoViagemExternamente() {
   link.click();
 }
 
+/* ============================================================
+   LOJA DESBRAVA: e-commerce gamificado, SEM gateway de pagamento real
+   por enquanto -- confirmarPedidoLoja só registra o pedido no
+   Firestore (ver criarPedido em js/auth.js), não cobra nada de
+   verdade. Produto "ativo" com municípios da regraDesbloqueio ainda
+   não raspados (ver estaVerificado) aparece em silhueta na vitrine.
+   Membro do Motoclube (souMembroMotoclube) ganha 1 voucher de R$4,90
+   por mês, não cumulativo (ver ultimoMesUsoVoucher em usuarios/{uid}).
+   ============================================================ */
+
+let lojaProdutos = [];
+let lojaAbaAtual = "fisico";
+let lojaProdutoSelecionadoCheckout = null;
+let lojaFreteCalculado = null; // { valor, uf } ou null se ainda não calculado
+
+function configurarLoja() {
+  document.getElementById("btn-abrir-loja")?.addEventListener("click", () => exigirLogin(abrirLoja));
+  document.getElementById("btn-fechar-loja")?.addEventListener("click", fecharLoja);
+  document.getElementById("modal-loja")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-loja") fecharLoja();
+  });
+  document.querySelectorAll("#loja-abas .loja-aba").forEach((botao) => {
+    botao.addEventListener("click", () => mudarAbaLoja(botao.dataset.tipo));
+  });
+
+  document.getElementById("btn-fechar-checkout-loja")?.addEventListener("click", fecharCheckoutLoja);
+  document.getElementById("modal-checkout-loja")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-checkout-loja") fecharCheckoutLoja();
+  });
+  document.getElementById("btn-calcular-frete")?.addEventListener("click", calcularFreteClick);
+  document.getElementById("check-checkout-voucher")?.addEventListener("change", atualizarResumoCheckout);
+  document.getElementById("btn-confirmar-pedido-loja")?.addEventListener("click", confirmarPedidoLoja);
+}
+
+async function abrirLoja() {
+  document.getElementById("modal-loja")?.classList.remove("oculto");
+  atualizarBannerVoucherLoja();
+  document.getElementById("loja-grade").innerHTML = '<div class="spinner"></div>';
+  try {
+    lojaProdutos = await window.raspadinhaAuth.buscarProdutos();
+  } catch (erro) {
+    console.error("Falha ao buscar produtos da loja:", erro);
+    lojaProdutos = [];
+  }
+  renderizarLoja();
+}
+
+function fecharLoja() {
+  document.getElementById("modal-loja")?.classList.add("oculto");
+}
+
+/** Verdadeiro só se a pessoa é membro do Motoclube E ainda não usou o
+ * voucher deste mês (ver window.raspadinhaAuth.ultimoMesUsoVoucher,
+ * populado no login e atualizado por usarVoucherMotoclube). */
+function voucherDisponivelAgora() {
+  if (!souMembroMotoclube()) return false;
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  return window.raspadinhaAuth?.ultimoMesUsoVoucher !== mesAtual;
+}
+
+function atualizarBannerVoucherLoja() {
+  document.getElementById("loja-voucher-banner")?.classList.toggle("oculto", !voucherDisponivelAgora());
+}
+
+function mudarAbaLoja(tipo) {
+  lojaAbaAtual = tipo;
+  document.querySelectorAll("#loja-abas .loja-aba").forEach((b) => {
+    b.classList.toggle("loja-aba-ativa", b.dataset.tipo === tipo);
+  });
+  renderizarLoja();
+}
+
+function formatarReais(valor) {
+  return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
+}
+
+function renderizarLoja() {
+  const grade = document.getElementById("loja-grade");
+  const produtosDaAba = lojaProdutos.filter((p) => p.tipo === lojaAbaAtual);
+  grade.innerHTML = "";
+  document.getElementById("loja-vazio")?.classList.toggle("oculto", produtosDaAba.length > 0);
+  produtosDaAba.forEach((produto) => grade.appendChild(montarCardProduto(produto)));
+}
+
+/** Nomes dos municípios que faltam pra desbloquear um produto (vazio
+ * se já está tudo desbloqueado ou o produto não tem regra nenhuma). */
+function municipiosFaltantes(produto) {
+  return (produto.regraDesbloqueio || [])
+    .filter((id) => !estaVerificado(id))
+    .map((id) => document.querySelector(`#mapa-rj [data-municipio="${id}"]`)?.dataset.nome || id);
+}
+
+function montarCardProduto(produto) {
+  const faltam = municipiosFaltantes(produto);
+  const bloqueado = produto.status === "ativo" && faltam.length > 0;
+  const emBreve = produto.status === "em_breve";
+
+  const card = document.createElement("div");
+  card.className = "loja-card";
+  if (bloqueado) card.classList.add("loja-card-tem-bloqueio");
+
+  const imgWrap = document.createElement("div");
+  imgWrap.className = "loja-card-imagem-wrap";
+  const img = document.createElement("img");
+  img.className = "loja-card-imagem";
+  if (bloqueado) img.classList.add("loja-card-bloqueado");
+  img.src = produto.imagemUrl || "assets/icons/desbrava-icone.png";
+  img.alt = produto.nome;
+  imgWrap.appendChild(img);
+
+  if (bloqueado) {
+    const cadeado = document.createElement("div");
+    cadeado.className = "loja-card-cadeado";
+    cadeado.textContent = "🔒";
+    imgWrap.appendChild(cadeado);
+  }
+  if (emBreve) {
+    const selo = document.createElement("span");
+    selo.className = "loja-card-selo-em-breve";
+    selo.textContent = "EM BREVE";
+    imgWrap.appendChild(selo);
+  }
+  card.appendChild(imgWrap);
+
+  const corpo = document.createElement("div");
+  corpo.className = "loja-card-corpo";
+
+  const nome = document.createElement("div");
+  nome.className = "loja-card-nome";
+  nome.textContent = produto.nome;
+  corpo.appendChild(nome);
+
+  if (!emBreve) {
+    const preco = document.createElement("div");
+    preco.className = "loja-card-preco";
+    preco.textContent = formatarReais(produto.valorBase);
+    corpo.appendChild(preco);
+  }
+
+  if (bloqueado) {
+    const texto = document.createElement("p");
+    texto.className = "loja-card-desbloqueio-texto";
+    texto.textContent = `Desbrave o município de ${faltam.join(", ")} para liberar`;
+    corpo.appendChild(texto);
+  }
+
+  const botao = document.createElement("button");
+  botao.type = "button";
+  botao.className = "loja-card-btn-comprar";
+  if (emBreve) {
+    botao.textContent = "Em breve";
+    botao.disabled = true;
+  } else if (bloqueado) {
+    botao.textContent = "🔒 Bloqueado";
+    botao.disabled = true;
+  } else if (produto.estoque <= 0) {
+    botao.textContent = "Esgotado";
+    botao.disabled = true;
+  } else {
+    botao.textContent = "Comprar";
+    botao.addEventListener("click", () => abrirCheckoutLoja(produto));
+  }
+  corpo.appendChild(botao);
+
+  card.appendChild(corpo);
+  return card;
+}
+
+function abrirCheckoutLoja(produto) {
+  lojaProdutoSelecionadoCheckout = produto;
+  lojaFreteCalculado = produto.tipo === "digital" ? { valor: 0, uf: null } : null;
+
+  document.getElementById("checkout-loja-nome-produto").textContent = produto.nome;
+  document.getElementById("checkout-loja-cep-bloco")?.classList.toggle("oculto", produto.tipo === "digital");
+  document.getElementById("checkout-loja-frete-status")?.classList.add("oculto");
+  document.getElementById("input-checkout-cep").value = "";
+  document.getElementById("checkout-loja-erro")?.classList.add("oculto");
+
+  const podeUsarVoucher = voucherDisponivelAgora();
+  document.getElementById("label-checkout-voucher")?.classList.toggle("oculto", !podeUsarVoucher);
+  document.getElementById("check-checkout-voucher").checked = podeUsarVoucher;
+
+  atualizarResumoCheckout();
+  document.getElementById("modal-checkout-loja")?.classList.remove("oculto");
+}
+
+function fecharCheckoutLoja() {
+  document.getElementById("modal-checkout-loja")?.classList.add("oculto");
+}
+
+/**
+ * Frete mockado (sem transportadora de verdade): digital é sempre
+ * grátis; físico consulta o CEP no ViaCEP só pra saber a UF -- RJ sai
+ * mais barato (R$15), qualquer outro estado R$35.
+ */
+async function calcularFrete(cep, tipoProduto) {
+  if (tipoProduto === "digital") return { valor: 0, uf: null };
+
+  const cepLimpo = (cep || "").replace(/\D/g, "");
+  if (cepLimpo.length !== 8) throw new Error("Digite um CEP válido (8 dígitos).");
+
+  const resposta = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+  const dados = await resposta.json();
+  if (dados.erro) throw new Error("CEP não encontrado.");
+
+  const valor = dados.uf === "RJ" ? 15 : 35;
+  return { valor, uf: dados.uf, cidade: dados.localidade };
+}
+
+async function calcularFreteClick() {
+  const botao = document.getElementById("btn-calcular-frete");
+  const status = document.getElementById("checkout-loja-frete-status");
+  const cep = document.getElementById("input-checkout-cep").value;
+
+  botao.disabled = true;
+  botao.textContent = "Calculando...";
+  status.classList.remove("oculto");
+  status.textContent = "Consultando o CEP...";
+  try {
+    lojaFreteCalculado = await calcularFrete(cep, lojaProdutoSelecionadoCheckout.tipo);
+    status.textContent = lojaFreteCalculado.cidade
+      ? `Entrega em ${lojaFreteCalculado.cidade}/${lojaFreteCalculado.uf}.`
+      : "Frete calculado.";
+  } catch (erro) {
+    lojaFreteCalculado = null;
+    status.textContent = erro.message || "Não foi possível calcular o frete agora.";
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Calcular frete";
+    atualizarResumoCheckout();
+  }
+}
+
+function atualizarResumoCheckout() {
+  const produto = lojaProdutoSelecionadoCheckout;
+  if (!produto) return;
+
+  const usarVoucher = voucherDisponivelAgora() && document.getElementById("check-checkout-voucher").checked;
+  const valorVoucher = usarVoucher ? Math.min(4.9, produto.valorBase) : 0;
+  const frete = lojaFreteCalculado?.valor ?? 0;
+  const total = Math.max(0, produto.valorBase - valorVoucher) + frete;
+
+  document.getElementById("checkout-resumo-base").textContent = formatarReais(produto.valorBase);
+  document.getElementById("checkout-linha-voucher")?.classList.toggle("oculto", !usarVoucher);
+  document.getElementById("checkout-resumo-voucher").textContent = `- ${formatarReais(valorVoucher)}`;
+  document.getElementById("checkout-resumo-frete").textContent = formatarReais(frete);
+  document.getElementById("checkout-resumo-total").textContent = formatarReais(total);
+
+  // Físico exige frete calculado antes de liberar o botão -- digital
+  // já nasce com frete zero (ver abrirCheckoutLoja), nunca trava.
+  const btnConfirmar = document.getElementById("btn-confirmar-pedido-loja");
+  if (btnConfirmar) btnConfirmar.disabled = !lojaFreteCalculado;
+}
+
+async function confirmarPedidoLoja() {
+  const produto = lojaProdutoSelecionadoCheckout;
+  if (!produto || !lojaFreteCalculado) return;
+  const erroEl = document.getElementById("checkout-loja-erro");
+  erroEl.classList.add("oculto");
+  const botao = document.getElementById("btn-confirmar-pedido-loja");
+  botao.disabled = true;
+  botao.textContent = "Confirmando...";
+
+  const usarVoucher = voucherDisponivelAgora() && document.getElementById("check-checkout-voucher").checked;
+  const valorVoucher = usarVoucher ? Math.min(4.9, produto.valorBase) : 0;
+  const total = Math.max(0, produto.valorBase - valorVoucher) + lojaFreteCalculado.valor;
+
+  try {
+    await window.raspadinhaAuth.criarPedido({
+      produtoId: produto.id,
+      produtoNome: produto.nome,
+      tipoProduto: produto.tipo,
+      valorBase: produto.valorBase,
+      valorVoucherAplicado: valorVoucher,
+      valorFrete: lojaFreteCalculado.valor,
+      valorTotal: total,
+      cep: produto.tipo === "digital" ? null : document.getElementById("input-checkout-cep").value,
+      uf: lojaFreteCalculado.uf,
+    });
+    if (usarVoucher) await window.raspadinhaAuth.usarVoucherMotoclube();
+
+    fecharCheckoutLoja();
+    atualizarBannerVoucherLoja();
+    alert("Pedido registrado! A gente combina envio/pagamento por fora em breve. 🎉");
+  } catch (erro) {
+    erroEl.textContent = erro.message || "Não foi possível registrar o pedido agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Confirmar pedido";
+  }
+}
+
+/* ---- Painel de Admin da Loja ---- */
+
+let produtosAdminCache = [];
+let produtoEditandoId = null;
+let municipiosEscolhidosProduto = new Set();
+
+// Municípios usados pelo botão "Popular com os 3 produtos de exemplo"
+// (ver popularProdutosExemploClick) -- mesmos ids de data/rotas.json
+// (povos-goytacazes) e do SVG do mapa (Niterói).
+const IDS_ROTA_GOYTACAZES_LOJA = [
+  "3301009", "3305000", "3304755", "3302403", "3304151", "3300936", "3301405", "3301157", "3304524",
+];
+const ID_NITEROI_LOJA = "3303302";
+
+function configurarLojaAdmin() {
+  document.getElementById("btn-popular-produtos-exemplo")?.addEventListener("click", popularProdutosExemploClick);
+  document.getElementById("btn-salvar-produto-admin")?.addEventListener("click", salvarProdutoAdmin);
+  document.getElementById("btn-cancelar-edicao-produto-admin")?.addEventListener("click", limparFormularioProdutoAdmin);
+  document.getElementById("input-loja-admin-filtro-municipios")?.addEventListener("input", (e) => {
+    renderizarListaMunicipiosProduto(e.target.value);
+  });
+  renderizarListaMunicipiosProduto("");
+}
+
+async function carregarProdutosAdmin() {
+  const lista = document.getElementById("loja-admin-lista");
+  if (!lista) return;
+  lista.innerHTML = '<div class="spinner"></div>';
+  try {
+    produtosAdminCache = await window.raspadinhaAuth.buscarTodosProdutosAdmin();
+  } catch (erro) {
+    console.error("Falha ao buscar produtos (admin):", erro);
+    produtosAdminCache = [];
+  }
+  renderizarListaProdutosAdmin();
+}
+
+const LABEL_STATUS_PRODUTO = { oculto: "Oculto", em_breve: "Em breve", ativo: "Ativo" };
+
+function renderizarListaProdutosAdmin() {
+  const lista = document.getElementById("loja-admin-lista");
+  if (!lista) return;
+  lista.innerHTML = "";
+  produtosAdminCache.forEach((produto) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "loja-admin-item";
+
+    const info = document.createElement("div");
+    info.className = "loja-admin-item-info";
+    const nome = document.createElement("span");
+    nome.className = "loja-admin-item-nome";
+    nome.textContent = produto.nome;
+    info.appendChild(nome);
+    item.appendChild(info);
+
+    const status = document.createElement("span");
+    status.className = `loja-admin-item-status loja-admin-item-status-${produto.status}`;
+    status.textContent = LABEL_STATUS_PRODUTO[produto.status] || produto.status;
+    item.appendChild(status);
+
+    item.addEventListener("click", () => abrirEdicaoProdutoAdmin(produto));
+    lista.appendChild(item);
+  });
+}
+
+/** Mesmo padrão de renderizarListaMunicipiosParaEscolher (rotas
+ * personalizadas), só que escreve em municipiosEscolhidosProduto. */
+function renderizarListaMunicipiosProduto(filtro) {
+  const lista = document.getElementById("loja-admin-lista-municipios");
+  if (!lista) return;
+  lista.innerHTML = "";
+  const filtroLower = (filtro || "").trim().toLowerCase();
+
+  const municipios = Array.from(document.querySelectorAll("#mapa-rj .municipio"))
+    .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
+    .filter((m, indice, todos) => todos.findIndex((x) => x.id === m.id) === indice)
+    .filter((m) => !filtroLower || m.nome.toLowerCase().includes(filtroLower))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  municipios.forEach((m) => {
+    const item = document.createElement("label");
+    item.className = "criar-rota-municipio-item";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = municipiosEscolhidosProduto.has(m.id);
+    check.addEventListener("change", () => {
+      if (check.checked) municipiosEscolhidosProduto.add(m.id);
+      else municipiosEscolhidosProduto.delete(m.id);
+      atualizarContadorMunicipiosProduto();
+    });
+    const texto = document.createElement("span");
+    texto.textContent = m.nome;
+    item.append(check, texto);
+    lista.appendChild(item);
+  });
+  atualizarContadorMunicipiosProduto();
+}
+
+function atualizarContadorMunicipiosProduto() {
+  const n = municipiosEscolhidosProduto.size;
+  document.getElementById("loja-admin-contador-municipios").textContent =
+    n === 0 ? "0 municípios selecionados (liberado pra todos)" : `${n} município${n === 1 ? "" : "s"} selecionado${n === 1 ? "" : "s"}`;
+}
+
+function abrirEdicaoProdutoAdmin(produto) {
+  produtoEditandoId = produto.id;
+  document.getElementById("loja-admin-form-titulo").textContent = `Editar: ${produto.nome}`;
+  document.getElementById("input-loja-admin-nome").value = produto.nome || "";
+  document.getElementById("input-loja-admin-descricao").value = produto.descricao || "";
+  document.getElementById("input-loja-admin-imagem").value = produto.imagemUrl || "";
+  document.getElementById("select-loja-admin-tipo").value = produto.tipo || "fisico";
+  document.getElementById("input-loja-admin-estoque").value = produto.estoque ?? 0;
+  document.getElementById("input-loja-admin-valor").value = produto.valorBase ?? 0;
+  document.getElementById("select-loja-admin-status").value = produto.status || "oculto";
+  municipiosEscolhidosProduto = new Set(produto.regraDesbloqueio || []);
+  document.getElementById("input-loja-admin-filtro-municipios").value = "";
+  renderizarListaMunicipiosProduto("");
+  document.getElementById("loja-admin-erro")?.classList.add("oculto");
+  document.getElementById("btn-cancelar-edicao-produto-admin")?.classList.remove("oculto");
+}
+
+function limparFormularioProdutoAdmin() {
+  produtoEditandoId = null;
+  document.getElementById("loja-admin-form-titulo").textContent = "+ Novo produto";
+  document.getElementById("input-loja-admin-nome").value = "";
+  document.getElementById("input-loja-admin-descricao").value = "";
+  document.getElementById("input-loja-admin-imagem").value = "";
+  document.getElementById("select-loja-admin-tipo").value = "fisico";
+  document.getElementById("input-loja-admin-estoque").value = "";
+  document.getElementById("input-loja-admin-valor").value = "";
+  document.getElementById("select-loja-admin-status").value = "oculto";
+  municipiosEscolhidosProduto = new Set();
+  document.getElementById("input-loja-admin-filtro-municipios").value = "";
+  renderizarListaMunicipiosProduto("");
+  document.getElementById("loja-admin-erro")?.classList.add("oculto");
+  document.getElementById("btn-cancelar-edicao-produto-admin")?.classList.add("oculto");
+}
+
+async function salvarProdutoAdmin() {
+  const erroEl = document.getElementById("loja-admin-erro");
+  erroEl.classList.add("oculto");
+  const dados = {
+    nome: document.getElementById("input-loja-admin-nome").value,
+    descricao: document.getElementById("input-loja-admin-descricao").value,
+    imagemUrl: document.getElementById("input-loja-admin-imagem").value,
+    tipo: document.getElementById("select-loja-admin-tipo").value,
+    estoque: document.getElementById("input-loja-admin-estoque").value,
+    valorBase: document.getElementById("input-loja-admin-valor").value,
+    status: document.getElementById("select-loja-admin-status").value,
+    regraDesbloqueio: Array.from(municipiosEscolhidosProduto),
+  };
+  if (!dados.nome.trim()) {
+    erroEl.textContent = "Dê um nome pro produto.";
+    erroEl.classList.remove("oculto");
+    return;
+  }
+
+  const botao = document.getElementById("btn-salvar-produto-admin");
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+  try {
+    if (produtoEditandoId) await window.raspadinhaAuth.atualizarProduto(produtoEditandoId, dados);
+    else await window.raspadinhaAuth.criarProduto(dados);
+    limparFormularioProdutoAdmin();
+    await carregarProdutosAdmin();
+  } catch (erro) {
+    erroEl.textContent = erro.message || "Não foi possível salvar agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar produto";
+  }
+}
+
+async function popularProdutosExemploClick() {
+  if (!confirm("Criar os 3 produtos de exemplo agora? Se já rodou antes, isso cria outros 3 (duplicados).")) return;
+  const botao = document.getElementById("btn-popular-produtos-exemplo");
+  botao.disabled = true;
+  botao.textContent = "Criando...";
+  try {
+    await window.raspadinhaAuth.popularProdutosExemplo(IDS_ROTA_GOYTACAZES_LOJA, ID_NITEROI_LOJA);
+    await carregarProdutosAdmin();
+  } catch (erro) {
+    alert("Não foi possível criar os produtos de exemplo agora.");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Popular com os 3 produtos de exemplo";
+  }
+}
+
 /**
  * Liga os botões novos da barra de topo (avatar -> perfil, lupa ->
  * busca) aos botões que já existiam, e mantém as iniciais do avatar
@@ -1812,6 +2299,7 @@ const OVERLAYS_APP = [
   "modal-rota-personalizada-detalhe", "modal-compartilhar-rota",
   "modal-confirmar-viagem", "modal-municipios-pendentes",
   "modal-resumo-viagem", "modal-compartilhar-viagem", "modal-garagem",
+  "modal-loja", "modal-checkout-loja",
   "menu-sheet",
 ];
 
@@ -2508,6 +2996,7 @@ function abrirAdmin() {
   atualizarCheckboxAnunciosGlobal();
   atualizarCheckboxAnuncioParaMim();
   carregarChavePixNoAdmin();
+  carregarProdutosAdmin();
 }
 
 /**

@@ -505,6 +505,7 @@
       <div id="menu-sheet-grade">
         <button type="button" class="menu-op" data-alvo="btn-meu-perfil"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Perfil</button>
         <button type="button" class="menu-op oculto" id="menu-abrir-garagem" data-alvo="btn-abrir-garagem"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/></svg></span>Garagem</button>
+        <button type="button" class="menu-op" data-alvo="btn-abrir-loja"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z"/><path d="M3 7h18"/><path d="M16 11a4 4 0 0 1-8 0"/></svg></span>Loja</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-ranking"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 4h3a2 2 0 0 1 0 4h-1M7 4H4a2 2 0 0 0 0 4h1"/></svg></span>Ranking</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-amigos"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Amigos</button>
         <button type="button" class="menu-op" data-alvo="btn-abrir-rotas"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span>Rotas</button>
@@ -668,6 +669,63 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Loja Desbrava: vitrine gamificada. Produto "ativo" mas com
+       municípios da regraDesbloqueio ainda não raspados aparece em
+       silhueta (ver .loja-card-bloqueado) -- ver renderizarLoja em
+       js/script.js. -->
+  <button id="btn-abrir-loja" class="oculto" aria-label="Abrir loja"></button>
+  <div id="modal-loja" class="oculto">
+    <div id="loja-conteudo">
+      <button id="btn-fechar-loja" aria-label="Fechar">✕</button>
+      <h2>🛍️ Loja Desbrava</h2>
+
+      <!-- Só aparece pra membro do Motoclube (souMembroMotoclube) que
+           ainda não usou o voucher do mês, ver atualizarBannerVoucherLoja. -->
+      <div id="loja-voucher-banner" class="oculto">🎁 Seu Voucher Mensal de R$ 4,90 está disponível!</div>
+
+      <div id="loja-abas">
+        <button type="button" class="loja-aba loja-aba-ativa" id="btn-loja-aba-fisicos" data-tipo="fisico">📦 Físicos</button>
+        <button type="button" class="loja-aba" id="btn-loja-aba-digitais" data-tipo="digital">💾 Digitais</button>
+      </div>
+
+      <div id="loja-grade"></div>
+      <p id="loja-vazio" class="oculto">Nenhum produto por aqui ainda.</p>
+    </div>
+  </div>
+
+  <!-- Checkout da Loja: pseudo-compra, SEM gateway de pagamento real
+       (ver criarPedido em js/auth.js) -- só registra o pedido. CEP via
+       ViaCEP pra estimar frete (calcularFrete em js/script.js). -->
+  <div id="modal-checkout-loja" class="oculto">
+    <div id="checkout-loja-conteudo">
+      <button id="btn-fechar-checkout-loja" aria-label="Fechar">✕</button>
+      <h2 id="checkout-loja-nome-produto"></h2>
+
+      <div id="checkout-loja-cep-bloco">
+        <label for="input-checkout-cep">CEP pra entrega</label>
+        <input type="text" id="input-checkout-cep" placeholder="00000-000" inputmode="numeric" maxlength="9">
+        <button type="button" id="btn-calcular-frete">Calcular frete</button>
+      </div>
+      <p id="checkout-loja-frete-status" class="oculto"></p>
+
+      <label id="label-checkout-voucher" class="oculto">
+        <input type="checkbox" id="check-checkout-voucher" checked>
+        🎁 Usar meu Voucher Mensal (R$ 4,90)
+      </label>
+
+      <div id="checkout-loja-resumo">
+        <div class="checkout-linha"><span>Produto</span><span id="checkout-resumo-base">R$ 0,00</span></div>
+        <div class="checkout-linha oculto" id="checkout-linha-voucher"><span>Voucher</span><span id="checkout-resumo-voucher">- R$ 0,00</span></div>
+        <div class="checkout-linha"><span>Frete</span><span id="checkout-resumo-frete">R$ 0,00</span></div>
+        <div class="checkout-linha checkout-linha-total"><span>Total</span><span id="checkout-resumo-total">R$ 0,00</span></div>
+      </div>
+
+      <p id="checkout-loja-aviso">Loja em fase inicial: sem pagamento online por enquanto. Ao confirmar, seu pedido fica registrado e a gente combina envio/pagamento por fora.</p>
+      <p id="checkout-loja-erro" class="oculto"></p>
+      <button type="button" id="btn-confirmar-pedido-loja">Confirmar pedido</button>
     </div>
   </div>
 
@@ -1155,6 +1213,38 @@
         <input type="text" id="input-chave-pix-admin" placeholder="ex: seu-email@banco.com" autocomplete="off">
         <button id="btn-salvar-chave-pix" class="btn-primario">Salvar chave PIX</button>
         <p id="pix-admin-status" class="oculto"></p>
+      </div>
+
+      <!-- Loja Desbrava: catálogo de produtos, ver popularAdminLoja em
+           js/script.js. status "oculto" só aparece nesta lista (a
+           vitrine pública nunca busca produtos ocultos). -->
+      <div id="secao-loja-admin">
+        <h3>🛍️ Loja Desbrava</h3>
+        <button type="button" id="btn-popular-produtos-exemplo" class="admin-dica-btn">Popular com os 3 produtos de exemplo</button>
+        <div id="loja-admin-lista"></div>
+
+        <h4 id="loja-admin-form-titulo">+ Novo produto</h4>
+        <input type="text" id="input-loja-admin-nome" placeholder="Nome do produto" maxlength="80">
+        <textarea id="input-loja-admin-descricao" rows="2" maxlength="500" placeholder="Descrição"></textarea>
+        <input type="url" id="input-loja-admin-imagem" placeholder="URL da imagem (https://...)">
+        <select id="select-loja-admin-tipo">
+          <option value="fisico">Físico</option>
+          <option value="digital">Digital</option>
+        </select>
+        <input type="number" id="input-loja-admin-estoque" placeholder="Estoque" min="0" step="1">
+        <input type="number" id="input-loja-admin-valor" placeholder="Valor base (R$)" min="0" step="0.01">
+        <select id="select-loja-admin-status">
+          <option value="oculto">Oculto (só eu vejo)</option>
+          <option value="em_breve">Em breve (aparece sem preço, sem comprar)</option>
+          <option value="ativo">Ativo (visível e comprável)</option>
+        </select>
+        <label id="label-loja-admin-municipios">Desbloqueia com (municípios raspados -- vazio = liberado pra todos)</label>
+        <input type="text" id="input-loja-admin-filtro-municipios" placeholder="Filtrar municípios...">
+        <p id="loja-admin-contador-municipios">0 municípios selecionados</p>
+        <div id="loja-admin-lista-municipios"></div>
+        <p id="loja-admin-erro" class="oculto"></p>
+        <button type="button" id="btn-salvar-produto-admin">Salvar produto</button>
+        <button type="button" id="btn-cancelar-edicao-produto-admin" class="oculto">Cancelar edição</button>
       </div>
     </div>
   </div>

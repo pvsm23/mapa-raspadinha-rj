@@ -2380,6 +2380,545 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   font-size: 0.7rem;
 }
 
+/* ============================================================
+   LOJA DESBRAVA -- painel de admin
+   ============================================================ */
+
+#secao-loja-admin h3 {
+  margin: 0 0 10px;
+}
+
+#secao-loja-admin h4 {
+  margin: 16px 0 8px;
+  font-size: 0.9rem;
+  color: #8E97A3;
+}
+
+#secao-loja-admin select,
+#secao-loja-admin input,
+#secao-loja-admin textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+}
+
+#label-loja-admin-municipios {
+  display: block;
+  font-size: 0.8rem;
+  color: #8E97A3;
+  margin: 10px 0 6px;
+}
+
+#loja-admin-contador-municipios {
+  font-size: 0.8rem;
+  color: #8E97A3;
+  margin: 0 0 6px;
+}
+
+#btn-popular-produtos-exemplo {
+  width: 100%;
+  background: var(--surf2);
+  color: var(--txt);
+  border: 1px dashed var(--linha);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+#loja-admin-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.loja-admin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #0F1216;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.loja-admin-item:hover {
+  background: #1E232B;
+}
+
+.loja-admin-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.loja-admin-item-nome {
+  color: #F2F5F7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loja-admin-item-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.loja-admin-item-status-ativo {
+  background: var(--verde-esc);
+  color: var(--verde);
+}
+
+.loja-admin-item-status-em_breve {
+  background: rgba(230, 184, 60, 0.15);
+  color: #E6B83C;
+}
+
+.loja-admin-item-status-oculto {
+  background: rgba(142, 151, 163, 0.15);
+  color: #8E97A3;
+}
+
+#loja-admin-erro {
+  color: #F08A94;
+  font-size: 0.8rem;
+  margin: 4px 0;
+}
+
+#loja-admin-erro.oculto {
+  display: none;
+}
+
+#btn-salvar-produto-admin,
+#btn-cancelar-edicao-produto-admin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+#btn-salvar-produto-admin {
+  background: #2FBE6B;
+  color: #0F1216;
+}
+
+#btn-salvar-produto-admin:hover {
+  background: #29A75E;
+}
+
+#btn-cancelar-edicao-produto-admin {
+  background: transparent;
+  color: #8E97A3;
+  border: 1px solid var(--linha) !important;
+}
+
+#btn-cancelar-edicao-produto-admin.oculto {
+  display: none;
+}
+
+/* ============================================================
+   LOJA DESBRAVA -- vitrine pública
+   ============================================================ */
+
+#btn-abrir-loja.oculto {
+  display: none;
+}
+
+#modal-loja {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-loja.oculto {
+  display: none;
+}
+
+#loja-conteudo {
+  position: relative;
+  background: #171B21;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 640px;
+  width: 100%;
+  margin-top: 5vh;
+  max-height: 88vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+#loja-conteudo h2 {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+}
+
+#loja-voucher-banner {
+  background: linear-gradient(135deg, #2FBE6B, #1FA85C);
+  color: #0F1216;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+#loja-voucher-banner.oculto {
+  display: none;
+}
+
+#loja-abas {
+  display: flex;
+  gap: 6px;
+  background: #0F1216;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.loja-aba {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #8E97A3;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.loja-aba-ativa {
+  background: #2FBE6B;
+  color: #0F1216;
+}
+
+#loja-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+#loja-vazio {
+  color: #8E97A3;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 20px 0;
+}
+
+#loja-vazio.oculto {
+  display: none;
+}
+
+.loja-card {
+  background: #0F1216;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.loja-card-imagem-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #1E232B;
+}
+
+.loja-card-imagem {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Efeito silhueta: produto ATIVO mas com município da
+   regraDesbloqueio ainda não raspado -- filtro escuro + cadeado por
+   cima, texto avisando o que falta desbravar. */
+.loja-card-imagem.loja-card-bloqueado {
+  filter: brightness(0);
+}
+
+.loja-card-cadeado {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #F2F5F7;
+  font-size: 2rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.loja-card.loja-card-tem-bloqueio .loja-card-cadeado {
+  display: flex;
+}
+
+.loja-card-selo-em-breve {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(230, 184, 60, 0.92);
+  color: #1a1400;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+}
+
+.loja-card-corpo {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.loja-card-nome {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #F2F5F7;
+  line-height: 1.3;
+}
+
+.loja-card-preco {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2FBE6B;
+}
+
+.loja-card-desbloqueio-texto {
+  font-size: 0.72rem;
+  color: #8E97A3;
+  line-height: 1.35;
+}
+
+.loja-card-btn-comprar {
+  margin-top: auto;
+  background: #2FBE6B;
+  color: #0F1216;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.loja-card-btn-comprar:hover {
+  background: #29A75E;
+}
+
+.loja-card-btn-comprar:disabled {
+  background: #1E232B;
+  color: #8E97A3;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   LOJA DESBRAVA -- checkout (pseudo-compra, sem gateway real)
+   ============================================================ */
+
+#modal-checkout-loja {
+  position: fixed;
+  inset: 0;
+  z-index: 230;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-checkout-loja.oculto {
+  display: none;
+}
+
+#checkout-loja-conteudo {
+  position: relative;
+  background: #171B21;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+#checkout-loja-conteudo h2 {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+}
+
+#checkout-loja-cep-bloco label {
+  display: block;
+  font-size: 0.8rem;
+  color: #8E97A3;
+  margin-bottom: 4px;
+}
+
+#checkout-loja-cep-bloco {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+#input-checkout-cep {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#btn-calcular-frete {
+  background: var(--surf2);
+  color: var(--txt);
+  border: 1px solid var(--linha) !important;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+#checkout-loja-frete-status {
+  font-size: 0.78rem;
+  color: #8E97A3;
+  margin: 4px 0 10px;
+}
+
+#checkout-loja-frete-status.oculto {
+  display: none;
+}
+
+#label-checkout-voucher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(47, 190, 107, 0.1);
+  border: 1px solid rgba(47, 190, 107, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+#label-checkout-voucher.oculto {
+  display: none;
+}
+
+#checkout-loja-resumo {
+  background: #0F1216;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.checkout-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #8E97A3;
+  padding: 4px 0;
+}
+
+.checkout-linha.oculto {
+  display: none;
+}
+
+#checkout-linha-voucher span:last-child {
+  color: #2FBE6B;
+}
+
+.checkout-linha-total {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 4px;
+  padding-top: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #F2F5F7 !important;
+}
+
+.checkout-linha-total span {
+  color: #F2F5F7;
+}
+
+#checkout-loja-aviso {
+  font-size: 0.72rem;
+  color: #8E97A3;
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+
+#checkout-loja-erro {
+  color: #F08A94;
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+}
+
+#checkout-loja-erro.oculto {
+  display: none;
+}
+
+#btn-confirmar-pedido-loja {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: #2FBE6B;
+  color: #0F1216;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+#btn-confirmar-pedido-loja:hover {
+  background: #29A75E;
+}
+
+#btn-confirmar-pedido-loja:disabled {
+  background: #1E232B;
+  color: #8E97A3;
+  cursor: not-allowed;
+}
+
+#btn-fechar-loja,
+#btn-fechar-checkout-loja {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
 #btn-fechar-resumo-viagem,
 #btn-fechar-compartilhar-viagem,
 #btn-fechar-garagem {
@@ -3953,7 +4492,8 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   margin: 0 0 6px;
 }
 
-#criar-rota-lista-municipios {
+#criar-rota-lista-municipios,
+#loja-admin-lista-municipios {
   max-height: 240px;
   overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -6206,6 +6746,8 @@ select:focus {
 #modal-resumo-viagem:not(.oculto),
 #modal-compartilhar-viagem:not(.oculto),
 #modal-garagem:not(.oculto),
+#modal-loja:not(.oculto),
+#modal-checkout-loja:not(.oculto),
 #menu-sheet:not(.oculto) {
   animation: janela-fade 0.2s ease;
 }
@@ -6234,7 +6776,9 @@ select:focus {
 #modal-municipios-pendentes:not(.oculto) #municipios-pendentes-conteudo,
 #modal-resumo-viagem:not(.oculto) #resumo-viagem-conteudo,
 #modal-compartilhar-viagem:not(.oculto) #compartilhar-viagem-conteudo,
-#modal-garagem:not(.oculto) #garagem-conteudo {
+#modal-garagem:not(.oculto) #garagem-conteudo,
+#modal-loja:not(.oculto) #loja-conteudo,
+#modal-checkout-loja:not(.oculto) #checkout-loja-conteudo {
   animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

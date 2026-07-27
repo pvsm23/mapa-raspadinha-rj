@@ -334,6 +334,32 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
           allow read: if true;
           allow write: if ehDono();
         }
+
+        // Loja Desbrava: catálogo de produtos, cadastrado só pelo
+        // admin (ehDono), ver painel dentro de #modal-admin e
+        // buscarProdutos/criarProduto em js/auth.js. status "oculto"
+        // é a única exceção de leitura -- nem aparece pro público, nem
+        // por acidente lendo o Firestore direto (buscarProdutos usa
+        // where("status","in",["ativo","em_breve"]) por isso).
+        match /produtos/{produtoId} {
+          allow read: if request.auth != null
+            && (resource.data.status != 'oculto' || ehDono());
+          allow write: if ehDono();
+        }
+
+        // Pedidos: registro do pseudo-checkout da Loja (SEM gateway de
+        // pagamento real por enquanto -- é só o "fechei esse pedido"
+        // ficando gravado, ver criarPedido em js/auth.js). Cada um só
+        // lê os próprios; o admin lê/atualiza todos (ex: futuro
+        // controle de envio). Sem delete de propósito, é histórico.
+        match /pedidos/{pedidoId} {
+          allow read: if request.auth != null
+            && (request.auth.uid == resource.data.donoUid || ehDono());
+          allow create: if request.auth != null
+            && request.resource.data.donoUid == request.auth.uid;
+          allow update: if ehDono();
+          allow delete: if false;
+        }
       }
     }
     ```

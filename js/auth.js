@@ -1276,6 +1276,167 @@ if (CONFIGURADO) {
     await deleteDoc(doc(db, "motoclubeItens", itemId));
   };
 
+  /* ============================================================
+     LOJA DESBRAVA: catálogo de produtos (físico/digital) cadastrado só
+     pelo admin (UID_DONO, ver regra no README), com gamificação de
+     desbloqueio por município (ver estaVerificado em js/script.js) e
+     pseudo-checkout (SEM gateway de pagamento real -- criarPedido só
+     registra a intenção de compra, não cobra nada de verdade).
+     ============================================================ */
+
+  /** Vitrine pública: só produtos "ativo" ou "em_breve" -- "oculto"
+   * nem entra na consulta (ver regra no README). */
+  window.raspadinhaAuth.buscarProdutos = async () => {
+    const consulta = query(collection(db, "produtos"), where("status", "in", ["ativo", "em_breve"]));
+    const snap = await getDocs(consulta);
+    const produtos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    produtos.sort((a, b) => (a.criadoEm?.toMillis?.() || 0) - (b.criadoEm?.toMillis?.() || 0));
+    return produtos;
+  };
+
+  /** Painel do admin: TODOS os produtos, incluindo "oculto". Só
+   * funciona de verdade pra UID_DONO (regra do Firestore rejeita
+   * qualquer outra conta). */
+  window.raspadinhaAuth.buscarTodosProdutosAdmin = async () => {
+    const snap = await getDocs(collection(db, "produtos"));
+    const produtos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    produtos.sort((a, b) => (b.criadoEm?.toMillis?.() || 0) - (a.criadoEm?.toMillis?.() || 0));
+    return produtos;
+  };
+
+  window.raspadinhaAuth.criarProduto = async ({
+    nome,
+    descricao,
+    imagemUrl,
+    tipo,
+    estoque,
+    valorBase,
+    regraDesbloqueio,
+    status,
+  }) => {
+    const novoDocRef = doc(collection(db, "produtos"));
+    await setDoc(novoDocRef, {
+      nome: (nome || "").trim().slice(0, 80),
+      descricao: (descricao || "").trim().slice(0, 500),
+      imagemUrl: imagemUrl || "",
+      tipo: tipo === "digital" ? "digital" : "fisico",
+      estoque: Number(estoque) || 0,
+      valorBase: Number(valorBase) || 0,
+      regraDesbloqueio: regraDesbloqueio || [],
+      status: ["oculto", "em_breve", "ativo"].includes(status) ? status : "oculto",
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp(),
+    });
+    return novoDocRef.id;
+  };
+
+  window.raspadinhaAuth.atualizarProduto = async (produtoId, dados) => {
+    await updateDoc(doc(db, "produtos", produtoId), {
+      nome: (dados.nome || "").trim().slice(0, 80),
+      descricao: (dados.descricao || "").trim().slice(0, 500),
+      imagemUrl: dados.imagemUrl || "",
+      tipo: dados.tipo === "digital" ? "digital" : "fisico",
+      estoque: Number(dados.estoque) || 0,
+      valorBase: Number(dados.valorBase) || 0,
+      regraDesbloqueio: dados.regraDesbloqueio || [],
+      status: ["oculto", "em_breve", "ativo"].includes(dados.status) ? dados.status : "oculto",
+      atualizadoEm: serverTimestamp(),
+    });
+  };
+
+  window.raspadinhaAuth.excluirProduto = async (produtoId) => {
+    await deleteDoc(doc(db, "produtos", produtoId));
+  };
+
+  /**
+   * Popula o Firestore com os 3 produtos de exemplo (rodar 1x pelo
+   * admin, ver botão dedicado no painel). Não confere duplicidade --
+   * clicar de novo cria outros 3 -- por isso o botão pede confirmação
+   * antes de chamar isso.
+   */
+  window.raspadinhaAuth.popularProdutosExemplo = async (idsRotaGoytacazes, idNiteroi) => {
+    await window.raspadinhaAuth.criarProduto({
+      nome: 'Patch Bordado em Couro "Rota Goytacazes"',
+      descricao: "Patch bordado, base de couro, pra colar na jaqueta ou na bagageira -- prova de quem já rodou a Rota Povos Goytacazes.",
+      imagemUrl: "",
+      tipo: "fisico",
+      estoque: 30,
+      valorBase: 39.9,
+      regraDesbloqueio: idsRotaGoytacazes || [],
+      status: "ativo",
+    });
+    await window.raspadinhaAuth.criarProduto({
+      nome: 'Ímã de Geladeira "Niterói"',
+      descricao: "Ímã de geladeira comemorativo de Niterói -- em breve na Loja.",
+      imagemUrl: "",
+      tipo: "fisico",
+      estoque: 50,
+      valorBase: 14.9,
+      regraDesbloqueio: idNiteroi ? [idNiteroi] : [],
+      status: "em_breve",
+    });
+    await window.raspadinhaAuth.criarProduto({
+      nome: "Chaveiro Clássico Desbrava",
+      descricao: "O chaveiro clássico do Desbrava, liberado pra qualquer um -- não precisa ter raspado nenhum município.",
+      imagemUrl: "",
+      tipo: "fisico",
+      estoque: 100,
+      valorBase: 19.9,
+      regraDesbloqueio: [],
+      status: "ativo",
+    });
+  };
+
+  /**
+   * Pseudo-checkout: só registra o pedido no Firestore (SEM gateway de
+   * pagamento real) -- ver calcularFrete/finalizarCompraLoja em
+   * js/script.js pro resto do fluxo (frete via ViaCEP, voucher do
+   * Motoclube).
+   */
+  window.raspadinhaAuth.criarPedido = async ({
+    produtoId,
+    produtoNome,
+    tipoProduto,
+    valorBase,
+    valorVoucherAplicado,
+    valorFrete,
+    valorTotal,
+    cep,
+    uf,
+  }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await addDoc(collection(db, "pedidos"), {
+      donoUid: usuario.uid,
+      donoApelido: window.raspadinhaAuth.apelido || "?",
+      produtoId,
+      produtoNome,
+      tipoProduto,
+      valorBase,
+      valorVoucherAplicado: valorVoucherAplicado || 0,
+      valorFrete: valorFrete || 0,
+      valorTotal,
+      cep: cep || null,
+      uf: uf || null,
+      criadoEm: serverTimestamp(),
+    });
+  };
+
+  /**
+   * Marca o voucher mensal do Motoclube como usado neste mês --
+   * qualquer conta pode escrever esse campo no PRÓPRIO perfil (regra
+   * padrão de usuarios/{uid}, não é um dos campos restritos tipo
+   * "ehPro"/"status"). "YYYY-MM" como valor, pra comparar mês a mês
+   * sem se importar com o dia/timezone exatos.
+   */
+  window.raspadinhaAuth.usarVoucherMotoclube = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const mesAtual = new Date().toISOString().slice(0, 7);
+    await updateDoc(doc(db, "usuarios", usuario.uid), { ultimoMesUsoVoucher: mesAtual });
+    window.raspadinhaAuth.ultimoMesUsoVoucher = mesAtual;
+  };
+
   /**
    * Busca a foto de um post via SDK (respeitando a regra de
    * segurança do Storage: só autenticado) e devolve um blob URL local
@@ -1849,6 +2010,7 @@ if (CONFIGURADO) {
       window.raspadinhaAuth.apelido = apelido || null;
       window.raspadinhaAuth.contaEhPro = !!snap.data()?.ehPro;
       window.raspadinhaAuth.fotoPerfil = snap.data()?.fotoPerfil || null;
+      window.raspadinhaAuth.ultimoMesUsoVoucher = snap.data()?.ultimoMesUsoVoucher || null;
 
       if (apelido) {
         document.dispatchEvent(
