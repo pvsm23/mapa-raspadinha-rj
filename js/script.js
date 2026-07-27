@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.15";
+const VERSAO_APP = "0.10.16";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.15";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.16", itens: ["Novos efeitos sonoros: raspar, revelar selo, selo dourado, curtir e conquista (pode desligar em Configurações).", "Brilho do selo dourado mais suave e contido na imagem."] },
   { versao: "0.10.15", itens: ["Corrigido: agora dá pra ativar as notificações no aplicativo instalado."] },
   { versao: "0.10.14", itens: ["Novo visual dos botões da comunidade (coração que enche ao curtir).", "Selos dourados ganharam um brilho que passa.", "Link 'me adicione como amigo(a)' na tela de Amigos."] },
   { versao: "0.10.13", itens: ["17 municípios ganharam selo ilustrado próprio! Angra dos Reis, Campos, Barra Mansa, Cantagalo e mais."] },
@@ -691,6 +692,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("check-notificacoes").addEventListener("change", (evento) => {
     alternarNotificacoes(evento.target.checked);
   });
+
+  // ---- Efeitos sonoros ----
+  const checkSom = document.getElementById("check-som");
+  checkSom.checked = somAtivado();
+  checkSom.addEventListener("change", (evento) => alternarSom(evento.target.checked));
 
   // ---- Mapa do Brasil ----
   document.getElementById("btn-mapa-brasil").addEventListener("click", abrirMapaBrasil);
@@ -4165,6 +4171,7 @@ function verificarNovasConquistasDesbloqueadas() {
     if (atual >= meta && !jaNotificadas.has(def.chave)) {
       jaNotificadas.add(def.chave);
       mudou = true;
+      if (typeof tocarSomConquista === "function") tocarSomConquista();
       dispararNotificacaoLocal("🏆 Conquista desbloqueada!", {
         body: `${def.titulo} — raspe o selo pra revelar.`,
         tag: `conquista-${def.chave}`,
@@ -6739,6 +6746,7 @@ function dispararPopCoracao(botao) {
   ico.classList.remove("pop");
   void ico.offsetWidth; // força reflow pra reiniciar a animação
   ico.classList.add("pop");
+  if (typeof tocarSomCurtir === "function") tocarSomCurtir();
 }
 
 /**

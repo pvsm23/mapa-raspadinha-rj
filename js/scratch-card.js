@@ -122,6 +122,7 @@ function initScratchCard({
     ctxRaspagem.beginPath();
     ctxRaspagem.arc(x, y, raioPincel, 0, Math.PI * 2);
     ctxRaspagem.fill();
+    if (typeof tocarSomRaspar === "function") tocarSomRaspar();
   }
 
   function calcularPorcentagemRaspada() {
@@ -196,7 +197,12 @@ function celebrarConclusao(wrapper, brilhante) {
   void wrapper.offsetWidth;
   wrapper.classList.add("selo-completo");
 
-  if (brilhante) adicionarBrilho(wrapper);
+  if (brilhante) {
+    adicionarBrilho(wrapper);
+    if (typeof tocarSomBrilhante === "function") tocarSomBrilhante();
+  } else if (typeof tocarSomRevelar === "function") {
+    tocarSomRevelar();
+  }
 
   const rect = wrapper.getBoundingClientRect();
   dispararConfete(rect.left + rect.width / 2, rect.top + rect.height / 2);

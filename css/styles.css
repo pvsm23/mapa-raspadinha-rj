@@ -3270,17 +3270,20 @@ body.modo-rota-ativo #toast-onde-estou {
   content: "";
   position: absolute;
   inset: 0;
-  clip-path: circle(48% at 50% 50%);
+  /* Raio menor que o círculo real do selo (~48%) pra garantir que a luz
+     NUNCA vaze pra fora da imagem, nem na moldura/margem transparente
+     do webp. */
+  clip-path: circle(42% at 50% 50%);
   background: linear-gradient(
     115deg,
-    transparent 38%,
-    rgba(255, 255, 255, 0.35) 47%,
-    rgba(255, 255, 255, 0.85) 50%,
-    rgba(255, 255, 255, 0.35) 53%,
-    transparent 62%
+    transparent 42%,
+    rgba(255, 255, 255, 0.3) 48%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0.3) 52%,
+    transparent 58%
   );
-  transform: translateX(-130%);
-  animation: sweep-dourado 4s ease-in-out infinite;
+  transform: translateX(-100%);
+  animation: sweep-dourado 5s ease-in-out infinite;
   animation-delay: 0.8s;
   pointer-events: none;
   mix-blend-mode: screen;
@@ -3301,31 +3304,34 @@ body.modo-rota-ativo #toast-onde-estou {
   left: 0;
   right: 0;
   aspect-ratio: 1 / 1;
-  clip-path: circle(46% at 50% 50%);
+  clip-path: circle(40% at 50% 50%);
   background: linear-gradient(
     115deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.4) 48%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.4) 52%,
-    transparent 60%
+    transparent 42%,
+    rgba(255, 255, 255, 0.35) 48%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.35) 52%,
+    transparent 58%
   );
-  transform: translateX(-130%);
-  animation: sweep-dourado 4s ease-in-out infinite;
+  transform: translateX(-100%);
+  animation: sweep-dourado 5s ease-in-out infinite;
   animation-delay: 1.4s;
   pointer-events: none;
   mix-blend-mode: screen;
   z-index: 2;
 }
 
+/* Movimento suave e lento: atravessa o selo devagar (60% do ciclo,
+   ~3s) e descansa o resto do tempo. -100%/100% (não 130%) porque agora
+   o clip-path já é bem menor que a caixa (40-42%), então não precisa de
+   folga extra pra "entrar" varrendo desde fora do círculo. */
 @keyframes sweep-dourado {
   0% {
-    transform: translateX(-130%);
+    transform: translateX(-100%);
   }
-  /* varre rápido e depois fica parado o resto do ciclo (respiro) */
-  18%,
+  60%,
   100% {
-    transform: translateX(130%);
+    transform: translateX(100%);
   }
 }
 
