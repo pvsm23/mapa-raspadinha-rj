@@ -38,6 +38,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
   doc,
   getDoc,
   setDoc,
@@ -248,7 +250,17 @@ if (CONFIGURADO) {
   const app = initializeApp(firebaseConfig);
   getAnalytics(app); // conta acessos automaticamente (ver Firebase Console > Analytics)
   const auth = getAuth(app);
-  const db = getFirestore(app);
+  // Cache local persistente (IndexedDB): grava/lê o progresso mesmo
+  // sem sinal (comum no Modo Viagem, em estrada) e sincroniza sozinho
+  // assim que a conexão volta. Cai pro getFirestore normal (sem cache
+  // offline) se o ambiente não suportar IndexedDB, ex.: aba anônima.
+  let db;
+  try {
+    db = initializeFirestore(app, { localCache: persistentLocalCache() });
+  } catch (erro) {
+    console.warn("Cache offline do Firestore indisponível, usando modo padrão:", erro);
+    db = getFirestore(app);
+  }
   const storage = getStorage(app);
   window.raspadinhaAuth.db = db;
 

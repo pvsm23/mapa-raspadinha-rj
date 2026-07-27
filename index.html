@@ -527,6 +527,33 @@
        pulsante em cima do municipio -->
   <button id="btn-onde-estou" aria-label="Mostrar onde estou no mapa" title="Onde estou?"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></button>
 
+  <!-- Modo Viagem: só aparece no app instalado (Android/Capacitor), ver
+       configurarModoViagem em js/script.js. Fica acima da bússola. -->
+  <button id="btn-modo-viagem" class="oculto" aria-label="Ativar Modo Viagem" title="Modo Viagem"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 17.5H9l1.5-5H14l3 5"/><path d="M10.5 12.5 12 8h3l1.5 3"/><path d="M6.5 12.5h3"/></svg></button>
+
+  <!-- Confirmação antes de ligar o Modo Viagem (rastreio em primeiro
+       plano com notificação fixa) -->
+  <div id="modal-confirmar-viagem" class="oculto">
+    <div id="confirmar-viagem-conteudo">
+      <button id="btn-fechar-confirmar-viagem" aria-label="Fechar">✕</button>
+      <h2>🏍️ Ativar Modo Viagem?</h2>
+      <p>O Desbrava vai rastrear sua rota em segundo plano, registrar sua quilometragem e verificar automaticamente os municípios por onde você passar. Isso consumirá um pouco mais de bateria. Iniciar rolê?</p>
+      <button id="btn-confirmar-iniciar-viagem">Iniciar rolê</button>
+      <button id="btn-cancelar-iniciar-viagem">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Lista de municípios que o GPS confirmou durante o Modo Viagem e
+       ainda estão esperando a pessoa raspar de verdade -->
+  <div id="modal-municipios-pendentes" class="oculto">
+    <div id="municipios-pendentes-conteudo">
+      <button id="btn-fechar-municipios-pendentes" aria-label="Fechar">✕</button>
+      <h2>📍 Você passou por novos municípios!</h2>
+      <p>Toque num município pra raspar o selo — sua presença já foi confirmada por GPS.</p>
+      <div id="municipios-pendentes-lista"></div>
+    </div>
+  </div>
+
   <div id="modal-busca-local" class="oculto">
     <div id="busca-local-conteudo">
       <button id="btn-fechar-busca-local" aria-label="Fechar">✕</button>
@@ -859,15 +886,11 @@
       </div>
 
       <!-- Só aparece no app instalado (Android/Capacitor), ver
-           configurarRastreamentoFundo em js/script.js -->
+           configurarModoViagem em js/script.js -->
       <div id="secao-rastreio-fundo" class="cartao-config oculto">
-        <h3>🧭 Rastrear em segundo plano</h3>
-        <label id="label-rastreio-fundo">
-          <input type="checkbox" id="check-rastreio-fundo">
-          Checar de hora em hora se estou num município novo, mesmo com o app minimizado
-        </label>
+        <h3>🏍️ Modo Viagem</h3>
         <p id="rastreio-fundo-status">
-          A cada ~60 minutos o Android confere sua localização por um instante (não fica com o GPS ligado o tempo todo). Se detectar um município novo, manda uma notificação — toque nela pra confirmar e poder raspar. Só funciona com o app minimizado, não fechado à força (removido dos recentes).
+          Use o botão de moto no mapa, acima da bússola, pra ligar o Modo Viagem antes de sair rodando. Ele mostra uma notificação fixa enquanto está ativo, registra a quilometragem do rolê e deixa os municípios por onde você passar prontos pra raspar depois.
         </p>
       </div>
 

@@ -1681,6 +1681,214 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   animation: girar-raios 1s linear infinite;
 }
 
+/* ---- Modo Viagem: botão flutuante acima da bússola ---- */
+
+#btn-modo-viagem {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 16px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 136px);
+  z-index: 50;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(23, 27, 33, 0.9);
+  backdrop-filter: blur(6px);
+  color: #F2F5F7;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#btn-modo-viagem.oculto {
+  display: none;
+}
+
+#btn-modo-viagem:hover {
+  background: #1E232B;
+}
+
+#btn-modo-viagem.viagem-ativa {
+  background: #2FBE6B;
+  color: #0F1216;
+  animation: pulsar-viagem 1.6s ease-in-out infinite;
+}
+
+@keyframes pulsar-viagem {
+  0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(47, 190, 107, 0.55); }
+  50% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 0 8px rgba(47, 190, 107, 0); }
+}
+
+/* ---- Confirmar Modo Viagem ---- */
+
+#modal-confirmar-viagem {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+#modal-confirmar-viagem.oculto {
+  display: none;
+}
+
+#confirmar-viagem-conteudo {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: #171B21;
+  border: 2px solid #2FBE6B;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: left;
+}
+
+#confirmar-viagem-conteudo h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+#confirmar-viagem-conteudo p {
+  color: #8E97A3;
+  font-size: 0.85rem;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+#btn-fechar-confirmar-viagem {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-confirmar-iniciar-viagem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: #2FBE6B;
+  color: #0F1216;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#btn-confirmar-iniciar-viagem:hover {
+  background: #29A75E;
+}
+
+#btn-cancelar-iniciar-viagem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: transparent;
+  color: #8E97A3;
+  border: none;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+#btn-cancelar-iniciar-viagem:hover {
+  color: #F2F5F7;
+}
+
+/* ---- Lista de municípios pendentes de raspagem (Modo Viagem) ---- */
+
+#modal-municipios-pendentes {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-municipios-pendentes.oculto {
+  display: none;
+}
+
+#municipios-pendentes-conteudo {
+  position: relative;
+  background: #171B21;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 440px;
+  width: 100%;
+  max-height: 75vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+#municipios-pendentes-conteudo h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+#municipios-pendentes-conteudo p {
+  color: #8E97A3;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+#btn-fechar-municipios-pendentes {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#municipios-pendentes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.municipio-pendente-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0F1216;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #F2F5F7;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.municipio-pendente-item:hover {
+  background: #1E232B;
+}
+
 #toast-onde-estou {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 96px);
@@ -3509,6 +3717,7 @@ body.modo-rota-ativo #barra-topo,
 body.modo-rota-ativo #botoes-lateral-esquerda,
 body.modo-rota-ativo #btn-buscar-local,
 body.modo-rota-ativo #btn-onde-estou,
+body.modo-rota-ativo #btn-modo-viagem,
 body.modo-rota-ativo #aviso-instalar-pwa,
 body.modo-rota-ativo #aviso-brilhante-pendente,
 body.modo-rota-ativo #aviso-municipio-detectado,
@@ -5182,6 +5391,7 @@ select:focus {
    não ficarem atrás da barra nova. */
 #btn-buscar-local { bottom: 82px !important; }
 #btn-onde-estou { bottom: 138px !important; }
+#btn-modo-viagem { bottom: 194px !important; }
 #dica-mapa { bottom: 78px !important; }
 
 /* Folha do Menu */
@@ -5481,6 +5691,8 @@ select:focus {
 #modal-historia-municipio:not(.oculto),
 #modal-compartilhar:not(.oculto),
 #modal-social:not(.oculto),
+#modal-confirmar-viagem:not(.oculto),
+#modal-municipios-pendentes:not(.oculto),
 #menu-sheet:not(.oculto) {
   animation: janela-fade 0.2s ease;
 }
@@ -5504,7 +5716,9 @@ select:focus {
 #modal-apelido:not(.oculto) #apelido-conteudo,
 #modal-confirmar-exclusao:not(.oculto) #confirmar-exclusao-conteudo,
 #modal-historia-municipio:not(.oculto) #historia-municipio-conteudo,
-#modal-compartilhar:not(.oculto) #compartilhar-conteudo {
+#modal-compartilhar:not(.oculto) #compartilhar-conteudo,
+#modal-confirmar-viagem:not(.oculto) #confirmar-viagem-conteudo,
+#modal-municipios-pendentes:not(.oculto) #municipios-pendentes-conteudo {
   animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

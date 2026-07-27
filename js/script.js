@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.1";
+const VERSAO_APP = "0.11.2";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.1";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.2", itens: ["Chegou o Modo Viagem! 🏍️ Botão novo acima da bússola: liga o rastreio só enquanto você estiver rodando (com notificação fixa), registra a quilometragem e deixa os municípios por onde você passar prontos pra raspar depois.", "Rastreio em segundo plano antigo (de hora em hora) saiu de circulação — o app não pede mais localização em segundo plano."] },
   { versao: "0.11.1", itens: ["Ícones de buscar, configurações, bússola e todo o Menu ficaram no mesmo estilo da barra de baixo."] },
   { versao: "0.11.0", itens: ["Chegou o Motoclube Desbrava! 🏍️ Dicas e lojas de peças/oficinas com filtro de marca e modelo — gratuito por enquanto.", "O botão de Perfil foi pro Menu; no lugar dele na barra de baixo agora fica o Motoclube."] },
   { versao: "0.10.19", itens: ["Novo menu ao compartilhar uma rota (link ou Comunidade).", "Rastreio em segundo plano agora confere sua localização de hora em hora, em vez de ficar o tempo todo ligado — usa bem menos bateria."] },
@@ -892,161 +893,293 @@ document.addEventListener("DOMContentLoaded", () => {
   mostrarBoasVindasSeNecessario();
   configurarNavInferior();
   configurarBarraTopo();
-  configurarRastreamentoFundo();
+  configurarModoViagem();
   esconderTelaCarregamento();
 });
 
 /* ============================================================
-   Rastreamento de municípios em SEGUNDO PLANO (só no app Android
-   instalado via Capacitor), via @capacitor/background-runner. Enquanto
-   ligado (opt-in em Configurações), o Android acorda um script isolado
-   (runners/geo-runner.js) a cada ~60 minutos ENQUANTO O APP ESTIVER EM
-   SEGUNDO PLANO (minimizado -- não funciona se o app for fechado à
-   força/removido dos recentes, o SO mata o processo e nada roda mais;
-   isso é limitação do próprio Android, não dá pra contornar via JS).
-   Bem mais leve de bateria que o watcher de GPS contínuo antigo
-   (baseado em distância), porque o GPS só liga uma vez por hora, não
-   fica escutando o tempo todo.
+   MODO VIAGEM: rastreio de GPS só em PRIMEIRO PLANO (foreground
+   service com notificação fixa, @capacitor-community/background-geolocation),
+   ligado à mão pelo botão flutuante (#btn-modo-viagem), nunca sozinho
+   em segundo plano. Isso evita de vez a permissão
+   ACCESS_BACKGROUND_LOCATION (motivo de rejeição na Play Store) --
+   o Android libera atualização contínua de localização com o app
+   minimizado desde que exista essa notificação visível avisando.
 
-   Limitação honesta do mecanismo: o runner roda isolado, sem acesso ao
-   app principal -- a única forma pública de "avisar" o app de um
-   município novo é uma notificação local (ver geo-runner.js). Ela fica
-   na bandeja até ser TOCADA; só nesse momento o app sabe qual
-   município era (pelo id da notificação) e confirma a presença
-   (confirmarPresencaPorId). Se a notificação for ignorada/dispensada
-   sem tocar, a detecção se perde -- não há como o app ler o que o
-   runner descobriu sem abrir a notificação.
+   Enquanto o Modo Viagem está ativo: acumula a quilometragem do
+   trajeto (haversine, ver distanciaEmKm) e, a cada posição nova,
+   confere em que município ela cai (mesmo poligono/ray-casting da
+   busca "onde estou", ver encontrarMunicipioPorCoordenada). Município
+   novo -> fica em municipiosPendentesVerificados (localStorage) até a
+   pessoa tocar pra raspar de verdade (ver mostrarModalPendentesSeNecessario).
    ============================================================ */
-const CHAVE_RASTREIO_FUNDO = "desbrava_rastreio_fundo";
+const CHAVE_PENDENTES_RASPAGEM = "desbrava_pendentes_raspagem";
 
 function ehAppNativo() {
   return !!window.Capacitor?.isNativePlatform?.();
 }
 
-function pluginBackgroundRunner() {
-  return (
-    window.Capacitor?.Plugins?.BackgroundRunner ||
-    (window.Capacitor?.registerPlugin && window.Capacitor.registerPlugin("BackgroundRunner")) ||
-    null
-  );
-}
-
-const LABEL_RUNNER_GEO = "io.github.pvsm23.desbrava.geo";
-
-function configurarRastreamentoFundo() {
-  const secao = document.getElementById("secao-rastreio-fundo");
-  const check = document.getElementById("check-rastreio-fundo");
-  const runner = pluginBackgroundRunner();
-  if (!secao || !check || !ehAppNativo() || !runner) return;
-
-  // Registrado sempre (não só quando o toggle está ligado): o clique
-  // na notificação pode acontecer horas/dias depois, inclusive reabrindo
-  // o app do zero -- o listener precisa já estar de prontidão.
-  runner.addListener("backgroundRunnerNotificationReceived", (evento) => {
-    const municipioId = String(evento?.notificationId || "");
-    if (!municipioId) return;
-    confirmarPresencaPorId(municipioId);
-    const path = document.querySelector(`#mapa-rj [data-municipio="${municipioId}"]`);
-    if (path && window.raspadinhaAuth?.usuarioAtual) {
-      abrirSeloPorId(municipioId, path.dataset.nome);
-    }
-  });
-
-  secao.classList.remove("oculto");
-  const ligado = localStorage.getItem(CHAVE_RASTREIO_FUNDO) === "1";
-  check.checked = ligado;
-  if (ligado) iniciarRastreioFundo();
-
-  check.addEventListener("change", async () => {
-    if (check.checked) {
-      const ok = await iniciarRastreioFundo();
-      if (ok) localStorage.setItem(CHAVE_RASTREIO_FUNDO, "1");
-      else {
-        check.checked = false;
-        alert("Não foi possível ligar o rastreamento. Confira se você concedeu a permissão de localização e notificações nas configurações do Android.");
-      }
-    } else {
-      await pararRastreioFundo();
-      localStorage.removeItem(CHAVE_RASTREIO_FUNDO);
-    }
-  });
-}
-
-async function iniciarRastreioFundo() {
-  const runner = pluginBackgroundRunner();
-  if (!runner) return false;
-  try {
-    const permissoes = await runner.requestPermissions({ apis: ["geolocation", "notifications"] });
-    if (permissoes.geolocation !== "granted" || permissoes.notifications !== "granted") return false;
-
-    await runner.dispatchEvent({
-      label: LABEL_RUNNER_GEO,
-      event: "atualizarRastreioAtivo",
-      details: { ativo: true },
-    });
-    sincronizarProgressoComRunner();
-    return true;
-  } catch (erro) {
-    console.error("Falha ao iniciar rastreio em segundo plano:", erro);
-    return false;
-  }
-}
-
-async function pararRastreioFundo() {
-  const runner = pluginBackgroundRunner();
-  if (!runner) return;
-  try {
-    await runner.dispatchEvent({
-      label: LABEL_RUNNER_GEO,
-      event: "atualizarRastreioAtivo",
-      details: { ativo: false },
-    });
-  } catch (erro) {
-    console.error("Falha ao parar rastreio:", erro);
-  }
-}
-
 /**
- * Manda pro runner (isolado) a lista de municípios já verificados, pra
- * ele saber quais IGNORAR na checagem periódica (não faz sentido
- * notificar um município que a pessoa já raspou). Chamada sempre que
- * o progresso muda (ver salvarEstado) -- sem custo real se o
- * rastreamento estiver desligado ou fora do app nativo (só desiste
- * cedo). Nunca espera a resposta (fire-and-forget): é sincronização em
- * segundo plano, não pode travar o salvamento normal do progresso.
- */
-function sincronizarProgressoComRunner() {
-  if (!ehAppNativo()) return;
-  const runner = pluginBackgroundRunner();
-  if (!runner) return;
-  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id));
-  runner
-    .dispatchEvent({
-      label: LABEL_RUNNER_GEO,
-      event: "sincronizarProgressoDesbrava",
-      details: { visitados },
-    })
-    .catch(() => {});
-}
-
-/**
- * Confirma presença num município SÓ pelo código IBGE (sem lat/lon) --
- * usado quando a notificação do rastreio em segundo plano é tocada, já
- * que a leitura de GPS foi feita pelo runner, não pelo app principal.
- * Mesma lógica de processarLocalizacaoFundo, sem a parte de "descobrir"
- * o município (já veio pronto) nem o anti-GPS-falso (não há uma
- * segunda coordenada pra comparar deslocamento aqui).
+ * Confirma presença num município SÓ pelo código IBGE (sem exigir uma
+ * segunda leitura de GPS pra comparar deslocamento) -- usado tanto
+ * pelo Modo Viagem quanto por qualquer fluxo que já tenha a posição em
+ * mãos. Se for uma confirmação NOVA (o município ainda não tinha
+ * presença confirmada nem tinha sido raspado), registra em
+ * municipiosPendentesVerificados pra aparecer na lista de "raspagem
+ * pendente" -- e devolve o id do município, ou null se não mudou nada.
  */
 function confirmarPresencaPorId(id) {
   const dados = estadoMapa[id];
   if (dados?.visitado) {
     if (!dados.verificado) atualizarVerificacaoMunicipio(id, true, "");
-    return;
+    return null;
   }
-  if (dados?.presencaConfirmadaEm) return;
+  if (dados?.presencaConfirmadaEm) return null;
   estadoMapa[id] = { ...estadoMapa[id], presencaConfirmadaEm: new Date().toISOString() };
   salvarEstado();
   aplicarEstadoNoSVG();
+  adicionarPendenteRaspagem(id);
+  return id;
+}
+
+function lerPendentesRaspagem() {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_PENDENTES_RASPAGEM) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function salvarPendentesRaspagem(lista) {
+  localStorage.setItem(CHAVE_PENDENTES_RASPAGEM, JSON.stringify(lista));
+}
+
+function adicionarPendenteRaspagem(id) {
+  const lista = lerPendentesRaspagem();
+  if (!lista.includes(id)) {
+    lista.push(id);
+    salvarPendentesRaspagem(lista);
+  }
+}
+
+/**
+ * Tira da lista de pendentes -- chamado sempre que um município
+ * termina de ser verificado de verdade (raspado ou não), de qualquer
+ * fluxo (ver atualizarVerificacaoMunicipio), pra lista nunca ficar
+ * desatualizada.
+ */
+function removerPendenteRaspagem(id) {
+  const lista = lerPendentesRaspagem();
+  const nova = lista.filter((mid) => mid !== id);
+  if (nova.length !== lista.length) salvarPendentesRaspagem(nova);
+}
+
+function pluginBackgroundGeolocation() {
+  return (
+    window.Capacitor?.Plugins?.BackgroundGeolocation ||
+    (window.Capacitor?.registerPlugin && window.Capacitor.registerPlugin("BackgroundGeolocation")) ||
+    null
+  );
+}
+
+const CHAVE_ULTIMA_VIAGEM = "desbrava_ultima_viagem";
+
+let viagemAtiva = false;
+let viagemWatcherId = null;
+let viagemKmTotal = 0;
+let viagemUltimaPosicao = null;
+let viagemMunicipiosNovos = 0;
+
+/**
+ * Liga o botão flutuante "Modo Viagem" e os dois modais dele
+ * (confirmação pra ligar / lista de pendentes). Só aparece no app
+ * nativo com o plugin de geolocalização disponível -- no navegador
+ * comum (site/PWA) o rastreio em primeiro plano com notificação fixa
+ * não existe, então o recurso fica escondido.
+ */
+function configurarModoViagem() {
+  const botao = document.getElementById("btn-modo-viagem");
+  const secao = document.getElementById("secao-rastreio-fundo");
+  if (!botao || !ehAppNativo() || !pluginBackgroundGeolocation()) return;
+
+  botao.classList.remove("oculto");
+  secao?.classList.remove("oculto");
+
+  botao.addEventListener("click", () => {
+    if (viagemAtiva) pararModoViagem();
+    else abrirConfirmacaoModoViagem();
+  });
+
+  document.getElementById("btn-fechar-confirmar-viagem")?.addEventListener("click", fecharConfirmacaoModoViagem);
+  document.getElementById("btn-cancelar-iniciar-viagem")?.addEventListener("click", fecharConfirmacaoModoViagem);
+  document.getElementById("btn-confirmar-iniciar-viagem")?.addEventListener("click", () => {
+    fecharConfirmacaoModoViagem();
+    iniciarModoViagem();
+  });
+  document.getElementById("modal-confirmar-viagem")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-confirmar-viagem") fecharConfirmacaoModoViagem();
+  });
+
+  document.getElementById("btn-fechar-municipios-pendentes")?.addEventListener("click", fecharModalPendentes);
+  document.getElementById("modal-municipios-pendentes")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-municipios-pendentes") fecharModalPendentes();
+  });
+
+  // Gatilho de abertura: se sobrou pendente de uma viagem anterior
+  // (ex: app foi fechado antes de raspar), mostra a lista já na
+  // inicialização, sem precisar ligar o Modo Viagem de novo.
+  mostrarModalPendentesSeNecessario();
+}
+
+function abrirConfirmacaoModoViagem() {
+  document.getElementById("modal-confirmar-viagem")?.classList.remove("oculto");
+}
+
+function fecharConfirmacaoModoViagem() {
+  document.getElementById("modal-confirmar-viagem")?.classList.add("oculto");
+}
+
+/**
+ * Liga o watcher de localização em PRIMEIRO PLANO (foreground service
+ * com notificação fixa -- backgroundTitle/backgroundMessage é o que
+ * faz o Android exigir e mostrar essa notificação, sem precisar de
+ * ACCESS_BACKGROUND_LOCATION). distanceFilter de 150m: fino o
+ * bastante pra pegar município pequeno na estrada, sem gastar GPS
+ * a cada poucos metros.
+ */
+async function iniciarModoViagem() {
+  const plugin = pluginBackgroundGeolocation();
+  if (!plugin) return;
+  const botao = document.getElementById("btn-modo-viagem");
+
+  viagemKmTotal = 0;
+  viagemUltimaPosicao = null;
+  viagemMunicipiosNovos = 0;
+
+  try {
+    viagemWatcherId = await plugin.addWatcher(
+      {
+        backgroundTitle: "Desbrava — Modo Viagem ativo",
+        backgroundMessage: "Registrando sua rota e checando municípios novos.",
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: 150,
+      },
+      (posicao, erro) => {
+        if (erro) {
+          console.error("Modo Viagem:", erro);
+          if (erro.code === "NOT_AUTHORIZED") pararModoViagem();
+          return;
+        }
+        if (posicao) processarPosicaoModoViagem(posicao);
+      }
+    );
+    viagemAtiva = true;
+    botao?.classList.add("viagem-ativa");
+    if (botao) botao.title = "Encerrar Modo Viagem";
+  } catch (erro) {
+    console.error("Falha ao iniciar Modo Viagem:", erro);
+    alert("Não foi possível ligar o Modo Viagem. Confira se a permissão de localização foi concedida.");
+  }
+}
+
+/** Encerra o watcher, mostra o resumo do rolê e, se houver município
+ * novo esperando raspagem, já abre a lista de pendentes. */
+async function pararModoViagem() {
+  const plugin = pluginBackgroundGeolocation();
+  const botao = document.getElementById("btn-modo-viagem");
+  if (plugin && viagemWatcherId) {
+    try {
+      await plugin.removeWatcher({ id: viagemWatcherId });
+    } catch (erro) {
+      console.error("Falha ao parar Modo Viagem:", erro);
+    }
+  }
+  viagemWatcherId = null;
+  viagemAtiva = false;
+  botao?.classList.remove("viagem-ativa");
+  if (botao) botao.title = "Modo Viagem";
+
+  localStorage.setItem(
+    CHAVE_ULTIMA_VIAGEM,
+    JSON.stringify({ km: viagemKmTotal, em: new Date().toISOString() })
+  );
+
+  const km = viagemKmTotal.toFixed(1);
+  mostrarToastOndeEstou(
+    viagemMunicipiosNovos > 0
+      ? `Rolê encerrado: ${km} km percorridos, ${viagemMunicipiosNovos} município(s) novo(s) detectado(s).`
+      : `Rolê encerrado: ${km} km percorridos.`
+  );
+  mostrarModalPendentesSeNecessario();
+}
+
+/** Callback do watcher: acumula km (haversine) e confere se a posição
+ * caiu num município ainda não raspado/confirmado. */
+function processarPosicaoModoViagem(posicao) {
+  const lat = posicao.latitude;
+  const lon = posicao.longitude;
+
+  if (viagemUltimaPosicao) {
+    viagemKmTotal += distanciaEmKm(viagemUltimaPosicao.lat, viagemUltimaPosicao.lon, lat, lon);
+  }
+  viagemUltimaPosicao = { lat, lon };
+
+  const id = encontrarMunicipioPorCoordenada(lon, lat);
+  if (!id) return;
+
+  const novo = confirmarPresencaPorId(id);
+  if (!novo) return;
+
+  viagemMunicipiosNovos++;
+  const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
+  const nome = path?.dataset.nome;
+  if (!nome) return;
+  mostrarAvisoMunicipioDetectado(nome, () => {
+    exigirLogin(() => {
+      window.controleMapa?.focarEmMunicipio(id);
+      setTimeout(() => abrirSeloPorId(id, nome), 650);
+    });
+  });
+}
+
+/** Mostra a lista de "raspagem pendente" se houver algum município com
+ * presença confirmada por GPS ainda não raspado -- chamado na
+ * inicialização do app e ao encerrar o Modo Viagem. */
+function mostrarModalPendentesSeNecessario() {
+  const lista = lerPendentesRaspagem().filter((id) => {
+    const dados = estadoMapa[id];
+    return dados?.presencaConfirmadaEm && !dados?.visitado;
+  });
+  if (!lista.length) return;
+  renderizarListaPendentes(lista);
+  document.getElementById("modal-municipios-pendentes")?.classList.remove("oculto");
+}
+
+function renderizarListaPendentes(lista) {
+  const container = document.getElementById("municipios-pendentes-lista");
+  if (!container) return;
+  container.innerHTML = "";
+  lista.forEach((id) => {
+    const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
+    const nome = path?.dataset.nome || `Município ${id}`;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "municipio-pendente-item";
+    item.textContent = `📍 ${nome}`;
+    item.addEventListener("click", () => {
+      fecharModalPendentes();
+      exigirLogin(() => {
+        window.controleMapa?.focarEmMunicipio(id);
+        setTimeout(() => abrirSeloPorId(id, nome), 650);
+      });
+    });
+    container.appendChild(item);
+  });
+}
+
+function fecharModalPendentes() {
+  document.getElementById("modal-municipios-pendentes")?.classList.add("oculto");
 }
 
 /**
@@ -1093,6 +1226,7 @@ const OVERLAYS_APP = [
   "modal-selo-lightbox", "modal-busca-local", "modal-confirmar-exclusao",
   "modal-motoclube", "modal-motoclube-form", "modal-criar-rota",
   "modal-rota-personalizada-detalhe", "modal-compartilhar-rota",
+  "modal-confirmar-viagem", "modal-municipios-pendentes",
   "menu-sheet",
 ];
 
@@ -2845,7 +2979,10 @@ function atualizarVerificacaoMunicipio(id, verificado, motivo) {
   // Consome a presença pré-confirmada assim que ela vira uma
   // verificação de verdade (ou quando uma nova verificação ao vivo
   // dá certo) -- não faz sentido mais um pendente depois disso.
-  if (verificado) delete estadoMapa[id].presencaConfirmadaEm;
+  if (verificado) {
+    delete estadoMapa[id].presencaConfirmadaEm;
+    removerPendenteRaspagem(id);
+  }
   salvarEstado();
   aplicarEstadoNoSVG();
   atualizarContador();
@@ -6541,7 +6678,6 @@ function resetarTudo() {
 
 function salvarEstado() {
   localStorage.setItem(chaveComUid(STORAGE_KEY), JSON.stringify(estadoMapa));
-  sincronizarProgressoComRunner();
 }
 
 function carregarEstado() {
