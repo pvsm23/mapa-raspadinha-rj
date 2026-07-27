@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.11";
+const VERSAO_APP = "0.10.12";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.11";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.12", itens: ["Duas rotas novas com selo próprio: Povos Goytacazes e Povos Tupinambás — a história dos povos indígenas que dominavam o Rio antes da colonização."] },
   { versao: "0.10.11", itens: ["Todos os 92 municípios do Rio agora têm curiosidade e história! E agora dá pra ler mesmo sem raspar — é só tocar no município."] },
   { versao: "0.10.10", itens: ["Em São Paulo: as regiões agora aparecem com as divisas desenhadas (afastado), o zoom vai bem mais longe (dá pra achar os municípios minúsculos) e as linhas ficaram mais finas."] },
   { versao: "0.10.9", itens: ["Dá pra dar mais zoom no mapa de São Paulo."] },
@@ -5198,7 +5199,15 @@ function abrirPopupRota(rotaId) {
     `${visitados} / ${idsDaRota.length} municípios verificados`;
   document.getElementById("rota-detalhe-barra-preenchida").style.width =
     `${(visitados / idsDaRota.length) * 100}%`;
-  document.getElementById("rota-detalhe-historia").textContent = info.historia || "";
+  // A história pode ter vários parágrafos (separados por linha em branco
+  // no data/rotas.json) -- cada um vira um <p>. Rotas com texto de uma
+  // linha só continuam funcionando (um <p> só).
+  document.getElementById("rota-detalhe-historia").innerHTML = (info.historia || "")
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${escaparHtml(p)}</p>`)
+    .join("");
 
   const corpo = document.getElementById("rota-detalhe-selo-body");
   corpo.innerHTML = "";
