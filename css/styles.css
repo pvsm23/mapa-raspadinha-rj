@@ -1637,6 +1637,9 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   font-size: 1.3rem;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #btn-buscar-local:hover {
@@ -1660,6 +1663,9 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   font-size: 1.3rem;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #btn-onde-estou:hover {
@@ -5215,6 +5221,23 @@ select:focus {
 }
 .menu-op span { font-size: 1.35rem; line-height: 1; }
 .menu-op:active { transform: scale(0.95); border-color: var(--verde); }
+
+/* Ícones SVG outline (mesmo estilo dos ícones da barra inferior,
+   ver .nav-ico svg) usados na barra de topo (buscar/configurações),
+   nos botões flutuantes (buscar local/onde estou) e em todos os itens
+   do Menu -- substituem os emojis antigos, mesma cor do texto ao redor
+   (stroke="currentColor" no próprio SVG). */
+.ico-svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.menu-op span .ico-svg {
+  width: 22px;
+  height: 22px;
+}
 
 /* Modais e painéis precisam ficar ACIMA da barra inferior */
 #modal-social, #modal-configuracoes, #modal-admin, #modal-brasil,

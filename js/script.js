@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.0";
+const VERSAO_APP = "0.11.1";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.0";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.1", itens: ["Ícones de buscar, configurações, bússola e todo o Menu ficaram no mesmo estilo da barra de baixo."] },
   { versao: "0.11.0", itens: ["Chegou o Motoclube Desbrava! 🏍️ Dicas e lojas de peças/oficinas com filtro de marca e modelo — gratuito por enquanto.", "O botão de Perfil foi pro Menu; no lugar dele na barra de baixo agora fica o Motoclube."] },
   { versao: "0.10.19", itens: ["Novo menu ao compartilhar uma rota (link ou Comunidade).", "Rastreio em segundo plano agora confere sua localização de hora em hora, em vez de ficar o tempo todo ligado — usa bem menos bateria."] },
   { versao: "0.10.18", itens: ["Corrigido: 'Minhas rotas' agora carrega certinho."] },
@@ -331,7 +332,7 @@ async function verificarAtualizacaoApp(item) {
     const dados = await resposta.json();
     const versaoNova = (dados.tag_name || "").replace(/^v/, "").trim();
     if (versaoNova && ehVersaoMaior(versaoNova, VERSAO_APP)) {
-      item.innerHTML = `<span>🔄</span>Atualizar app · ${versaoNova} nova!`;
+      item.innerHTML = `<span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>Atualizar app · ${versaoNova} nova!`;
       item.classList.add("menu-op-destaque");
     }
   } catch {
@@ -877,8 +878,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // versão nova publicada, mostra o aviso.
   const itemBaixarApk = document.getElementById("menu-baixar-apk");
   itemBaixarApk.innerHTML = ehAppNativo()
-    ? "<span>🔄</span>Atualizar app"
-    : "<span>📥</span>Baixar app";
+    ? '<span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>Atualizar app'
+    : '<span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Baixar app';
   itemBaixarApk.addEventListener("click", () => {
     document.getElementById("menu-sheet").classList.add("oculto");
     baixarApk();
