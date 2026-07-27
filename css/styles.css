@@ -3099,6 +3099,231 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   margin: 0 0 12px;
 }
 
+.rotas-personalizadas-titulo {
+  margin: 20px 0 10px;
+  font-size: 1rem;
+  text-align: left;
+}
+
+#minhas-rotas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.rota-personalizada-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  background: #1E242C;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #F2F5F7;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.rota-personalizada-item:hover {
+  background: #262D37;
+}
+
+.rota-personalizada-item span {
+  color: #8E97A3;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+#minhas-rotas-vazio {
+  color: #8E97A3;
+  font-size: 0.82rem;
+  margin: 8px 0 0;
+}
+
+/* Modal "Criar rota personalizada" e detalhe de rota personalizada --
+   mesmo padrão auto-contido do #modal-rotas/#modal-rota-detalhe (ver
+   acima), pra não depender de grupos de estilo distantes. */
+#modal-criar-rota,
+#modal-rota-personalizada-detalhe {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 18, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+#modal-criar-rota.oculto,
+#modal-rota-personalizada-detalhe.oculto {
+  display: none;
+}
+
+#criar-rota-conteudo,
+#rota-personalizada-detalhe-conteudo {
+  position: relative;
+  background: #171B21;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+#criar-rota-conteudo h2,
+#rota-personalizada-detalhe-conteudo h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+#btn-fechar-criar-rota,
+#btn-fechar-rota-personalizada-detalhe {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 6px;
+}
+
+#btn-fechar-criar-rota:hover,
+#btn-fechar-rota-personalizada-detalhe:hover {
+  color: #F2F5F7;
+}
+
+#input-nome-rota,
+#input-descricao-rota,
+#input-filtro-municipios-rota {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0F1216;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #F2F5F7;
+  font-size: 0.88rem;
+  margin-bottom: 10px;
+  font-family: inherit;
+}
+
+#input-descricao-rota {
+  resize: vertical;
+}
+
+#criar-rota-contador {
+  color: #8E97A3;
+  font-size: 0.8rem;
+  margin: 0 0 6px;
+}
+
+#criar-rota-lista-municipios {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 14px;
+}
+
+.criar-rota-municipio-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.criar-rota-municipio-item:last-child {
+  border-bottom: none;
+}
+
+#criar-rota-erro {
+  color: #EF4444;
+  font-size: 0.82rem;
+  margin: 0 0 10px;
+}
+
+#btn-salvar-rota-personalizada,
+#btn-ver-rota-personalizada-no-mapa,
+#btn-compartilhar-rota-personalizada,
+#btn-excluir-rota-personalizada {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  margin: 0 0 10px;
+}
+
+#btn-salvar-rota-personalizada,
+#btn-ver-rota-personalizada-no-mapa {
+  background: var(--verde);
+  color: #0F1216;
+}
+
+#btn-compartilhar-rota-personalizada {
+  background: rgba(43, 213, 118, 0.15);
+  color: var(--verde);
+  border: 1px solid rgba(43, 213, 118, 0.45);
+}
+
+#btn-excluir-rota-personalizada {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+#rota-personalizada-autor {
+  text-align: center;
+  color: #8E97A3;
+  font-size: 0.8rem;
+  margin: -6px 0 12px;
+}
+
+#rota-personalizada-descricao {
+  color: #C3CBD4;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+#rota-personalizada-status {
+  color: #8E97A3;
+  font-size: 0.85rem;
+  margin: 0 0 6px;
+}
+
+#rota-personalizada-barra {
+  height: 6px;
+  background: #262C35;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+#rota-personalizada-barra-preenchida {
+  height: 100%;
+  background: var(--verde);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
 #rota-detalhe-status {
   color: #8E97A3;
   font-size: 0.85rem;

@@ -547,6 +547,10 @@
       <button id="btn-fechar-modal" aria-label="Fechar">✕</button>
       <h2 id="modal-municipio-nome"></h2>
       <p id="modal-status"></p>
+      <!-- Convite pontual pra alguém ir raspar ESSE município junto --
+           gera um link ?municipio=<id>, não precisa ser amigo (ver
+           compartilharConviteMunicipio em js/script.js). -->
+      <button type="button" id="btn-convite-municipio" class="btn-link-amigo">🤝 Bora buscar esse selo?</button>
       <!-- So aparece quando raspado mas ainda nao verificado por localizacao -->
       <button id="btn-verificar-local" class="oculto">📍 Verificar agora que estou aqui</button>
       <div id="scratch-modal-body"></div>
@@ -590,6 +594,50 @@
       <button id="btn-fechar-rotas" aria-label="Fechar">✕</button>
       <h2>🗺️ Rotas Temáticas</h2>
       <div id="rotas-lista"></div>
+
+      <!-- Rotas criadas pelo próprio usuário: SEM selo (diferente das
+           oficiais acima), com nome + descrição opcional + lista de
+           municípios escolhidos por ele. Ver abrirModalCriarRota /
+           renderizarMinhasRotas em js/script.js. -->
+      <h3 class="rotas-personalizadas-titulo">📍 Minhas rotas</h3>
+      <button type="button" id="btn-criar-rota-personalizada" class="btn-link-amigo">+ Criar minha rota</button>
+      <div id="minhas-rotas-lista"></div>
+    </div>
+  </div>
+
+  <!-- Criar rota personalizada: nome + descrição opcional + escolha dos
+       municípios (lista com busca). Sem seleção no mapa por enquanto --
+       lista com filtro de texto é mais rápido de usar. -->
+  <div id="modal-criar-rota" class="oculto">
+    <div id="criar-rota-conteudo">
+      <button id="btn-fechar-criar-rota" aria-label="Fechar">✕</button>
+      <h2>📍 Criar minha rota</h2>
+      <input type="text" id="input-nome-rota" maxlength="60" placeholder="Nome da rota (ex: Fim de semana na Serra)">
+      <textarea id="input-descricao-rota" rows="2" maxlength="300" placeholder="Descrição (opcional)"></textarea>
+      <input type="text" id="input-filtro-municipios-rota" placeholder="Filtrar municípios...">
+      <p id="criar-rota-contador">0 municípios selecionados</p>
+      <div id="criar-rota-lista-municipios"></div>
+      <p id="criar-rota-erro" class="oculto"></p>
+      <button type="button" id="btn-salvar-rota-personalizada">Salvar rota</button>
+    </div>
+  </div>
+
+  <!-- Detalhe de uma rota personalizada (própria ou de outra pessoa,
+       aberta pelo link compartilhado ?rotaPersonalizada=<id>). Sem
+       selo/raspadinha -- só progresso, descrição e destaque no mapa. -->
+  <div id="modal-rota-personalizada-detalhe" class="oculto">
+    <div id="rota-personalizada-detalhe-conteudo">
+      <button id="btn-fechar-rota-personalizada-detalhe" aria-label="Fechar">✕</button>
+      <h2 id="rota-personalizada-nome"></h2>
+      <p id="rota-personalizada-autor"></p>
+      <p id="rota-personalizada-descricao"></p>
+      <p id="rota-personalizada-status"></p>
+      <div id="rota-personalizada-barra">
+        <div id="rota-personalizada-barra-preenchida"></div>
+      </div>
+      <button type="button" id="btn-ver-rota-personalizada-no-mapa">🗺️ Ver no mapa</button>
+      <button type="button" id="btn-compartilhar-rota-personalizada">↗ Compartilhar</button>
+      <button type="button" id="btn-excluir-rota-personalizada" class="oculto">🗑️ Excluir rota</button>
     </div>
   </div>
 
@@ -732,7 +780,7 @@
       <div id="secao-som" class="cartao-config">
         <h3>🔊 Efeitos sonoros</h3>
         <label id="label-som">
-          <input type="checkbox" id="check-som" checked>
+          <input type="checkbox" id="check-som">
           Som ao raspar, revelar selo e curtir na comunidade
         </label>
       </div>

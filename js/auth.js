@@ -952,6 +952,54 @@ if (CONFIGURADO) {
   };
 
   /**
+   * Rotas personalizadas: criadas pelo próprio usuário (nome +
+   * descrição opcional + lista de municípios), SEM selo -- diferente
+   * das rotas oficiais de data/rotas.json. Coleção própria no
+   * Firestore (`rotasPersonalizadas`), regra exige donoUid == uid pra
+   * criar/editar/apagar; qualquer autenticado pode ler (link
+   * compartilhado ?rotaPersonalizada=<id> funciona pra quem não é o
+   * dono também).
+   */
+  window.raspadinhaAuth.criarRotaPersonalizada = async ({ nome, descricao, municipios }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!nome || !nome.trim()) throw new Error("Dê um nome pra rota.");
+    if (!municipios || municipios.length < 2) throw new Error("Escolha pelo menos 2 municípios.");
+
+    const novoDocRef = doc(collection(db, "rotasPersonalizadas"));
+    await setDoc(novoDocRef, {
+      donoUid: usuario.uid,
+      donoApelido: window.raspadinhaAuth.apelido || "?",
+      nome: nome.trim().slice(0, 60),
+      descricao: (descricao || "").trim().slice(0, 300),
+      municipios,
+      criadoEm: serverTimestamp(),
+    });
+    return novoDocRef.id;
+  };
+
+  window.raspadinhaAuth.buscarMinhasRotasPersonalizadas = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return [];
+    const consulta = query(
+      collection(db, "rotasPersonalizadas"),
+      where("donoUid", "==", usuario.uid),
+      orderBy("criadoEm", "desc")
+    );
+    const snap = await getDocs(consulta);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  window.raspadinhaAuth.buscarRotaPersonalizadaPorId = async (rotaId) => {
+    const snap = await getDoc(doc(db, "rotasPersonalizadas", rotaId));
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  };
+
+  window.raspadinhaAuth.excluirRotaPersonalizada = async (rotaId) => {
+    await deleteDoc(doc(db, "rotasPersonalizadas", rotaId));
+  };
+
+  /**
    * Busca a foto de um post via SDK (respeitando a regra de
    * segurança do Storage: só autenticado) e devolve um blob URL local
    * -- em vez de getDownloadURL(), que gera um link com token que

@@ -14,8 +14,10 @@
 
 const CHAVE_SOM_ATIVADO = "scratchMapRJ_som_ativado_v1";
 
+// Desativado por padrão: os sons atuais são sintetizados (placeholder)
+// até o Paulo trazer os áudios de verdade -- aí troca pra `!== "false"`.
 function somAtivado() {
-  return localStorage.getItem(CHAVE_SOM_ATIVADO) !== "false";
+  return localStorage.getItem(CHAVE_SOM_ATIVADO) === "true";
 }
 
 function alternarSom(ativar) {

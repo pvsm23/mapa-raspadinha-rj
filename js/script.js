@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.16";
+const VERSAO_APP = "0.10.17";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.16";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.17", itens: ["Rotas personalizadas: monte sua própria rota com os municípios que quiser, com nome e descrição, e compartilhe por link ou na Comunidade.", "Novo link \"Bora buscar esse selo?\" no popup de cada município, pra convidar alguém a raspar junto."] },
   { versao: "0.10.16", itens: ["Novos efeitos sonoros: raspar, revelar selo, selo dourado, curtir e conquista (pode desligar em Configurações).", "Brilho do selo dourado mais suave e contido na imagem."] },
   { versao: "0.10.15", itens: ["Corrigido: agora dá pra ativar as notificações no aplicativo instalado."] },
   { versao: "0.10.14", itens: ["Novo visual dos botões da comunidade (coração que enche ao curtir).", "Selos dourados ganharam um brilho que passa.", "Link 'me adicione como amigo(a)' na tela de Amigos."] },
@@ -188,6 +189,16 @@ let filtroCategoriaSugestaoAtual = "";
 // abrir de verdade depois do login resolver (ver
 // abrirPostDoLinkSeExistir, chamado no primeiro "auth-mudou").
 let postIdPendenteDoLink = new URLSearchParams(window.location.search).get("post");
+
+// Link "bora buscar esse selo?" (?municipio=<id-ibge>, ver
+// compartilharConviteMunicipio) -- convite pontual pra raspar um
+// município específico junto, não precisa ser amigo. Só dá pra abrir
+// de verdade depois do login resolver (mesmo padrão do postIdPendenteDoLink).
+let municipioIdPendenteDoLink = new URLSearchParams(window.location.search).get("municipio");
+
+// Rota personalizada (?rotaPersonalizada=<id>, ver
+// compartilharRotaPersonalizada) -- mesma ideia.
+let rotaPersonalizadaIdPendenteDoLink = new URLSearchParams(window.location.search).get("rotaPersonalizada");
 
 // Guarda quem convidou (?convite=uid no link compartilhado) ate a
 // conta ser criada de verdade -- soh entao js/auth.js credita a
@@ -402,6 +413,9 @@ document.addEventListener("DOMContentLoaded", () => {
       evento.stopPropagation();
       exigirLogin(() => abrirPainelSocial(municipioSelecionadoId));
     });
+  document
+    .getElementById("btn-convite-municipio")
+    .addEventListener("click", () => exigirLogin(compartilharConviteMunicipio));
 
   // fecha o modal ao clicar fora do cartão (no fundo escurecido)
   document
@@ -553,6 +567,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
   document.addEventListener("auth-mudou", (evento) => abrirPostDoLinkSeExistir(evento.detail?.usuario));
+  document.addEventListener("auth-mudou", (evento) => abrirMunicipioDoLinkSeExistir(evento.detail?.usuario));
+  document.addEventListener("auth-mudou", (evento) => abrirRotaPersonalizadaDoLinkSeExistir(evento.detail?.usuario));
   document.addEventListener("auth-mudou", (evento) => processarAmigoPendente(evento.detail?.usuario));
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
   document.addEventListener("conta-bloqueada", (evento) => mostrarTelaContaBloqueada(evento.detail));
@@ -604,6 +620,31 @@ document.addEventListener("DOMContentLoaded", () => {
     entrarModoRota(idParaVerNoMapa);
   });
   document.getElementById("btn-sair-rota").addEventListener("click", sairModoRota);
+
+  // ---- Rotas personalizadas (sem selo, criadas pelo usuário) ----
+  document.getElementById("btn-criar-rota-personalizada").addEventListener("click", abrirModalCriarRota);
+  document.getElementById("btn-fechar-criar-rota").addEventListener("click", fecharModalCriarRota);
+  document.getElementById("modal-criar-rota").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-criar-rota") fecharModalCriarRota();
+  });
+  document.getElementById("input-filtro-municipios-rota").addEventListener("input", (evento) => {
+    renderizarListaMunicipiosParaEscolher(evento.target.value);
+  });
+  document.getElementById("btn-salvar-rota-personalizada").addEventListener("click", salvarRotaPersonalizada);
+
+  document.getElementById("btn-fechar-rota-personalizada-detalhe").addEventListener("click", fecharRotaPersonalizadaDetalhe);
+  document.getElementById("modal-rota-personalizada-detalhe").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-rota-personalizada-detalhe") fecharRotaPersonalizadaDetalhe();
+  });
+  document.getElementById("btn-ver-rota-personalizada-no-mapa").addEventListener("click", () => {
+    if (!rotaPersonalizadaSelecionada) return;
+    const ids = rotaPersonalizadaSelecionada.municipios;
+    fecharRotaPersonalizadaDetalhe();
+    fecharRotas();
+    entrarModoRotaPersonalizada(ids);
+  });
+  document.getElementById("btn-compartilhar-rota-personalizada").addEventListener("click", compartilharRotaPersonalizada);
+  document.getElementById("btn-excluir-rota-personalizada").addEventListener("click", excluirRotaPersonalizadaAtual);
 
   // ---- Amigos ----
   document
@@ -1126,6 +1167,67 @@ function compartilharLinkAmigo() {
       .catch(() => prompt("Copie o link:", dados.url));
   } else {
     prompt("Copie o link:", dados.url);
+  }
+}
+
+/**
+ * Link "🤝 Bora buscar esse selo?" no popup de um município (visitado
+ * ou não): convite pontual pra outra pessoa ir raspar aquele mesmo
+ * município, sem precisar ser amigo (?municipio=<id>). Ver
+ * abrirMunicipioDoLinkSeExistir, que abre o popup pra quem clicar.
+ */
+function compartilharConviteMunicipio() {
+  if (!municipioSelecionadoId) return;
+  const nome = document.getElementById("modal-municipio-nome").textContent;
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("municipio", municipioSelecionadoId);
+  const dados = {
+    title: "Desbrava",
+    text: `Bora buscar o selo de ${nome} juntos?`,
+    url: url.toString(),
+  };
+  if (navigator.share) {
+    navigator.share(dados).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(dados.url)
+      .then(() => alert("Link copiado!"))
+      .catch(() => prompt("Copie o link:", dados.url));
+  } else {
+    prompt("Copie o link:", dados.url);
+  }
+}
+
+/**
+ * Ao logar, se veio de um link "?municipio=id" (ver
+ * compartilharConviteMunicipio), abre o popup daquele município na
+ * hora -- mesmo fluxo de abrir pelo mapa (abrirSeloPorId).
+ */
+function abrirMunicipioDoLinkSeExistir(usuario) {
+  if (!municipioIdPendenteDoLink || !usuario) return;
+  const id = municipioIdPendenteDoLink;
+  municipioIdPendenteDoLink = null;
+  const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
+  if (!path) return;
+  abrirSeloPorId(id, path.dataset.nome);
+}
+
+/**
+ * Ao logar, se veio de um link "?rotaPersonalizada=id" (ver
+ * compartilharRotaPersonalizada), busca a rota e abre o detalhe --
+ * funciona pra qualquer autenticado, não só o dono (regra do
+ * Firestore permite leitura geral).
+ */
+async function abrirRotaPersonalizadaDoLinkSeExistir(usuario) {
+  if (!rotaPersonalizadaIdPendenteDoLink || !usuario) return;
+  const id = rotaPersonalizadaIdPendenteDoLink;
+  rotaPersonalizadaIdPendenteDoLink = null;
+  try {
+    const rota = await window.raspadinhaAuth.buscarRotaPersonalizadaPorId(id);
+    if (rota) abrirRotaPersonalizadaDetalhe(rota);
+  } catch (erro) {
+    console.error("Falha ao abrir rota personalizada do link:", erro);
   }
 }
 
@@ -5334,6 +5436,7 @@ function abrirRotas() {
   });
 
   document.getElementById("modal-rotas").classList.remove("oculto");
+  renderizarMinhasRotas();
 }
 
 function fecharRotas() {
@@ -5491,6 +5594,276 @@ function sairModoRota() {
   document.body.classList.remove("modo-rota-ativo");
   document.getElementById("btn-sair-rota").classList.add("oculto");
   window.controleMapa?.resetarZoom();
+}
+
+/* ============================================================
+   Rotas PERSONALIZADAS: criadas por qualquer usuário, sem selo (ao
+   contrário das rotas oficiais de data/rotas.json, que nunca entram
+   aqui -- ficam em coleções/objetos totalmente separados, então não
+   contam pras conquistas de rota nem aparecem misturadas com as
+   oficiais). Guardadas em rotasPersonalizadas no Firestore (ver
+   criarRotaPersonalizada/etc em js/auth.js).
+   ============================================================ */
+
+// Municípios escolhidos na tela de criação (Set de códigos IBGE) --
+// sobrevive à digitação no filtro de busca.
+let municipiosEscolhidosNaRota = new Set();
+// Rota personalizada atualmente aberta no modal de detalhe.
+let rotaPersonalizadaSelecionada = null;
+
+function abrirModalCriarRota() {
+  municipiosEscolhidosNaRota = new Set();
+  document.getElementById("input-nome-rota").value = "";
+  document.getElementById("input-descricao-rota").value = "";
+  document.getElementById("input-filtro-municipios-rota").value = "";
+  document.getElementById("criar-rota-erro").classList.add("oculto");
+  renderizarListaMunicipiosParaEscolher("");
+  fecharRotas();
+  document.getElementById("modal-criar-rota").classList.remove("oculto");
+}
+
+function fecharModalCriarRota() {
+  document.getElementById("modal-criar-rota").classList.add("oculto");
+}
+
+/**
+ * Lista com filtro de texto dos 92 municípios pra escolher quais
+ * entram na rota -- lê direto do #mapa-rj (mesma fonte que tudo mais),
+ * ordenada por nome. A seleção (municipiosEscolhidosNaRota) persiste
+ * entre re-renderizações causadas por digitar no filtro.
+ */
+function renderizarListaMunicipiosParaEscolher(filtro) {
+  const lista = document.getElementById("criar-rota-lista-municipios");
+  lista.innerHTML = "";
+  const filtroLower = (filtro || "").trim().toLowerCase();
+
+  const municipios = Array.from(document.querySelectorAll("#mapa-rj .municipio"))
+    .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
+    .filter((m, indice, todos) => todos.findIndex((x) => x.id === m.id) === indice)
+    .filter((m) => !filtroLower || m.nome.toLowerCase().includes(filtroLower))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  municipios.forEach((m) => {
+    const item = document.createElement("label");
+    item.className = "criar-rota-municipio-item";
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = municipiosEscolhidosNaRota.has(m.id);
+    check.addEventListener("change", () => {
+      if (check.checked) municipiosEscolhidosNaRota.add(m.id);
+      else municipiosEscolhidosNaRota.delete(m.id);
+      atualizarContadorCriarRota();
+    });
+    const texto = document.createElement("span");
+    texto.textContent = m.nome;
+    item.append(check, texto);
+    lista.appendChild(item);
+  });
+
+  atualizarContadorCriarRota();
+}
+
+function atualizarContadorCriarRota() {
+  const n = municipiosEscolhidosNaRota.size;
+  document.getElementById("criar-rota-contador").textContent =
+    `${n} município${n === 1 ? "" : "s"} selecionado${n === 1 ? "" : "s"}`;
+}
+
+async function salvarRotaPersonalizada() {
+  const erroEl = document.getElementById("criar-rota-erro");
+  erroEl.classList.add("oculto");
+  const nome = document.getElementById("input-nome-rota").value;
+  const descricao = document.getElementById("input-descricao-rota").value;
+  const municipios = Array.from(municipiosEscolhidosNaRota);
+
+  const botao = document.getElementById("btn-salvar-rota-personalizada");
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+  try {
+    await window.raspadinhaAuth.criarRotaPersonalizada({ nome, descricao, municipios });
+    fecharModalCriarRota();
+    abrirRotas();
+  } catch (erro) {
+    erroEl.textContent = erro.message || "Não foi possível salvar a rota agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar rota";
+  }
+}
+
+/**
+ * Renderiza a seção "Minhas rotas" dentro do modal de Rotas Temáticas
+ * (ver abrirRotas). Busca sempre que o modal abre -- lista curta, sem
+ * necessidade de cache.
+ */
+async function renderizarMinhasRotas() {
+  const lista = document.getElementById("minhas-rotas-lista");
+  lista.innerHTML = '<div class="spinner"></div>';
+  try {
+    const rotas = await window.raspadinhaAuth.buscarMinhasRotasPersonalizadas();
+    lista.innerHTML = "";
+    if (!rotas.length) {
+      const vazio = document.createElement("p");
+      vazio.id = "minhas-rotas-vazio";
+      vazio.textContent = "Você ainda não criou nenhuma rota.";
+      lista.appendChild(vazio);
+      return;
+    }
+    rotas.forEach((rota) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "rota-personalizada-item";
+      const visitados = rota.municipios.filter((id) => estaVerificado(id)).length;
+      item.innerHTML = `${escaparHtml(rota.nome)}<span>${visitados}/${rota.municipios.length} municípios</span>`;
+      item.addEventListener("click", () => abrirRotaPersonalizadaDetalhe(rota));
+      lista.appendChild(item);
+    });
+  } catch (erro) {
+    console.error("Falha ao buscar minhas rotas:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar suas rotas agora.</p>";
+  }
+}
+
+function abrirRotaPersonalizadaDetalhe(rota) {
+  rotaPersonalizadaSelecionada = rota;
+  const meuUid = window.raspadinhaAuth?.usuarioAtual?.uid;
+  const souDono = rota.donoUid === meuUid;
+  const visitados = rota.municipios.filter((id) => estaVerificado(id)).length;
+
+  document.getElementById("rota-personalizada-nome").textContent = rota.nome;
+  document.getElementById("rota-personalizada-autor").textContent = souDono
+    ? "Criada por você"
+    : `Criada por ${rota.donoApelido || "alguém"}`;
+  document.getElementById("rota-personalizada-descricao").textContent = rota.descricao || "";
+  document.getElementById("rota-personalizada-status").textContent =
+    `${visitados} / ${rota.municipios.length} municípios verificados`;
+  document.getElementById("rota-personalizada-barra-preenchida").style.width =
+    `${(visitados / rota.municipios.length) * 100}%`;
+  document.getElementById("btn-excluir-rota-personalizada").classList.toggle("oculto", !souDono);
+
+  fecharRotas();
+  document.getElementById("modal-rota-personalizada-detalhe").classList.remove("oculto");
+}
+
+function fecharRotaPersonalizadaDetalhe() {
+  document.getElementById("modal-rota-personalizada-detalhe").classList.add("oculto");
+}
+
+/** Mesma ideia de entrarModoRota, mas recebe a lista de ids direto
+ * (rota personalizada não vive em rotasInfo). Usa o mesmo
+ * sairModoRota pra desfazer -- ele já é genérico. */
+function entrarModoRotaPersonalizada(ids) {
+  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
+    const naRota = ids.includes(path.dataset.municipio);
+    path.classList.toggle("municipio-da-rota", naRota);
+    path.classList.toggle("municipio-fora-da-rota", !naRota);
+  });
+  document.body.classList.add("modo-rota-ativo");
+  document.getElementById("btn-sair-rota").classList.remove("oculto");
+  window.controleMapa?.focarEmMunicipios(ids);
+}
+
+async function excluirRotaPersonalizadaAtual() {
+  if (!rotaPersonalizadaSelecionada) return;
+  if (!confirm(`Excluir a rota "${rotaPersonalizadaSelecionada.nome}"? Essa ação não pode ser desfeita.`)) return;
+  try {
+    await window.raspadinhaAuth.excluirRotaPersonalizada(rotaPersonalizadaSelecionada.id);
+    fecharRotaPersonalizadaDetalhe();
+    abrirRotas();
+  } catch (erro) {
+    alert("Não foi possível excluir a rota agora.");
+  }
+}
+
+/**
+ * Compartilhar rota personalizada: link externo (Web Share/copiar) OU
+ * um post na Comunidade Desbrava. Como criarPost exige uma foto, gera
+ * um "cartão" da rota via canvas (mesmo espírito do cartão de
+ * progresso) e usa ele como a foto do post.
+ */
+async function compartilharRotaPersonalizada() {
+  if (!rotaPersonalizadaSelecionada) return;
+  const rota = rotaPersonalizadaSelecionada;
+  const compartilharNaComunidade = confirm(
+    "OK = compartilhar como post na Comunidade Desbrava.\nCancelar = compartilhar o link (WhatsApp, etc)."
+  );
+
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("rotaPersonalizada", rota.id);
+
+  if (compartilharNaComunidade) {
+    try {
+      const dataUrl = await gerarCartaoRotaPersonalizada(rota);
+      const resposta = await fetch(dataUrl);
+      const blob = await resposta.blob();
+      const arquivo = new File([blob], "rota-desbrava.png", { type: "image/png" });
+      await window.raspadinhaAuth.criarPost({
+        arquivoFoto: arquivo,
+        texto: `Criei a rota "${rota.nome}"! ${rota.descricao || ""} 🗺️`.trim(),
+      });
+      alert("Rota compartilhada na Comunidade! 🎉");
+    } catch (erro) {
+      console.error("Falha ao compartilhar rota na comunidade:", erro);
+      alert("Não foi possível compartilhar agora. Tente de novo.");
+    }
+    return;
+  }
+
+  const dados = {
+    title: "Desbrava",
+    text: `Olha a rota "${rota.nome}" que criei no Desbrava!`,
+    url: url.toString(),
+  };
+  if (navigator.share) {
+    navigator.share(dados).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(dados.url)
+      .then(() => alert("Link copiado!"))
+      .catch(() => prompt("Copie o link:", dados.url));
+  } else {
+    prompt("Copie o link:", dados.url);
+  }
+}
+
+/** Cartão simples (canvas) representando a rota, usado como "foto" ao
+ * compartilhar a rota como post na comunidade (ver compartilharRotaPersonalizada). */
+async function gerarCartaoRotaPersonalizada(rota) {
+  const largura = 600;
+  const altura = 400;
+  const canvas = document.createElement("canvas");
+  canvas.width = largura;
+  canvas.height = altura;
+  const ctx = canvas.getContext("2d");
+
+  const gradiente = ctx.createLinearGradient(0, 0, 0, altura);
+  gradiente.addColorStop(0, "#1e293b");
+  gradiente.addColorStop(1, "#0f172a");
+  ctx.fillStyle = gradiente;
+  ctx.fillRect(0, 0, largura, altura);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#2BD576";
+  ctx.font = "bold 28px system-ui, sans-serif";
+  ctx.fillText("🗺️ ROTA PERSONALIZADA", largura / 2, 70);
+
+  ctx.fillStyle = "#f1f5f9";
+  ctx.font = "bold 36px system-ui, sans-serif";
+  quebrarTextoEmLinhas(ctx, rota.nome, 130, largura * 0.8, 44).forEach((linha) => {
+    ctx.fillText(linha.texto, largura / 2, linha.y);
+  });
+
+  ctx.font = "600 22px system-ui, sans-serif";
+  ctx.fillStyle = "#94a3b8";
+  ctx.fillText(`${rota.municipios.length} municípios`, largura / 2, 250);
+
+  ctx.font = "18px system-ui, sans-serif";
+  ctx.fillStyle = "#64748b";
+  ctx.fillText("Desbrava · raspe o mapa do Rio de Janeiro", largura / 2, altura - 30);
+
+  return canvas.toDataURL("image/png");
 }
 
 /**

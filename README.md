@@ -227,6 +227,19 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
           }
         }
 
+        // Rotas personalizadas: criadas por qualquer usuário logado,
+        // SEM selo (diferente de data/rotas.json, que não passa pelo
+        // Firestore). Leitura liberada pra qualquer autenticado (o
+        // link compartilhado ?rotaPersonalizada=<id> precisa funcionar
+        // pra quem não é o dono); só o dono cria/edita/apaga a própria.
+        match /rotasPersonalizadas/{rotaId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null
+            && request.resource.data.donoUid == request.auth.uid;
+          allow update, delete: if request.auth != null
+            && request.auth.uid == resource.data.donoUid;
+        }
+
         // Sugestões da Comunidade: uma subcoleção POR MUNICÍPIO (o id
         // do IBGE vira o id do documento pai, que nunca precisa
         // existir de verdade -- só serve pra agrupar a subcoleção
