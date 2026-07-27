@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.18";
+const VERSAO_APP = "0.10.19";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.18";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.19", itens: ["Novo menu ao compartilhar uma rota (link ou Comunidade).", "Rastreio em segundo plano agora confere sua localização de hora em hora, em vez de ficar o tempo todo ligado — usa bem menos bateria."] },
   { versao: "0.10.18", itens: ["Corrigido: 'Minhas rotas' agora carrega certinho."] },
   { versao: "0.10.17", itens: ["Rotas personalizadas: monte sua própria rota com os municípios que quiser, com nome e descrição, e compartilhe por link ou na Comunidade.", "Novo link \"Bora buscar esse selo?\" no popup de cada município, pra convidar alguém a raspar junto."] },
   { versao: "0.10.16", itens: ["Novos efeitos sonoros: raspar, revelar selo, selo dourado, curtir e conquista (pode desligar em Configurações).", "Brilho do selo dourado mais suave e contido na imagem."] },
@@ -646,6 +647,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btn-compartilhar-rota-personalizada").addEventListener("click", compartilharRotaPersonalizada);
   document.getElementById("btn-excluir-rota-personalizada").addEventListener("click", excluirRotaPersonalizadaAtual);
+  document.getElementById("btn-fechar-compartilhar-rota").addEventListener("click", fecharMenuCompartilharRota);
+  document.getElementById("modal-compartilhar-rota").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-compartilhar-rota") fecharMenuCompartilharRota();
+  });
+  document.getElementById("btn-compartilhar-rota-link").addEventListener("click", compartilharRotaPersonalizadaComoLink);
+  document.getElementById("btn-compartilhar-rota-comunidade").addEventListener("click", compartilharRotaPersonalizadaNaComunidade);
+  document.getElementById("btn-cancelar-compartilhar-rota").addEventListener("click", fecharMenuCompartilharRota);
 
   // ---- Amigos ----
   document
@@ -851,33 +859,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ============================================================
    Rastreamento de municípios em SEGUNDO PLANO (só no app Android
-   instalado via Capacitor). Enquanto ligado (opt-in em
-   Configurações), o app registra os municípios por onde a pessoa
-   passa mesmo minimizado -- assim não precisa abrir o app em cada
-   cidade da viagem. Limitações honestas: exige a permissão "o tempo
-   todo", mostra uma notificação fixa (imposição do Android) e para
-   se o app for FECHADO à força (o SO mata o webview). No navegador
-   comum nada disso aparece.
+   instalado via Capacitor), via @capacitor/background-runner. Enquanto
+   ligado (opt-in em Configurações), o Android acorda um script isolado
+   (runners/geo-runner.js) a cada ~60 minutos ENQUANTO O APP ESTIVER EM
+   SEGUNDO PLANO (minimizado -- não funciona se o app for fechado à
+   força/removido dos recentes, o SO mata o processo e nada roda mais;
+   isso é limitação do próprio Android, não dá pra contornar via JS).
+   Bem mais leve de bateria que o watcher de GPS contínuo antigo
+   (baseado em distância), porque o GPS só liga uma vez por hora, não
+   fica escutando o tempo todo.
+
+   Limitação honesta do mecanismo: o runner roda isolado, sem acesso ao
+   app principal -- a única forma pública de "avisar" o app de um
+   município novo é uma notificação local (ver geo-runner.js). Ela fica
+   na bandeja até ser TOCADA; só nesse momento o app sabe qual
+   município era (pelo id da notificação) e confirma a presença
+   (confirmarPresencaPorId). Se a notificação for ignorada/dispensada
+   sem tocar, a detecção se perde -- não há como o app ler o que o
+   runner descobriu sem abrir a notificação.
    ============================================================ */
 const CHAVE_RASTREIO_FUNDO = "desbrava_rastreio_fundo";
-let watcherFundoId = null;
 
 function ehAppNativo() {
   return !!window.Capacitor?.isNativePlatform?.();
 }
 
-function pluginBgGeo() {
+function pluginBackgroundRunner() {
   return (
-    window.Capacitor?.Plugins?.BackgroundGeolocation ||
-    (window.Capacitor?.registerPlugin && window.Capacitor.registerPlugin("BackgroundGeolocation")) ||
+    window.Capacitor?.Plugins?.BackgroundRunner ||
+    (window.Capacitor?.registerPlugin && window.Capacitor.registerPlugin("BackgroundRunner")) ||
     null
   );
 }
 
+const LABEL_RUNNER_GEO = "io.github.pvsm23.desbrava.geo";
+
 function configurarRastreamentoFundo() {
   const secao = document.getElementById("secao-rastreio-fundo");
   const check = document.getElementById("check-rastreio-fundo");
-  if (!secao || !check || !ehAppNativo() || !pluginBgGeo()) return;
+  const runner = pluginBackgroundRunner();
+  if (!secao || !check || !ehAppNativo() || !runner) return;
+
+  // Registrado sempre (não só quando o toggle está ligado): o clique
+  // na notificação pode acontecer horas/dias depois, inclusive reabrindo
+  // o app do zero -- o listener precisa já estar de prontidão.
+  runner.addListener("backgroundRunnerNotificationReceived", (evento) => {
+    const municipioId = String(evento?.notificationId || "");
+    if (!municipioId) return;
+    confirmarPresencaPorId(municipioId);
+    const path = document.querySelector(`#mapa-rj [data-municipio="${municipioId}"]`);
+    if (path && window.raspadinhaAuth?.usuarioAtual) {
+      abrirSeloPorId(municipioId, path.dataset.nome);
+    }
+  });
 
   secao.classList.remove("oculto");
   const ligado = localStorage.getItem(CHAVE_RASTREIO_FUNDO) === "1";
@@ -890,7 +924,7 @@ function configurarRastreamentoFundo() {
       if (ok) localStorage.setItem(CHAVE_RASTREIO_FUNDO, "1");
       else {
         check.checked = false;
-        alert("Não foi possível ligar o rastreamento. Confira se você concedeu a permissão de localização 'o tempo todo' nas configurações do Android.");
+        alert("Não foi possível ligar o rastreamento. Confira se você concedeu a permissão de localização e notificações nas configurações do Android.");
       }
     } else {
       await pararRastreioFundo();
@@ -900,62 +934,77 @@ function configurarRastreamentoFundo() {
 }
 
 async function iniciarRastreioFundo() {
-  if (watcherFundoId) return true;
-  const BG = pluginBgGeo();
-  if (!BG) return false;
+  const runner = pluginBackgroundRunner();
+  if (!runner) return false;
   try {
-    watcherFundoId = await BG.addWatcher(
-      {
-        backgroundTitle: "Desbrava",
-        backgroundMessage: "Registrando os municípios por onde você passa.",
-        requestPermissions: true,
-        stale: false,
-        distanceFilter: 150, // só reage a cada ~150 m, pra poupar bateria
-      },
-      (location, error) => {
-        if (error || !location) return;
-        processarLocalizacaoFundo(location.latitude, location.longitude);
-      }
-    );
+    const permissoes = await runner.requestPermissions({ apis: ["geolocation", "notifications"] });
+    if (permissoes.geolocation !== "granted" || permissoes.notifications !== "granted") return false;
+
+    await runner.dispatchEvent({
+      label: LABEL_RUNNER_GEO,
+      event: "atualizarRastreioAtivo",
+      details: { ativo: true },
+    });
+    sincronizarProgressoComRunner();
     return true;
   } catch (erro) {
     console.error("Falha ao iniciar rastreio em segundo plano:", erro);
-    watcherFundoId = null;
     return false;
   }
 }
 
 async function pararRastreioFundo() {
-  const BG = pluginBgGeo();
-  if (BG && watcherFundoId != null) {
-    try {
-      await BG.removeWatcher({ id: watcherFundoId });
-    } catch (erro) {
-      console.error("Falha ao parar rastreio:", erro);
-    }
+  const runner = pluginBackgroundRunner();
+  if (!runner) return;
+  try {
+    await runner.dispatchEvent({
+      label: LABEL_RUNNER_GEO,
+      event: "atualizarRastreioAtivo",
+      details: { ativo: false },
+    });
+  } catch (erro) {
+    console.error("Falha ao parar rastreio:", erro);
   }
-  watcherFundoId = null;
 }
 
 /**
- * Cada posição recebida em segundo plano: descobre o município e
- * confirma a presença ali -- mesma lógica da bússola/abertura, mas
- * silenciosa (sem toast). Só grava se mudou algo, pra não ficar
- * reescrevendo/sincronizando à toa.
+ * Manda pro runner (isolado) a lista de municípios já verificados, pra
+ * ele saber quais IGNORAR na checagem periódica (não faz sentido
+ * notificar um município que a pessoa já raspou). Chamada sempre que
+ * o progresso muda (ver salvarEstado) -- sem custo real se o
+ * rastreamento estiver desligado ou fora do app nativo (só desiste
+ * cedo). Nunca espera a resposta (fire-and-forget): é sincronização em
+ * segundo plano, não pode travar o salvamento normal do progresso.
  */
-function processarLocalizacaoFundo(lat, lon) {
-  const id = encontrarMunicipioPorCoordenada(lon, lat);
-  if (!id) return;
+function sincronizarProgressoComRunner() {
+  if (!ehAppNativo()) return;
+  const runner = pluginBackgroundRunner();
+  if (!runner) return;
+  const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id));
+  runner
+    .dispatchEvent({
+      label: LABEL_RUNNER_GEO,
+      event: "sincronizarProgressoDesbrava",
+      details: { visitados },
+    })
+    .catch(() => {});
+}
+
+/**
+ * Confirma presença num município SÓ pelo código IBGE (sem lat/lon) --
+ * usado quando a notificação do rastreio em segundo plano é tocada, já
+ * que a leitura de GPS foi feita pelo runner, não pelo app principal.
+ * Mesma lógica de processarLocalizacaoFundo, sem a parte de "descobrir"
+ * o município (já veio pronto) nem o anti-GPS-falso (não há uma
+ * segunda coordenada pra comparar deslocamento aqui).
+ */
+function confirmarPresencaPorId(id) {
   const dados = estadoMapa[id];
   if (dados?.visitado) {
-    if (!dados.verificado) {
-      avaliarDeslocamento(id, lat, lon);
-      atualizarVerificacaoMunicipio(id, true, "");
-    }
+    if (!dados.verificado) atualizarVerificacaoMunicipio(id, true, "");
     return;
   }
   if (dados?.presencaConfirmadaEm) return;
-  avaliarDeslocamento(id, lat, lon);
   estadoMapa[id] = { ...estadoMapa[id], presencaConfirmadaEm: new Date().toISOString() };
   salvarEstado();
   aplicarEstadoNoSVG();
@@ -5778,40 +5827,28 @@ async function excluirRotaPersonalizadaAtual() {
 }
 
 /**
- * Compartilhar rota personalizada: link externo (Web Share/copiar) OU
- * um post na Comunidade Desbrava. Como criarPost exige uma foto, gera
- * um "cartão" da rota via canvas (mesmo espírito do cartão de
- * progresso) e usa ele como a foto do post.
+ * Compartilhar rota personalizada: abre um menu de opções (link externo
+ * OU post na Comunidade) -- substitui o antigo confirm()/cancel() do
+ * navegador. Ver btn-compartilhar-rota-link/comunidade/cancelar.
  */
-async function compartilharRotaPersonalizada() {
+function compartilharRotaPersonalizada() {
   if (!rotaPersonalizadaSelecionada) return;
+  document.getElementById("modal-compartilhar-rota").classList.remove("oculto");
+}
+
+function fecharMenuCompartilharRota() {
+  document.getElementById("modal-compartilhar-rota").classList.add("oculto");
+}
+
+/** Compartilha o link externo (?rotaPersonalizada=id) via Web Share/copiar. */
+function compartilharRotaPersonalizadaComoLink() {
   const rota = rotaPersonalizadaSelecionada;
-  const compartilharNaComunidade = confirm(
-    "OK = compartilhar como post na Comunidade Desbrava.\nCancelar = compartilhar o link (WhatsApp, etc)."
-  );
+  fecharMenuCompartilharRota();
+  if (!rota) return;
 
   const url = new URL(window.location.href);
   url.search = "";
   url.searchParams.set("rotaPersonalizada", rota.id);
-
-  if (compartilharNaComunidade) {
-    try {
-      const dataUrl = await gerarCartaoRotaPersonalizada(rota);
-      const resposta = await fetch(dataUrl);
-      const blob = await resposta.blob();
-      const arquivo = new File([blob], "rota-desbrava.png", { type: "image/png" });
-      await window.raspadinhaAuth.criarPost({
-        arquivoFoto: arquivo,
-        texto: `Criei a rota "${rota.nome}"! ${rota.descricao || ""} 🗺️`.trim(),
-      });
-      alert("Rota compartilhada na Comunidade! 🎉");
-    } catch (erro) {
-      console.error("Falha ao compartilhar rota na comunidade:", erro);
-      alert("Não foi possível compartilhar agora. Tente de novo.");
-    }
-    return;
-  }
-
   const dados = {
     title: "Desbrava",
     text: `Olha a rota "${rota.nome}" que criei no Desbrava!`,
@@ -5826,6 +5863,32 @@ async function compartilharRotaPersonalizada() {
       .catch(() => prompt("Copie o link:", dados.url));
   } else {
     prompt("Copie o link:", dados.url);
+  }
+}
+
+/**
+ * Compartilha como post na Comunidade Desbrava. Como criarPost exige
+ * uma foto, gera um "cartão" da rota via canvas (mesmo espírito do
+ * cartão de progresso) e usa ele como a foto do post.
+ */
+async function compartilharRotaPersonalizadaNaComunidade() {
+  const rota = rotaPersonalizadaSelecionada;
+  fecharMenuCompartilharRota();
+  if (!rota) return;
+
+  try {
+    const dataUrl = await gerarCartaoRotaPersonalizada(rota);
+    const resposta = await fetch(dataUrl);
+    const blob = await resposta.blob();
+    const arquivo = new File([blob], "rota-desbrava.png", { type: "image/png" });
+    await window.raspadinhaAuth.criarPost({
+      arquivoFoto: arquivo,
+      texto: `Criei a rota "${rota.nome}"! ${rota.descricao || ""} 🗺️`.trim(),
+    });
+    alert("Rota compartilhada na Comunidade! 🎉");
+  } catch (erro) {
+    console.error("Falha ao compartilhar rota na comunidade:", erro);
+    alert("Não foi possível compartilhar agora. Tente de novo.");
   }
 }
 
@@ -6224,6 +6287,7 @@ function resetarTudo() {
 
 function salvarEstado() {
   localStorage.setItem(chaveComUid(STORAGE_KEY), JSON.stringify(estadoMapa));
+  sincronizarProgressoComRunner();
 }
 
 function carregarEstado() {

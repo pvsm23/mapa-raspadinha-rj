@@ -26,6 +26,10 @@ const INCLUIR = [
   "assets",
   "data",
   "guia",
+  // Arquivo do Background Runner (ver capacitor.config.json ->
+  // BackgroundRunner.src) -- roda isolado, fora do webview, mas
+  // precisa estar dentro do bundle do app pra o Android achar.
+  "runners",
   // Só fazem sentido no site (o Netlify publica esta mesma pasta),
   // mas não atrapalham dentro do APK.
   "ads.txt",

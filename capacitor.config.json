@@ -14,6 +14,14 @@
     "FirebaseAuthentication": {
       "skipNativeAuth": true,
       "providers": ["google.com"]
+    },
+    "BackgroundRunner": {
+      "label": "io.github.pvsm23.desbrava.geo",
+      "src": "runners/geo-runner.js",
+      "event": "checarLocalizacaoDesbrava",
+      "repeat": true,
+      "interval": 60,
+      "autoStart": true
     }
   }
 }

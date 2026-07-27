@@ -641,6 +641,25 @@
     </div>
   </div>
 
+  <!-- Menu de opções ao compartilhar uma rota personalizada -- substitui
+       o antigo confirm()/cancel() do navegador. Ver
+       compartilharRotaPersonalizada em js/script.js. -->
+  <div id="modal-compartilhar-rota" class="oculto">
+    <div id="compartilhar-rota-conteudo">
+      <button id="btn-fechar-compartilhar-rota" aria-label="Fechar">✕</button>
+      <h2>↗ Compartilhar rota</h2>
+      <button type="button" id="btn-compartilhar-rota-link" class="btn-opcao-compartilhar">
+        🔗 Link (WhatsApp, etc)
+      </button>
+      <button type="button" id="btn-compartilhar-rota-comunidade" class="btn-opcao-compartilhar">
+        📣 Postar na Comunidade
+      </button>
+      <button type="button" id="btn-cancelar-compartilhar-rota" class="btn-opcao-cancelar">
+        Cancelar
+      </button>
+    </div>
+  </div>
+
   <!-- Rotas tematicas: detalhe de uma rota (historia, progresso e o
        selo especial, mesmo padrao do popup de regiao) -->
   <div id="modal-rota-detalhe" class="oculto">
@@ -800,10 +819,10 @@
         <h3>🧭 Rastrear em segundo plano</h3>
         <label id="label-rastreio-fundo">
           <input type="checkbox" id="check-rastreio-fundo">
-          Registrar os municípios por onde eu passar, mesmo com o app minimizado
+          Checar de hora em hora se estou num município novo, mesmo com o app minimizado
         </label>
         <p id="rastreio-fundo-status">
-          Enquanto ligado, o Android mostra uma notificação fixa e a bateria é usada um pouco mais. Funciona com o app minimizado (não fechado à força).
+          A cada ~60 minutos o Android confere sua localização por um instante (não fica com o GPS ligado o tempo todo). Se detectar um município novo, manda uma notificação — toque nela pra confirmar e poder raspar. Só funciona com o app minimizado, não fechado à força (removido dos recentes).
         </p>
       </div>
 
