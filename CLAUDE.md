@@ -36,16 +36,35 @@ Netlify (web) · GitHub Releases (APK, via `tools/publicar-apk.ps1`).
 Build APK: `node tools/montar-www.js && npx cap sync android && cd
 android && ./gradlew assembleDebug bundleRelease`.
 
-## Última funcionalidade (v0.11.2)
+## Última funcionalidade (v0.11.3)
 
-- **Modo Viagem**: substituiu de vez o rastreio em segundo plano
-  (`@capacitor/background-runner`, removido do projeto). Agora é um
-  foreground service explícito (`@capacitor-community/background-geolocation`),
-  ligado só pelo botão flutuante acima da bússola, com notificação fixa
-  enquanto ativo. Sem `ACCESS_BACKGROUND_LOCATION` no manifest (motivo
-  da rejeição na Play Store). Acumula quilometragem do trajeto e grava
-  municípios detectados em `municipiosPendentesVerificados`
-  (localStorage) até a pessoa tocar pra raspar.
+- **3 recursos PRO do Motoclube ligados ao Modo Viagem** (gate
+  `souMembroMotoclube()`, mesma regra de "gratuito por enquanto" do
+  Motoclube):
+  - **Garagem Virtual** (coleção `garagem`, doc id = uid): marca/modelo/
+    apelido da moto + odômetro somado sozinho ao encerrar um Modo
+    Viagem. Estritamente privado (regra Firestore só permite o dono
+    ler/escrever) — nunca aparece em perfil público.
+  - **Trilha do trajeto**: Modo Viagem grava as coordenadas percorridas;
+    ao encerrar, dá pra salvar como `rotasPersonalizadas` (campo
+    `trilha`), privada por padrão (`publica: false` — aviso: a leitura
+    dessa coleção continua liberada por id pra qualquer logado, é o
+    que faz o link compartilhado funcionar; "privada" aqui é só não
+    aparecer em listagem nenhuma).
+  - **Resumo + compartilhamento**: tela com km/tempo/municípios e
+    geração de imagem via `<canvas>` (cartão do app ou por cima de
+    foto escolhida no aparelho), pra postar na Comunidade (reusa
+    `criarPost`) ou compartilhar fora do app (Web Share API).
+  - Log privado das viagens: coleção `viagens` (append-only, só o dono lê).
+- **Modo Viagem** (base, gratuita pra todos): substituiu de vez o
+  rastreio em segundo plano (`@capacitor/background-runner`, removido
+  do projeto). Foreground service explícito
+  (`@capacitor-community/background-geolocation`), ligado só pelo
+  botão flutuante acima da bússola, com notificação fixa enquanto
+  ativo. Sem `ACCESS_BACKGROUND_LOCATION` no manifest (motivo da
+  rejeição na Play Store). Município detectado vira
+  `municipiosPendentesVerificados` (localStorage) até a pessoa tocar
+  pra raspar.
 - Firestore com `persistentLocalCache` (grava progresso offline, em
   estrada sem sinal, e sincroniza sozinho depois).
 - Motoclube Desbrava: dicas/lojas (peças, oficinas, acessórios...) com
