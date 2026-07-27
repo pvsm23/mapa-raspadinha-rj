@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.13";
+const VERSAO_APP = "0.10.14";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.13";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.14", itens: ["Novo visual dos botões da comunidade (coração que enche ao curtir).", "Selos dourados ganharam um brilho que passa.", "Link 'me adicione como amigo(a)' na tela de Amigos."] },
   { versao: "0.10.13", itens: ["17 municípios ganharam selo ilustrado próprio! Angra dos Reis, Campos, Barra Mansa, Cantagalo e mais."] },
   { versao: "0.10.12", itens: ["Duas rotas novas com selo próprio: Povos Goytacazes e Povos Tupinambás — a história dos povos indígenas que dominavam o Rio antes da colonização."] },
   { versao: "0.10.11", itens: ["Todos os 92 municípios do Rio agora têm curiosidade e história! E agora dá pra ler mesmo sem raspar — é só tocar no município."] },
@@ -65,6 +66,21 @@ const HISTORICO_VERSOES = [
 // Admin (configuracoes/global.chavePix), ela é carregada por cima em
 // carregarChavePixGlobal() e passa a valer pra todo mundo.
 let CHAVE_PIX_COLABORACAO = "pvsm23@jim.com";
+
+// Ícones SVG dos botões da comunidade (curtir/comentar/compartilhar).
+// Estilo em CSS (.ico-social): contorno verde vazio por padrão; o
+// coração vira verde cheio quando .curtido (ver aoCurtirPost) com uma
+// animação de "pop". Substituem os emojis ❤️💬↗ antigos.
+const ICONE_CORACAO =
+  '<svg class="ico-social ico-coracao" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M12 20.3l-1.4-1.28C5.4 14.36 2 11.28 2 7.5 2 4.9 4.02 3 6.5 3c1.6 0 3.13.86 3.9 2.18h1.2C12.37 3.86 13.9 3 15.5 3 17.98 3 20 4.9 20 7.5c0 3.78-3.4 6.86-8.6 11.53L12 20.3z"/></svg>';
+const ICONE_COMENTAR =
+  '<svg class="ico-social ico-comentar" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M20 11.5a7.5 7.5 0 0 1-10.9 6.68L4 19.5l1.4-4.2A7.5 7.5 0 1 1 20 11.5z"/></svg>';
+const ICONE_COMPARTILHAR =
+  '<svg class="ico-social ico-compartilhar" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/>' +
+  '<polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>';
 
 // Dono "atual" das chaves de localStorage acima -- "anon" enquanto
 // ninguém logou nesta aba, ou o uid de quem está logado. CRÍTICO:
@@ -179,6 +195,16 @@ let postIdPendenteDoLink = new URLSearchParams(window.location.search).get("post
   const conviteUid = new URLSearchParams(window.location.search).get("convite");
   if (conviteUid) {
     localStorage.setItem("desbrava_convite_pendente", conviteUid);
+  }
+})();
+
+// Link "me adicione como amigo(a)" (?amigo=uid): guarda até a pessoa
+// logar; aí processarAmigoPendente manda um pedido de amizade pra quem
+// gerou o link (ver o listener de "auth-mudou").
+(function detectarLinkDeAmigo() {
+  const amigoUid = new URLSearchParams(window.location.search).get("amigo");
+  if (amigoUid) {
+    localStorage.setItem("desbrava_amigo_pendente", amigoUid);
   }
 })();
 
@@ -525,6 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
   document.addEventListener("auth-mudou", (evento) => abrirPostDoLinkSeExistir(evento.detail?.usuario));
+  document.addEventListener("auth-mudou", (evento) => processarAmigoPendente(evento.detail?.usuario));
   document.addEventListener("precisa-apelido", (evento) => abrirModalApelido(evento.detail));
   document.addEventListener("conta-bloqueada", (evento) => mostrarTelaContaBloqueada(evento.detail));
   document
@@ -588,6 +615,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("input-busca-amigo").addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") buscarAmigoPorTexto();
   });
+  document.getElementById("btn-link-amigo").addEventListener("click", () => exigirLogin(compartilharLinkAmigo));
 
   // ---- Check-in semanal ----
   document
@@ -1062,6 +1090,54 @@ function compartilharApp() {
       .catch(() => prompt("Copie o link para compartilhar:", dados.url));
   } else {
     prompt("Copie o link para compartilhar:", dados.url);
+  }
+}
+
+/**
+ * Gera e compartilha o link "me adicione como amigo(a)" (?amigo=<meu-uid>).
+ * Quem abrir o link, estando logado, manda um pedido de amizade pra mim
+ * automaticamente (ver processarAmigoPendente). Já é gated por exigirLogin.
+ */
+function compartilharLinkAmigo() {
+  const uid = window.raspadinhaAuth?.usuarioAtual?.uid;
+  if (!uid) return;
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("amigo", uid);
+  const apelido = window.raspadinhaAuth?.apelido || "Alguém";
+  const dados = {
+    title: "Desbrava",
+    text: `${apelido} quer te adicionar no Desbrava! Abra o link e vocês viram amigos no app.`,
+    url: url.toString(),
+  };
+  if (navigator.share) {
+    navigator.share(dados).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(dados.url)
+      .then(() => alert("Link copiado! Quem abrir e estiver logado vira seu amigo no app."))
+      .catch(() => prompt("Copie o link:", dados.url));
+  } else {
+    prompt("Copie o link:", dados.url);
+  }
+}
+
+/**
+ * Ao logar, se veio de um link "?amigo=uid", manda um pedido de amizade
+ * pra quem gerou o link. Roda uma vez só (limpa o pendente na hora) e
+ * ignora se for o próprio uid. Ver detectarLinkDeAmigo.
+ */
+async function processarAmigoPendente(usuario) {
+  if (!usuario) return;
+  const amigoUid = localStorage.getItem("desbrava_amigo_pendente");
+  if (!amigoUid) return;
+  localStorage.removeItem("desbrava_amigo_pendente");
+  if (amigoUid === usuario.uid) return; // não dá pra ser amigo de si mesmo
+  try {
+    await window.raspadinhaAuth.enviarPedidoAmizade(amigoUid);
+    alert("Pronto! Enviamos seu pedido de amizade. 🤝");
+  } catch (erro) {
+    console.error("Falha ao enviar pedido de amizade do link:", erro);
   }
 }
 
@@ -6526,9 +6602,9 @@ function renderizarCardPost(post) {
     </div>
     <img class="post-card-foto" alt="Foto do post">
     <div class="post-card-acoes">
-      <button type="button" class="post-card-curtir${curtido ? " curtido" : ""}">❤️ <span class="post-card-curtidas">${curtidoPor.length}</span></button>
-      <button type="button" class="post-card-comentar">💬 <span class="post-card-num-comentarios">${nComentarios}</span></button>
-      <button type="button" class="post-card-compartilhar" aria-label="Compartilhar">↗</button>
+      <button type="button" class="post-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span class="post-card-curtidas">${curtidoPor.length}</span></button>
+      <button type="button" class="post-card-comentar">${ICONE_COMENTAR} <span class="post-card-num-comentarios">${nComentarios}</span></button>
+      <button type="button" class="post-card-compartilhar" aria-label="Compartilhar">${ICONE_COMPARTILHAR}</button>
     </div>
     <p class="post-card-legenda">${post.texto ? `<b>${escaparHtml(post.autorApelido)}</b> ${escaparHtml(post.texto)}` : ""}</p>
     ${marcados.length ? `<p class="post-card-marcados">Com ${marcados.map((p) => "@" + escaparHtml(p.apelido)).join(", ")}</p>` : ""}
@@ -6580,6 +6656,20 @@ function renderizarCardPost(post) {
 }
 
 /**
+ * Dispara a animação de "pop" no coração do botão de curtir. Usa
+ * remove+reflow+add pra REINICIAR a animação a cada curtida (senão só
+ * tocaria uma vez). Chamado só quando a pessoa curte, não ao descurtir
+ * nem ao renderizar um post que já estava curtido.
+ */
+function dispararPopCoracao(botao) {
+  const ico = botao.querySelector(".ico-coracao");
+  if (!ico) return;
+  ico.classList.remove("pop");
+  void ico.offsetWidth; // força reflow pra reiniciar a animação
+  ico.classList.add("pop");
+}
+
+/**
  * Curtir/descurtir com atualização otimista da UI (não espera o
  * Firestore responder pra já mostrar o resultado), desfazendo se a
  * chamada falhar.
@@ -6593,6 +6683,7 @@ async function aoCurtirPost(post, card) {
 
   botao.classList.toggle("curtido", novoEstado);
   contador.textContent = Number(contador.textContent) + (novoEstado ? 1 : -1);
+  if (novoEstado) dispararPopCoracao(botao);
 
   try {
     await window.raspadinhaAuth.curtirPost(post.id, novoEstado);
@@ -6886,8 +6977,8 @@ function renderizarCardSugestao(sugestao) {
     ${sugestao.descricao ? `<p class="sugestao-card-descricao">${escaparHtml(sugestao.descricao)}</p>` : ""}
     ${sugestao.linkMaps ? `<a class="sugestao-card-maps" href="${escaparHtml(sugestao.linkMaps)}" target="_blank" rel="noopener">📍 Abrir no Maps</a>` : ""}
     <div class="sugestao-card-acoes">
-      <button type="button" class="sugestao-card-curtir${curtido ? " curtido" : ""}">❤️ <span class="sugestao-card-curtidas">${curtidoPor.length}</span></button>
-      <button type="button" class="sugestao-card-comentar">💬 <span class="sugestao-card-num-comentarios">${sugestao.numComentarios || 0}</span></button>
+      <button type="button" class="sugestao-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span class="sugestao-card-curtidas">${curtidoPor.length}</span></button>
+      <button type="button" class="sugestao-card-comentar">${ICONE_COMENTAR} <span class="sugestao-card-num-comentarios">${sugestao.numComentarios || 0}</span></button>
       ${souAutor ? '<button type="button" class="sugestao-card-excluir">Excluir</button>' : ""}
     </div>
     <div class="sugestao-card-comentarios oculto">
@@ -6923,6 +7014,7 @@ async function aoCurtirSugestao(sugestao, card) {
 
   botao.classList.toggle("curtido", novoEstado);
   contador.textContent = Number(contador.textContent) + (novoEstado ? 1 : -1);
+  if (novoEstado) dispararPopCoracao(botao);
 
   try {
     await window.raspadinhaAuth.curtirSugestao(municipioAtualSugestoes, sugestao.id, novoEstado);

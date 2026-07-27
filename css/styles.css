@@ -1114,7 +1114,54 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   gap: 5px;
 }
 .post-card-curtir.curtido { color: var(--verde); }
-.post-card-compartilhar { margin-left: auto; font-size: 1.05rem !important; }
+.post-card-compartilhar { margin-left: auto; }
+
+/* Ícones SVG dos botões da comunidade (curtir/comentar/compartilhar):
+   contorno verde e vazio por padrão; o coração vira verde CHEIO ao
+   curtir, com uma animação de "pop". Vale pros posts E pras sugestões.
+   Ver ICONE_CORACAO em js/script.js. */
+.ico-social {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  transition: transform 0.12s ease;
+  overflow: visible;
+}
+.ico-social path,
+.ico-social polyline,
+.ico-social line {
+  fill: none;
+  stroke: var(--verde);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Contorno branco sutil pra o ícone se destacar no fundo escuro. */
+.ico-social {
+  filter: drop-shadow(0 0 0.7px rgba(255, 255, 255, 0.9));
+}
+/* Coração CHEIO (verde) quando curtido. */
+.post-card-curtir.curtido .ico-coracao path,
+.sugestao-card-curtir.curtido .ico-coracao path {
+  fill: var(--verde);
+}
+/* "Pop" só no ato de curtir (classe .pop adicionada por JS, ver
+   aoCurtirPost/aoCurtirSugestao) -- não toca ao só renderizar um post
+   que já estava curtido. */
+.ico-coracao.pop {
+  animation: coracao-pop 0.42s ease;
+}
+@keyframes coracao-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.4); }
+  55% { transform: scale(0.86); }
+  100% { transform: scale(1); }
+}
+/* Leve "tap" ao apertar os outros botões sociais. */
+.post-card-acoes button:active .ico-social,
+.sugestao-card-acoes button:active .ico-social {
+  transform: scale(0.85);
+}
 
 /* "⋯" no canto do cabeçalho (só do autor) */
 .post-card-excluir {
@@ -3211,9 +3258,76 @@ body.modo-rota-ativo #toast-onde-estou {
   isolation: isolate;
 }
 
-/* Selo dourado sem animação de brilho: os raios girantes e o brilho
-   pulsante (::before/::after) foram removidos a pedido -- o selo
-   dourado agora aparece só com a arte dourada, sem efeito de luz. */
+/* Selo dourado: efeito "light sweep" -- uma faixa de luz diagonal que
+   varre o selo de tempos em tempos (tipo reflexo em cartão holográfico),
+   recortada num círculo pra seguir o formato do selo. Substitui os
+   antigos raios girantes (removidos). Ver .selo-brilhante-luz. */
+.selo-brilhante {
+  overflow: hidden;
+}
+
+.selo-brilhante::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: circle(48% at 50% 50%);
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.35) 47%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.35) 53%,
+    transparent 62%
+  );
+  transform: translateX(-130%);
+  animation: sweep-dourado 4s ease-in-out infinite;
+  animation-delay: 0.8s;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+/* Na grade da biblioteca/perfil: o sweep vai por cima da imagem do selo
+   (que é circular), recortado no mesmo círculo. */
+.selo-item-brilhante {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.selo-item-brilhante::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  aspect-ratio: 1 / 1;
+  clip-path: circle(46% at 50% 50%);
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.4) 48%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.4) 52%,
+    transparent 60%
+  );
+  transform: translateX(-130%);
+  animation: sweep-dourado 4s ease-in-out infinite;
+  animation-delay: 1.4s;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+@keyframes sweep-dourado {
+  0% {
+    transform: translateX(-130%);
+  }
+  /* varre rápido e depois fica parado o resto do ciclo (respiro) */
+  18%,
+  100% {
+    transform: translateX(130%);
+  }
+}
 
 @keyframes pulsar-brilho {
   0%,
@@ -4174,6 +4288,25 @@ body.modo-rota-ativo #toast-onde-estou {
 }
 
 /* ---- Amigos ---- */
+
+/* Botão "Me adicione como amigo(a)" -- gera o link ?amigo=<uid>. */
+.btn-link-amigo {
+  display: block;
+  width: 100%;
+  background: rgba(43, 213, 118, 0.15);
+  color: var(--verde);
+  border: 1px solid rgba(43, 213, 118, 0.45);
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+
+.btn-link-amigo:hover {
+  background: rgba(43, 213, 118, 0.25);
+}
 
 #amigos-busca {
   display: flex;

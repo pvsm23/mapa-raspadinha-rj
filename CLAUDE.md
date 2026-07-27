@@ -45,8 +45,12 @@ arquitetura e regras do Firestore em `README.md`.
    "brilhante"). Os nomes internos de código/dados/classes/ids/chaves
    (`brilhante`, `selo-item-brilhante`, `aviso-brilhante-*`, conquistas
    `brilhante-N`) **continuam** — não renomear, senão quebra estado
-   salvo. Selo dourado **não tem animação de brilho** (removida a
-   pedido); só a arte dourada + borda estática.
+   salvo. Os **raios girantes / brilho pulsante** foram removidos a
+   pedido. Desde a v0.10.14 o selo dourado tem um **"light sweep"** — uma
+   faixa de luz diagonal que varre o selo de tempos em tempos (recortada
+   em círculo), pedida pelo Paulo. Ver `@keyframes sweep-dourado` e os
+   `::after` de `.selo-brilhante`/`.selo-item-brilhante` em
+   `css/styles.css`.
 
 6. **Chave PIX** — editável pelo Paulo no painel de Admin
    (`configuracoes/global.chavePix`). Não hardcodar de novo.

@@ -929,6 +929,11 @@
       <button id="btn-fechar-amigos" aria-label="Fechar">✕</button>
       <h2>👥 Amigos</h2>
 
+      <!-- Link "me adicione": gera um link com ?amigo=<meu-uid>. Quem
+           abrir e estiver logado manda um pedido de amizade pra você
+           automaticamente (ver processarAmigoPendente em js/script.js). -->
+      <button type="button" id="btn-link-amigo" class="btn-link-amigo">🔗 Me adicione como amigo(a)</button>
+
       <div id="amigos-busca">
         <input type="text" id="input-busca-amigo" placeholder="Buscar por e-mail ou apelido">
         <button id="btn-buscar-amigo">Buscar</button>
