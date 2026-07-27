@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.10.14";
+const VERSAO_APP = "0.10.15";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.10.14";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.10.15", itens: ["Corrigido: agora dá pra ativar as notificações no aplicativo instalado."] },
   { versao: "0.10.14", itens: ["Novo visual dos botões da comunidade (coração que enche ao curtir).", "Selos dourados ganharam um brilho que passa.", "Link 'me adicione como amigo(a)' na tela de Amigos."] },
   { versao: "0.10.13", itens: ["17 municípios ganharam selo ilustrado próprio! Angra dos Reis, Campos, Barra Mansa, Cantagalo e mais."] },
   { versao: "0.10.12", itens: ["Duas rotas novas com selo próprio: Povos Goytacazes e Povos Tupinambás — a história dos povos indígenas que dominavam o Rio antes da colonização."] },
@@ -2781,42 +2782,74 @@ function esconderToastOndeEstou() {
 }
 
 /* ============================================================
-   Notificações locais: disparadas pelo próprio app enquanto ele
-   está aberto (mesmo minimizado/em outra aba) -- via
-   Notification API + Service Worker (sw.js), pra funcionar melhor
-   no Android (Chrome no Android exige showNotification() por um
-   Service Worker; `new Notification()` direto costuma falhar lá).
-   NÃO é push de verdade: não chega com o app 100% fechado, porque
-   isso exigiria um servidor disparando via Firebase Cloud Messaging.
-   Ativado/desativado em Configurações → Notificações
+   Notificações locais: disparadas pelo próprio app enquanto ele está
+   aberto (mesmo minimizado/em outra aba) -- NÃO é push de verdade, não
+   chega com o app 100% fechado (isso exigiria servidor + Firebase Cloud
+   Messaging). Ativado/desativado em Configurações → Notificações
    (#check-notificacoes), preferência puramente local (dispositivo).
+
+   Duas implementações, conforme a plataforma (ver ehAppNativo()):
+   - APK (nativo): plugin @capacitor/local-notifications. A Web
+     Notification API (`window.Notification`) NÃO existe no WebView do
+     Android -- é por isso que o toggle sempre mostrava "seu navegador
+     não suporta notificações" mesmo dentro do app instalado.
+   - Web: Notification API + Service Worker (sw.js), como antes (Chrome
+     no Android exige showNotification() por um Service Worker;
+     `new Notification()` direto costuma falhar lá).
    ============================================================ */
 
 const CHAVE_NOTIFICACOES_ATIVADAS = "scratchMapRJ_notificacoes_ativadas_v1";
 
-/**
- * true só quando o navegador concedeu a permissão E o usuário não
- * desativou manualmente o toggle em Configurações (o navegador não
- * deixa "revogar" a permissão via JS -- então a desativação local é
- * só uma preferência nossa que soma à checagem).
- */
-function notificacoesPermitidas() {
+function pluginNotificacoesLocais() {
   return (
-    typeof Notification !== "undefined" &&
-    Notification.permission === "granted" &&
-    localStorage.getItem(CHAVE_NOTIFICACOES_ATIVADAS) !== "false"
+    window.Capacitor?.Plugins?.LocalNotifications ||
+    (window.Capacitor?.registerPlugin && window.Capacitor.registerPlugin("LocalNotifications")) ||
+    null
   );
 }
 
+// Cache da permissão nativa: checkPermissions() é assíncrono, mas
+// notificacoesPermitidas() precisa responder na hora (é chamada em
+// vários pontos síncronos) -- então mantemos o último resultado
+// conhecido aqui, atualizado por sincronizarCheckboxNotificacoes() e
+// alternarNotificacoes(). Começa "prompt" (ainda não sabemos).
+let permissaoNotificacaoNativa = "prompt";
+
 /**
- * Mostra uma notificação do sistema (fora da aba/app), se permitido.
- * Silenciosa se não tiver permissão -- nunca interrompe o uso normal
- * do app por causa disso.
+ * true só quando a permissão foi concedida E o usuário não desativou
+ * manualmente o toggle em Configurações (nem o navegador nem o Android
+ * deixam "revogar" a permissão via JS -- a desativação local é só uma
+ * preferência nossa que soma à checagem).
+ */
+function notificacoesPermitidas() {
+  const concedida = ehAppNativo()
+    ? permissaoNotificacaoNativa === "granted"
+    : typeof Notification !== "undefined" && Notification.permission === "granted";
+  return concedida && localStorage.getItem(CHAVE_NOTIFICACOES_ATIVADAS) !== "false";
+}
+
+/**
+ * Mostra uma notificação do sistema (fora do app), se permitido.
+ * Silenciosa se não tiver permissão -- nunca interrompe o uso normal.
  */
 async function dispararNotificacaoLocal(titulo, opcoes = {}) {
   if (!notificacoesPermitidas()) return;
   try {
-    if (navigator.serviceWorker) {
+    if (ehAppNativo()) {
+      const plugin = pluginNotificacoesLocais();
+      if (!plugin) return;
+      // Sem "smallIcon": deixa o plugin usar o ícone padrão dele (não
+      // temos um recurso drawable customizado no Android pra isso).
+      await plugin.schedule({
+        notifications: [
+          {
+            id: Math.floor(Math.random() * 2147483647),
+            title: titulo,
+            body: opcoes.body || "",
+          },
+        ],
+      });
+    } else if (navigator.serviceWorker) {
       const registro = await navigator.serviceWorker.ready;
       await registro.showNotification(titulo, {
         icon: "assets/icons/desbrava-icone.png",
@@ -2832,14 +2865,37 @@ async function dispararNotificacaoLocal(titulo, opcoes = {}) {
 }
 
 /**
- * Reflete no checkbox de Configurações o estado real da permissão do
- * navegador -- chamada ao carregar a página e sempre que o modal de
- * Configurações é aberto (a permissão pode ter mudado nas
- * configurações do próprio navegador/site a qualquer momento).
+ * Reflete no checkbox de Configurações o estado real da permissão --
+ * chamada ao carregar a página e sempre que o modal de Configurações é
+ * aberto (a permissão pode ter mudado fora do app a qualquer momento).
  */
-function sincronizarCheckboxNotificacoes() {
+async function sincronizarCheckboxNotificacoes() {
   const checkbox = document.getElementById("check-notificacoes");
   const status = document.getElementById("notificacoes-status");
+
+  if (ehAppNativo()) {
+    const plugin = pluginNotificacoesLocais();
+    if (!plugin) {
+      checkbox.checked = false;
+      checkbox.disabled = true;
+      status.textContent = "Notificações não disponíveis nesta instalação do app.";
+      status.classList.remove("oculto");
+      return;
+    }
+    const resultado = await plugin.checkPermissions();
+    permissaoNotificacaoNativa = resultado.display;
+    if (resultado.display === "denied") {
+      checkbox.checked = false;
+      checkbox.disabled = true;
+      status.textContent = "Notificações bloqueadas nas configurações do Android pro app.";
+      status.classList.remove("oculto");
+      return;
+    }
+    checkbox.disabled = false;
+    status.classList.add("oculto");
+    checkbox.checked = notificacoesPermitidas();
+    return;
+  }
 
   if (typeof Notification === "undefined") {
     checkbox.checked = false;
@@ -2870,6 +2926,22 @@ function sincronizarCheckboxNotificacoes() {
 async function alternarNotificacoes(ativar) {
   if (!ativar) {
     localStorage.setItem(CHAVE_NOTIFICACOES_ATIVADAS, "false");
+    return;
+  }
+
+  if (ehAppNativo()) {
+    const plugin = pluginNotificacoesLocais();
+    if (!plugin) return;
+    if (permissaoNotificacaoNativa === "prompt" || permissaoNotificacaoNativa === "prompt-with-rationale") {
+      const resultado = await plugin.requestPermissions();
+      permissaoNotificacaoNativa = resultado.display;
+      if (resultado.display !== "granted") {
+        sincronizarCheckboxNotificacoes();
+        return;
+      }
+    }
+    localStorage.setItem(CHAVE_NOTIFICACOES_ATIVADAS, "true");
+    sincronizarCheckboxNotificacoes();
     return;
   }
 
