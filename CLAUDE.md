@@ -9,9 +9,9 @@ App onde o usuário "raspa" selos dos municípios do RJ num mapa
 interativo (SVG), com progresso, ranking, amigos, conquistas, rotas
 temáticas (oficiais + personalizadas, sem selo), comunidade
 (posts/curtidas/comentários), Motoclube Desbrava (dicas/lojas pra
-motociclistas) e verificação por GPS (inclusive em segundo plano, de
-hora em hora). Estado de SP em expansão (mapa navegável, sem conteúdo
-ainda).
+motociclistas) e verificação por GPS via Modo Viagem (rastreio só em
+primeiro plano, ligado à mão pelo usuário). Estado de SP em expansão
+(mapa navegável, sem conteúdo ainda).
 
 Regras fixas:
 - Versão (`VERSAO_APP` em `js/script.js` + `versionCode`/`versionName`
@@ -36,16 +36,20 @@ Netlify (web) · GitHub Releases (APK, via `tools/publicar-apk.ps1`).
 Build APK: `node tools/montar-www.js && npx cap sync android && cd
 android && ./gradlew assembleDebug bundleRelease`.
 
-## Última funcionalidade (v0.11.0)
+## Última funcionalidade (v0.11.2)
 
-- **Motoclube Desbrava**: dicas/lojas (peças, oficinas, acessórios...)
-  com filtro de marca/modelo, coleção `motoclubeItens`. Gratuito hoje,
+- **Modo Viagem**: substituiu de vez o rastreio em segundo plano
+  (`@capacitor/background-runner`, removido do projeto). Agora é um
+  foreground service explícito (`@capacitor-community/background-geolocation`),
+  ligado só pelo botão flutuante acima da bússola, com notificação fixa
+  enquanto ativo. Sem `ACCESS_BACKGROUND_LOCATION` no manifest (motivo
+  da rejeição na Play Store). Acumula quilometragem do trajeto e grava
+  municípios detectados em `municipiosPendentesVerificados`
+  (localStorage) até a pessoa tocar pra raspar.
+- Firestore com `persistentLocalCache` (grava progresso offline, em
+  estrada sem sinal, e sincroniza sozinho depois).
+- Motoclube Desbrava: dicas/lojas (peças, oficinas, acessórios...) com
+  filtro de marca/modelo, coleção `motoclubeItens`. Gratuito hoje,
   preparado pra cobrança futura (ver regra fixa acima).
-  Botão no lugar de "Perfil" na barra inferior; Perfil foi pro Menu.
 - Rotas personalizadas (sem selo): criar/salvar/compartilhar (link ou
   post na Comunidade), coleção `rotasPersonalizadas`.
-- Rastreio em segundo plano trocado pra checagem de hora em hora
-  (`@capacitor/background-runner`, bem mais leve de bateria que o
-  watcher contínuo antigo).
-- Mapa de SP: pan/zoom próprio, regiões delimitadas, 17 selos de
-  município novos, 2 rotas históricas (Goytacazes/Tupinambás).
