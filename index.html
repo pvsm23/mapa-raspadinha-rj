@@ -613,19 +613,61 @@
     <div id="garagem-conteudo">
       <button id="btn-fechar-garagem" aria-label="Fechar">✕</button>
       <h2>🏠 Garagem Virtual</h2>
-      <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo da sua moto nunca aparecem no seu perfil público.</p>
-      <label for="select-garagem-marca">Marca</label>
-      <select id="select-garagem-marca"></select>
-      <label for="input-garagem-modelo">Modelo</label>
-      <input type="text" id="input-garagem-modelo" maxlength="60" placeholder="Ex: Hunter 350">
-      <label for="input-garagem-apelido">Apelido (opcional)</label>
-      <input type="text" id="input-garagem-apelido" maxlength="40" placeholder="Ex: A Fera">
-      <div id="garagem-odometro">
-        <span>Odômetro (Modo Viagem)</span>
-        <strong id="garagem-odometro-valor">0 km</strong>
+      <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo das suas motos nunca aparecem no seu perfil público.</p>
+
+      <div id="garagem-abas">
+        <button type="button" class="garagem-aba garagem-aba-ativa" id="btn-garagem-aba-criar" data-aba="criar">+ Criar nova</button>
+        <button type="button" class="garagem-aba" id="btn-garagem-aba-editar" data-aba="editar">✏️ Editar</button>
+        <button type="button" class="garagem-aba" id="btn-garagem-aba-stats" data-aba="stats">📊 Estatísticas</button>
       </div>
-      <p id="garagem-erro" class="oculto"></p>
-      <button type="button" id="btn-salvar-garagem">Salvar</button>
+
+      <!-- Aba "Criar nova" -->
+      <div id="garagem-painel-criar" class="garagem-painel">
+        <label for="select-garagem-marca-criar">Marca</label>
+        <select id="select-garagem-marca-criar"></select>
+        <label for="input-garagem-modelo-criar">Modelo</label>
+        <input type="text" id="input-garagem-modelo-criar" maxlength="60" placeholder="Ex: Hunter 350">
+        <label for="input-garagem-apelido-criar">Apelido (opcional)</label>
+        <input type="text" id="input-garagem-apelido-criar" maxlength="40" placeholder="Ex: A Fera">
+        <p id="garagem-criar-erro" class="oculto"></p>
+        <button type="button" id="btn-criar-moto">Cadastrar moto</button>
+        <p id="garagem-limite-aviso" class="oculto">Você já tem 3 motos cadastradas (o máximo por enquanto). Exclua uma na aba Editar pra cadastrar outra.</p>
+      </div>
+
+      <!-- Aba "Editar" -->
+      <div id="garagem-painel-editar" class="garagem-painel oculto">
+        <div id="garagem-lista-motos-editar" class="garagem-lista-motos"></div>
+        <p id="garagem-editar-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
+        <div id="garagem-editar-form" class="oculto">
+          <label for="select-garagem-marca-editar">Marca</label>
+          <select id="select-garagem-marca-editar"></select>
+          <label for="input-garagem-modelo-editar">Modelo</label>
+          <input type="text" id="input-garagem-modelo-editar" maxlength="60">
+          <label for="input-garagem-apelido-editar">Apelido (opcional)</label>
+          <input type="text" id="input-garagem-apelido-editar" maxlength="40">
+          <p id="garagem-editar-erro" class="oculto"></p>
+          <button type="button" id="btn-salvar-edicao-moto">Salvar alterações</button>
+          <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
+          <button type="button" id="btn-excluir-moto">🗑️ Excluir moto</button>
+        </div>
+      </div>
+
+      <!-- Aba "Estatísticas" -->
+      <div id="garagem-painel-stats" class="garagem-painel oculto">
+        <div id="garagem-lista-motos-stats" class="garagem-lista-motos"></div>
+        <p id="garagem-stats-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
+        <div id="garagem-stats-conteudo" class="oculto">
+          <h3 id="garagem-stats-nome"></h3>
+          <div id="garagem-odometro">
+            <span>Odômetro (Modo Viagem)</span>
+            <strong id="garagem-odometro-valor">0 km</strong>
+          </div>
+          <div id="garagem-stats-grade">
+            <div class="garagem-stat"><span id="garagem-stats-viagens">0</span><small>Viagens registradas</small></div>
+            <div class="garagem-stat"><span id="garagem-stats-ultima">—</span><small>Última viagem</small></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

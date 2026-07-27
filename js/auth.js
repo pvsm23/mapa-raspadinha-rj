@@ -1025,56 +1025,142 @@ if (CONFIGURADO) {
 
   /**
    * Garagem Virtual (recurso PRO do Motoclube, ver souMembroMotoclube
-   * em js/script.js): 1 moto por usuário hoje, guardada num doc cujo
-   * ID É o próprio uid -- assim a regra do Firestore (README) fica
-   * "só o dono lê/escreve" sem precisar checar campo nenhum. Marca e
-   * modelo NUNCA aparecem em perfil público/ranking/comunidade -- só
-   * esta função e a tela da Garagem tocam nesse documento.
+   * em js/script.js): até 3 motos por usuário (limite conferido aqui,
+   * ver criarMoto), guardadas em garagem/{uid}/motos/{motoId}. A
+   * regra do Firestore (README) checa só o uid no CAMINHO, tanto pro
+   * doc pai quanto pra subcoleção. Marca e modelo NUNCA aparecem em
+   * perfil público/ranking/comunidade -- só as funções daqui e a tela
+   * da Garagem tocam nesses documentos.
+   *
+   * O doc pai (garagem/{uid}) guarda só `motoAtivaId`: qual moto
+   * recebe a quilometragem automática do Modo Viagem (ver
+   * somarOdometroGaragem) -- evita ter que tocar em todas as motos
+   * toda vez que a pessoa troca qual é a "principal".
    */
-  window.raspadinhaAuth.buscarGaragem = async () => {
+  const LIMITE_MOTOS_GARAGEM = 3;
+
+  /**
+   * Compatibilidade com o formato antigo (v0.11.3, 1 doc só em
+   * garagem/{uid} com marca/modelo direto): na primeira vez que
+   * alguém que já tinha cadastrado antes abrir a Garagem de novo,
+   * migra pra dentro da subcoleção `motos` automaticamente.
+   */
+  async function migrarGaragemAntigaSeNecessario(uid) {
+    const refPai = doc(db, "garagem", uid);
+    const snapPai = await getDoc(refPai);
+    if (!snapPai.exists() || !snapPai.data().marca) return;
+
+    const dadosAntigos = snapPai.data();
+    const novaMotoRef = doc(collection(db, "garagem", uid, "motos"));
+    await setDoc(novaMotoRef, {
+      marca: dadosAntigos.marca,
+      modelo: dadosAntigos.modelo || "",
+      apelido: dadosAntigos.apelido || "",
+      odometroKm: dadosAntigos.odometroKm || 0,
+      criadoEm: dadosAntigos.atualizadoEm || serverTimestamp(),
+      atualizadoEm: serverTimestamp(),
+    });
+    await setDoc(refPai, { motoAtivaId: novaMotoRef.id }, { merge: true });
+  }
+
+  /** Lista as motos + qual delas está ativa. */
+  window.raspadinhaAuth.buscarMotos = async () => {
     const usuario = auth.currentUser;
-    if (!usuario) return null;
-    const snap = await getDoc(doc(db, "garagem", usuario.uid));
-    return snap.exists() ? snap.data() : null;
+    if (!usuario) return { motos: [], motoAtivaId: null };
+    await migrarGaragemAntigaSeNecessario(usuario.uid);
+
+    const [snapMotos, snapPai] = await Promise.all([
+      getDocs(collection(db, "garagem", usuario.uid, "motos")),
+      getDoc(doc(db, "garagem", usuario.uid)),
+    ]);
+    const motos = snapMotos.docs.map((d) => ({ id: d.id, ...d.data() }));
+    motos.sort((a, b) => (a.criadoEm?.toMillis?.() || 0) - (b.criadoEm?.toMillis?.() || 0));
+    return { motos, motoAtivaId: snapPai.data()?.motoAtivaId || motos[0]?.id || null };
   };
 
-  window.raspadinhaAuth.salvarGaragem = async ({ marca, modelo, apelido }) => {
+  window.raspadinhaAuth.criarMoto = async ({ marca, modelo, apelido }) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     if (!marca || !modelo || !modelo.trim()) throw new Error("Preencha marca e modelo da moto.");
 
-    const ref = doc(db, "garagem", usuario.uid);
-    const snap = await getDoc(ref);
-    await setDoc(
-      ref,
-      {
-        marca,
-        modelo: modelo.trim().slice(0, 60),
-        apelido: (apelido || "").trim().slice(0, 40),
-        // Só inicializa o odômetro na primeira vez -- atualizações
-        // seguintes (ver somarOdometroGaragem) não podem passar por
-        // aqui de novo, senão zerariam o acumulado.
-        ...(snap.exists() ? {} : { odometroKm: 0 }),
-        atualizadoEm: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    const atuais = await getDocs(collection(db, "garagem", usuario.uid, "motos"));
+    if (atuais.size >= LIMITE_MOTOS_GARAGEM) {
+      throw new Error(`Você já tem ${LIMITE_MOTOS_GARAGEM} motos cadastradas (o máximo por enquanto).`);
+    }
+
+    const novaRef = doc(collection(db, "garagem", usuario.uid, "motos"));
+    await setDoc(novaRef, {
+      marca,
+      modelo: modelo.trim().slice(0, 60),
+      apelido: (apelido || "").trim().slice(0, 40),
+      odometroKm: 0,
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp(),
+    });
+
+    // A primeira moto cadastrada já vira a "ativa" sozinha.
+    if (atuais.empty) {
+      await setDoc(doc(db, "garagem", usuario.uid), { motoAtivaId: novaRef.id }, { merge: true });
+    }
+    return novaRef.id;
+  };
+
+  window.raspadinhaAuth.atualizarMoto = async (motoId, { marca, modelo, apelido }) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!marca || !modelo || !modelo.trim()) throw new Error("Preencha marca e modelo da moto.");
+    await updateDoc(doc(db, "garagem", usuario.uid, "motos", motoId), {
+      marca,
+      modelo: modelo.trim().slice(0, 60),
+      apelido: (apelido || "").trim().slice(0, 40),
+      atualizadoEm: serverTimestamp(),
+    });
+  };
+
+  /** Exclui uma moto -- se ela era a ativa, promove outra (a primeira
+   * que sobrar) automaticamente, ou deixa sem ativa se não sobrar nenhuma. */
+  window.raspadinhaAuth.excluirMoto = async (motoId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await deleteDoc(doc(db, "garagem", usuario.uid, "motos", motoId));
+
+    const refPai = doc(db, "garagem", usuario.uid);
+    const snapPai = await getDoc(refPai);
+    if (snapPai.data()?.motoAtivaId === motoId) {
+      const restantes = await getDocs(collection(db, "garagem", usuario.uid, "motos"));
+      await setDoc(refPai, { motoAtivaId: restantes.docs[0]?.id || null }, { merge: true });
+    }
+  };
+
+  window.raspadinhaAuth.definirMotoAtiva = async (motoId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await setDoc(doc(db, "garagem", usuario.uid), { motoAtivaId: motoId }, { merge: true });
   };
 
   /**
-   * Soma a quilometragem de um rolê ao odômetro da moto cadastrada --
+   * Soma a quilometragem de um rolê ao odômetro da moto ATIVA --
    * chamada automaticamente ao encerrar o Modo Viagem (usuário PRO).
-   * Fica em silêncio (sem lançar erro pro chamador tratar como falha
-   * visível) se a pessoa ainda não cadastrou moto nenhuma -- não faz
-   * sentido forçar isso na hora de fechar uma viagem.
+   * Fica em silêncio se a pessoa ainda não cadastrou moto nenhuma --
+   * não faz sentido forçar isso na hora de fechar uma viagem. Devolve
+   * o id da moto que recebeu (ou null), pra o resumo da viagem
+   * conseguir gravar o vínculo em `viagens` (ver salvarResumoViagem).
    */
   window.raspadinhaAuth.somarOdometroGaragem = async (km) => {
     const usuario = auth.currentUser;
-    if (!usuario || !km || km <= 0) return;
-    const ref = doc(db, "garagem", usuario.uid);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
-    await updateDoc(ref, { odometroKm: increment(km), atualizadoEm: serverTimestamp() });
+    if (!usuario || !km || km <= 0) return null;
+    const snapPai = await getDoc(doc(db, "garagem", usuario.uid));
+    let motoId = snapPai.data()?.motoAtivaId;
+    if (!motoId) {
+      const snapMotos = await getDocs(collection(db, "garagem", usuario.uid, "motos"));
+      motoId = snapMotos.docs[0]?.id;
+    }
+    if (!motoId) return null;
+    await updateDoc(doc(db, "garagem", usuario.uid, "motos", motoId), {
+      odometroKm: increment(km),
+      atualizadoEm: serverTimestamp(),
+    });
+    return motoId;
   };
 
   /**
@@ -1082,8 +1168,11 @@ if (CONFIGURADO) {
    * encerrado, só pro próprio dono ler (ver regra no README) -- é
    * estatística pessoal, não posta nada em lugar nenhum sozinho (isso
    * é uma ação separada, ver criarPost usado na tela de compartilhar).
+   * `motoId` (opcional) vincula a viagem à moto que recebeu a
+   * quilometragem, pra tela de Estatísticas da Garagem conseguir
+   * filtrar (ver buscarViagensPorMoto).
    */
-  window.raspadinhaAuth.salvarResumoViagem = async ({ km, duracaoMs, municipiosNovos }) => {
+  window.raspadinhaAuth.salvarResumoViagem = async ({ km, duracaoMs, municipiosNovos, motoId }) => {
     const usuario = auth.currentUser;
     if (!usuario) return;
     await addDoc(collection(db, "viagens"), {
@@ -1091,8 +1180,29 @@ if (CONFIGURADO) {
       km,
       duracaoMs,
       municipiosNovos,
+      motoId: motoId || null,
       criadoEm: serverTimestamp(),
     });
+  };
+
+  /**
+   * Viagens registradas com uma moto específica -- usado na aba
+   * Estatísticas da Garagem. SEM orderBy (mesmo motivo de sempre:
+   * where(donoUid) + where(motoId) + orderBy exigiria índice
+   * composto) -- ordena no cliente, lista de uma pessoa só é pequena.
+   */
+  window.raspadinhaAuth.buscarViagensPorMoto = async (motoId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return [];
+    const consulta = query(
+      collection(db, "viagens"),
+      where("donoUid", "==", usuario.uid),
+      where("motoId", "==", motoId)
+    );
+    const snap = await getDocs(consulta);
+    const viagens = snap.docs.map((d) => d.data());
+    viagens.sort((a, b) => (b.criadoEm?.toMillis?.() || 0) - (a.criadoEm?.toMillis?.() || 0));
+    return viagens;
   };
 
   /**

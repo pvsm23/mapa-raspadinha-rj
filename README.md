@@ -248,11 +248,19 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
         // viagem são dados privados de verdade, não tem link
         // compartilhável como as rotas.
 
-        // Garagem: 1 documento por usuário (o id do doc É o uid, então
-        // a regra de "só o dono lê/escreve" fica trivial e não tem
-        // como um uid gravar no doc de outro por engano).
+        // Garagem: até 3 motos por usuário (limite conferido no
+        // cliente, ver criarMoto em js/auth.js), guardadas na
+        // subcoleção garagem/{uid}/motos/{motoId}. O doc pai
+        // (garagem/{uid}) só guarda motoAtivaId (qual moto recebe a
+        // quilometragem automática do Modo Viagem). Regra idêntica
+        // pros dois níveis -- checa só o uid no CAMINHO, não tem como
+        // um uid gravar no doc/subcoleção de outro por engano.
         match /garagem/{uid} {
           allow read, write: if request.auth != null && request.auth.uid == uid;
+
+          match /motos/{motoId} {
+            allow read, write: if request.auth != null && request.auth.uid == uid;
+          }
         }
 
         // Viagens: log append-only (resumo de cada Modo Viagem

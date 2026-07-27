@@ -2185,34 +2185,199 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   font-size: 1rem;
 }
 
-#garagem-erro {
+#garagem-criar-erro,
+#garagem-editar-erro {
   color: #F08A94;
   font-size: 0.8rem;
   margin: 10px 0 0;
 }
 
-#garagem-erro.oculto {
+#garagem-criar-erro.oculto,
+#garagem-editar-erro.oculto {
   display: none;
 }
 
-#btn-salvar-garagem {
+/* ---- Abas da Garagem ---- */
+
+#garagem-abas {
+  display: flex;
+  gap: 6px;
+  background: #0F1216;
+  border-radius: 10px;
+  padding: 4px;
+  margin: 14px 0;
+}
+
+.garagem-aba {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 6px;
+  color: #8E97A3;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.garagem-aba-ativa {
+  background: #2FBE6B;
+  color: #0F1216;
+}
+
+.garagem-painel.oculto {
+  display: none;
+}
+
+#garagem-painel-criar button,
+#garagem-painel-editar button {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  background: #2FBE6B;
-  color: #0F1216;
   border: none;
   border-radius: 8px;
   padding: 11px 14px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
-#btn-salvar-garagem:hover {
+#btn-criar-moto,
+#btn-salvar-edicao-moto {
+  background: #2FBE6B;
+  color: #0F1216;
+}
+
+#btn-criar-moto:hover,
+#btn-salvar-edicao-moto:hover {
   background: #29A75E;
+}
+
+#btn-definir-moto-ativa {
+  background: #0F1216;
+  color: #F2F5F7;
+  border: 1px solid #1E232B !important;
+}
+
+#btn-definir-moto-ativa:hover {
+  background: #1E232B;
+}
+
+#btn-definir-moto-ativa.oculto {
+  display: none;
+}
+
+#btn-excluir-moto {
+  background: transparent;
+  color: #F08A94;
+  border: 1px solid rgba(240, 97, 109, 0.3) !important;
+}
+
+#btn-excluir-moto:hover {
+  background: rgba(240, 97, 109, 0.12);
+}
+
+#garagem-limite-aviso {
+  color: #8E97A3;
+  font-size: 0.8rem;
+  margin: 10px 0 0;
+  line-height: 1.4;
+}
+
+#garagem-limite-aviso.oculto {
+  display: none;
+}
+
+/* ---- Lista de motos (abas Editar/Estatísticas) ---- */
+
+.garagem-lista-motos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.garagem-moto-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #0F1216;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #F2F5F7;
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.garagem-moto-item:hover {
+  background: #1E232B;
+}
+
+.garagem-moto-item.garagem-moto-selecionada {
+  border-color: #2FBE6B;
+}
+
+.garagem-moto-item-ativa-tag {
+  color: #2FBE6B;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.garagem-vazio {
+  color: #8E97A3;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.garagem-vazio.oculto {
+  display: none;
+}
+
+#garagem-editar-form.oculto,
+#garagem-stats-conteudo.oculto {
+  display: none;
+}
+
+/* ---- Estatísticas da moto selecionada ---- */
+
+#garagem-stats-nome {
+  margin: 4px 0 10px;
+  font-size: 1rem;
+}
+
+#garagem-stats-grade {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.garagem-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #0F1216;
+  border-radius: 10px;
+  padding: 12px 6px;
+  text-align: center;
+}
+
+.garagem-stat span {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #2FBE6B;
+}
+
+.garagem-stat small {
+  color: #8E97A3;
+  font-size: 0.7rem;
 }
 
 #btn-fechar-resumo-viagem,

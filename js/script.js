@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.3";
+const VERSAO_APP = "0.11.4";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.3";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.4", itens: ["Garagem Virtual agora aceita até 3 motos, com abas pra Criar nova, Editar (e definir qual é a ativa) e ver Estatísticas (odômetro e viagens registradas) de cada uma."] },
   { versao: "0.11.3", itens: ["Novidades PRO do Motoclube Desbrava: Garagem Virtual (marca/modelo/apelido da sua moto, 100% privado, com odômetro somado sozinho pelo Modo Viagem), opção de salvar o trajeto de um rolê como rota personalizada, e resumo do rolê (km, tempo, municípios) com imagem pra compartilhar na Comunidade ou fora do app.", "Gratuito por enquanto, junto com o resto do Motoclube."] },
   { versao: "0.11.2", itens: ["Chegou o Modo Viagem! 🏍️ Botão novo acima da bússola: liga o rastreio só enquanto você estiver rodando (com notificação fixa), registra a quilometragem e deixa os municípios por onde você passar prontos pra raspar depois.", "Rastreio em segundo plano antigo (de hora em hora) saiu de circulação — o app não pede mais localização em segundo plano."] },
   { versao: "0.11.1", itens: ["Ícones de buscar, configurações, bússola e todo o Menu ficaram no mesmo estilo da barra de baixo."] },
@@ -1138,12 +1139,24 @@ async function pararModoViagem() {
 
   if (souMembroMotoclube() && stats.km > 0) {
     abrirResumoViagem(stats);
-    window.raspadinhaAuth
-      ?.salvarResumoViagem({ km: stats.km, duracaoMs: stats.duracaoMs, municipiosNovos: stats.municipiosNovos })
-      .catch((erro) => console.error("Falha ao salvar resumo da viagem:", erro));
+    // Primeiro soma no odômetro da moto ativa (se houver), depois usa
+    // o id devolvido pra já gravar o vínculo viagem->moto em
+    // salvarResumoViagem (ver buscarViagensPorMoto, tela Estatísticas).
     window.raspadinhaAuth
       ?.somarOdometroGaragem(stats.km)
-      .catch((erro) => console.error("Falha ao somar odômetro da garagem:", erro));
+      .catch((erro) => {
+        console.error("Falha ao somar odômetro da garagem:", erro);
+        return null;
+      })
+      .then((motoId) =>
+        window.raspadinhaAuth?.salvarResumoViagem({
+          km: stats.km,
+          duracaoMs: stats.duracaoMs,
+          municipiosNovos: stats.municipiosNovos,
+          motoId,
+        })
+      )
+      .catch((erro) => console.error("Falha ao salvar resumo da viagem:", erro));
   } else {
     const km = stats.km.toFixed(1);
     mostrarToastOndeEstou(
@@ -1230,13 +1243,19 @@ function fecharModalPendentes() {
 }
 
 /* ============================================================
-   GARAGEM VIRTUAL (recurso PRO/Motoclube): marca, modelo e apelido da
-   moto do usuário, com odômetro somado automaticamente pelo Modo
-   Viagem (ver somarOdometroGaragem em pararModoViagem). Dado
-   estritamente privado -- ver regra do Firestore no README (o id do
-   doc É o uid, só o dono lê/escreve) -- nunca é exposto em perfil
-   público, ranking ou comunidade.
+   GARAGEM VIRTUAL (recurso PRO/Motoclube): até 3 motos por usuário
+   (marca, modelo, apelido), com odômetro da moto ATIVA somado
+   automaticamente pelo Modo Viagem (ver somarOdometroGaragem em
+   pararModoViagem). Dado estritamente privado -- ver regra do
+   Firestore no README -- nunca é exposto em perfil público, ranking
+   ou comunidade. 3 abas: Criar nova / Editar / Estatísticas.
    ============================================================ */
+
+let garagemMotos = [];
+let garagemMotoAtivaId = null;
+let garagemMotosCarregadas = false;
+let garagemMotoSelecionadaEditar = null;
+let garagemMotoSelecionadaStats = null;
 
 function configurarGaragem() {
   const itemMenu = document.getElementById("menu-abrir-garagem");
@@ -1247,60 +1266,230 @@ function configurarGaragem() {
   document.getElementById("modal-garagem")?.addEventListener("click", (e) => {
     if (e.target.id === "modal-garagem") fecharGaragem();
   });
-  document.getElementById("btn-salvar-garagem")?.addEventListener("click", salvarGaragemForm);
 
-  const selectMarca = document.getElementById("select-garagem-marca");
-  if (selectMarca) {
+  document.querySelectorAll("#garagem-abas .garagem-aba").forEach((botao) => {
+    botao.addEventListener("click", () => mudarAbaGaragem(botao.dataset.aba));
+  });
+
+  ["select-garagem-marca-criar", "select-garagem-marca-editar"].forEach((idSelect) => {
+    const select = document.getElementById(idSelect);
+    if (!select) return;
     MARCAS_MOTOCLUBE.forEach((marca) => {
       const opt = document.createElement("option");
       opt.value = marca;
       opt.textContent = marca;
-      selectMarca.appendChild(opt);
+      select.appendChild(opt);
     });
-  }
+  });
+
+  document.getElementById("btn-criar-moto")?.addEventListener("click", criarMotoForm);
+  document.getElementById("btn-salvar-edicao-moto")?.addEventListener("click", salvarEdicaoMotoAtual);
+  document.getElementById("btn-definir-moto-ativa")?.addEventListener("click", definirMotoAtivaAtual);
+  document.getElementById("btn-excluir-moto")?.addEventListener("click", excluirMotoAtual);
 }
 
 async function abrirGaragem() {
   if (!souMembroMotoclube()) return;
-  document.getElementById("garagem-erro")?.classList.add("oculto");
+  garagemMotosCarregadas = false;
   document.getElementById("modal-garagem")?.classList.remove("oculto");
-  document.getElementById("garagem-odometro-valor").textContent = "...";
-
-  try {
-    const dados = await window.raspadinhaAuth.buscarGaragem();
-    document.getElementById("select-garagem-marca").value = dados?.marca || "Honda";
-    document.getElementById("input-garagem-modelo").value = dados?.modelo || "";
-    document.getElementById("input-garagem-apelido").value = dados?.apelido || "";
-    document.getElementById("garagem-odometro-valor").textContent = `${(dados?.odometroKm || 0).toFixed(1)} km`;
-  } catch (erro) {
-    console.error("Falha ao buscar garagem:", erro);
-    document.getElementById("garagem-odometro-valor").textContent = "0 km";
-  }
+  mudarAbaGaragem("criar");
+  await carregarMotosGaragem();
 }
 
 function fecharGaragem() {
   document.getElementById("modal-garagem")?.classList.add("oculto");
 }
 
-async function salvarGaragemForm() {
-  const erroEl = document.getElementById("garagem-erro");
+function mudarAbaGaragem(aba) {
+  document.querySelectorAll("#garagem-abas .garagem-aba").forEach((b) => {
+    b.classList.toggle("garagem-aba-ativa", b.dataset.aba === aba);
+  });
+  document.getElementById("garagem-painel-criar")?.classList.toggle("oculto", aba !== "criar");
+  document.getElementById("garagem-painel-editar")?.classList.toggle("oculto", aba !== "editar");
+  document.getElementById("garagem-painel-stats")?.classList.toggle("oculto", aba !== "stats");
+  if (garagemMotosCarregadas) renderizarAbasGaragem();
+}
+
+/** Busca as motos (uma vez por abertura do modal) e redesenha as 3 abas. */
+async function carregarMotosGaragem() {
+  try {
+    const { motos, motoAtivaId } = await window.raspadinhaAuth.buscarMotos();
+    garagemMotos = motos;
+    garagemMotoAtivaId = motoAtivaId;
+    garagemMotosCarregadas = true;
+    renderizarAbasGaragem();
+  } catch (erro) {
+    console.error("Falha ao buscar motos da garagem:", erro);
+  }
+}
+
+function renderizarAbasGaragem() {
+  const cheia = garagemMotos.length >= 3;
+  document.getElementById("btn-criar-moto").disabled = cheia;
+  document.getElementById("garagem-limite-aviso")?.classList.toggle("oculto", !cheia);
+
+  renderizarListaMotosGaragem(
+    "garagem-lista-motos-editar",
+    garagemMotoSelecionadaEditar,
+    selecionarMotoEditar
+  );
+  document.getElementById("garagem-editar-vazio")?.classList.toggle("oculto", garagemMotos.length > 0);
+  if (!garagemMotos.find((m) => m.id === garagemMotoSelecionadaEditar)) {
+    selecionarMotoEditar(garagemMotos[0]?.id || null);
+  }
+
+  renderizarListaMotosGaragem(
+    "garagem-lista-motos-stats",
+    garagemMotoSelecionadaStats,
+    selecionarMotoStats
+  );
+  document.getElementById("garagem-stats-vazio")?.classList.toggle("oculto", garagemMotos.length > 0);
+  if (!garagemMotos.find((m) => m.id === garagemMotoSelecionadaStats)) {
+    selecionarMotoStats(garagemMotos[0]?.id || null);
+  }
+}
+
+function renderizarListaMotosGaragem(containerId, selecionadaId, aoSelecionar) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+  // Só mostra a lista quando há mais de 1 moto -- com 1 só (ou
+  // nenhuma) não faz sentido escolher, o painel já mostra ela direto.
+  if (garagemMotos.length < 2) return;
+  garagemMotos.forEach((moto) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "garagem-moto-item";
+    item.classList.toggle("garagem-moto-selecionada", moto.id === selecionadaId);
+    const nome = document.createElement("span");
+    nome.textContent = `${moto.apelido ? `${moto.apelido} — ` : ""}${moto.marca} ${moto.modelo}`;
+    item.appendChild(nome);
+    if (moto.id === garagemMotoAtivaId) {
+      const tag = document.createElement("span");
+      tag.className = "garagem-moto-item-ativa-tag";
+      tag.textContent = "⭐ Ativa";
+      item.appendChild(tag);
+    }
+    item.addEventListener("click", () => aoSelecionar(moto.id));
+    container.appendChild(item);
+  });
+}
+
+function selecionarMotoEditar(motoId) {
+  garagemMotoSelecionadaEditar = motoId;
+  const moto = garagemMotos.find((m) => m.id === motoId);
+  const form = document.getElementById("garagem-editar-form");
+  if (!moto) {
+    form.classList.add("oculto");
+    return;
+  }
+  form.classList.remove("oculto");
+  document.getElementById("select-garagem-marca-editar").value = moto.marca;
+  document.getElementById("input-garagem-modelo-editar").value = moto.modelo || "";
+  document.getElementById("input-garagem-apelido-editar").value = moto.apelido || "";
+  document.getElementById("garagem-editar-erro")?.classList.add("oculto");
+  document.getElementById("btn-definir-moto-ativa")?.classList.toggle("oculto", motoId === garagemMotoAtivaId);
+}
+
+function selecionarMotoStats(motoId) {
+  garagemMotoSelecionadaStats = motoId;
+  const moto = garagemMotos.find((m) => m.id === motoId);
+  const conteudo = document.getElementById("garagem-stats-conteudo");
+  if (!moto) {
+    conteudo.classList.add("oculto");
+    return;
+  }
+  conteudo.classList.remove("oculto");
+  document.getElementById("garagem-stats-nome").textContent =
+    `${moto.apelido ? `${moto.apelido} — ` : ""}${moto.marca} ${moto.modelo}${motoId === garagemMotoAtivaId ? " ⭐" : ""}`;
+  document.getElementById("garagem-odometro-valor").textContent = `${(moto.odometroKm || 0).toFixed(1)} km`;
+  document.getElementById("garagem-stats-viagens").textContent = "...";
+  document.getElementById("garagem-stats-ultima").textContent = "...";
+
+  window.raspadinhaAuth
+    .buscarViagensPorMoto(motoId)
+    .then((viagens) => {
+      if (garagemMotoSelecionadaStats !== motoId) return; // trocou de moto enquanto buscava
+      document.getElementById("garagem-stats-viagens").textContent = String(viagens.length);
+      const ultima = viagens[0]?.criadoEm?.toDate?.();
+      document.getElementById("garagem-stats-ultima").textContent = ultima
+        ? ultima.toLocaleDateString("pt-BR")
+        : "—";
+    })
+    .catch((erro) => {
+      console.error("Falha ao buscar viagens da moto:", erro);
+      document.getElementById("garagem-stats-viagens").textContent = "—";
+    });
+}
+
+async function criarMotoForm() {
+  const erroEl = document.getElementById("garagem-criar-erro");
   erroEl.classList.add("oculto");
-  const botao = document.getElementById("btn-salvar-garagem");
+  const botao = document.getElementById("btn-criar-moto");
+  botao.disabled = true;
+  botao.textContent = "Cadastrando...";
+  try {
+    await window.raspadinhaAuth.criarMoto({
+      marca: document.getElementById("select-garagem-marca-criar").value,
+      modelo: document.getElementById("input-garagem-modelo-criar").value,
+      apelido: document.getElementById("input-garagem-apelido-criar").value,
+    });
+    document.getElementById("input-garagem-modelo-criar").value = "";
+    document.getElementById("input-garagem-apelido-criar").value = "";
+    await carregarMotosGaragem();
+    mudarAbaGaragem("editar");
+  } catch (erro) {
+    erroEl.textContent = erro.message || "Não foi possível cadastrar agora.";
+    erroEl.classList.remove("oculto");
+  } finally {
+    botao.disabled = garagemMotos.length >= 3;
+    botao.textContent = "Cadastrar moto";
+  }
+}
+
+async function salvarEdicaoMotoAtual() {
+  if (!garagemMotoSelecionadaEditar) return;
+  const erroEl = document.getElementById("garagem-editar-erro");
+  erroEl.classList.add("oculto");
+  const botao = document.getElementById("btn-salvar-edicao-moto");
   botao.disabled = true;
   botao.textContent = "Salvando...";
   try {
-    await window.raspadinhaAuth.salvarGaragem({
-      marca: document.getElementById("select-garagem-marca").value,
-      modelo: document.getElementById("input-garagem-modelo").value,
-      apelido: document.getElementById("input-garagem-apelido").value,
+    await window.raspadinhaAuth.atualizarMoto(garagemMotoSelecionadaEditar, {
+      marca: document.getElementById("select-garagem-marca-editar").value,
+      modelo: document.getElementById("input-garagem-modelo-editar").value,
+      apelido: document.getElementById("input-garagem-apelido-editar").value,
     });
-    fecharGaragem();
+    await carregarMotosGaragem();
   } catch (erro) {
     erroEl.textContent = erro.message || "Não foi possível salvar agora.";
     erroEl.classList.remove("oculto");
   } finally {
     botao.disabled = false;
-    botao.textContent = "Salvar";
+    botao.textContent = "Salvar alterações";
+  }
+}
+
+async function definirMotoAtivaAtual() {
+  if (!garagemMotoSelecionadaEditar) return;
+  try {
+    await window.raspadinhaAuth.definirMotoAtiva(garagemMotoSelecionadaEditar);
+    await carregarMotosGaragem();
+  } catch (erro) {
+    alert("Não foi possível definir a moto ativa agora.");
+  }
+}
+
+async function excluirMotoAtual() {
+  const moto = garagemMotos.find((m) => m.id === garagemMotoSelecionadaEditar);
+  if (!moto) return;
+  if (!confirm(`Excluir "${moto.marca} ${moto.modelo}" da garagem? Essa ação não pode ser desfeita.`)) return;
+  try {
+    await window.raspadinhaAuth.excluirMoto(moto.id);
+    garagemMotoSelecionadaEditar = null;
+    await carregarMotosGaragem();
+  } catch (erro) {
+    alert("Não foi possível excluir agora.");
   }
 }
 
