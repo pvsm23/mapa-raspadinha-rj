@@ -5822,13 +5822,8 @@ body.modo-rota-ativo #toast-onde-estou {
   margin: 0 0 6px;
 }
 
-#perfil-contador {
-  color: #8E97A3;
-  font-size: 0.85rem;
-  margin: 0 0 12px;
-}
-
-/* ---- Perfil no estilo do app (cabeçalho + stats + progresso) ---- */
+/* ---- Perfil no estilo do app (cabeçalho + dashboard + minimapa +
+   últimos conquistados) ---- */
 .perfil-cabecalho {
   display: flex;
   flex-direction: column;
@@ -5859,34 +5854,61 @@ body.modo-rota-ativo #toast-onde-estou {
   line-height: 1.2;
 }
 
-.perfil-legenda {
-  margin-top: 4px;
-  font-size: 0.82rem;
-  color: #8E97A3;
+/* Pílula logo abaixo do apelido -- dourada pra membro do Motoclube
+   (souMembroMotoclube), cinza neutra pra quem ainda não é. */
+.perfil-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
+.perfil-badge-pro {
+  background: rgba(233, 185, 73, 0.15);
+  color: var(--ouro);
+  border: 1px solid rgba(233, 185, 73, 0.4);
+}
+
+.perfil-badge-free {
+  background: var(--surf2);
+  color: var(--fraco);
+  border: 1px solid var(--linha);
+}
+
+/* Dashboard 2x2: Municípios, Selos Dourados, Rotas Concluídas, Regiões. */
 .perfil-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   margin-bottom: 16px;
 }
 
 .perfil-stat {
   background: #1E232B;
   border-radius: 14px;
-  padding: 14px 6px;
+  padding: 16px 6px;
+  aspect-ratio: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
 }
 
 .perfil-stat-num {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: var(--verde);
   line-height: 1;
+}
+
+.perfil-stat-num small {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--fraco);
 }
 
 .perfil-stat-num.perfil-stat-ouro {
@@ -5898,21 +5920,7 @@ body.modo-rota-ativo #toast-onde-estou {
   color: #8E97A3;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-}
-
-.perfil-progresso {
-  height: 8px;
-  border-radius: 999px;
-  background: #0F1216;
-  overflow: hidden;
-  margin-bottom: 18px;
-}
-
-.perfil-progresso-preench {
-  height: 100%;
-  background: var(--verde);
-  border-radius: 999px;
-  transition: width 0.5s ease;
+  text-align: center;
 }
 
 .perfil-secao-titulo {
@@ -5920,14 +5928,22 @@ body.modo-rota-ativo #toast-onde-estou {
   color: #8E97A3;
   margin: 4px 0 10px;
   font-weight: 700;
+  text-align: left;
 }
 
+/* Minimapa: encaixado com elegância -- cantos arredondados, borda bem
+   sutil, e o fundo do CONTAINER igual ao card do app (não dá pra
+   remover via CSS a cor de fundo já "assada" dentro do PNG salvo,
+   ver gerarSnapshotMapaComoDataUrl -- isso deixa as bordas
+   sobrando/letterbox se misturarem em vez de aparecer um retângulo
+   azul marinho destacado). */
 #perfil-mapa-mini {
   margin: 0 0 16px;
   height: 160px;
   overflow: hidden;
-  border-radius: 8px;
-  background: #0F1216;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surf);
 }
 
 #perfil-mapa-mini .mini-mapa-imagem {
@@ -5949,19 +5965,53 @@ body.modo-rota-ativo #toast-onde-estou {
   padding: 0 12px;
 }
 
-#perfil-selos-grade {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-  gap: 10px;
+/* "Últimos conquistados": só 4 selos numa linha só (ver
+   renderizarUltimosConquistadosPerfil) -- fim da rolagem infinita que
+   repetia a Biblioteca inteira aqui. */
+#perfil-ultimos-conquistados {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
-#perfil-selos-grade .selo-item {
+#perfil-ultimos-conquistados .selo-item {
   pointer-events: none;
 }
 
-#perfil-selos-grade .selo-item img {
+#perfil-ultimos-conquistados .selo-item .selo-placeholder-box,
+#perfil-ultimos-conquistados .selo-item img {
   width: 56px;
   height: 56px;
+}
+
+.perfil-ultimos-vazio {
+  color: #6B7480;
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* Botão outline, longo -- fecha o Perfil e abre a Biblioteca cheia
+   (só aparece no próprio perfil, ver ehOProprioPerfil em abrirPerfil). */
+#btn-perfil-ver-biblioteca {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: transparent;
+  color: var(--verde);
+  border: 1px solid rgba(43, 213, 118, 0.4);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+#btn-perfil-ver-biblioteca:hover {
+  background: var(--verde-esc);
 }
 
 #compartilhar-conteudo p {

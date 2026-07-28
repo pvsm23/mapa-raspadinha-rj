@@ -1513,17 +1513,16 @@
     </div>
   </div>
 
-  <!-- Perfil público: outras pessoas podem abrir (via ranking/amigos)
-       e ver os selos e o mini-mapa, se não estiver marcado privado -->
+  <!-- Perfil público: outras pessoas podem abrir (via ranking/amigos/
+       comunidade) e ver o progresso e o mini-mapa, se não estiver
+       marcado privado. #perfil-corpo é reconstruído inteiro pelo JS
+       (abrirPerfil, ver js/script.js) toda vez que abre -- o que tem
+       aqui é só o estado inicial de "carregando". -->
   <div id="modal-perfil" class="oculto">
     <div id="perfil-conteudo">
       <button id="btn-fechar-perfil" aria-label="Fechar">✕</button>
       <h2 id="perfil-apelido"></h2>
-      <div id="perfil-corpo">
-        <p id="perfil-contador"></p>
-        <div id="perfil-mapa-mini"></div>
-        <div id="perfil-selos-grade"></div>
-      </div>
+      <div id="perfil-corpo"></div>
     </div>
   </div>
 

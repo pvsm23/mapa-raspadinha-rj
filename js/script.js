@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.10";
+const VERSAO_APP = "0.11.11";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.10";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.11", itens: ["Perfil redesenhado: crachá de Membro Desbrava/Desbravador embaixo do apelido, dashboard 2x2 (municípios, selos dourados, rotas concluídas, regiões), minimapa com cantos arredondados, e só os 4 selos mais recentes no lugar da lista inteira repetida — com botão pra ver a Biblioteca completa."] },
   { versao: "0.11.10", itens: ["Biblioteca de selos virou um álbum de colecionador: abas (Municípios/Regiões/Rotas) e filtro (Todos/Conquistados/Faltam). Selos bloqueados agora têm o mesmo visual em todo lugar, sem cadeado amarelo espalhado pelo texto."] },
   { versao: "0.11.9", itens: ["Amigos e Ranking com visual novo: avatares, busca contínua (sem botão), menu '⋮' no lugar do botão vermelho de remover amigo, pódio com medalhas no Ranking, e sua linha sempre visível mesmo fora do topo 50."] },
   { versao: "0.11.8", itens: ["Comunidade com visual novo, estilo Instagram/Threads: tabs minimalistas, feed sem cartões pesados (só uma linha fina separando os posts), foto ocupando a largura toda, e um botão redondo (FAB) pra postar no canto da tela. Menções @assim agora aparecem destacadas em verde."] },
@@ -6151,8 +6152,17 @@ async function abrirPerfil(uid) {
     const verificados =
       Object.values(estadoMun).filter((m) => m?.verificado).length || perfil.municipiosVisitadosCount || 0;
     const brilhantes = Object.values(estadoMun).filter((m) => m?.brilhante).length;
+    const totalRegioes = Object.keys(municipiosPorRegiao).length || 8;
     const regioes = Object.values(estadoReg).filter((r) => r?.revelado).length;
-    const pct = totalMunicipios ? Math.round((verificados / totalMunicipios) * 100) : 0;
+    // Rotas concluídas: NÃO usa rotaEstaCompleta() direto -- essa
+    // função lê o estadoMapa GLOBAL (só faz sentido pro próprio
+    // usuário logado). Aqui precisa funcionar também pro perfil de
+    // outra pessoa, então confere a lista de municípios de cada rota
+    // contra o estadoMunicipios QUE VEIO do perfil sendo visto.
+    const totalRotas = Object.keys(rotasInfo).length;
+    const rotasCompletas = Object.keys(rotasInfo).filter((id) =>
+      (rotasInfo[id]?.municipios || []).every((mid) => estadoMun[mid]?.verificado)
+    ).length;
 
     corpo.innerHTML = `
       <div class="perfil-cabecalho">
@@ -6161,32 +6171,35 @@ async function abrirPerfil(uid) {
           ${ehOProprioPerfil ? '<button type="button" id="btn-editar-avatar" aria-label="Mudar foto de perfil">📷</button>' : ""}
         </div>
         <div class="perfil-nome">${perfil.apelido}</div>
-        <div class="perfil-legenda">${verificados} de ${totalMunicipios} municípios · ${pct}% do RJ</div>
+        <span class="perfil-badge ${souMembroMotoclube() ? "perfil-badge-pro" : "perfil-badge-free"}">
+          ${souMembroMotoclube() ? "👑 Membro Desbrava" : "Desbravador"}
+        </span>
       </div>
 
       <div class="perfil-stats">
         <div class="perfil-stat">
-          <span class="perfil-stat-num">${verificados}</span>
+          <span class="perfil-stat-num">${verificados}<small>/${totalMunicipios}</small></span>
           <span class="perfil-stat-rot">Municípios</span>
         </div>
         <div class="perfil-stat">
-          <span class="perfil-stat-num">${regioes}</span>
-          <span class="perfil-stat-rot">Regiões</span>
+          <span class="perfil-stat-num perfil-stat-ouro">${brilhantes}</span>
+          <span class="perfil-stat-rot">Selos Dourados</span>
         </div>
         <div class="perfil-stat">
-          <span class="perfil-stat-num perfil-stat-ouro">${brilhantes}</span>
-          <span class="perfil-stat-rot">Dourados</span>
+          <span class="perfil-stat-num">${rotasCompletas}<small>/${totalRotas}</small></span>
+          <span class="perfil-stat-rot">Rotas Concluídas</span>
         </div>
-      </div>
-
-      <div class="perfil-progresso" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
-        <div class="perfil-progresso-preench" style="width:${pct}%"></div>
+        <div class="perfil-stat">
+          <span class="perfil-stat-num">${regioes}<small>/${totalRegioes}</small></span>
+          <span class="perfil-stat-rot">Regiões</span>
+        </div>
       </div>
 
       <div id="perfil-mapa-mini"></div>
 
-      <h3 class="perfil-secao-titulo">Selos</h3>
-      <div id="perfil-selos-grade"></div>
+      <h3 class="perfil-secao-titulo">Últimos conquistados</h3>
+      <div id="perfil-ultimos-conquistados"></div>
+      ${ehOProprioPerfil ? '<button type="button" id="btn-perfil-ver-biblioteca">📖 Ver Biblioteca Completa</button>' : ""}
     `;
     // O nome agora vive no cabeçalho com avatar; zera o h2 (usado só
     // pros estados de "Carregando..."/erro/privado).
@@ -6197,9 +6210,13 @@ async function abrirPerfil(uid) {
     aplicarAvatar(corpo.querySelector(".perfil-avatar"), fotoAvatar, perfil.apelido);
     if (ehOProprioPerfil) {
       document.getElementById("btn-editar-avatar").addEventListener("click", abrirEditarAvatar);
+      document.getElementById("btn-perfil-ver-biblioteca").addEventListener("click", () => {
+        fecharPerfil();
+        abrirBibliotecaSelos();
+      });
     }
     renderizarMiniMapaPerfil(perfil.mapaSnapshot);
-    renderizarSelosPerfil(estadoMun);
+    renderizarUltimosConquistadosPerfil(estadoMun);
   } catch (erro) {
     console.error("Falha ao carregar perfil:", erro);
     corpo.innerHTML = "<p>Não foi possível carregar esse perfil agora.</p>";
@@ -6371,7 +6388,12 @@ function gerarSnapshotMapaComoDataUrl() {
       canvas.width = largura;
       canvas.height = altura;
       const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#0f172a";
+      // Mesma cor do card do app (--surf), não mais um azul marinho
+      // forte -- assim o fundo do PNG combina com o container do
+      // Perfil (#perfil-mapa-mini) em vez de aparecer como um
+      // retângulo destacado. Só vale pra snapshot NOVO -- quem já
+      // tinha um salvo só atualiza no próximo login (gerarSnapshotMapaSeNecessario).
+      ctx.fillStyle = "#171B21";
       ctx.fillRect(0, 0, largura, altura);
       ctx.drawImage(img, 0, 0, largura, altura);
       resolve(canvas.toDataURL("image/png"));
@@ -6539,28 +6561,44 @@ function renderizarMiniMapaPerfil(snapshotUrl) {
 }
 
 /**
- * Grade (só leitura) dos selos de município de quem está sendo
- * visto, com a arte dourada quando o selo brilhante daquele
- * município estiver ativo.
+ * "Últimos conquistados": só os 4 selos de município mais recentes
+ * (por dataVisita, ver marcarComoVisitado) de quem está sendo visto
+ * -- em vez do álbum inteiro de 92, que estava duplicando a
+ * Biblioteca e esticando a tela pra sempre. Ver "Ver Biblioteca
+ * Completa" logo abaixo (só no próprio perfil) pra quem quiser a
+ * lista cheia de verdade.
  */
-function renderizarSelosPerfil(estadoMunicipios) {
-  const grade = document.getElementById("perfil-selos-grade");
-  if (!grade) return;
-  grade.innerHTML = "";
+function renderizarUltimosConquistadosPerfil(estadoMunicipios) {
+  const container = document.getElementById("perfil-ultimos-conquistados");
+  if (!container) return;
+  container.innerHTML = "";
 
-  const municipios = Array.from(document.querySelectorAll("#mapa-rj .municipio"))
-    .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const nomesPorId = new Map(
+    Array.from(document.querySelectorAll("#mapa-rj .municipio")).map((path) => [
+      path.dataset.municipio,
+      path.dataset.nome,
+    ])
+  );
 
-  municipios.forEach(({ id, nome }) => {
-    const estado = estadoMunicipios[id] || {};
+  const ultimos = Object.entries(estadoMunicipios)
+    .filter(([, estado]) => estado?.verificado)
+    .sort((a, b) => new Date(b[1].dataVisita || 0) - new Date(a[1].dataVisita || 0))
+    .slice(0, 4);
+
+  if (!ultimos.length) {
+    container.innerHTML = '<p class="perfil-ultimos-vazio">Nenhum selo conquistado ainda.</p>';
+    return;
+  }
+
+  ultimos.forEach(([id, estado]) => {
+    const nome = nomesPorId.get(id) || id;
     const item = document.createElement("div");
     item.className = "selo-item" + (estado.brilhante ? " selo-item-brilhante" : "");
     item.title = nome;
 
     const img = document.createElement("img");
     img.alt = nome;
-    img.className = estado.verificado ? "selo-colorido" : "selo-cinza";
+    img.className = "selo-colorido";
     resolverImagemColorida(`assets/img/selos/${id}`, !!estado.brilhante, id, nome).then((resultado) => {
       img.src = resultado.url;
     });
@@ -6568,9 +6606,9 @@ function renderizarSelosPerfil(estadoMunicipios) {
     const legenda = document.createElement("span");
     legenda.textContent = nome;
 
-    item.appendChild(img);
+    item.appendChild(envolverComPlaceholder(img, "verde"));
     item.appendChild(legenda);
-    grade.appendChild(item);
+    container.appendChild(item);
   });
 }
 
