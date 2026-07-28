@@ -57,6 +57,20 @@ self.addEventListener("notificationclick", (evento) => {
 });
 
 self.addEventListener("fetch", (evento) => {
+  /* Só cuida do que é NOSSO (mesma origem) e só de GET.
+     Sem esta guarda, o SW interceptava TAMBÉM as fotos dos posts
+     (drive.google.com), o Firestore e as APIs do Google -- e as fotos
+     simplesmente não apareciam no app, embora a URL respondesse 200
+     e o arquivo fosse público. Motivo: a resposta de uma imagem de
+     outro domínio é "opaca" (sem CORS); o cache.put() abaixo rejeita
+     com TypeError nesse tipo de resposta, e qualquer tropeço aqui
+     dentro vira uma imagem quebrada, porque o respondWith já tirou o
+     pedido das mãos do navegador.
+     Não chamar respondWith deixa o navegador tratar do jeito
+     normal dele, que é exatamente o que essas requisições precisam. */
+  const url = new URL(evento.request.url);
+  if (evento.request.method !== "GET" || url.origin !== self.location.origin) return;
+
   evento.respondWith(
     // cache: "no-store" evita que o proprio navegador sirva uma
     // resposta HTTP antiga aqui dentro do service worker (o SW so
