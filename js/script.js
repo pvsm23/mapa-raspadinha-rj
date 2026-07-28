@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.19";
+const VERSAO_APP = "0.11.20";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.19";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.20", itens: ["A opção de tema \"Automático\" (que tentava clarear a tela no sol) foi removida: o Android bloqueia o sensor de luz dentro do app, então ela não funcionava em aparelho nenhum. Ficaram Sistema, Claro e Escuro. De quebra, a barra de status do celular agora acompanha o tema, em vez de ficar sempre preta."] },
   { versao: "0.11.19", itens: ["Selos muito mais nítidos na hora de raspar (antes ficavam borrados nas telas de celular), a área de raspagem agora bate exatamente com o selo — sem precisar raspar o vazio em volta — e o brilho dos selos dourados parou de vazar pelos cantos. Raspadinhas de capa cinza, como as das Conquistas, que não davam pra concluir, agora completam normalmente."] },
   { versao: "0.11.18", itens: ["Correção na atualização do app: o arquivo baixado agora tem o número da versão no nome. Antes todo download salvava por cima do mesmo Desbrava.apk, e o celular acabava oferecendo o arquivo antigo pra instalar, dizendo que já era a mesma versão."] },
   { versao: "0.11.17", itens: ["A escolha de tema virou quatro botõezinhos lado a lado (Sistema/Claro/Escuro/Auto), no lugar da listinha cinza do celular que destoava do app. Na primeira vez que você abre o Desbrava, ele pergunta se pode usar o sensor de luz pra clarear o mapa no sol — e agora os avisos aparecem como mensagem flutuante, sem caixa do sistema travando a tela."] },
@@ -421,24 +422,44 @@ window.addEventListener("appinstalled", () => {
 });
 
 /* ============================================================
-   TEMA: Sistema / Claro / Escuro / Automático (sensor de sol)
+   TEMA: Sistema / Claro / Escuro
    ============================================================
-   "Sistema" e "Automático" não fixam nada em <html data-theme> por
-   conta própria -- "Sistema" remove o atributo (o CSS já tem uma
-   media query prefers-color-scheme cobrindo esse caso) e
-   "Automático" deixa o próprio Ambient Light Sensor escrever
-   data-theme sozinho a cada leitura de luz. Só "Claro"/"Escuro"
-   fixam o atributo direto.
+   "Sistema" não fixa nada em <html data-theme>: remove o atributo e
+   deixa a media query prefers-color-scheme do CSS decidir. "Claro" e
+   "Escuro" fixam o atributo direto.
 
-   Ambient Light Sensor: API removida do Chrome desde 2021 (motivo:
-   fingerprinting) e nunca existiu no Safari/iOS -- ou seja, a grande
-   maioria dos aparelhos reais vai cair no catch abaixo e simplesmente
-   não suportar. Por isso o try/catch + o alerta explicando + a volta
-   automática pra "Sistema" são o CAMINHO PRINCIPAL na prática, não
-   só um detalhe de borda.
+   Existiu aqui um quarto modo, "Automático", que lia o
+   AmbientLightSensor pra clarear a tela no sol. Foi removido: a
+   WebView do Android bloqueia essa API, e ela também já tinha sido
+   removida do Chrome (fingerprinting) e nunca existiu no iOS -- não
+   havia aparelho real em que funcionasse. Se um dia voltar, volta
+   como recurso à parte, não como opção de tema.
    ============================================================ */
 const CHAVE_TEMA = "desbrava_tema";
-let sensorLuzAtivo = null;
+const TEMAS_VALIDOS = ["sistema", "claro", "escuro"];
+
+// Fonte única sobre o tema do sistema. O CSS já reage sozinho à media
+// query; esta consulta existe pro JS saber QUAL cor está valendo
+// quando o modo é "sistema" (ver sincronizarCorDaBarra).
+const consultaEscuro = window.matchMedia("(prefers-color-scheme: dark)");
+
+/** Cor que está realmente na tela agora, resolvendo "sistema". */
+function temaEfetivo(modo) {
+  if (modo === "claro") return "claro";
+  if (modo === "escuro") return "escuro";
+  return consultaEscuro.matches ? "escuro" : "claro";
+}
+
+/* A barra de status do Android se pinta pelo <meta name="theme-color">,
+   que era fixo em #000000 -- no tema Claro ficava uma tarja preta em
+   cima de um app todo branco. Estes valores acompanham o --bg de cada
+   tema (ver o :root em css/styles.css). */
+const COR_BARRA = { escuro: "#0F1216", claro: "#F4F6F8" };
+
+function sincronizarCorDaBarra(modo) {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", COR_BARRA[temaEfetivo(modo)]);
+}
 
 function aplicarDataTheme(modo) {
   const raiz = document.documentElement;
@@ -449,113 +470,7 @@ function aplicarDataTheme(modo) {
   // isso, algum elemento pontual podia demorar a refletir a troca de
   // variável CSS até o próximo repaint natural da página.
   void raiz.offsetHeight;
-}
-
-/** Desliga e descarta o sensor de luz, se estiver ativo. Chamado
- *  sempre que o modo muda pra qualquer coisa que não seja
- *  "automatico", e também antes de tentar ligar de novo. */
-function pararSensorLuz() {
-  if (!sensorLuzAtivo) return;
-  try {
-    sensorLuzAtivo.stop();
-  } catch (erro) {
-    console.error("Falha ao parar o sensor de luz:", erro);
-  }
-  sensorLuzAtivo = null;
-}
-
-/**
- * Liga o Ambient Light Sensor e passa a escrever data-theme sozinho
- * conforme o lux medido. Usa dois limiares bem afastados (1000/400,
- * com "zona morta" no meio) em vez de um só -- assim, passar rápido
- * por uma sombra de árvore ou nuvem não faz a tela ficar piscando
- * entre os dois temas; só troca de verdade quando a luminosidade sai
- * de forma consistente de uma faixa clara pra outra.
- * Rejeita a Promise se a API não existir, a permissão for negada, ou
- * o sensor falhar ao construir/iniciar -- quem chama decide o
- * fallback (ver definirTema).
- */
-async function ligarSensorLuz() {
-  if (!("AmbientLightSensor" in window)) {
-    throw new Error("Sensor de luz ambiente não é suportado neste navegador/aparelho.");
-  }
-
-  try {
-    const permissao = await navigator.permissions?.query({ name: "ambient-light-sensor" });
-    if (permissao?.state === "denied") {
-      throw new Error("Permissão do sensor de luz negada.");
-    }
-  } catch (erro) {
-    // Nem todo navegador reconhece essa permissão específica no
-    // permissions.query -- segue em frente e deixa o próprio
-    // construtor abaixo falhar de vez se realmente não der certo.
-  }
-
-  return new Promise((resolve, reject) => {
-    let sensor;
-    try {
-      sensor = new AmbientLightSensor({ frequency: 1 });
-    } catch (erro) {
-      reject(erro);
-      return;
-    }
-
-    let iniciado = false;
-    sensor.addEventListener("reading", () => {
-      const lux = sensor.illuminance;
-      if (lux > 1000) aplicarDataTheme("claro");
-      else if (lux < 400) aplicarDataTheme("escuro");
-      // entre 400 e 1000: zona morta, não mexe no tema atual
-
-      if (!iniciado) {
-        iniciado = true;
-        sensorLuzAtivo = sensor;
-        resolve();
-      }
-    });
-
-    sensor.addEventListener("error", (evento) => {
-      console.error("Sensor de luz ambiente falhou:", evento.error);
-      pararSensorLuz();
-      if (!iniciado) {
-        reject(evento.error);
-      } else {
-        // já estava funcionando e caiu no meio do caminho -- avisa e
-        // volta pro Sistema sozinho, do mesmo jeito que uma falha
-        // logo de cara.
-        mostrarToastApp("O sensor de luz parou de funcionar. Voltando pro tema Sistema.");
-        definirTema("sistema");
-      }
-    });
-
-    try {
-      sensor.start();
-    } catch (erro) {
-      reject(erro);
-    }
-  });
-}
-
-/**
- * Toast flutuante de rodapé (#toast-app), genérico. Existe porque
- * alert()/confirm() nativos quebram o visual do app no Android (caixa
- * do sistema, com o domínio do site no cabeçalho) e travam a tela até
- * o usuário tocar em OK.
- * Chamadas seguidas reaproveitam o mesmo elemento: o timer anterior é
- * cancelado, senão o toast novo sumiria junto com o antigo.
- */
-let timerToastApp = null;
-function mostrarToastApp(mensagem, duracao = 3200) {
-  const toast = document.getElementById("toast-app");
-  if (!toast) return;
-  clearTimeout(timerToastApp);
-  toast.textContent = mensagem;
-  toast.classList.remove("oculto", "toast-saindo");
-  void toast.offsetHeight; // reinicia a animação de entrada
-  timerToastApp = setTimeout(() => {
-    toast.classList.add("toast-saindo");
-    timerToastApp = setTimeout(() => toast.classList.add("oculto"), 220);
-  }, duracao);
+  sincronizarCorDaBarra(modo);
 }
 
 /** Marca qual botão do segmented control está ativo (visual +
@@ -568,140 +483,40 @@ function sincronizarAparenciaUI(modo) {
   });
 }
 
-/**
- * Ponto de entrada único pra trocar de tema -- chamado pelo segmented
- * control em Configurações, pelo onboarding e na inicialização (pra
- * restaurar o que ficou salvo). Sempre para o sensor primeiro: só o
- * modo "automatico" pode religá-lo.
- * `silencioso` desliga o toast de erro: o onboarding cai pra "sistema"
- * sem avisar nada (o usuário só pediu pra tentar), enquanto em
- * Configurações ele escolheu "Auto" de propósito e merece saber por
- * que o botão voltou sozinho.
- * Devolve o modo que REALMENTE valeu no fim -- quem chama não pode
- * assumir que "automatico" pegou.
- */
-async function definirTema(modo, { silencioso = false } = {}) {
-  pararSensorLuz();
-  const status = document.getElementById("aparencia-status");
-
-  if (modo === "automatico") {
-    if (status && !silencioso) {
-      status.textContent = "Pedindo acesso ao sensor de luz do aparelho...";
-      status.classList.remove("oculto");
-    }
-    try {
-      await ligarSensorLuz();
-      localStorage.setItem(CHAVE_TEMA, modo);
-      sincronizarAparenciaUI(modo);
-      // Esse texto vale mesmo no modo silencioso: se o sensor pegou na
-      // inicialização, Configurações precisa explicar por que a tela
-      // troca de tema sozinha quando o usuário abrir mais tarde.
-      if (status) {
-        status.textContent = "Automático: acompanhando a luz do ambiente pra trocar de tema sozinho.";
-        status.classList.remove("oculto");
-      }
-      return modo;
-    } catch (erro) {
-      console.error("Não foi possível ligar o sensor de luz:", erro);
-      if (!silencioso) mostrarToastApp("Seu dispositivo não suporta o sensor de luz.");
-      modo = "sistema";
-    }
-  }
-
-  if (status) status.classList.add("oculto");
+/** Ponto de entrada único pra trocar de tema -- usado pelo segmented
+ *  control de Configurações e pela restauração na inicialização. */
+function definirTema(modo) {
+  if (!TEMAS_VALIDOS.includes(modo)) modo = "sistema";
   aplicarDataTheme(modo);
   localStorage.setItem(CHAVE_TEMA, modo);
   sincronizarAparenciaUI(modo);
-  return modo;
 }
 
-/* A primeira abertura do app já tem uma FILA de modais: boas-vindas ->
-   aviso de "em desenvolvimento" (ver mostrarBoasVindasSeNecessario).
-   O convite do sensor entra no fim dessa fila, nunca por cima dela --
-   por isso a flag: configurarAparencia só marca que está pendente, e
-   quem fecha a última modal da fila é que chama de fato. */
-let aparenciaPendenteOnboarding = false;
-
-function talvezAbrirOnboardingSensor() {
-  if (!aparenciaPendenteOnboarding) return;
-  aparenciaPendenteOnboarding = false;
-  abrirOnboardingSensor();
-}
-
-/**
- * Onboarding do sensor de luz, uma única vez (primeira abertura, quando
- * ainda não há nada em desbrava_tema). Os dois botões gravam alguma
- * coisa no localStorage justamente pra essa modal não voltar nunca
- * mais -- inclusive quando o sensor falha.
- */
-function abrirOnboardingSensor() {
-  const modal = document.getElementById("modal-sensor-luz");
-  const btnPermitir = document.getElementById("btn-sensor-permitir");
-  const btnNegar = document.getElementById("btn-sensor-negar");
-  if (!modal || !btnPermitir || !btnNegar) {
-    // Sem a modal no HTML, não deixa o app sem preferência salva.
-    definirTema("sistema");
-    return;
-  }
-
-  const fechar = () => modal.classList.add("oculto");
-
-  btnPermitir.addEventListener(
-    "click",
-    async () => {
-      btnPermitir.disabled = true;
-      // Silencioso: se não rolar (iPhone, Chrome moderno, permissão
-      // negada), cai pra "sistema" sem toast -- ver definirTema.
-      await definirTema("automatico", { silencioso: true });
-      fechar();
-    },
-    { once: true }
-  );
-
-  btnNegar.addEventListener("click", () => {
-    definirTema("sistema");
-    fechar();
-  }, { once: true });
-
-  modal.classList.remove("oculto");
-}
-
-/** Restaura o tema salvo e liga o segmented control de Configurações.
- *  Sem nada salvo = primeira abertura: aplica "sistema" na hora (pra
- *  tela não ficar sem tema enquanto a modal está aberta) e propõe o
- *  sensor de luz. */
+/** Restaura o tema salvo (padrão "sistema") e liga o segmented
+ *  control de Configurações. */
 function configurarAparencia() {
-  const salvo = localStorage.getItem(CHAVE_TEMA);
-
   document.querySelectorAll(".aparencia-opcao").forEach((botao) => {
     botao.addEventListener("click", () => definirTema(botao.dataset.tema));
   });
 
-  if (!salvo) {
-    // Tema aplicado na hora pra tela não ficar "sem tema" enquanto a
-    // fila de modais da 1ª abertura roda; a pergunta do sensor fica
-    // pendente e sai no fim da fila (ver talvezAbrirOnboardingSensor).
-    aplicarDataTheme("sistema");
-    sincronizarAparenciaUI("sistema");
-    aparenciaPendenteOnboarding = true;
-    // Quem já usava o app (atualizou de uma versão sem tema) não passa
-    // mais por aquela fila -- pra esse caso, abre direto, com um
-    // respiro pro mapa pintar antes.
-    if (
-      localStorage.getItem(CHAVE_BOAS_VINDAS_VISTAS) &&
-      localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)
-    ) {
-      setTimeout(talvezAbrirOnboardingSensor, 800);
-    }
-    return;
-  }
+  const salvo = localStorage.getItem(CHAVE_TEMA);
+  // Quem tinha "automatico" salvo (versões 0.11.16 a 0.11.19) cai em
+  // "sistema" e fica gravado assim -- senão o valor órfão continuaria
+  // no localStorage sem nenhum botão correspondente na tela.
+  const modo = TEMAS_VALIDOS.includes(salvo) ? salvo : "sistema";
 
-  if (salvo === "automatico") {
-    definirTema("automatico", { silencioso: true });
-  } else {
-    aplicarDataTheme(salvo);
-    sincronizarAparenciaUI(salvo);
-  }
+  aplicarDataTheme(modo);
+  sincronizarAparenciaUI(modo);
+  if (salvo !== modo) localStorage.setItem(CHAVE_TEMA, modo);
+
+  // Só importa no modo "sistema": se a pessoa trocar o tema do celular
+  // com o app aberto, o CSS vira sozinho, mas a cor da barra de status
+  // não -- ela depende do <meta>, que é JS.
+  consultaEscuro.addEventListener("change", () => {
+    if ((localStorage.getItem(CHAVE_TEMA) || "sistema") === "sistema") {
+      sincronizarCorDaBarra("sistema");
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -6488,19 +6303,13 @@ const CHAVE_AVISO_DESENVOLVIMENTO_VISTO = "scratchMapRJ_aviso_dev_visto_v1";
  * das boas-vindas (ver mostrarBoasVindasSeNecessario/fecharBoasVindas).
  */
 function mostrarAvisoDesenvolvimentoSeNecessario() {
-  if (localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)) {
-    // Fim da fila sem ter nada pra mostrar: passa a vez pro convite do
-    // sensor de luz, se estiver pendente.
-    talvezAbrirOnboardingSensor();
-    return;
-  }
+  if (localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)) return;
   document.getElementById("modal-aviso-desenvolvimento").classList.remove("oculto");
 }
 
 function fecharAvisoDesenvolvimento() {
   localStorage.setItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO, "true");
   document.getElementById("modal-aviso-desenvolvimento").classList.add("oculto");
-  talvezAbrirOnboardingSensor();
 }
 
 /* ============================================================

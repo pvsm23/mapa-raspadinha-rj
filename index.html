@@ -1167,16 +1167,12 @@
       <div class="settings-card">
         <h3 class="settings-card-titulo">⚙️ Preferências</h3>
 
-        <!-- Tema: Sistema (segue o SO)/Claro/Escuro fixos, ou
-             Automático via sensor de luz ambiente do aparelho (ver
-             definirTema/configurarAparencia em js/script.js). Sem
-             suporte (a maioria dos aparelhos, incl. todo iPhone) ou
-             permissão negada, mostra um toast e volta pra "Sistema"
-             sozinho.
+        <!-- Tema: Sistema (segue o SO) ou Claro/Escuro fixos (ver
+             definirTema/configurarAparencia em js/script.js).
              Segmented control em vez de <select>: o dropdown nativo é
              desenhado pelo Android/iOS, não acompanha o tema nem o
              arredondamento do resto do app. role="radiogroup" mantém
-             a semântica de "escolha uma entre quatro" que o <select>
+             a semântica de "escolha uma entre três" que o <select>
              dava de graça pro leitor de tela. -->
         <span class="settings-campo-label" id="label-aparencia">Aparência</span>
         <div id="aparencia-opcoes" role="radiogroup" aria-labelledby="label-aparencia">
@@ -1192,12 +1188,7 @@
             <span class="aparencia-opcao-icone" aria-hidden="true">🌙</span>
             <span class="aparencia-opcao-txt">Escuro</span>
           </button>
-          <button type="button" class="aparencia-opcao" data-tema="automatico" role="radio" aria-checked="false">
-            <span class="aparencia-opcao-icone" aria-hidden="true">🔆</span>
-            <span class="aparencia-opcao-txt">Auto</span>
-          </button>
         </div>
-        <p id="aparencia-status" class="oculto"></p>
 
         <label class="settings-toggle" id="label-som">
           <span class="settings-toggle-texto">
@@ -1674,28 +1665,6 @@
       <div id="novidades-lista"></div>
     </div>
   </div>
-
-  <!-- Onboarding do sensor de luz: aparece UMA vez, na primeira
-       abertura do app (nada salvo em desbrava_tema ainda). Modal
-       própria em vez de confirm() nativo -- o confirm do Android
-       mostra o domínio do site no cabeçalho e não dá pra estilizar.
-       Ver configurarAparencia/abrirOnboardingSensor em js/script.js. -->
-  <div id="modal-sensor-luz" class="oculto">
-    <div id="sensor-luz-conteudo">
-      <div id="sensor-luz-icone" aria-hidden="true">🔆</div>
-      <h2>Clarear a tela no sol?</h2>
-      <p>O Desbrava pode usar o sensor de luz para clarear o mapa quando você estiver no sol pilotando.</p>
-      <div id="sensor-luz-acoes">
-        <button id="btn-sensor-permitir" type="button">Permitir</button>
-        <button id="btn-sensor-negar" type="button">Não, obrigado</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast genérico de rodapé (ver mostrarToastApp em js/script.js).
-       Fica acima de qualquer modal (z-index) porque nasceu pra avisar
-       de erro DENTRO das Configurações. -->
-  <div id="toast-app" class="oculto" role="status" aria-live="polite"></div>
 
   <!-- Aviso flutuante: sugestao de baixar o app (APK) -->
   <div id="aviso-instalar-pwa" class="oculto">
