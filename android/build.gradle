@@ -28,7 +28,14 @@ allprojects {
     // some children"). Mandar TODO o build pra fora do OneDrive
     // (AppData\Local) resolve de vez -- o APK sai lá em
     // .../DesbravaBuild/app/outputs/apk/debug/app-debug.apk
-    buildDir = "${System.env.LOCALAPPDATA}/DesbravaBuild/${project.name}"
+    //
+    // Só no Windows: no runner do GitHub Actions (Linux) não existe
+    // LOCALAPPDATA nem OneDrive, e sem essa guarda o caminho virava a
+    // string "null/DesbravaBuild/app". Lá vale o build/ padrão.
+    def raizBuildLocal = System.env.LOCALAPPDATA
+    if (raizBuildLocal) {
+        buildDir = "${raizBuildLocal}/DesbravaBuild/${project.name}"
+    }
 }
 
 task clean(type: Delete) {
