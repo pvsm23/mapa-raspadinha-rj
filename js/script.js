@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.17";
+const VERSAO_APP = "0.11.18";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.17";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.18", itens: ["Correção na atualização do app: o arquivo baixado agora tem o número da versão no nome. Antes todo download salvava por cima do mesmo Desbrava.apk, e o celular acabava oferecendo o arquivo antigo pra instalar, dizendo que já era a mesma versão."] },
   { versao: "0.11.17", itens: ["A escolha de tema virou quatro botõezinhos lado a lado (Sistema/Claro/Escuro/Auto), no lugar da listinha cinza do celular que destoava do app. Na primeira vez que você abre o Desbrava, ele pergunta se pode usar o sensor de luz pra clarear o mapa no sol — e agora os avisos aparecem como mensagem flutuante, sem caixa do sistema travando a tela."] },
   { versao: "0.11.16", itens: ["Tema Claro (e Automático, via sensor de luz do aparelho quando suportado) nas Configurações, ícone de configurações trocado de sol pra engrenagem, Modo Viagem virou um botão flutuante verde de destaque, e a dica de arrastar/zoom some sozinha depois de alguns segundos."] },
   { versao: "0.11.15", itens: ["Garagem Virtual com cara de painel automotivo: abas viraram um segmented control contínuo, a lista de motos duplicada deu lugar a um card seletor (moto atual + setas pra trocar), e a aba Estatísticas ganhou um dashboard de verdade com o odômetro em destaque."] },
@@ -357,6 +358,36 @@ async function verificarAtualizacaoApp(item) {
 }
 
 /**
+ * Descobre o link do APK com NOME VERSIONADO (Desbrava-v0.11.18.apk) no
+ * último release.
+ *
+ * Por que não basta o URL_APK "latest/download/Desbrava.apk": esse nome
+ * é fixo, então toda versão baixa por cima do mesmo arquivo em
+ * Downloads. Se já existia um Desbrava.apk de uma versão anterior, o
+ * Android abre/oferece o ARQUIVO ANTIGO e o instalador diz que já é a
+ * mesma versão -- foi exatamente o que aconteceu na 0.11.17. Com um
+ * nome por versão, cada download vira um arquivo distinto e não tem
+ * como instalar o velho sem querer.
+ *
+ * Devolve null se não achar (release antigo, sem rede): quem chama cai
+ * no URL_APK de sempre.
+ */
+async function descobrirUrlApkVersionado() {
+  try {
+    const resposta = await fetch(
+      "https://api.github.com/repos/pvsm23/mapa-raspadinha-rj/releases/latest",
+      { headers: { Accept: "application/vnd.github+json" } }
+    );
+    if (!resposta.ok) return null;
+    const dados = await resposta.json();
+    const versionado = (dados.assets || []).find((a) => /^Desbrava-v.+\.apk$/i.test(a.name || ""));
+    return versionado?.browser_download_url || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Dispara o download do APK. IMPORTANTE: nada de nova aba/target=_blank
  * -- em navegador in-app ou "aba personalizada" (Custom Tab) o download
  * do APK trava em 100% sem finalizar. Como o servidor manda o arquivo
@@ -364,11 +395,14 @@ async function verificarAtualizacaoApp(item) {
  * sem sair da página. No app instalado, abre no navegador do sistema
  * (dentro da WebView o download/instalação do APK não conclui).
  */
-function baixarApk() {
+async function baixarApk() {
+  // Prefere o nome versionado; sem rede ou em release antigo, o link
+  // "latest" continua valendo (é melhor baixar do que não baixar).
+  const url = (await descobrirUrlApkVersionado()) || URL_APK;
   if (ehAppNativo()) {
-    window.open(URL_APK, "_system");
+    window.open(url, "_system");
   } else {
-    window.location.href = URL_APK;
+    window.location.href = url;
   }
 }
 

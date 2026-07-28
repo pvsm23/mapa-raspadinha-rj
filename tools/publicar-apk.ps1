@@ -34,6 +34,13 @@ $apkVersionado = "$env:USERPROFILE\Downloads\Desbrava-$tag.apk"
 Copy-Item $apk $apkVersionado -Force
 Write-Host "Cópia versionada salva em: $apkVersionado"
 
+# A cópia versionada vai TAMBÉM pro release, não só pra Downloads: o
+# nome fixo Desbrava.apk faz toda versão baixar por cima do mesmo
+# arquivo no celular, e o Android acaba oferecendo o antigo pra
+# instalar ("já é a mesma versão" -- aconteceu na 0.11.17). O app
+# prefere este nome quando existe (ver descobrirUrlApkVersionado em
+# js/script.js) e cai no Desbrava.apk quando não.
+
 Write-Host "Publicando Desbrava $tag ($apk)..."
 
 # Já existe release nessa tag? Então só substitui o arquivo (--clobber);
@@ -46,9 +53,9 @@ $existe = ($LASTEXITCODE -eq 0)
 $ErrorActionPreference = "Stop"
 
 if ($existe) {
-  & $gh release upload $tag $apk --repo $repo --clobber
+  & $gh release upload $tag $apk $apkVersionado --repo $repo --clobber
 } else {
-  & $gh release create $tag $apk --repo $repo --title "Desbrava $ver" --notes "APK do Desbrava versão $ver."
+  & $gh release create $tag $apk $apkVersionado --repo $repo --title "Desbrava $ver" --notes "APK do Desbrava versão $ver."
 }
 
 Write-Host ""

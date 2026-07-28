@@ -58,8 +58,18 @@ jobs:
       # instala o que faltar e aceita as licenças do SDK.
       - uses: android-actions/setup-android@v3
 
+      # O segredo vai por env, não interpolado direto no comando: assim
+      # o shell não vê o valor como texto (nada de aspas/quebra de linha
+      # atrapalhando) e o printf não acrescenta o \n que o echo põe.
       - name: Restaura o google-services.json (gitignorado)
-        run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json
+        env:
+          GS_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          printf '%s' "$GS_JSON_B64" | base64 -d > android/app/google-services.json
+          # Falha aqui é bem mais fácil de ler do que lá na frente, no
+          # meio do erro do plugin do Firebase.
+          node -e "JSON.parse(require('fs').readFileSync('android/app/google-services.json','utf8'))" \
+            && echo "google-services.json restaurado e valido"
 
       - name: Monta o www/ e sincroniza o Capacitor
         run: |
@@ -76,23 +86,31 @@ jobs:
         id: versao
         run: echo "v=$(grep -oP 'versionName\s+"\K[^"]+' android/app/build.gradle)" >> "$GITHUB_OUTPUT"
 
-      # O nome precisa ser exatamente Desbrava.apk: é o que o link
-      # /releases/latest/download/Desbrava.apk serve, e é pra ele que o
-      # botão "Baixar app" do site aponta (URL_APK em js/script.js).
-      - name: Renomeia pro nome que o link "latest" serve
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Desbrava.apk
+      # Dois nomes de propósito:
+      # - Desbrava.apk: o que o link /releases/latest/download/ serve,
+      #   pra onde o botão "Baixar app" do site aponta (URL_APK).
+      # - Desbrava-v<ver>.apk: nome único por versão. O fixo faz toda
+      #   versão baixar por cima do mesmo arquivo no celular, e o
+      #   Android acaba oferecendo o antigo ("já é a mesma versão" --
+      #   aconteceu na 0.11.17). O app prefere este quando existe
+      #   (descobrirUrlApkVersionado em js/script.js).
+      - name: Prepara os dois nomes do APK
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk Desbrava.apk
+          cp Desbrava.apk "Desbrava-v${{ steps.versao.outputs.v }}.apk"
 
       - name: Publica no Releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="v${{ steps.versao.outputs.v }}"
+          apks=(Desbrava.apk "Desbrava-v${{ steps.versao.outputs.v }}.apk")
           # Repetir a mesma versão não é erro: só troca o arquivo do
           # release que já existe (mesma lógica do publicar-apk.ps1).
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" Desbrava.apk --clobber
+            gh release upload "$tag" "${apks[@]}" --clobber
           else
-            gh release create "$tag" Desbrava.apk \
+            gh release create "$tag" "${apks[@]}" \
               --title "Desbrava ${{ steps.versao.outputs.v }}" \
               --notes "APK do Desbrava versão ${{ steps.versao.outputs.v }}."
           fi
