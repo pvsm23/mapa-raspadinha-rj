@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.15";
+const VERSAO_APP = "0.11.16";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.15";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.16", itens: ["Tema Claro (e Automático, via sensor de luz do aparelho quando suportado) nas Configurações, ícone de configurações trocado de sol pra engrenagem, Modo Viagem virou um botão flutuante verde de destaque, e a dica de arrastar/zoom some sozinha depois de alguns segundos."] },
   { versao: "0.11.15", itens: ["Garagem Virtual com cara de painel automotivo: abas viraram um segmented control contínuo, a lista de motos duplicada deu lugar a um card seletor (moto atual + setas pra trocar), e a aba Estatísticas ganhou um dashboard de verdade com o odômetro em destaque."] },
   { versao: "0.11.14", itens: ["Conquistas em lista horizontal (medalha + descrição lado a lado) em vez dos cards gigantes de antes — cabe muito mais na tela, sem cadeado amarelo enorme, com selo de raridade colorido por nível e barra de progresso mais fina."] },
   { versao: "0.11.13", itens: ["Popup do município reequilibrado: selo menor e status virou um selinho verde, 3 botões de ação num grid discreto (Compartilhar / Fotos daqui / Sugestões, sem remover nenhuma função), e \"Abrir no Maps\" virou um link pequeno em vez de bloco verde gigante."] },
@@ -383,7 +384,177 @@ window.addEventListener("appinstalled", () => {
   fecharAvisoInstalarPwa();
 });
 
+/* ============================================================
+   TEMA: Sistema / Claro / Escuro / Automático (sensor de sol)
+   ============================================================
+   "Sistema" e "Automático" não fixam nada em <html data-theme> por
+   conta própria -- "Sistema" remove o atributo (o CSS já tem uma
+   media query prefers-color-scheme cobrindo esse caso) e
+   "Automático" deixa o próprio Ambient Light Sensor escrever
+   data-theme sozinho a cada leitura de luz. Só "Claro"/"Escuro"
+   fixam o atributo direto.
+
+   Ambient Light Sensor: API removida do Chrome desde 2021 (motivo:
+   fingerprinting) e nunca existiu no Safari/iOS -- ou seja, a grande
+   maioria dos aparelhos reais vai cair no catch abaixo e simplesmente
+   não suportar. Por isso o try/catch + o alerta explicando + a volta
+   automática pra "Sistema" são o CAMINHO PRINCIPAL na prática, não
+   só um detalhe de borda.
+   ============================================================ */
+const CHAVE_TEMA = "desbrava_tema";
+let sensorLuzAtivo = null;
+
+function aplicarDataTheme(modo) {
+  const raiz = document.documentElement;
+  if (modo === "claro") raiz.dataset.theme = "light";
+  else if (modo === "escuro") raiz.dataset.theme = "dark";
+  else raiz.removeAttribute("data-theme"); // "sistema": prefers-color-scheme decide
+  // Força o navegador a recalcular estilo/repintar na hora -- sem
+  // isso, algum elemento pontual podia demorar a refletir a troca de
+  // variável CSS até o próximo repaint natural da página.
+  void raiz.offsetHeight;
+}
+
+/** Desliga e descarta o sensor de luz, se estiver ativo. Chamado
+ *  sempre que o modo muda pra qualquer coisa que não seja
+ *  "automatico", e também antes de tentar ligar de novo. */
+function pararSensorLuz() {
+  if (!sensorLuzAtivo) return;
+  try {
+    sensorLuzAtivo.stop();
+  } catch (erro) {
+    console.error("Falha ao parar o sensor de luz:", erro);
+  }
+  sensorLuzAtivo = null;
+}
+
+/**
+ * Liga o Ambient Light Sensor e passa a escrever data-theme sozinho
+ * conforme o lux medido. Usa dois limiares bem afastados (1000/400,
+ * com "zona morta" no meio) em vez de um só -- assim, passar rápido
+ * por uma sombra de árvore ou nuvem não faz a tela ficar piscando
+ * entre os dois temas; só troca de verdade quando a luminosidade sai
+ * de forma consistente de uma faixa clara pra outra.
+ * Rejeita a Promise se a API não existir, a permissão for negada, ou
+ * o sensor falhar ao construir/iniciar -- quem chama decide o
+ * fallback (ver definirTema).
+ */
+async function ligarSensorLuz() {
+  if (!("AmbientLightSensor" in window)) {
+    throw new Error("Sensor de luz ambiente não é suportado neste navegador/aparelho.");
+  }
+
+  try {
+    const permissao = await navigator.permissions?.query({ name: "ambient-light-sensor" });
+    if (permissao?.state === "denied") {
+      throw new Error("Permissão do sensor de luz negada.");
+    }
+  } catch (erro) {
+    // Nem todo navegador reconhece essa permissão específica no
+    // permissions.query -- segue em frente e deixa o próprio
+    // construtor abaixo falhar de vez se realmente não der certo.
+  }
+
+  return new Promise((resolve, reject) => {
+    let sensor;
+    try {
+      sensor = new AmbientLightSensor({ frequency: 1 });
+    } catch (erro) {
+      reject(erro);
+      return;
+    }
+
+    let iniciado = false;
+    sensor.addEventListener("reading", () => {
+      const lux = sensor.illuminance;
+      if (lux > 1000) aplicarDataTheme("claro");
+      else if (lux < 400) aplicarDataTheme("escuro");
+      // entre 400 e 1000: zona morta, não mexe no tema atual
+
+      if (!iniciado) {
+        iniciado = true;
+        sensorLuzAtivo = sensor;
+        resolve();
+      }
+    });
+
+    sensor.addEventListener("error", (evento) => {
+      console.error("Sensor de luz ambiente falhou:", evento.error);
+      pararSensorLuz();
+      if (!iniciado) {
+        reject(evento.error);
+      } else {
+        // já estava funcionando e caiu no meio do caminho -- avisa e
+        // volta pro Sistema sozinho, do mesmo jeito que uma falha
+        // logo de cara.
+        alert("O sensor de luz parou de funcionar nesse aparelho. Voltando pro tema Sistema.");
+        definirTema("sistema");
+      }
+    });
+
+    try {
+      sensor.start();
+    } catch (erro) {
+      reject(erro);
+    }
+  });
+}
+
+/**
+ * Ponto de entrada único pra trocar de tema -- chamado pelo
+ * #select-aparencia em Configurações e na inicialização (pra
+ * restaurar o que ficou salvo). Sempre para o sensor primeiro: só o
+ * modo "automatico" pode religá-lo.
+ */
+async function definirTema(modo) {
+  pararSensorLuz();
+  const select = document.getElementById("select-aparencia");
+  const status = document.getElementById("aparencia-status");
+
+  if (modo === "automatico") {
+    if (status) {
+      status.textContent = "Pedindo acesso ao sensor de luz do aparelho...";
+      status.classList.remove("oculto");
+    }
+    try {
+      await ligarSensorLuz();
+      localStorage.setItem(CHAVE_TEMA, modo);
+      if (select) select.value = modo;
+      if (status) {
+        status.textContent = "Automático: acompanhando a luz do ambiente pra trocar de tema sozinho.";
+      }
+      return;
+    } catch (erro) {
+      console.error("Não foi possível ligar o sensor de luz:", erro);
+      alert(
+        "Esse aparelho não suporta o sensor de luz ambiente (é o caso de todo iPhone, e da maioria dos Android) ou a permissão foi negada. Voltando para o tema Sistema."
+      );
+      modo = "sistema";
+    }
+  }
+
+  if (status) status.classList.add("oculto");
+  aplicarDataTheme(modo);
+  localStorage.setItem(CHAVE_TEMA, modo);
+  if (select) select.value = modo;
+}
+
+/** Restaura o tema salvo (ou "sistema" por padrão) e liga o
+ *  select de Configurações. */
+function configurarAparencia() {
+  const select = document.getElementById("select-aparencia");
+  const salvo = localStorage.getItem(CHAVE_TEMA) || "sistema";
+  if (salvo === "automatico") {
+    definirTema("automatico");
+  } else {
+    aplicarDataTheme(salvo);
+    if (select) select.value = salvo;
+  }
+  select?.addEventListener("change", (evento) => definirTema(evento.target.value));
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  configurarAparencia();
   const versaoEl = document.getElementById("versao-app-texto");
   if (versaoEl) versaoEl.textContent = `versão ${VERSAO_APP}`;
   document.getElementById("btn-ver-novidades")?.addEventListener("click", abrirNovidades);
@@ -923,6 +1094,7 @@ document.addEventListener("DOMContentLoaded", () => {
   configurarLojaAdmin();
   configurarBiblioteca();
   configurarRotas();
+  configurarDicaMapa();
   esconderTelaCarregamento();
 });
 
@@ -2395,6 +2567,17 @@ function configurarNavInferior() {
  */
 function fecharTodosOsModais() {
   OVERLAYS_APP.forEach((id) => document.getElementById(id)?.classList.add("oculto"));
+}
+
+/**
+ * A dica "Arraste para mover..." some sozinha depois de alguns
+ * segundos -- só serve pra ensinar de primeira, não precisa ficar
+ * poluindo a tela pra sempre.
+ */
+function configurarDicaMapa() {
+  const dica = document.getElementById("dica-mapa");
+  if (!dica) return;
+  setTimeout(() => dica.classList.add("dica-mapa-escondida"), 4000);
 }
 
 /**
