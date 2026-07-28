@@ -645,10 +645,13 @@
       <h2>🏠 Garagem Virtual</h2>
       <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo das suas motos nunca aparecem no seu perfil público.</p>
 
+      <!-- Segmented control (estilo iOS): só a aba ativa recebe
+           destaque, sem parecer 3 botões soltos. Mesmos ids/data-aba
+           de sempre -- ver mudarAbaGaragem em js/script.js. -->
       <div id="garagem-abas">
-        <button type="button" class="garagem-aba garagem-aba-ativa" id="btn-garagem-aba-criar" data-aba="criar">+ Criar nova</button>
-        <button type="button" class="garagem-aba" id="btn-garagem-aba-editar" data-aba="editar">✏️ Editar</button>
-        <button type="button" class="garagem-aba" id="btn-garagem-aba-stats" data-aba="stats">📊 Estatísticas</button>
+        <button type="button" class="garagem-aba garagem-aba-ativa" id="btn-garagem-aba-criar" data-aba="criar">Nova</button>
+        <button type="button" class="garagem-aba" id="btn-garagem-aba-editar" data-aba="editar">Editar</button>
+        <button type="button" class="garagem-aba" id="btn-garagem-aba-stats" data-aba="stats">Estatísticas</button>
       </div>
 
       <!-- Aba "Criar nova" -->
@@ -666,8 +669,21 @@
 
       <!-- Aba "Editar" -->
       <div id="garagem-painel-editar" class="garagem-painel oculto">
-        <div id="garagem-lista-motos-editar" class="garagem-lista-motos"></div>
         <p id="garagem-editar-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
+
+        <!-- Card seletor: mostra só a moto atual (com a estrela
+             dourada se for a ativa); as setas só aparecem com 2+
+             motos cadastradas -- substitui a lista inteira empilhada
+             (ver renderizarSeletorGaragem em js/script.js). -->
+        <div id="garagem-seletor-editar" class="garagem-seletor oculto">
+          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-editar-anterior" aria-label="Moto anterior">‹</button>
+          <div class="garagem-seletor-info">
+            <span class="garagem-seletor-nome" id="garagem-seletor-editar-nome"></span>
+            <span class="garagem-seletor-ativa-tag oculto" id="garagem-seletor-editar-tag">⭐ Ativa</span>
+          </div>
+          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-editar-proxima" aria-label="Próxima moto">›</button>
+        </div>
+
         <div id="garagem-editar-form" class="oculto">
           <label for="select-garagem-marca-editar">Marca</label>
           <select id="select-garagem-marca-editar"></select>
@@ -678,23 +694,42 @@
           <p id="garagem-editar-erro" class="oculto"></p>
           <button type="button" id="btn-salvar-edicao-moto">Salvar alterações</button>
           <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
-          <button type="button" id="btn-excluir-moto">🗑️ Excluir moto</button>
+          <button type="button" id="btn-excluir-moto">Excluir moto</button>
         </div>
       </div>
 
       <!-- Aba "Estatísticas" -->
       <div id="garagem-painel-stats" class="garagem-painel oculto">
-        <div id="garagem-lista-motos-stats" class="garagem-lista-motos"></div>
         <p id="garagem-stats-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
+
+        <div id="garagem-seletor-stats" class="garagem-seletor oculto">
+          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-stats-anterior" aria-label="Moto anterior">‹</button>
+          <div class="garagem-seletor-info">
+            <span class="garagem-seletor-nome" id="garagem-seletor-stats-nome"></span>
+            <span class="garagem-seletor-ativa-tag oculto" id="garagem-seletor-stats-tag">⭐ Ativa</span>
+          </div>
+          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-stats-proxima" aria-label="Próxima moto">›</button>
+        </div>
+
+        <!-- Dashboard de telemetria: odômetro como herói (número
+             grande e verde), viagens/última viagem num grid 2 col
+             abaixo. -->
         <div id="garagem-stats-conteudo" class="oculto">
-          <h3 id="garagem-stats-nome"></h3>
           <div id="garagem-odometro">
-            <span>Odômetro (Modo Viagem)</span>
             <strong id="garagem-odometro-valor">0 km</strong>
+            <span>Odômetro (Modo Viagem)</span>
           </div>
           <div id="garagem-stats-grade">
-            <div class="garagem-stat"><span id="garagem-stats-viagens">0</span><small>Viagens registradas</small></div>
-            <div class="garagem-stat"><span id="garagem-stats-ultima">—</span><small>Última viagem</small></div>
+            <div class="garagem-stat">
+              <span class="garagem-stat-icone">🗺️</span>
+              <strong id="garagem-stats-viagens">0</strong>
+              <small>Viagens registradas</small>
+            </div>
+            <div class="garagem-stat">
+              <span class="garagem-stat-icone">📅</span>
+              <strong id="garagem-stats-ultima">—</strong>
+              <small>Última viagem</small>
+            </div>
           </div>
         </div>
       </div>

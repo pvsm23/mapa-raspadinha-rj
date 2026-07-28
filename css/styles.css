@@ -2228,6 +2228,9 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 #garagem-conteudo select,
 #garagem-conteudo input {
   width: 100%;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
 }
 
 #garagem-aviso-privacidade {
@@ -2237,24 +2240,33 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   line-height: 1.4;
 }
 
+/* Odômetro: o "herói" do dashboard -- número grande e verde,
+   centralizado, com a legenda menor embaixo. */
 #garagem-odometro {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  background: #0F1216;
-  border-radius: 10px;
-  padding: 12px 14px;
-  margin-top: 16px;
+  gap: 2px;
+  background: radial-gradient(circle at 50% 0%, rgba(43, 213, 118, 0.1) 0%, #0F1216 70%);
+  border: 1px solid rgba(43, 213, 118, 0.15);
+  border-radius: 14px;
+  padding: 22px 14px;
+  margin-top: 4px;
+  text-align: center;
 }
 
 #garagem-odometro span {
   color: #8E97A3;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 #garagem-odometro strong {
   color: #2FBE6B;
-  font-size: 1rem;
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 #garagem-criar-erro,
@@ -2269,14 +2281,16 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   display: none;
 }
 
-/* ---- Abas da Garagem ---- */
+/* ---- Abas da Garagem: segmented control (estilo iOS) -- uma
+   trilha contínua, só a aba ativa ganha destaque (pill clara),
+   em vez de 3 botões soltos. ---- */
 
 #garagem-abas {
   display: flex;
-  gap: 6px;
+  gap: 2px;
   background: #0F1216;
   border-radius: 10px;
-  padding: 4px;
+  padding: 3px;
   margin: 14px 0;
 }
 
@@ -2287,14 +2301,16 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   border-radius: 8px;
   padding: 8px 6px;
   color: #8E97A3;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .garagem-aba-ativa {
-  background: #2FBE6B;
-  color: #0F1216;
+  background: #2A313C;
+  color: #F2F5F7;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 .garagem-painel.oculto {
@@ -2341,14 +2357,18 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   display: none;
 }
 
+/* Ghost: sem contorno, só texto vermelho -- não deve competir
+   visualmente com "Salvar alterações" (ação principal). */
 #btn-excluir-moto {
   background: transparent;
   color: #F08A94;
-  border: 1px solid rgba(240, 97, 109, 0.3) !important;
+  border: none !important;
+  margin-top: 2px;
+  font-weight: 600;
 }
 
 #btn-excluir-moto:hover {
-  background: rgba(240, 97, 109, 0.12);
+  background: rgba(240, 97, 109, 0.1);
 }
 
 #garagem-limite-aviso {
@@ -2362,43 +2382,89 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   display: none;
 }
 
-/* ---- Lista de motos (abas Editar/Estatísticas) ---- */
+/* ---- Card Seletor (abas Editar/Estatísticas): mostra só a moto
+   atual (com estrela dourada se for a ativa) -- sem repetir o nome
+   dela de novo no formulário/painel logo abaixo. Setas só aparecem
+   com 2+ motos cadastradas (ver renderizarSeletorGaragem). ---- */
 
-.garagem-lista-motos {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.garagem-moto-item {
+.garagem-seletor {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: #0F1216;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  gap: 10px;
+  background: linear-gradient(135deg, #1B2027 0%, #12151A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
   padding: 10px 12px;
-  color: #F2F5F7;
-  font-size: 0.88rem;
+  margin-bottom: 16px;
+}
+
+.garagem-seletor.oculto {
+  display: none;
+}
+
+.garagem-seletor-seta {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 8px;
+  color: #C3CBD4;
+  font-size: 1.15rem;
+  line-height: 1;
   cursor: pointer;
-  text-align: left;
-  width: 100%;
 }
 
-.garagem-moto-item:hover {
-  background: #1E232B;
+.garagem-seletor-seta:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #F2F5F7;
 }
 
-.garagem-moto-item.garagem-moto-selecionada {
-  border-color: #2FBE6B;
+.garagem-seletor-seta.oculto {
+  visibility: hidden;
 }
 
-.garagem-moto-item-ativa-tag {
-  color: #2FBE6B;
-  font-size: 0.72rem;
+/* #garagem-painel-editar button (mais específico, id+tag) senão
+   forçaria as setas a width:100%/margin-top como os botões do
+   formulário -- essa regra recupera o tamanho compacto delas. */
+#garagem-painel-editar .garagem-seletor-seta {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-top: 0;
+}
+
+.garagem-seletor-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.garagem-seletor-nome {
+  max-width: 100%;
+  font-size: 0.92rem;
   font-weight: 700;
+  color: #F2F5F7;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.garagem-seletor-ativa-tag {
+  color: var(--ouro, #E9B949);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.garagem-seletor-ativa-tag.oculto {
+  display: none;
 }
 
 .garagem-vazio {
@@ -2417,16 +2483,12 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   display: none;
 }
 
-/* ---- Estatísticas da moto selecionada ---- */
-
-#garagem-stats-nome {
-  margin: 4px 0 10px;
-  font-size: 1rem;
-}
+/* ---- Dashboard de telemetria (aba Estatísticas): odômetro como
+   herói, viagens/última viagem num grid 2 colunas abaixo. ---- */
 
 #garagem-stats-grade {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 10px;
 }
@@ -2434,17 +2496,23 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 .garagem-stat {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
   background: #0F1216;
   border-radius: 10px;
-  padding: 12px 6px;
+  padding: 14px 6px;
   text-align: center;
 }
 
-.garagem-stat span {
+.garagem-stat-icone {
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+}
+
+.garagem-stat strong {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #2FBE6B;
+  color: #F2F5F7;
 }
 
 .garagem-stat small {

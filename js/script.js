@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.14";
+const VERSAO_APP = "0.11.15";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.14";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.15", itens: ["Garagem Virtual com cara de painel automotivo: abas viraram um segmented control contínuo, a lista de motos duplicada deu lugar a um card seletor (moto atual + setas pra trocar), e a aba Estatísticas ganhou um dashboard de verdade com o odômetro em destaque."] },
   { versao: "0.11.14", itens: ["Conquistas em lista horizontal (medalha + descrição lado a lado) em vez dos cards gigantes de antes — cabe muito mais na tela, sem cadeado amarelo enorme, com selo de raridade colorido por nível e barra de progresso mais fina."] },
   { versao: "0.11.13", itens: ["Popup do município reequilibrado: selo menor e status virou um selinho verde, 3 botões de ação num grid discreto (Compartilhar / Fotos daqui / Sugestões, sem remover nenhuma função), e \"Abrir no Maps\" virou um link pequeno em vez de bloco verde gigante."] },
   { versao: "0.11.12", itens: ["Rotas Temáticas com visual novo: lista vertical de cards (em vez do grid circular apertado), com miniatura, barra de progresso fina e sem mais cadeado amarelo — rota não iniciada fica em tons de cinza, o resto aparece colorido."] },
@@ -1307,6 +1308,11 @@ function configurarGaragem() {
   document.getElementById("btn-salvar-edicao-moto")?.addEventListener("click", salvarEdicaoMotoAtual);
   document.getElementById("btn-definir-moto-ativa")?.addEventListener("click", definirMotoAtivaAtual);
   document.getElementById("btn-excluir-moto")?.addEventListener("click", excluirMotoAtual);
+
+  document.getElementById("btn-garagem-seletor-editar-anterior")?.addEventListener("click", () => navegarSeletorGaragem("editar", -1));
+  document.getElementById("btn-garagem-seletor-editar-proxima")?.addEventListener("click", () => navegarSeletorGaragem("editar", 1));
+  document.getElementById("btn-garagem-seletor-stats-anterior")?.addEventListener("click", () => navegarSeletorGaragem("stats", -1));
+  document.getElementById("btn-garagem-seletor-stats-proxima")?.addEventListener("click", () => navegarSeletorGaragem("stats", 1));
 }
 
 async function abrirGaragem() {
@@ -1349,55 +1355,61 @@ function renderizarAbasGaragem() {
   document.getElementById("btn-criar-moto").disabled = cheia;
   document.getElementById("garagem-limite-aviso")?.classList.toggle("oculto", !cheia);
 
-  renderizarListaMotosGaragem(
-    "garagem-lista-motos-editar",
-    garagemMotoSelecionadaEditar,
-    selecionarMotoEditar
-  );
   document.getElementById("garagem-editar-vazio")?.classList.toggle("oculto", garagemMotos.length > 0);
   if (!garagemMotos.find((m) => m.id === garagemMotoSelecionadaEditar)) {
-    selecionarMotoEditar(garagemMotos[0]?.id || null);
+    garagemMotoSelecionadaEditar = garagemMotos[0]?.id || null;
   }
+  selecionarMotoEditar(garagemMotoSelecionadaEditar);
 
-  renderizarListaMotosGaragem(
-    "garagem-lista-motos-stats",
-    garagemMotoSelecionadaStats,
-    selecionarMotoStats
-  );
   document.getElementById("garagem-stats-vazio")?.classList.toggle("oculto", garagemMotos.length > 0);
   if (!garagemMotos.find((m) => m.id === garagemMotoSelecionadaStats)) {
-    selecionarMotoStats(garagemMotos[0]?.id || null);
+    garagemMotoSelecionadaStats = garagemMotos[0]?.id || null;
   }
+  selecionarMotoStats(garagemMotoSelecionadaStats);
 }
 
-function renderizarListaMotosGaragem(containerId, selecionadaId, aoSelecionar) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = "";
-  // Só mostra a lista quando há mais de 1 moto -- com 1 só (ou
-  // nenhuma) não faz sentido escolher, o painel já mostra ela direto.
+/**
+ * Atualiza o "Card Seletor" (moto atual + estrela dourada se for a
+ * ativa + setas pra trocar) de uma das abas -- `prefixo` é "editar" ou
+ * "stats", casando com os ids `garagem-seletor-<prefixo>*` no HTML.
+ * As setas só aparecem com 2+ motos: com 1 só (ou nenhuma) não faz
+ * sentido escolher.
+ */
+function renderizarSeletorGaragem(prefixo, motoId) {
+  const seletor = document.getElementById(`garagem-seletor-${prefixo}`);
+  if (!seletor) return;
+  const moto = garagemMotos.find((m) => m.id === motoId);
+
+  if (!moto) {
+    seletor.classList.add("oculto");
+    return;
+  }
+  seletor.classList.remove("oculto");
+  document.getElementById(`garagem-seletor-${prefixo}-nome`).textContent =
+    `${moto.apelido ? `${moto.apelido} — ` : ""}${moto.marca} ${moto.modelo}`;
+  document
+    .getElementById(`garagem-seletor-${prefixo}-tag`)
+    ?.classList.toggle("oculto", moto.id !== garagemMotoAtivaId);
+
+  const temVarias = garagemMotos.length > 1;
+  document.getElementById(`btn-garagem-seletor-${prefixo}-anterior`)?.classList.toggle("oculto", !temVarias);
+  document.getElementById(`btn-garagem-seletor-${prefixo}-proxima`)?.classList.toggle("oculto", !temVarias);
+}
+
+/** Avança/volta (delta = 1/-1) a moto exibida no seletor de uma aba. */
+function navegarSeletorGaragem(prefixo, delta) {
   if (garagemMotos.length < 2) return;
-  garagemMotos.forEach((moto) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "garagem-moto-item";
-    item.classList.toggle("garagem-moto-selecionada", moto.id === selecionadaId);
-    const nome = document.createElement("span");
-    nome.textContent = `${moto.apelido ? `${moto.apelido} — ` : ""}${moto.marca} ${moto.modelo}`;
-    item.appendChild(nome);
-    if (moto.id === garagemMotoAtivaId) {
-      const tag = document.createElement("span");
-      tag.className = "garagem-moto-item-ativa-tag";
-      tag.textContent = "⭐ Ativa";
-      item.appendChild(tag);
-    }
-    item.addEventListener("click", () => aoSelecionar(moto.id));
-    container.appendChild(item);
-  });
+  const selecionadaId = prefixo === "editar" ? garagemMotoSelecionadaEditar : garagemMotoSelecionadaStats;
+  const atual = garagemMotos.findIndex((m) => m.id === selecionadaId);
+  if (atual === -1) return;
+  const proximoId = garagemMotos[(atual + delta + garagemMotos.length) % garagemMotos.length].id;
+  if (prefixo === "editar") selecionarMotoEditar(proximoId);
+  else selecionarMotoStats(proximoId);
 }
 
 function selecionarMotoEditar(motoId) {
   garagemMotoSelecionadaEditar = motoId;
+  renderizarSeletorGaragem("editar", motoId);
   const moto = garagemMotos.find((m) => m.id === motoId);
   const form = document.getElementById("garagem-editar-form");
   if (!moto) {
@@ -1414,6 +1426,7 @@ function selecionarMotoEditar(motoId) {
 
 function selecionarMotoStats(motoId) {
   garagemMotoSelecionadaStats = motoId;
+  renderizarSeletorGaragem("stats", motoId);
   const moto = garagemMotos.find((m) => m.id === motoId);
   const conteudo = document.getElementById("garagem-stats-conteudo");
   if (!moto) {
@@ -1421,9 +1434,8 @@ function selecionarMotoStats(motoId) {
     return;
   }
   conteudo.classList.remove("oculto");
-  document.getElementById("garagem-stats-nome").textContent =
-    `${moto.apelido ? `${moto.apelido} — ` : ""}${moto.marca} ${moto.modelo}${motoId === garagemMotoAtivaId ? " ⭐" : ""}`;
-  document.getElementById("garagem-odometro-valor").textContent = `${(moto.odometroKm || 0).toFixed(1)} km`;
+  document.getElementById("garagem-odometro-valor").textContent =
+    `${Math.round(moto.odometroKm || 0).toLocaleString("pt-BR")} km`;
   document.getElementById("garagem-stats-viagens").textContent = "...";
   document.getElementById("garagem-stats-ultima").textContent = "...";
 
