@@ -870,45 +870,67 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   padding: 0;
 }
 
+/* Tabs minimalistas (estilo Threads/Instagram): sem fundo, texto
+   cinza inativo, branco + risco verde embaixo quando ativo. */
 #social-abas {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 24px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .social-aba {
-  flex: 1;
-  background: #0F1216;
+  flex: none;
+  background: transparent;
   color: #8E97A3;
   border: none;
-  padding: 8px;
-  border-radius: 8px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 10px 2px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 600;
 }
 
 .social-aba-ativa {
-  background: #2BD576;
-  color: white;
+  background: transparent;
+  color: #F2F5F7;
+  border-bottom-color: var(--verde);
 }
 
+/* FAB (Floating Action Button): circular, fixo no canto inferior
+   direito do painel -- substitui o antigo botão "Postar uma foto" em
+   bloco cheio no topo do feed. */
 #btn-abrir-criar-post {
-  display: block;
-  width: 100%;
-  background: #2BD576;
-  color: white;
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 18px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  z-index: 10;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--verde);
+  color: #0F1216;
   border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 14px;
+  box-shadow: 0 6px 18px rgba(43, 213, 118, 0.4);
+  margin-bottom: 0;
+}
+
+#btn-abrir-criar-post svg {
+  width: 26px;
+  height: 26px;
 }
 
 #btn-abrir-criar-post:hover {
   background: #1FA85C;
+}
+
+#btn-abrir-criar-post:active {
+  transform: scale(0.94);
 }
 
 #social-form-post {
@@ -1029,22 +1051,29 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   cursor: not-allowed;
 }
 
+/* Feed estilo Instagram/Threads: sem gap grande entre posts, a
+   separação vira só a divisória fina de .post-card (border-bottom) --
+   ver mais abaixo (#social-feed .post-card). */
 #social-feed {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
 }
 
 .post-card {
   overflow: hidden;
 }
 
-/* Cabeçalho estilo rede social: avatar + nome/local/hora + "⋯" */
+/* Cabeçalho estilo rede social: avatar + nome/local (empilhados) +
+   data (extrema direita) + "⋯". Nome e localização ficam juntos em
+   .post-ident (coluna); a data é irmã, não faz parte do bloco de
+   identidade, por isso o flex:1 do .post-ident empurra ela sozinha
+   pra ponta direita. */
 .post-topo {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  padding: 11px 14px;
+  padding: 12px 14px;
 }
 .post-avatar {
   width: 38px;
@@ -1060,6 +1089,7 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 .post-ident {
   display: flex;
   flex-direction: column;
+  gap: 1px;
   min-width: 0;
   flex: 1;
 }
@@ -1069,23 +1099,25 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   cursor: pointer;
   color: var(--txt);
 }
-.post-sub {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  color: var(--fraco);
-}
 .post-card-municipio {
+  display: block;
   background: none;
   border: none;
-  color: var(--verde);
+  color: var(--fraco);
   padding: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-align: left;
   cursor: pointer;
 }
-.post-tempo { color: var(--fraco); }
+.post-tempo {
+  flex: none;
+  color: var(--fraco);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  padding-top: 2px;
+}
 
 .post-card-foto {
   width: 100%;
@@ -1098,7 +1130,7 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 .post-card-acoes {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   padding: 11px 14px 6px;
 }
 .post-card-acoes button {
@@ -1183,6 +1215,21 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 }
 .post-card-legenda b { font-weight: 600; }
 .post-card-legenda:empty { display: none; }
+
+/* Menções "@algo" -- na legenda (texto livre, ver destacarMencoes em
+   js/script.js) e nas pessoas marcadas (estruturado, com uid -- por
+   isso é clicável e abre o perfil, ver renderizarCardPost). Mesmo
+   visual pros dois casos, só a segunda é interativa de verdade. */
+.post-mencao {
+  color: var(--verde);
+  font-weight: 500;
+}
+.post-mencao-clicavel {
+  cursor: pointer;
+}
+.post-mencao-clicavel:hover {
+  text-decoration: underline;
+}
 
 .post-card-marcados {
   padding: 4px 14px 0;
@@ -6300,7 +6347,6 @@ a {
 #btn-entrar-email,
 #btn-confirmar-apelido,
 #btn-salvar-apelido-config,
-#btn-abrir-criar-post,
 #btn-abrir-nova-sugestao,
 #btn-buscar-amigo,
 #btn-compartilhar-de-fato,
@@ -6310,7 +6356,6 @@ a {
 #btn-copiar-pix,
 #btn-fechar-aviso-desenvolvimento,
 #cartao-progresso-acoes button,
-.social-aba-ativa,
 .ranking-aba-ativa,
 .destino-btn-maps,
 .post-card-novo-comentario button,
@@ -6367,13 +6412,31 @@ select:focus {
 }
 
 /* ---- Abas inativas ---- */
-.social-aba:not(.social-aba-ativa),
 .ranking-aba:not(.ranking-aba-ativa) {
   background: var(--surf2) !important;
   color: var(--fraco) !important;
   border: 1px solid var(--linha) !important;
   box-shadow: none !important;
   border-radius: 11px !important;
+}
+
+/* Tabs da Comunidade (#social-abas) são o único caso minimalista --
+   sem fundo em nenhum dos dois estados, só texto + risco embaixo
+   quando ativo. Qualificado com o container pra vencer qualquer
+   regra genérica de botão (mesmo raciocínio de especificidade usado
+   em Configurações, ver #configuracoes-conteudo .settings-btn-*). */
+#social-abas .social-aba {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: var(--fraco) !important;
+  font-weight: 600 !important;
+}
+#social-abas .social-aba-ativa {
+  color: var(--txt) !important;
+  border-bottom-color: var(--verde) !important;
 }
 
 /* ---- Chips ---- */
@@ -6707,11 +6770,32 @@ select:focus {
 
 /* Cards do feed com sombra suave (a herdada dos modais era pesada
    demais pra uma lista de posts) e espaçamento mais justo. */
+/* Feed sem cartão pesado: fundo se mistura com o app, só uma
+   divisória fina separa um post do outro (sem borda, sem sombra, sem
+   cantos arredondados) -- reaproveita a especificidade (ID + classe)
+   pra vencer a regra genérica de "cartão" (background/border/shadow)
+   herdada de [id$="-conteudo"], .post-card. */
 #social-feed .post-card {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
-  border-radius: 16px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid #1A1E24 !important;
+  padding-bottom: 6px;
 }
-#social-feed { gap: 14px; }
+#social-feed .post-card:last-child {
+  border-bottom: none !important;
+}
+
+/* O município do post vira texto cinza discreto embaixo do nome, não
+   mais um chip colorido -- some sobrescreve a regra global de "chip
+   verde" (.post-card-municipio, .sugestao-card-categoria etc). */
+#social-feed .post-card-municipio {
+  background: none !important;
+  color: var(--fraco) !important;
+  border-radius: 0 !important;
+  font-weight: 400 !important;
+}
 
 /* =========================================================
    BARRA SUPERIOR MODERNA (avatar + título + busca + config
@@ -6795,20 +6879,25 @@ select:focus {
 #btn-buscar-local { display: none !important; }
 
 /* Atalho pras Sugestões dentro da Comunidade */
+/* Virou um chip pequeno e discreto (não um bloco cheio) -- só um
+   atalho a mais, não pode competir visualmente com o feed nem com o
+   FAB de postar. */
 #btn-atalho-sugestoes {
-  width: 100%;
-  margin: 10px 0 4px;
-  padding: 11px 14px;
+  display: inline-flex;
+  width: auto;
+  margin: 10px 0 16px;
+  padding: 7px 12px;
   background: var(--verde-esc);
   color: var(--verde);
   border: 1px solid rgba(43, 213, 118, 0.3);
-  border-radius: 12px;
-  font-size: 0.85rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: transform 0.1s;
 }
-#btn-atalho-sugestoes:active { transform: scale(0.98); }
+#btn-atalho-sugestoes:active { transform: scale(0.96); }
 
 /* =========================================================
    ANIMAÇÕES DE ABERTURA DAS JANELAS

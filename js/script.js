@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.7";
+const VERSAO_APP = "0.11.8";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.7";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.8", itens: ["Comunidade com visual novo, estilo Instagram/Threads: tabs minimalistas, feed sem cartões pesados (só uma linha fina separando os posts), foto ocupando a largura toda, e um botão redondo (FAB) pra postar no canto da tela. Menções @assim agora aparecem destacadas em verde."] },
   { versao: "0.11.7", itens: ["Configurações com visual novo: cartões organizados (Perfil, Preferências, Recursos, Conta), toggles no lugar das caixinhas de marcar, e só o botão 'Salvar apelido' fica verde vibrante agora."] },
   { versao: "0.11.6", itens: ["Menu reorganizado: 'Minha Jornada', 'Explorar' e 'Sistema', mais fácil de achar as coisas. Perfil saiu do Menu (já abre pelo avatar no topo) e o Check-in semanal saiu de circulação."] },
   { versao: "0.11.5", itens: ["Chegou a Loja Desbrava! 🛍️ Produtos físicos e digitais, alguns liberados só depois de desbravar certos municípios. Membro do Motoclube ganha um voucher mensal de R$ 4,90 pra usar nas compras."] },
@@ -4954,6 +4955,22 @@ function escaparHtml(texto) {
   return div.innerHTML;
 }
 
+/**
+ * Destaca menções "@algo" dentro de um texto JÁ ESCAPADO (ver
+ * escaparHtml -- tem que ser chamada depois, nunca antes, senão vira
+ * brecha de HTML injection). Usado na legenda dos posts da Comunidade
+ * pra dar o mesmo efeito visual de link do Instagram/Threads --  é só
+ * texto livre digitado por quem postou, sem uid associado (por isso
+ * não é clicável; diferente das pessoas marcadas de verdade, que têm
+ * uid e abrem o perfil ao tocar, ver renderizarCardPost).
+ */
+function destacarMencoes(textoEscapado) {
+  return textoEscapado.replace(
+    /(^|\s)(@[\p{L}0-9_]+)/gu,
+    (match, espaco, mencao) => `${espaco}<span class="post-mencao">${mencao}</span>`
+  );
+}
+
 const cacheExisteImagem = {};
 
 /**
@@ -8531,12 +8548,9 @@ function renderizarCardPost(post) {
       <div class="post-avatar" style="background:${corAvatar(post.autorApelido)}">${escaparHtml(iniciaisApelido(post.autorApelido))}</div>
       <div class="post-ident">
         <span class="post-card-autor">${escaparHtml(post.autorApelido)}</span>
-        <span class="post-sub">
-          ${nomeMunicipio ? `<button type="button" class="post-card-municipio">📍 ${escaparHtml(nomeMunicipio)}</button>` : ""}
-          ${nomeMunicipio && tempo ? " · " : ""}
-          ${tempo ? `<span class="post-tempo">${tempo}</span>` : ""}
-        </span>
+        ${nomeMunicipio ? `<button type="button" class="post-card-municipio">📍 ${escaparHtml(nomeMunicipio)}</button>` : ""}
       </div>
+      ${tempo ? `<span class="post-tempo">${tempo}</span>` : ""}
       ${souAutor ? '<button type="button" class="post-card-excluir" aria-label="Opções">⋯</button>' : ""}
     </div>
     <img class="post-card-foto" alt="Foto do post">
@@ -8545,8 +8559,8 @@ function renderizarCardPost(post) {
       <button type="button" class="post-card-comentar">${ICONE_COMENTAR} <span class="post-card-num-comentarios">${nComentarios}</span></button>
       <button type="button" class="post-card-compartilhar" aria-label="Compartilhar">${ICONE_COMPARTILHAR}</button>
     </div>
-    <p class="post-card-legenda">${post.texto ? `<b>${escaparHtml(post.autorApelido)}</b> ${escaparHtml(post.texto)}` : ""}</p>
-    ${marcados.length ? `<p class="post-card-marcados">Com ${marcados.map((p) => "@" + escaparHtml(p.apelido)).join(", ")}</p>` : ""}
+    <p class="post-card-legenda">${post.texto ? `<b>${escaparHtml(post.autorApelido)}</b> ${destacarMencoes(escaparHtml(post.texto))}` : ""}</p>
+    ${marcados.length ? `<p class="post-card-marcados">Com ${marcados.map((p) => `<span class="post-mencao post-mencao-clicavel" data-uid="${escaparHtml(p.uid)}">@${escaparHtml(p.apelido)}</span>`).join(", ")}</p>` : ""}
     <button type="button" class="post-ver-comentarios${nComentarios > 0 ? "" : " oculto"}">${nComentarios === 1 ? "Ver 1 comentário" : `Ver todos os ${nComentarios} comentários`}</button>
     <div class="post-card-comentarios oculto">
       <div class="post-card-lista-comentarios"></div>
@@ -8582,6 +8596,12 @@ function renderizarCardPost(post) {
   card.querySelector(".post-ver-comentarios")?.addEventListener("click", () => aoAbrirComentarios(post, card));
   card.querySelector(".post-card-compartilhar").addEventListener("click", () => compartilharPost(post.id));
   card.querySelector(".post-card-excluir")?.addEventListener("click", () => aoExcluirPost(post, card));
+  card.querySelectorAll(".post-mencao-clicavel").forEach((mencao) => {
+    mencao.addEventListener("click", () => {
+      fecharPainelSocial();
+      abrirPerfil(mencao.dataset.uid);
+    });
+  });
 
   const inputComentario = card.querySelector(".post-card-novo-comentario input");
   card.querySelector(".post-card-novo-comentario button").addEventListener("click", () =>

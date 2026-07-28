@@ -404,10 +404,21 @@
       </div>
 
       <!-- Atalho pras Sugestões da Comunidade (feed de lugares por
-           município) direto da rede social. -->
-      <button type="button" id="btn-atalho-sugestoes">💡 Sugestões de lugares da comunidade</button>
+           município) direto da rede social -- chip discreto, não
+           compete com o feed. -->
+      <button type="button" id="btn-atalho-sugestoes">💡 Sugestões de lugares</button>
 
-      <button type="button" id="btn-abrir-criar-post">📷 Postar uma foto</button>
+      <!-- FAB (Floating Action Button) fixo no canto inferior direito
+           do painel -- mesmo id/handler de sempre
+           (alternarFormularioCriarPost em js/script.js), só mudou de
+           bloco cheio no topo pra um botão circular flutuante. -->
+      <button type="button" id="btn-abrir-criar-post" aria-label="Postar uma foto" title="Postar uma foto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <line x1="12" y1="10" x2="12" y2="16"/>
+          <line x1="9" y1="13" x2="15" y2="13"/>
+        </svg>
+      </button>
 
       <div id="social-form-post" class="oculto">
         <label for="input-foto-post">Foto</label>
