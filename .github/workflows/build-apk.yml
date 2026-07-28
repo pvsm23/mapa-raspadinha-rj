@@ -73,6 +73,20 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('android/app/google-services.json','utf8'))" \
             && echo "google-services.json restaurado e valido"
 
+      # Sem isso o runner assina com uma debug.keystore gerada na hora,
+      # e o APK resultante NÃO instala por cima de uma versão vinda de
+      # build local -- o Android bloqueia troca de assinatura.
+      - name: Restaura a debug.keystore (mesma assinatura do build local)
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$DEBUG_KEYSTORE_B64" ]; then
+            echo "::error::Secret DEBUG_KEYSTORE_B64 vazio -- o APK sairia com assinatura errada e nao instalaria por cima do app ja instalado."
+            exit 1
+          fi
+          printf '%s' "$DEBUG_KEYSTORE_B64" | base64 -d > android/app/debug.keystore
+          keytool -list -keystore android/app/debug.keystore -storepass android -alias androiddebugkey
+
       - name: Monta o www/ e sincroniza o Capacitor
         run: |
           node tools/montar-www.js
