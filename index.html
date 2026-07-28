@@ -1178,16 +1178,16 @@
            não precisa duplicar em Configurações. -->
       <div class="settings-card">
         <h3 class="settings-card-titulo">⭐ Recursos</h3>
-        <!--
-          TODO(PRO): esta secao e um placeholder. A funcao de baixar
-          os dados (selos/destinos) para uso offline soh deve ficar
-          disponivel para quem for PRO. Falta: login funcionando +
-          alguma forma de saber quem pagou (ex: campo no Firestore).
-          Ver ehUsuarioPro() e baixarDadosOffline() em js/script.js.
-        -->
-        <button id="btn-baixar-offline" disabled title="Em breve, para assinantes PRO">
-          ⬇️ Baixar dados offline (em breve)
-        </button>
+        <!-- Baixa selos, mapas SVG e os JSONs de dados pro cache do
+             navegador, pra usar o app sem internet. Só pra PRO
+             (ehUsuarioPro em js/script.js). O que entra no pacote vem
+             de data/offline-manifest.json, GERADO no build por
+             tools/montar-www.js -- não é lista escrita à mão. -->
+        <button id="btn-baixar-offline">⬇️ Baixar dados offline</button>
+        <div id="offline-progresso" class="oculto">
+          <div id="offline-barra"><div id="offline-barra-preenchida"></div></div>
+          <p id="offline-status"></p>
+        </div>
 
         <!-- Só aparece pra conta "dona" do projeto (UID_DONO em
              js/auth.js) -- abre o painel de Admin (moderação +

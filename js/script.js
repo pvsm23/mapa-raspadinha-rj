@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.22";
+const VERSAO_APP = "0.11.23";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.22";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.23", itens: ["\"Baixar dados offline\" saiu do \"em breve\" e funciona: assinantes PRO guardam mapa, selos e dados no aparelho, com barra de progresso, e o app abre sem internet. As imagens também passaram a carregar do aparelho antes de ir na rede, deixando a abertura mais rápida. Mais um punhado de acabamentos: botões respondem ao toque, e janelas e gavetas agora fecham com animação em vez de sumir de uma vez."] },
   { versao: "0.11.22", itens: ["Correção: as fotos dos posts não apareciam no feed. O app estava interceptando o carregamento das imagens por engano — agora elas carregam normalmente."] },
   { versao: "0.11.21", itens: ["Sugestões da Comunidade repaginadas: as categorias viraram uma faixa de pílulas deslizantes, o município agora se escolhe numa lista com busca (some a listinha do celular com 92 opções), e os lugares aparecem num mosaico de cartões com a foto de fundo. Publicar uma foto ou sugerir um lugar abre uma janelinha que sobe de baixo, em vez de esticar a tela, e escolher a foto virou um quadro que já mostra a prévia."] },
   { versao: "0.11.20", itens: ["A opção de tema \"Automático\" (que tentava clarear a tela no sol) foi removida: o Android bloqueia o sensor de luz dentro do app, então ela não funcionava em aparelho nenhum. Ficaram Sistema, Claro e Escuro. De quebra, a barra de status do celular agora acompanha o tema, em vez de ficar sempre preta."] },
@@ -3581,19 +3582,88 @@ async function fecharModalApelidoComAleatorio() {
 }
 
 /**
- * TODO(PRO): stub do futuro recurso de baixar os dados (selos e
- * destinos) para uso offline, restrito a assinantes PRO. O botão já
- * fica desabilitado no HTML (ver #btn-baixar-offline) até isso
- * existir de verdade — esta função é só para não precisar mexer em
- * vários lugares do código quando a hora chegar.
+ * Baixa os dados (selos, SVGs e JSONs) pro cache do navegador, pra
+ * usar o app sem internet. Restrito a assinantes PRO.
  */
-function baixarDadosOffline() {
+// Mesmo nome usado em sw.js: fica FORA do cache do app (CACHE_NAME),
+// que é apagado a cada deploy -- senão os ~12 MB baixados sumiriam a
+// cada atualização.
+const CACHE_OFFLINE = "desbrava-offline-v1";
+
+/**
+ * Baixa selos, mapas SVG e os JSONs de dados pro CacheStorage, pra
+ * usar o app sem internet. Recurso do PRO.
+ *
+ * A lista vem de data/offline-manifest.json, gerado no build por
+ * tools/montar-www.js -- assim arte nova entra sozinha no pacote.
+ *
+ * Quem serve isso depois é o próprio service worker: o handler de
+ * imagem é cache-first e o caches.match() varre TODOS os caches, então
+ * o que está aqui é encontrado sem nenhuma gambiarra.
+ */
+async function baixarDadosOffline() {
   if (!ehUsuarioPro()) {
-    alert("Recurso em construção — em breve disponível para assinantes PRO.");
+    alert(
+      "Baixar dados offline é um recurso do Desbrava PRO.\n\nCom ele, o mapa e os selos funcionam sem internet."
+    );
     return;
   }
-  // TODO(PRO): implementar o download de verdade (ex: empacotar
-  // assets/img/selos + data/destinos.json num arquivo só).
+
+  const botao = document.getElementById("btn-baixar-offline");
+  const painel = document.getElementById("offline-progresso");
+  const barra = document.getElementById("offline-barra-preenchida");
+  const status = document.getElementById("offline-status");
+
+  botao.disabled = true;
+  painel.classList.remove("oculto");
+  barra.style.width = "0%";
+  status.textContent = "Preparando...";
+
+  try {
+    const respostaManifesto = await fetch("data/offline-manifest.json", { cache: "no-store" });
+    if (!respostaManifesto.ok) throw new Error("Lista de arquivos offline indisponível.");
+    const { arquivos } = await respostaManifesto.json();
+    if (!arquivos?.length) throw new Error("Lista de arquivos offline vazia.");
+
+    const cache = await caches.open(CACHE_OFFLINE);
+    let prontos = 0;
+    let falhas = 0;
+
+    // De 6 em 6: sem limite, 300+ requisições de uma vez fazem a
+    // WebView engasgar e a barra de progresso trava sem nada acontecer.
+    const LOTE = 6;
+    for (let i = 0; i < arquivos.length; i += LOTE) {
+      const fatia = arquivos.slice(i, i + LOTE);
+      await Promise.all(
+        fatia.map(async (caminho) => {
+          try {
+            // Arquivo já baixado não é rebaixado: reabrir a tela e
+            // mandar de novo não custa 12 MB toda vez.
+            if (!(await cache.match(caminho))) await cache.add(caminho);
+          } catch (erro) {
+            falhas++; // arte que ainda não existe, offline no meio etc.
+          } finally {
+            prontos++;
+          }
+        })
+      );
+
+      const pct = Math.round((prontos / arquivos.length) * 100);
+      barra.style.width = `${pct}%`;
+      status.textContent = `Baixando mapa e selos: ${pct}%`;
+    }
+
+    barra.style.width = "100%";
+    status.textContent = falhas
+      ? `Pronto! ${arquivos.length - falhas} de ${arquivos.length} arquivos guardados.`
+      : "Tudo pronto! O mapa e os selos funcionam sem internet.";
+    botao.textContent = "✓ Dados offline atualizados";
+  } catch (erro) {
+    console.error("Falha ao baixar dados offline:", erro);
+    status.textContent = "Não foi possível baixar agora. Tente de novo com uma conexão melhor.";
+  } finally {
+    botao.disabled = false;
+  }
 }
 
 /**
@@ -5215,6 +5285,52 @@ function escaparHtml(texto) {
   const div = document.createElement("div");
   div.textContent = texto;
   return div.innerHTML;
+}
+
+/**
+ * Fecha uma janela COM animação de saída, em vez de sumir na hora.
+ *
+ * O app inteiro esconde janela com `.oculto` (display:none), que corta
+ * o elemento no mesmo quadro. Aqui a gente põe uma classe de saída
+ * (.fechando pras gavetas, .janela-fechando pras centralizadas, ver
+ * css/styles.css), espera a animação e SÓ ENTÃO aplica o `.oculto`.
+ *
+ * De propósito NÃO troquei o `.oculto` por um sistema de `.open` em
+ * todo o app: são dezenas de modais abrindo/fechando em muitos pontos,
+ * e a animação de ENTRADA já funciona hoje via `:not(.oculto)`. Este
+ * helper cobre a lacuna real (a saída) sem tocar em nada disso.
+ */
+function fecharComAnimacao(elemento, classeSaida = "fechando") {
+  if (!elemento || elemento.classList.contains("oculto")) return;
+
+  // Quem pediu menos movimento no sistema fecha na hora, sem espera.
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    elemento.classList.add("oculto");
+    return;
+  }
+
+  const encerrar = () => {
+    elemento.classList.remove(classeSaida);
+    elemento.classList.add("oculto");
+  };
+
+  // Rede de segurança: se o animationend não vier (aba em segundo
+  // plano, animação cancelada, navegador antigo), a janela não pode
+  // ficar presa na tela pra sempre.
+  const salvaVidas = setTimeout(encerrar, 400);
+  elemento.addEventListener(
+    "animationend",
+    (evento) => {
+      // Só o fim da animação DESTE elemento conta -- o animationend
+      // dos filhos (a folha dentro do overlay) também borbulha aqui.
+      if (evento.target !== elemento) return;
+      clearTimeout(salvaVidas);
+      encerrar();
+    },
+    { once: true }
+  );
+
+  elemento.classList.add(classeSaida);
 }
 
 /**
@@ -9278,7 +9394,7 @@ function abrirEscolherMunicipio({ selecionado = null, permitirNenhum = false, ao
 }
 
 function fecharEscolherMunicipio() {
-  document.getElementById("modal-escolher-municipio").classList.add("oculto");
+  fecharComAnimacao(document.getElementById("modal-escolher-municipio"));
   escolherMunicipioContexto = null;
 }
 
@@ -9366,7 +9482,7 @@ function abrirModalNovaSugestao() {
 }
 
 function fecharModalNovaSugestao() {
-  document.getElementById("modal-nova-sugestao").classList.add("oculto");
+  fecharComAnimacao(document.getElementById("modal-nova-sugestao"));
 }
 
 function resetarFormularioNovaSugestao() {
@@ -9562,7 +9678,7 @@ function abrirDetalheSugestao(sugestao) {
 }
 
 function fecharDetalheSugestao() {
-  document.getElementById("modal-sugestao-detalhe").classList.add("oculto");
+  fecharComAnimacao(document.getElementById("modal-sugestao-detalhe"));
   sugestaoDetalheAtual = null;
 }
 
@@ -9724,7 +9840,7 @@ function abrirModalNovoPost() {
 }
 
 function fecharModalNovoPost() {
-  document.getElementById("modal-novo-post").classList.add("oculto");
+  fecharComAnimacao(document.getElementById("modal-novo-post"));
 }
 
 function aoEscolherFotoPost(evento) {

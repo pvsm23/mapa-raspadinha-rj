@@ -10,7 +10,12 @@
  * atualizaria se o CACHE_NAME mudasse a cada vez, o que é fácil de
  * esquecer de fazer.
  */
-const CACHE_NAME = "mapa-raspadinha-v6";
+const CACHE_NAME = "mapa-raspadinha-v7";
+// Pacote offline do PRO: fica num cache SEPARADO de propósito, pra
+// sobreviver à troca de CACHE_NAME a cada deploy (ver o activate
+// abaixo, que só apaga caches "mapa-raspadinha-*"). Sem isso, o
+// usuário perderia os ~12 MB baixados a cada atualização do app.
+const CACHE_OFFLINE = "desbrava-offline-v1";
 const ARQUIVOS_BASICOS = [
   "./",
   "./index.html",
@@ -34,7 +39,9 @@ self.addEventListener("activate", (evento) => {
     caches.keys().then((nomes) =>
       Promise.all(
         nomes
-          .filter((nome) => nome !== CACHE_NAME)
+          // Só limpa versões antigas do cache do APP. O CACHE_OFFLINE
+          // (pacote baixado pelo usuário PRO) não entra nessa faxina.
+          .filter((nome) => nome.startsWith("mapa-raspadinha-") && nome !== CACHE_NAME)
           .map((nome) => caches.delete(nome))
       )
     )
@@ -70,6 +77,35 @@ self.addEventListener("fetch", (evento) => {
      normal dele, que é exatamente o que essas requisições precisam. */
   const url = new URL(evento.request.url);
   if (evento.request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  /* ---- Cache-first SÓ para imagem ----
+     Arte de selo, ícone e SVG do mapa praticamente não mudam, e são o
+     grosso do peso do app (~12 MB só de selos). Servir do cache
+     primeiro deixa a abertura instantânea e é o que faz o pacote
+     offline do PRO valer de alguma coisa.
+
+     HTML/CSS/JS de propósito FICAM DE FORA: com cache-first, um deploy
+     novo só apareceria depois que o cache fosse invalidado, e o app
+     ficaria presa numa versão antiga -- que é exatamente o problema
+     que o comentário no topo deste arquivo diz que a gente evitou ao
+     escolher network-first. Continuam network-first. */
+  if (evento.request.destination === "image" || /\.(webp|png|jpe?g|svg|ico)$/i.test(url.pathname)) {
+    evento.respondWith(
+      caches.match(evento.request).then((cacheada) => {
+        if (cacheada) return cacheada;
+        return fetch(evento.request).then((resposta) => {
+          // Só guarda resposta boa: cachear um 404 deixaria o selo
+          // quebrado pra sempre, mesmo depois da arte existir.
+          if (resposta.ok) {
+            const copia = resposta.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(evento.request, copia));
+          }
+          return resposta;
+        });
+      })
+    );
+    return;
+  }
 
   evento.respondWith(
     // cache: "no-store" evita que o proprio navegador sirva uma

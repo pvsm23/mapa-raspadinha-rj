@@ -33,6 +33,41 @@ const INCLUIR = [
   "sitemap.xml",
 ];
 
+/* ---- Manifesto do pacote offline (PRO) ----
+   Lista o que baixarDadosOffline() em js/script.js manda pro cache.
+   É GERADO, não escrito à mão: a alternativa seria o app chutar 276
+   URLs de selo (92 municípios x 3 variações) e comer ~160 respostas
+   404, e qualquer arte nova ficaria de fora até alguém lembrar de
+   editar a lista.
+
+   Gerado na RAIZ (e não em www/) de propósito: o site é servido da
+   raiz pelo GitHub Pages/Netlify, então o manifesto precisa existir
+   lá também -- a cópia abaixo o leva pro www/ de brinde. */
+function listarArquivos(dirAbsoluto, prefixoUrl) {
+  if (!fs.existsSync(dirAbsoluto)) return [];
+  const saida = [];
+  for (const e of fs.readdirSync(dirAbsoluto, { withFileTypes: true })) {
+    const url = `${prefixoUrl}/${e.name}`;
+    if (e.isDirectory()) saida.push(...listarArquivos(path.join(dirAbsoluto, e.name), url));
+    else if (!e.name.startsWith(".") && e.name !== "offline-manifest.json") saida.push(url);
+  }
+  return saida;
+}
+
+const arquivosOffline = [
+  ...listarArquivos(path.join(RAIZ, "assets/img/selos"), "assets/img/selos"),
+  ...listarArquivos(path.join(RAIZ, "assets/svg"), "assets/svg"),
+  ...listarArquivos(path.join(RAIZ, "data"), "data").filter((u) => u.endsWith(".json")),
+];
+
+// Sem timestamp de propósito: com ele, o arquivo apareceria como
+// modificado no git a cada build, mesmo sem arte nova nenhuma.
+fs.writeFileSync(
+  path.join(RAIZ, "data", "offline-manifest.json"),
+  JSON.stringify({ arquivos: arquivosOffline }, null, 0) + "\n"
+);
+console.log(`manifesto offline: ${arquivosOffline.length} arquivos`);
+
 fs.rmSync(DESTINO, { recursive: true, force: true });
 fs.mkdirSync(DESTINO, { recursive: true });
 

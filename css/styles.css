@@ -9049,3 +9049,219 @@ textarea.campo-material {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* =========================================================
+   POLIMENTO: MICRO-INTERAÇÕES, SAÍDA DE JANELAS E SKELETON
+   ---------------------------------------------------------
+   O que já existia e NÃO foi refeito aqui: a animação de ENTRADA
+   de modais (janela-surge/janela-fade) e de gavetas (sheet-subir),
+   mais 21 regras :active pontuais. Este bloco cobre o que faltava:
+   feedback tátil como padrão, animação de SAÍDA e skeleton.
+   ========================================================= */
+
+/* ---- 1. Feedback tátil ----
+   Padrão pra qualquer botão, com escape (.sem-tatil) pros casos em
+   que encolher fica estranho. Os :active específicos que já existiam
+   continuam valendo -- vêm depois no arquivo ou são mais específicos,
+   e quase todos usam a mesma escala. */
+button,
+.card-clicavel,
+.sugestao-card,
+.post-card-foto,
+[role="button"] {
+  transition: transform 0.1s ease, filter 0.15s ease, background-color 0.15s ease;
+}
+
+button:active,
+.card-clicavel:active,
+.sugestao-card:active,
+[role="button"]:active {
+  transform: scale(0.96);
+}
+
+/* Onde encolher atrapalha: trilhas de segmented control (o filho é
+   que reage), toggles, o SVG do mapa e barras de largura total que
+   ficam "pulando" ao toque. */
+.sem-tatil:active,
+#aparencia-opcoes:active,
+.settings-toggle:active,
+.settings-toggle-switch:active,
+#mapa-rj button:active,
+.chip-barra:active {
+  transform: none;
+}
+
+/* :hover SÓ em quem tem mouse de verdade. Em touch, o hover "gruda"
+   depois do toque e o botão fica aceso até você tocar em outro
+   lugar -- é o efeito mais denunciador de "isto é um site". */
+@media (hover: hover) and (pointer: fine) {
+  button:hover:not(:disabled),
+  .card-clicavel:hover,
+  [role="button"]:hover {
+    filter: brightness(1.12);
+  }
+
+  .sugestao-card:hover {
+    filter: brightness(1.08);
+  }
+}
+
+/* Estado desabilitado nunca reage ao toque. */
+button:disabled:active {
+  transform: none;
+  filter: none;
+}
+
+/* ---- 2. Animação de SAÍDA ----
+   O `.oculto` (display:none) corta a janela na hora. A classe
+   .fechando roda a animação inversa ANTES do display sumir -- quem
+   coordena isso é fecharComAnimacao() em js/script.js, que espera o
+   animationend pra só então pôr o .oculto.
+   Os tempos são um pouco menores que os de entrada: saída lenta dá
+   sensação de travamento. */
+@keyframes sheet-descer {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+@keyframes sheet-sumir {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes janela-encolhe {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(10px) scale(0.97); }
+}
+
+/* Gavetas (.sheet-overlay > .sheet) */
+.sheet-overlay.fechando {
+  animation: sheet-sumir 0.22s ease forwards;
+  pointer-events: none; /* não dá pra clicar em algo que está saindo */
+}
+
+.sheet-overlay.fechando .sheet {
+  animation: sheet-descer 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Janelas centralizadas: o backdrop some junto com o cartão. */
+.janela-fechando {
+  animation: sheet-sumir 0.18s ease forwards;
+  pointer-events: none;
+}
+
+.janela-fechando > [id$="-conteudo"] {
+  animation: janela-encolhe 0.18s ease forwards;
+}
+
+/* ---- 3. Skeleton loader ----
+   Uso: enquanto o fetch não volta, coloque divs com .skeleton-pulse
+   (+ .skeleton-linha ou .skeleton-bloco) no lugar do conteúdo.
+   O pulso é em background-color, não em opacity: opacity faria o
+   bloco inteiro piscar contra o fundo do card e cansa mais a vista. */
+.skeleton-pulse {
+  --sk-a: #1E232B; /* = var(--surf2) no escuro */
+  --sk-b: #2A313C; /* um degrau acima, mesmo tom */
+  background-color: var(--sk-a);
+  animation: skeleton-pulsar 1.4s ease-in-out infinite;
+  border-radius: 8px;
+  /* Não deixa texto/filho aparecer por cima do placeholder. */
+  color: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+
+:root[data-theme="light"] .skeleton-pulse {
+  --sk-a: #E4E8ED;
+  --sk-b: #F1F4F7;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .skeleton-pulse {
+    --sk-a: #E4E8ED;
+    --sk-b: #F1F4F7;
+  }
+}
+
+@keyframes skeleton-pulsar {
+  0%, 100% { background-color: var(--sk-a); }
+  50%      { background-color: var(--sk-b); }
+}
+
+/* Formas prontas, pra não precisar de style inline em cada uso. */
+.skeleton-linha {
+  height: 12px;
+  margin-bottom: 8px;
+}
+
+.skeleton-linha.curta { width: 45%; }
+.skeleton-linha.media { width: 70%; }
+
+.skeleton-bloco {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+}
+
+.skeleton-circulo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+/* ---- 4. Acessibilidade ----
+   O bloco de prefers-reduced-motion que já existe cobre as janelas
+   antigas por id. Estas são as peças novas: com movimento reduzido,
+   nada de escala nem deslize -- e o skeleton para de pulsar, virando
+   um bloco chapado (continua comunicando "carregando", sem piscar). */
+@media (prefers-reduced-motion: reduce) {
+  button:active,
+  .card-clicavel:active,
+  .sugestao-card:active,
+  [role="button"]:active {
+    transform: none;
+  }
+
+  .sheet-overlay.fechando,
+  .sheet-overlay.fechando .sheet,
+  .janela-fechando,
+  .janela-fechando > [id$="-conteudo"] {
+    animation-duration: 0.01ms;
+  }
+
+  .skeleton-pulse {
+    animation: none;
+  }
+}
+
+/* ---- Progresso do download offline (PRO) ---- */
+#offline-progresso {
+  margin-top: 10px;
+}
+
+#offline-progresso.oculto {
+  display: none;
+}
+
+#offline-barra {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+#offline-barra-preenchida {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--verde);
+  /* A barra anda de 6 em 6 arquivos; sem a transição ela pula em
+     degraus visíveis em vez de correr. */
+  transition: width 0.25s ease;
+}
+
+#offline-status {
+  margin: 6px 0 0;
+  color: var(--fraco);
+  font-size: 0.76rem;
+}
