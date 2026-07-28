@@ -1042,53 +1042,71 @@
       <button id="btn-fechar-configuracoes" aria-label="Fechar">✕</button>
       <h2>Configurações</h2>
 
-      <div id="secao-conta" class="cartao-config">
-        <h3>👤 Conta</h3>
+      <!-- Card 1: Perfil -- identidade da conta, apelido e as duas
+           ações que dependem dela (compartilhar progresso, tornar o
+           perfil público). -->
+      <div class="settings-card">
+        <h3 class="settings-card-titulo">👤 Perfil</h3>
         <p id="conta-status">Você não está conectado.</p>
         <p id="dados-email"></p>
-        <label id="label-perfil-publico">
-          <input type="checkbox" id="check-perfil-publico" checked>
-          Perfil público (outras pessoas podem ver seus selos e mapa)
-        </label>
-        <label for="input-apelido-config">Apelido</label>
+
+        <label for="input-apelido-config" class="settings-campo-label">Apelido</label>
         <input type="text" id="input-apelido-config" maxlength="30" placeholder="Como quer ser chamado?">
         <p id="erro-apelido-config" class="oculto"></p>
-        <button id="btn-salvar-apelido-config">
+        <button id="btn-salvar-apelido-config" class="settings-btn-primario">
           <span class="btn-texto">Salvar apelido</span>
           <span class="spinner oculto"></span>
         </button>
-        <button id="btn-compartilhar-progresso" type="button">📤 Compartilhar meu progresso</button>
-        <button id="btn-logout">🚪 Sair da conta</button>
-      </div>
 
-      <div id="secao-som" class="cartao-config">
-        <h3>🔊 Efeitos sonoros</h3>
-        <label id="label-som">
-          <input type="checkbox" id="check-som">
-          Som ao raspar, revelar selo e curtir na comunidade
+        <button id="btn-compartilhar-progresso" type="button" class="settings-btn-secundario">📤 Compartilhar meu progresso</button>
+
+        <label class="settings-toggle" id="label-perfil-publico">
+          <span class="settings-toggle-texto">
+            <span class="settings-toggle-titulo">Perfil público</span>
+            <span class="settings-toggle-desc">Outras pessoas podem ver seus selos e mapa</span>
+          </span>
+          <span class="settings-toggle-switch">
+            <input type="checkbox" id="check-perfil-publico" checked>
+            <span class="settings-toggle-slider"></span>
+          </span>
         </label>
       </div>
 
-      <div id="secao-notificacoes" class="cartao-config">
-        <h3>🔔 Notificações</h3>
-        <label id="label-notificacoes">
-          <input type="checkbox" id="check-notificacoes">
-          Avisar quando detectar um município pra raspar ou desbloquear uma conquista
+      <!-- Card 2: Preferências -- som e notificações, os dois únicos
+           "ajustes" que não mexem em dados de conta. -->
+      <div class="settings-card">
+        <h3 class="settings-card-titulo">⚙️ Preferências</h3>
+
+        <label class="settings-toggle" id="label-som">
+          <span class="settings-toggle-texto">
+            <span class="settings-toggle-titulo">Efeitos sonoros</span>
+            <span class="settings-toggle-desc">Som ao raspar, revelar selo e curtir na comunidade</span>
+          </span>
+          <span class="settings-toggle-switch">
+            <input type="checkbox" id="check-som">
+            <span class="settings-toggle-slider"></span>
+          </span>
+        </label>
+
+        <label class="settings-toggle" id="label-notificacoes">
+          <span class="settings-toggle-texto">
+            <span class="settings-toggle-titulo">Notificações</span>
+            <span class="settings-toggle-desc">Avisar quando detectar um município pra raspar ou desbloquear uma conquista</span>
+          </span>
+          <span class="settings-toggle-switch">
+            <input type="checkbox" id="check-notificacoes">
+            <span class="settings-toggle-slider"></span>
+          </span>
         </label>
         <p id="notificacoes-status" class="oculto"></p>
       </div>
 
-      <!-- Só aparece no app instalado (Android/Capacitor), ver
-           configurarModoViagem em js/script.js -->
-      <div id="secao-rastreio-fundo" class="cartao-config oculto">
-        <h3>🏍️ Modo Viagem</h3>
-        <p id="rastreio-fundo-status">
-          Use o botão de moto no mapa, acima da bússola, pra ligar o Modo Viagem antes de sair rodando. Ele mostra uma notificação fixa enquanto está ativo, registra a quilometragem do rolê e deixa os municípios por onde você passar prontos pra raspar depois.
-        </p>
-      </div>
-
-      <div id="secao-pro" class="cartao-config">
-        <h3>⭐ Recursos PRO</h3>
+      <!-- Card 3: Recursos -- o que depende de plano PRO ou de ser a
+           conta admin (UID_DONO em js/auth.js). Modo Viagem saiu
+           daqui: a explicação agora mora no próprio modal do mapa,
+           não precisa duplicar em Configurações. -->
+      <div class="settings-card">
+        <h3 class="settings-card-titulo">⭐ Recursos</h3>
         <!--
           TODO(PRO): esta secao e um placeholder. A funcao de baixar
           os dados (selos/destinos) para uso offline soh deve ficar
@@ -1099,27 +1117,31 @@
         <button id="btn-baixar-offline" disabled title="Em breve, para assinantes PRO">
           ⬇️ Baixar dados offline (em breve)
         </button>
+
+        <!-- Só aparece pra conta "dona" do projeto (UID_DONO em
+             js/auth.js) -- abre o painel de Admin (moderação +
+             anúncios + loja), ver abrirAdmin em js/script.js. -->
+        <div id="secao-admin" class="oculto">
+          <button type="button" id="btn-abrir-admin">👑 Abrir configurações de admin</button>
+        </div>
       </div>
 
-      <!-- Só aparece pra conta "dona" do projeto (UID_DONO em
-           js/auth.js) -- abre o painel de Admin (moderação + anúncios),
-           ver abrirAdmin em js/script.js. -->
-      <div id="secao-admin" class="cartao-config oculto">
-        <h3>👑 Admin</h3>
-        <button type="button" id="btn-abrir-admin">Abrir configurações de admin</button>
-      </div>
-
-      <!-- Resetar tudo + excluir conta: as duas ações destrutivas e
-           irreversíveis ficam juntas na mesma "Zona de risco", nunca
-           soltas em outra parte da janela. Excluir conta tem 3
-           confirmações crescentes (2 confirm() + esse ultimo passo
-           digitando "EXCLUIR") antes de chamar excluirConta -- ver
+      <!-- Card 4: Conta e Perigo -- sair é reversível (só desloga),
+           por isso fica no topo do card; resetar/excluir são
+           destrutivas e ficam destacadas em vermelho por baixo.
+           Excluir conta tem 3 confirmações crescentes (2 confirm() +
+           digitar "EXCLUIR") antes de chamar excluirConta -- ver
            abrirFluxoExclusaoConta em js/script.js. -->
-      <div id="secao-zona-risco" class="cartao-config">
-        <h3>⚠️ Zona de risco</h3>
-        <button id="btn-reset-tudo">🗑️ Resetar mapa inteiro</button>
-        <p>Excluir sua conta apaga todo o progresso, selos, amigos, posts e fotos -- essa ação não pode ser desfeita.</p>
-        <button type="button" id="btn-abrir-excluir-conta" class="btn-excluir-conta">🗑️ Excluir minha conta</button>
+      <div class="settings-card settings-card-perigo">
+        <h3 class="settings-card-titulo">Conta</h3>
+        <button id="btn-logout" class="settings-btn-secundario">🚪 Sair da conta</button>
+
+        <div class="settings-zona-risco">
+          <h4 class="settings-zona-risco-titulo">⚠️ Zona de risco</h4>
+          <button id="btn-reset-tudo" class="settings-btn-perigo">🗑️ Resetar mapa inteiro</button>
+          <p>Excluir sua conta apaga todo o progresso, selos, amigos, posts e fotos -- essa ação não pode ser desfeita.</p>
+          <button type="button" id="btn-abrir-excluir-conta" class="btn-excluir-conta settings-btn-perigo">🗑️ Excluir minha conta</button>
+        </div>
       </div>
 
       <!-- Slot discreto de anúncio (Google AdSense) -- só é preenchido
@@ -1138,11 +1160,11 @@
         ></ins>
       </div>
 
-      <!-- Sobre: versão do app. O número sobe automaticamente a cada
+      <!-- Rodapé: versão do app. O número sobe automaticamente a cada
            atualização (só o último dígito), preenchido por JS a partir
-           de VERSAO_APP em js/script.js. -->
-      <div id="secao-sobre" class="cartao-config">
-        <h3>Sobre</h3>
+           de VERSAO_APP em js/script.js. Discreto de propósito, sem o
+           peso visual de um card. -->
+      <div id="secao-sobre" class="settings-footer">
         <button type="button" id="btn-ver-novidades" class="sobre-linha">
           <span class="logo-desbrava">DESBRAVA</span>
           <span id="versao-app-texto">versão —</span>

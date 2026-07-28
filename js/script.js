@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.6";
+const VERSAO_APP = "0.11.7";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.6";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.7", itens: ["Configurações com visual novo: cartões organizados (Perfil, Preferências, Recursos, Conta), toggles no lugar das caixinhas de marcar, e só o botão 'Salvar apelido' fica verde vibrante agora."] },
   { versao: "0.11.6", itens: ["Menu reorganizado: 'Minha Jornada', 'Explorar' e 'Sistema', mais fácil de achar as coisas. Perfil saiu do Menu (já abre pelo avatar no topo) e o Check-in semanal saiu de circulação."] },
   { versao: "0.11.5", itens: ["Chegou a Loja Desbrava! 🛍️ Produtos físicos e digitais, alguns liberados só depois de desbravar certos municípios. Membro do Motoclube ganha um voucher mensal de R$ 4,90 pra usar nas compras."] },
   { versao: "0.11.4", itens: ["Garagem Virtual agora aceita até 3 motos, com abas pra Criar nova, Editar (e definir qual é a ativa) e ver Estatísticas (odômetro e viagens registradas) de cada uma."] },
@@ -1006,11 +1007,9 @@ let viagemMunicipiosPercorridos = new Set();
  */
 function configurarModoViagem() {
   const botao = document.getElementById("btn-modo-viagem");
-  const secao = document.getElementById("secao-rastreio-fundo");
   if (!botao || !ehAppNativo() || !pluginBackgroundGeolocation()) return;
 
   botao.classList.remove("oculto");
-  secao?.classList.remove("oculto");
 
   botao.addEventListener("click", () => {
     if (viagemAtiva) pararModoViagem();

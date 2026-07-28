@@ -3419,30 +3419,147 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   text-align: center;
 }
 
-#configuracoes-conteudo h3 {
-  font-size: 0.9rem;
-  color: #8E97A3;
-  margin: 20px 0 8px;
-}
-
 /* Cada seção de Configurações vira um "cartão" visualmente separado
    (fundo levemente destacado + borda + espaçamento), em vez de todos
    os botões ficarem soltos e misturados numa lista só. */
-.cartao-config {
+.settings-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 12px;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
 }
 
-.cartao-config h3 {
+.settings-card-titulo {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: #8E97A3;
+  font-weight: 700;
+}
+
+.settings-campo-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #8E97A3;
+  margin: 4px 0 6px;
+}
+
+/* Card 4 (Conta): "Sair" fica neutro no topo, a Zona de Risco de
+   verdade (destrutivo/irreversível) fica destacada por baixo, só ela
+   com o tom avermelhado -- sair da conta não é perigoso, não precisa
+   competir visualmente com resetar/excluir. */
+.settings-zona-risco {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(240, 97, 109, 0.2);
+}
+
+.settings-zona-risco-titulo {
   margin: 0 0 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #F0616D;
 }
 
-#secao-zona-risco.cartao-config {
-  background: rgba(240, 97, 109, 0.07);
-  border-color: rgba(240, 97, 109, 0.25);
+.settings-zona-risco p {
+  color: #8E97A3;
+  font-size: 0.8rem;
+  margin: 10px 0 8px;
+}
+
+/* ---- Toggle/switch (substitui os <input type="checkbox"> nativos de
+   Perfil público, Efeitos sonoros e Notificações) ---- */
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.settings-card .settings-toggle + .settings-toggle {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-toggle-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-toggle-titulo {
+  font-size: 0.88rem;
+  color: #F2F5F7;
+  font-weight: 600;
+}
+
+.settings-toggle-desc {
+  font-size: 0.76rem;
+  color: #8E97A3;
+  line-height: 1.35;
+}
+
+.settings-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.settings-toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+
+.settings-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #1E232B;
+  border: 1px solid #2A303A;
+  border-radius: 999px;
+  transition: background 0.2s, border-color 0.2s;
+  pointer-events: none;
+}
+
+.settings-toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  top: 2px;
+  background: #F2F5F7;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.settings-toggle-switch input:checked + .settings-toggle-slider {
+  background: var(--verde);
+  border-color: var(--verde);
+}
+
+.settings-toggle-switch input:checked + .settings-toggle-slider::before {
+  transform: translateX(18px);
+}
+
+.settings-toggle-switch input:focus-visible + .settings-toggle-slider {
+  outline: 2px solid var(--verde);
+  outline-offset: 2px;
+}
+
+/* ---- Rodapé de Configurações (versão do app) -- discreto de
+   propósito, sem o peso visual de um .settings-card. ---- */
+.settings-footer {
+  margin-top: 4px;
+  text-align: center;
 }
 
 #configuracoes-conteudo button {
@@ -3722,17 +3839,6 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   font-size: 0.78rem;
   color: #8E97A3;
   cursor: pointer;
-}
-
-#secao-zona-risco {
-  border-top: 1px solid #1E232B;
-  padding-top: 4px;
-}
-
-#secao-zona-risco p {
-  color: #8E97A3;
-  font-size: 0.8rem;
-  margin: 0 0 8px;
 }
 
 .btn-excluir-conta {
@@ -5463,32 +5569,10 @@ body.modo-rota-ativo #toast-onde-estou {
 
 /* ---- Notificações ---- */
 
-#label-notificacoes {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: #8E97A3;
-  margin: 10px 0;
-  cursor: pointer;
-}
-
 #notificacoes-status {
   font-size: 0.78rem;
   color: #F08A94;
-  margin: -4px 0 10px;
-}
-
-/* ---- Perfil público ---- */
-
-#label-perfil-publico {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: #8E97A3;
-  margin: 10px 0;
-  cursor: pointer;
+  margin: 0 0 6px;
 }
 
 #perfil-contador {
@@ -6334,8 +6418,11 @@ select:focus {
 /* Botões de ênfase que vivem DENTRO de Configurações/Admin precisam
    de especificidade maior que a regra dos botões neutros daquele
    container, senão saem cinzas. */
+/* Hierarquia de cores de Configurações: só "Salvar apelido" é o
+   botão primário (verde vibrante, cheio) -- é a única ação com valor
+   de verdade nesse card. Os demais botões neutros/secundários usam
+   .settings-btn-secundario (fundo transparente, borda verde). */
 #configuracoes-conteudo #btn-salvar-apelido-config,
-#configuracoes-conteudo #btn-compartilhar-progresso,
 #admin-conteudo .moderacao-item-acoes button.status-ativa {
   background: var(--verde) !important;
   color: var(--verde-tinta) !important;
@@ -6343,11 +6430,25 @@ select:focus {
   font-weight: 700 !important;
 }
 
+/* Qualificado com #configuracoes-conteudo (mesma especificidade da
+   regra "botões neutros" acima, ID + classe > ID + tipo) -- senão a
+   regra genérica de botão neutro ganhava mesmo com !important dos
+   dois lados. */
+#configuracoes-conteudo .settings-btn-secundario {
+  background: transparent !important;
+  color: var(--verde) !important;
+  border: 1px solid var(--verde) !important;
+  font-weight: 600 !important;
+}
+
+#configuracoes-conteudo .settings-btn-secundario:hover {
+  background: var(--verde-esc) !important;
+}
+
 /* Ações destrutivas continuam vermelhas -- a regra dos botões neutros
    de Configurações é mais específica, então precisam vir depois e com
    a mesma força. */
-#configuracoes-conteudo #btn-reset-tudo,
-#configuracoes-conteudo .btn-excluir-conta,
+#configuracoes-conteudo .settings-btn-perigo,
 #confirmar-exclusao-conteudo #btn-excluir-de-vez {
   background: var(--erro) !important;
   color: #2A0A0E !important;
