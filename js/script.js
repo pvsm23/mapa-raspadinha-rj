@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.12";
+const VERSAO_APP = "0.11.13";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.12";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.13", itens: ["Popup do município reequilibrado: selo menor e status virou um selinho verde, 3 botões de ação num grid discreto (Compartilhar / Fotos daqui / Sugestões, sem remover nenhuma função), e \"Abrir no Maps\" virou um link pequeno em vez de bloco verde gigante."] },
   { versao: "0.11.12", itens: ["Rotas Temáticas com visual novo: lista vertical de cards (em vez do grid circular apertado), com miniatura, barra de progresso fina e sem mais cadeado amarelo — rota não iniciada fica em tons de cinza, o resto aparece colorido."] },
   { versao: "0.11.11", itens: ["Perfil redesenhado: crachá de Membro Desbrava/Desbravador embaixo do apelido, dashboard 2x2 (municípios, selos dourados, rotas concluídas, regiões), minimapa com cantos arredondados, e só os 4 selos mais recentes no lugar da lista inteira repetida — com botão pra ver a Biblioteca completa."] },
   { versao: "0.11.10", itens: ["Biblioteca de selos virou um álbum de colecionador: abas (Municípios/Regiões/Rotas) e filtro (Todos/Conquistados/Faltam). Selos bloqueados agora têm o mesmo visual em todo lugar, sem cadeado amarelo espalhado pelo texto."] },
@@ -4532,6 +4533,19 @@ function prepararModal(nome) {
 }
 
 /**
+ * Define o texto de #modal-status e o estilo do "pill" ao redor dele
+ * -- neutro (cinza, durante a raspagem/confirmação), ok (verde, já
+ * verificado) ou alerta (raspado mas não verificado ainda).
+ */
+function definirStatusMunicipio(texto, estado = "neutro") {
+  const el = document.getElementById("modal-status");
+  el.textContent = texto;
+  el.classList.remove("modal-status-ok", "modal-status-alerta");
+  if (estado === "ok") el.classList.add("modal-status-ok");
+  else if (estado === "alerta") el.classList.add("modal-status-alerta");
+}
+
+/**
  * Abre o popup com a raspadinha (canvas) para o município escolhido.
  * Ao raspar o suficiente, marca como visitado automaticamente.
  *
@@ -4543,7 +4557,7 @@ function prepararModal(nome) {
  */
 function abrirModalRaspadinha(id, nome) {
   prepararModal(nome);
-  document.getElementById("modal-status").textContent = "";
+  definirStatusMunicipio("");
   document.getElementById("modal-instrucao").textContent = estadoMapa[id]?.presencaConfirmadaEm
     ? "Raspe com o dedo ou o mouse para revelar! (sua presença aqui já foi confirmada antes por GPS -- não precisa estar no local agora)"
     : "Raspe com o dedo ou o mouse para revelar!";
@@ -4573,6 +4587,7 @@ function abrirModalRaspadinha(id, nome) {
       // que abandone sem terminar -- sem isso, dava pra "espiar"
       // (raspar uma pontinha, ver que não veio brilhante, fechar sem
       // completar) e tentar de novo depois (ver travarSorteNaPrimeiraRaspada).
+      tamanho: 190,
       onPrimeiroToque: () => travarSorteNaPrimeiraRaspada(id, brilhante),
       onComplete: () => {
         // Marca como raspado na hora (selo revelado, sorte já
@@ -4588,9 +4603,9 @@ function abrirModalRaspadinha(id, nome) {
         // depois. Sem expiração de propósito -- a presença já foi
         // real uma vez, não tem por que "vencer".
         const presencaJaConfirmada = !!estadoMapa[id]?.presencaConfirmadaEm;
-        document.getElementById("modal-status").textContent = brilhante
-          ? "🌟 Raspadinha DOURADA! Confirmando sua localização..."
-          : "📍 Confirmando sua localização...";
+        definirStatusMunicipio(
+          brilhante ? "🌟 Raspadinha DOURADA! Confirmando sua localização..." : "📍 Confirmando sua localização..."
+        );
 
         const promessaVerificacao = presencaJaConfirmada
           ? Promise.resolve({ verificado: true, motivo: "" })
@@ -4603,9 +4618,14 @@ function abrirModalRaspadinha(id, nome) {
             !document.getElementById("modal-raspadinha").classList.contains("oculto");
           if (!aindaAberto) return;
 
-          document.getElementById("modal-status").textContent = verificado
-            ? `${brilhante ? "🌟 Raspadinha DOURADA! " : ""}Visitado em: ${new Date().toLocaleString("pt-BR")} ✅`
-            : `⚠️ Raspado, mas não verificado: ${motivo}`;
+          if (verificado) {
+            definirStatusMunicipio(
+              `${brilhante ? "🌟 Raspadinha DOURADA! " : ""}✓ Desbravado em ${new Date().toLocaleString("pt-BR")}`,
+              "ok"
+            );
+          } else {
+            definirStatusMunicipio(`⚠️ Raspado, mas não verificado: ${motivo}`, "alerta");
+          }
           setTimeout(fecharModalRaspadinha, verificado ? 1400 : 3200);
         });
 
@@ -4686,13 +4706,18 @@ function visualizarSeloRevelado(id, nome) {
   const botaoVerificar = document.getElementById("btn-verificar-local");
 
   if (verificado) {
-    document.getElementById("modal-status").textContent = dados?.dataVisita
-      ? `✅ Visitado em: ${new Date(dados.dataVisita).toLocaleString("pt-BR")}`
-      : "✅ Visitado";
+    definirStatusMunicipio(
+      dados?.dataVisita
+        ? `✓ Desbravado em ${new Date(dados.dataVisita).toLocaleString("pt-BR")}`
+        : "✓ Desbravado",
+      "ok"
+    );
     botaoVerificar.classList.add("oculto");
   } else {
-    document.getElementById("modal-status").textContent =
-      `⚠️ Raspado, mas ainda não verificado. ${dados?.motivoNaoVerificado || "Você precisa estar no município para confirmar."}`;
+    definirStatusMunicipio(
+      `⚠️ Raspado, mas ainda não verificado. ${dados?.motivoNaoVerificado || "Você precisa estar no município para confirmar."}`,
+      "alerta"
+    );
     botaoVerificar.classList.remove("oculto");
   }
 
@@ -4713,7 +4738,7 @@ function visualizarSeloRevelado(id, nome) {
     const img = document.createElement("img");
     img.src = resultado.url;
     img.alt = nome;
-    img.className = "selo-revelado";
+    img.className = "selo-revelado selo-revelado-pequeno";
     wrapper.appendChild(img);
     if (brilhante) adicionarBrilho(wrapper);
     corpo.appendChild(wrapper);
@@ -4940,7 +4965,7 @@ function mostrarDestinos(id) {
           <div class="destino-detalhe oculto" data-indice="${indice}">
             <p class="destino-texto-completo">${escaparHtml(d.textoCompleto || "Em breve: um pouco da história e curiosidades sobre este lugar.")}</p>
             <button type="button" class="destino-btn-maps" data-link="${temLink ? escaparHtml(d.linkMaps) : ""}" ${temLink ? "" : "disabled"}>
-              ▶️ Abrir no Maps
+              Abrir no Maps ↗
             </button>
           </div>
         </li>`;

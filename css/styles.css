@@ -1310,25 +1310,45 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   display: none;
 }
 
-/* Botão "Sugestões da Comunidade" no popup do município -- mesmo
-   formato de #btn-verificar-local (bloco cheio, canto arredondado),
-   cor diferente só pra distinguir visualmente das outras ações. */
-#btn-sugestoes-comunidade {
-  display: block;
-  width: 100%;
-  background: #2BD576;
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin: 10px 0;
+/* Grade de ações do popup de município: Compartilhar / Filtro da
+   Comunidade (antigo "@") / Sugestões -- 3 botões discretos, mesmo
+   estilo, em vez de blocos verdes gigantes empilhados. */
+#modal-acoes-grid {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 14px;
 }
 
-#btn-sugestoes-comunidade:hover {
-  background: #1FA85C;
+.modal-acao-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #1E232B;
+  color: #C3CBD4;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 4px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.modal-acao-btn:hover {
+  background: #262C36;
+  color: #F2F5F7;
+}
+
+.modal-acao-icone {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.modal-acao-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 /* ============================================================
@@ -1630,34 +1650,39 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   font-size: 0.8rem;
 }
 
-#btn-posts-municipio {
-  position: absolute;
-  top: 8px;
-  left: 44px;
-  background: transparent;
-  border: none;
-  color: #8E97A3;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  line-height: 1;
-  padding: 6px;
-}
-
-#btn-posts-municipio:hover {
-  color: #F2F5F7;
-}
-
 #modal-instrucao {
   color: #8E97A3;
   font-size: 0.85rem;
   margin-bottom: 0;
 }
 
+/* Status do município: pill centralizado -- cinza neutro enquanto
+   raspa/confirma, verde quando verificado, âmbar quando raspado mas
+   ainda não verificado (ver definirStatusMunicipio em js/script.js). */
 #modal-status {
+  display: inline-block;
   color: #8E97A3;
-  font-size: 0.85rem;
-  margin: -4px 0 12px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 999px;
+  margin: -2px auto 12px;
+}
+
+#modal-status:empty {
+  display: none;
+  margin: 0;
+}
+
+#modal-status.modal-status-ok {
+  color: var(--verde, #2BD576);
+  background: rgba(43, 213, 118, 0.15);
+}
+
+#modal-status.modal-status-alerta {
+  color: #F0C36D;
+  background: rgba(240, 195, 109, 0.15);
 }
 
 #modal-selo-estatistica,
@@ -3282,19 +3307,26 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   margin: 8px 0;
 }
 
+/* "Abrir no Maps": link de texto discreto no rodapé do destino (era
+   um bloco verde grande antes -- destoava do resto do card). */
 .destino-btn-maps {
-  background: #2BD576;
-  color: #0F1216;
+  display: block;
+  width: 100%;
+  text-align: right;
+  background: none;
+  color: var(--verde, #2BD576);
   border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 4px 0;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
 }
 
+.destino-btn-maps:hover {
+  text-decoration: underline;
+}
+
 .destino-btn-maps:disabled {
-  background: #1E232B;
   color: #39404A;
   cursor: not-allowed;
 }
@@ -5947,8 +5979,8 @@ body.modo-rota-ativo #toast-onde-estou {
 #historia-municipio-corpo p {
   color: #C3CBD4;
   font-size: 0.88rem;
-  line-height: 1.5;
-  margin: 0 0 12px;
+  line-height: 1.6;
+  margin: 0 0 16px;
 }
 
 #historia-municipio-corpo p:last-child {
@@ -6437,6 +6469,10 @@ body.modo-rota-ativo #toast-onde-estou {
   width: 400px;
 }
 
+.selo-revelado-wrapper:has(.selo-revelado-pequeno) {
+  width: 200px;
+}
+
 .conquista-instrucao {
   color: #8E97A3;
   font-size: 0.8rem;
@@ -6917,7 +6953,6 @@ a {
 #btn-verificar-local,
 #btn-publicar-post,
 #btn-publicar-sugestao,
-#btn-sugestoes-comunidade,
 #btn-entrar-email,
 #btn-confirmar-apelido,
 #btn-salvar-apelido-config,
@@ -6929,7 +6964,6 @@ a {
 #btn-copiar-pix,
 #btn-fechar-aviso-desenvolvimento,
 #cartao-progresso-acoes button,
-.destino-btn-maps,
 .post-card-novo-comentario button,
 .sugestao-card-novo-comentario button {
   background: var(--verde) !important;
@@ -6942,8 +6976,7 @@ a {
 }
 #btn-verificar-local:active,
 #btn-publicar-post:active,
-#btn-publicar-sugestao:active,
-#btn-sugestoes-comunidade:active {
+#btn-publicar-sugestao:active {
   transform: scale(0.98);
   filter: brightness(0.92);
 }

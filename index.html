@@ -775,27 +775,43 @@
       <div id="modal-menu" class="oculto">
         <button id="btn-reset-um">Desmarcar este município</button>
       </div>
-      <!-- Abre a rede social já filtrada pelos posts marcados nesse município -->
-      <button id="btn-posts-municipio" aria-label="Ver posts desse município" title="Ver posts desse município">@</button>
       <button id="btn-fechar-modal" aria-label="Fechar">✕</button>
       <h2 id="modal-municipio-nome"></h2>
       <p id="modal-status"></p>
-      <!-- Convite pontual pra alguém ir raspar ESSE município junto --
-           gera um link ?municipio=<id>, não precisa ser amigo (ver
-           compartilharConviteMunicipio em js/script.js). -->
-      <button type="button" id="btn-convite-municipio" class="btn-link-amigo">🤝 Bora buscar esse selo?</button>
-      <!-- So aparece quando raspado mas ainda nao verificado por localizacao -->
-      <button id="btn-verificar-local" class="oculto">📍 Verificar agora que estou aqui</button>
       <div id="scratch-modal-body"></div>
       <p id="modal-instrucao">Raspe com o dedo ou o mouse para revelar!</p>
       <!-- So aparece depois de raspar (ver mostrarCuriosidade) -->
       <div id="modal-curiosidade"></div>
+      <!-- So aparece quando raspado mas ainda nao verificado por localizacao -->
+      <button id="btn-verificar-local" class="oculto">📍 Verificar agora que estou aqui</button>
+
+      <!-- Grade de 3 ações -- Compartilhar / Filtro da Comunidade (antigo
+           botão "@") / Sugestões. Nenhuma das 3 foi removida, só
+           reorganizada num grid horizontal discreto (a pedido do Paulo). -->
+      <div id="modal-acoes-grid">
+        <!-- Convite pontual pra alguém ir raspar ESSE município junto --
+             gera um link ?municipio=<id>, não precisa ser amigo (ver
+             compartilharConviteMunicipio em js/script.js). -->
+        <button type="button" id="btn-convite-municipio" class="modal-acao-btn">
+          <span class="modal-acao-icone">🤝</span>
+          <span class="modal-acao-label">Bora buscar junto</span>
+        </button>
+        <!-- Abre a rede social já filtrada pelos posts marcados nesse município -->
+        <button type="button" id="btn-posts-municipio" class="modal-acao-btn" aria-label="Ver posts desse município" title="Ver posts desse município">
+          <span class="modal-acao-icone">📍</span>
+          <span class="modal-acao-label">Fotos daqui</span>
+        </button>
+        <!-- Abre a lista de sugestoes de lugares desse municipio (ver
+             abrirSugestoesComunidade em js/script.js) -->
+        <button type="button" id="btn-sugestoes-comunidade" class="modal-acao-btn">
+          <span class="modal-acao-icone">💡</span>
+          <span class="modal-acao-label">Sugestões</span>
+        </button>
+      </div>
+
       <!-- So aparece na visualizacao de um selo ja raspado (numero
            de contas que tem esse selo) -->
       <p id="modal-selo-estatistica"></p>
-      <!-- Abre a lista de sugestoes de lugares desse municipio (ver
-           abrirSugestoesComunidade em js/script.js) -->
-      <button type="button" id="btn-sugestoes-comunidade">💡 Sugestões da Comunidade</button>
       <div id="modal-destinos"></div>
     </div>
   </div>
