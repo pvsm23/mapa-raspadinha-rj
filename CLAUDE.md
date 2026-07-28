@@ -37,15 +37,34 @@ Netlify (web) · GitHub Releases (APK, via `tools/publicar-apk.ps1`).
 Build APK: `node tools/montar-www.js && npx cap sync android && cd
 android && ./gradlew assembleDebug bundleRelease`.
 
-## Última funcionalidade (v0.11.11)
+## Última funcionalidade (v0.11.14)
 
-**Onda de redesign visual** (v0.11.6 a v0.11.11) — a maior parte das
+**Onda de redesign visual** (v0.11.6 a v0.11.14) — a maior parte das
 telas do app passou por uma limpeza de UI, todas seguindo o mesmo
 padrão minimalista de tabs (texto cinza inativo, branco + risco verde
 embaixo quando ativo — classe `.social-aba`, reaplicada em
-`.ranking-aba`/`.biblioteca-aba`) e um componente de avatar circular
-reutilizável (`corAvatar`/`iniciaisApelido` em `js/script.js`, iniciais
-sobre gradiente determinístico):
+`.ranking-aba`/`.biblioteca-aba`/`.rotas-aba`) e um componente de
+avatar circular reutilizável (`corAvatar`/`iniciaisApelido` em
+`js/script.js`, iniciais sobre gradiente determinístico):
+- **Rotas Temáticas** (v0.11.12): grid circular virou lista vertical
+  de cards horizontais (miniatura 60x60 + barra de progresso fina +
+  chevron), abas Oficiais/Personalizadas, sem cadeado amarelo — rota
+  não iniciada (`visitados === 0`, diferente do gate "completa" da
+  Biblioteca) fica em tons de cinza (`.rota-card-bloqueada`).
+- **Popup do Município** (v0.11.13): selo raspável/revelado encolhido
+  pra ~190-200px, status virou pill colorido (`definirStatusMunicipio`
+  — verde quando verificado, âmbar quando raspado mas não verificado),
+  os 3 botões de ação (Compartilhar/Filtro Comunidade "antigo @"/
+  Sugestões — nenhum removido) viraram um grid horizontal discreto
+  (`#modal-acoes-grid`/`.modal-acao-btn`), e "Abrir no Maps" trocou o
+  bloco verde gigante por um link de texto pequeno.
+- **Conquistas** (v0.11.14): cards verticais gigantes (1-2 por tela)
+  viraram lista horizontal (medalha 76px + info ao lado); cadeado
+  amarelo emoji virou ícone SVG pequeno e discreto; frase "Continue
+  jogando para desbloquear" removida; pills de raridade padronizadas
+  por cor (cinza/verde/roxo-azulado/dourado). De quebra, o fundo cinza
+  chapado da raspadinha sem capa própria (`scratch-card.js`) virou um
+  gradiente metálico em todo o app, não só aqui.
 - **Menu inferior**: reorganizado em seções (Minha Jornada/Explorar/
   Sistema); Check-in semanal descontinuado por completo (removido de
   HTML/JS/CSS/README); Perfil só abre pelo avatar da topbar.
