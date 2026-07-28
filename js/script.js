@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.11";
+const VERSAO_APP = "0.11.12";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.11";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.12", itens: ["Rotas Temáticas com visual novo: lista vertical de cards (em vez do grid circular apertado), com miniatura, barra de progresso fina e sem mais cadeado amarelo — rota não iniciada fica em tons de cinza, o resto aparece colorido."] },
   { versao: "0.11.11", itens: ["Perfil redesenhado: crachá de Membro Desbrava/Desbravador embaixo do apelido, dashboard 2x2 (municípios, selos dourados, rotas concluídas, regiões), minimapa com cantos arredondados, e só os 4 selos mais recentes no lugar da lista inteira repetida — com botão pra ver a Biblioteca completa."] },
   { versao: "0.11.10", itens: ["Biblioteca de selos virou um álbum de colecionador: abas (Municípios/Regiões/Rotas) e filtro (Todos/Conquistados/Faltam). Selos bloqueados agora têm o mesmo visual em todo lugar, sem cadeado amarelo espalhado pelo texto."] },
   { versao: "0.11.9", itens: ["Amigos e Ranking com visual novo: avatares, busca contínua (sem botão), menu '⋮' no lugar do botão vermelho de remover amigo, pódio com medalhas no Ranking, e sua linha sempre visível mesmo fora do topo 50."] },
@@ -918,6 +919,7 @@ document.addEventListener("DOMContentLoaded", () => {
   configurarLoja();
   configurarLojaAdmin();
   configurarBiblioteca();
+  configurarRotas();
   esconderTelaCarregamento();
 });
 
@@ -6805,6 +6807,23 @@ function rotaEstaCompleta(rotaId) {
   return idsDaRota.length > 0 && idsDaRota.every((id) => estaVerificado(id));
 }
 
+let rotasAbaAtual = "oficiais";
+
+function configurarRotas() {
+  document.querySelectorAll("#rotas-abas .rotas-aba").forEach((botao) => {
+    botao.addEventListener("click", () => mudarAbaRotas(botao.dataset.aba));
+  });
+}
+
+function mudarAbaRotas(aba) {
+  rotasAbaAtual = aba;
+  document.querySelectorAll("#rotas-abas .rotas-aba").forEach((b) => {
+    b.classList.toggle("rotas-aba-ativa", b.dataset.aba === aba);
+  });
+  document.getElementById("rotas-painel-oficiais").classList.toggle("oculto", aba !== "oficiais");
+  document.getElementById("rotas-painel-personalizadas").classList.toggle("oculto", aba !== "personalizadas");
+}
+
 function abrirRotas() {
   const lista = document.getElementById("rotas-lista");
   lista.innerHTML = "";
@@ -6817,18 +6836,20 @@ function abrirRotas() {
     const info = rotasInfo[id];
     const idsDaRota = info.municipios || [];
     const visitados = idsDaRota.filter((mid) => estaVerificado(mid)).length;
+    const iniciada = visitados > 0;
+    const pct = idsDaRota.length ? (visitados / idsDaRota.length) * 100 : 0;
     const completa = rotaEstaCompleta(id);
     const revelado = completa && !!estadoRotas[id]?.revelado;
     const brilhante = revelado && !!estadoRotas[id]?.brilhante;
 
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
+    item.className =
+      "rota-card" + (iniciada ? "" : " rota-card-bloqueada") + (brilhante ? " rota-card-brilhante" : "");
     item.title = info.nome;
 
     const img = document.createElement("img");
     img.alt = info.nome;
-    img.className = revelado ? "selo-colorido" : "selo-cinza";
     if (revelado) {
       resolverImagemColorida(`assets/img/rotas/${id}`, brilhante, id, info.nome).then((resultado) => {
         img.src = resultado.url;
@@ -6836,18 +6857,26 @@ function abrirRotas() {
     } else {
       img.src = gerarSeloPlaceholder(id, info.nome);
     }
+    const thumb = envolverComPlaceholder(img, "dourado");
+    thumb.classList.add("rota-card-thumb");
+    item.appendChild(thumb);
 
-    const legenda = document.createElement("span");
-    legenda.textContent = `${completa ? "" : "🔒 "}${info.nome} (${visitados}/${idsDaRota.length})`;
+    const infoCol = document.createElement("div");
+    infoCol.className = "rota-card-info";
+    infoCol.innerHTML = `
+      <span class="rota-card-titulo">${escaparHtml(info.nome)}${brilhante ? " ✨" : ""}</span>
+      <div class="rota-card-progresso-linha">
+        <div class="rota-card-barra"><div class="rota-card-barra-preenchida" style="width:${pct}%"></div></div>
+        <span class="rota-card-contador">${visitados}/${idsDaRota.length}</span>
+      </div>
+    `;
+    item.appendChild(infoCol);
 
-    item.appendChild(img);
-    if (brilhante) {
-      const marca = document.createElement("span");
-      marca.className = "selo-marca-brilhante";
-      marca.textContent = "✨";
-      item.appendChild(marca);
-    }
-    item.appendChild(legenda);
+    const chevron = document.createElement("span");
+    chevron.className = "rota-card-chevron";
+    chevron.textContent = "›";
+    item.appendChild(chevron);
+
     item.addEventListener("click", () => {
       fecharRotas();
       abrirPopupRota(id);
@@ -6855,6 +6884,7 @@ function abrirRotas() {
     lista.appendChild(item);
   });
 
+  mudarAbaRotas("oficiais");
   document.getElementById("modal-rotas").classList.remove("oculto");
   renderizarMinhasRotas();
 }

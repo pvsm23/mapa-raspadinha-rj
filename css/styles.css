@@ -4702,11 +4702,137 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   color: #F2F5F7;
 }
 
+/* ---- Abas Oficiais/Personalizadas -- mesmo padrão minimalista de
+   #social-abas (texto cinza inativo, branco + risco verde ativo). ---- */
+#rotas-abas {
+  display: flex;
+  gap: 20px;
+  margin: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.rotas-aba {
+  flex: none;
+  padding: 10px 2px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  font-size: 0.86rem;
+}
+
+.rotas-painel.oculto {
+  display: none;
+}
+
+/* ---- Lista de rotas oficiais: cards horizontais (abandona o grid
+   circular da Biblioteca -- nomes longos de rota precisam de linha
+   inteira, não de coluna espremida). ---- */
 #rotas-lista {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 16px;
-  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  text-align: left;
+}
+
+.rota-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: #0F1216;
+  border: none;
+  border-radius: 14px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rota-card-thumb {
+  flex: none;
+  width: 60px;
+  height: 60px;
+}
+
+/* .selo-placeholder-box (ver bloco de placeholder genérico mais
+   acima no arquivo) é circular por padrão -- aqui vira quadrado com
+   cantos arredondados, combinando com o card. */
+.rota-card-thumb.selo-placeholder-box,
+.rota-card-thumb .selo-placeholder-img {
+  border-radius: 14px;
+}
+
+.rota-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rota-card-titulo {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.rota-card-progresso-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rota-card-barra {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surf2);
+  overflow: hidden;
+}
+
+.rota-card-barra-preenchida {
+  height: 100%;
+  background: var(--verde);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.rota-card-contador {
+  flex: none;
+  font-size: 0.7rem;
+  color: var(--fraco);
+  font-weight: 600;
+}
+
+.rota-card-chevron {
+  flex: none;
+  color: #4A515C;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* Rota não iniciada (0/X): thumbnail escurecida + título opaco.
+   Assim que tiver 1 município sequer, já conta como "em progresso"
+   e ganha a cor normal (ver critério em abrirRotas). Sem cadeado
+   amarelo em lugar nenhum. */
+.rota-card-bloqueada .rota-card-thumb img,
+.rota-card-bloqueada .selo-placeholder-img {
+  filter: grayscale(1) brightness(0.3);
+}
+
+.rota-card-bloqueada .rota-card-titulo {
+  color: #6B7480;
+  font-weight: 500;
+}
+
+/* Rota dourada (brilhante): glow sutil no thumbnail em vez do sweep
+   circular completo (esse era desenhado pro .selo-item redondo da
+   Biblioteca, não encaixa num card retangular). */
+.rota-card-brilhante .rota-card-thumb {
+  box-shadow: 0 0 10px 1px rgba(233, 185, 73, 0.6);
 }
 
 #rota-detalhe-descricao {
@@ -4715,17 +4841,32 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   margin: 0 0 12px;
 }
 
-.rotas-personalizadas-titulo {
-  margin: 20px 0 10px;
-  font-size: 1rem;
-  text-align: left;
+/* ---- Aba "Personalizadas" ---- */
+.btn-criar-rota {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: rgba(43, 213, 118, 0.15);
+  color: var(--verde);
+  border: 1px solid rgba(43, 213, 118, 0.45);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 14px 0 10px;
+}
+
+.btn-criar-rota:hover {
+  background: rgba(43, 213, 118, 0.25);
 }
 
 #minhas-rotas-lista {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 10px;
   text-align: left;
 }
 
@@ -6870,6 +7011,21 @@ select:focus {
   font-weight: 600 !important;
 }
 #biblioteca-abas .biblioteca-aba-ativa {
+  color: var(--txt) !important;
+  border-bottom-color: var(--verde) !important;
+}
+
+/* Rotas Temáticas: mesmo padrão minimalista. */
+#rotas-abas .rotas-aba {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: var(--fraco) !important;
+  font-weight: 600 !important;
+}
+#rotas-abas .rotas-aba-ativa {
   color: var(--txt) !important;
   border-bottom-color: var(--verde) !important;
 }

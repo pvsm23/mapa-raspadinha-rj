@@ -822,19 +822,28 @@
 
   <!-- Rotas tematicas: lista (agrupamento curado de municipios, ver
        data/rotas.json) -->
+  <!-- Rotas Temáticas: 2 abas -- Oficiais (data/rotas.json, com selo)
+       e Personalizadas (criadas pelo usuário, sem selo). Cards
+       horizontais em lista, ver abrirRotas/renderizarMinhasRotas em
+       js/script.js. -->
   <div id="modal-rotas" class="oculto">
     <div id="rotas-conteudo">
       <button id="btn-fechar-rotas" aria-label="Fechar">✕</button>
       <h2>🗺️ Rotas Temáticas</h2>
-      <div id="rotas-lista"></div>
 
-      <!-- Rotas criadas pelo próprio usuário: SEM selo (diferente das
-           oficiais acima), com nome + descrição opcional + lista de
-           municípios escolhidos por ele. Ver abrirModalCriarRota /
-           renderizarMinhasRotas em js/script.js. -->
-      <h3 class="rotas-personalizadas-titulo">📍 Minhas rotas</h3>
-      <button type="button" id="btn-criar-rota-personalizada" class="btn-link-amigo">+ Criar minha rota</button>
-      <div id="minhas-rotas-lista"></div>
+      <div id="rotas-abas">
+        <button type="button" id="btn-rotas-aba-oficiais" class="rotas-aba rotas-aba-ativa" data-aba="oficiais">Oficiais</button>
+        <button type="button" id="btn-rotas-aba-personalizadas" class="rotas-aba" data-aba="personalizadas">Personalizadas</button>
+      </div>
+
+      <div id="rotas-painel-oficiais" class="rotas-painel">
+        <div id="rotas-lista"></div>
+      </div>
+
+      <div id="rotas-painel-personalizadas" class="rotas-painel oculto">
+        <button type="button" id="btn-criar-rota-personalizada" class="btn-criar-rota">+ Criar minha rota</button>
+        <div id="minhas-rotas-lista"></div>
+      </div>
     </div>
   </div>
 
