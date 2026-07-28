@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.13";
+const VERSAO_APP = "0.11.14";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.13";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.14", itens: ["Conquistas em lista horizontal (medalha + descrição lado a lado) em vez dos cards gigantes de antes — cabe muito mais na tela, sem cadeado amarelo enorme, com selo de raridade colorido por nível e barra de progresso mais fina."] },
   { versao: "0.11.13", itens: ["Popup do município reequilibrado: selo menor e status virou um selinho verde, 3 botões de ação num grid discreto (Compartilhar / Fotos daqui / Sugestões, sem remover nenhuma função), e \"Abrir no Maps\" virou um link pequeno em vez de bloco verde gigante."] },
   { versao: "0.11.12", itens: ["Rotas Temáticas com visual novo: lista vertical de cards (em vez do grid circular apertado), com miniatura, barra de progresso fina e sem mais cadeado amarelo — rota não iniciada fica em tons de cinza, o resto aparece colorido."] },
   { versao: "0.11.11", itens: ["Perfil redesenhado: crachá de Membro Desbrava/Desbravador embaixo do apelido, dashboard 2x2 (municípios, selos dourados, rotas concluídas, regiões), minimapa com cantos arredondados, e só os 4 selos mais recentes no lugar da lista inteira repetida — com botão pra ver a Biblioteca completa."] },
@@ -5554,13 +5555,19 @@ function abrirConquistas() {
     const item = document.createElement("div");
     item.className = "conquista-item";
     item.innerHTML = `
-      <h3>${escaparHtml(def.titulo)}</h3>
-      <span class="conquista-raridade raridade-${def.raridade}">${NOMES_RARIDADE[def.raridade]}</span>
-      <p class="conquista-descricao">${escaparHtml(def.descricao)}</p>
-      <p class="conquista-progresso-texto">${atual} / ${meta}</p>
-      <div class="conquista-barra"><div class="conquista-barra-preenchida" style="width:${(atual / meta) * 100}%"></div></div>
-      <div class="conquista-selo-body" id="conquista-selo-${def.chave}"></div>
-      <p class="conquista-instrucao" id="conquista-instrucao-${def.chave}"></p>
+      <div class="conquista-medalha" id="conquista-selo-${def.chave}"></div>
+      <div class="conquista-info">
+        <div class="conquista-cabecalho">
+          <h3>${escaparHtml(def.titulo)}</h3>
+          <span class="conquista-raridade raridade-${def.raridade}">${NOMES_RARIDADE[def.raridade]}</span>
+        </div>
+        <p class="conquista-descricao">${escaparHtml(def.descricao)}</p>
+        <p class="conquista-instrucao" id="conquista-instrucao-${def.chave}"></p>
+        <div class="conquista-progresso-linha">
+          <div class="conquista-barra"><div class="conquista-barra-preenchida" style="width:${(atual / meta) * 100}%"></div></div>
+          <span class="conquista-progresso-texto">${atual}/${meta}</span>
+        </div>
+      </div>
     `;
     container.appendChild(item);
 
@@ -5575,8 +5582,14 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
   const instrucao = document.getElementById(`conquista-instrucao-${chave}`);
 
   if (!desbloqueada) {
-    instrucao.textContent = "Continue jogando para desbloquear.";
-    corpo.innerHTML = `<div class="selo-bloqueado">🔒</div>`;
+    instrucao.textContent = "";
+    corpo.innerHTML = `
+      <div class="conquista-medalha-lock">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="11" width="14" height="9" rx="2"/>
+          <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+        </svg>
+      </div>`;
     return;
   }
 
@@ -5588,9 +5601,9 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
       const wrapper = document.createElement("div");
       wrapper.className = "selo-revelado-wrapper";
       const img = document.createElement("img");
-      img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 200);
+      img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 76);
       img.alt = titulo;
-      img.className = "selo-revelado";
+      img.className = "selo-revelado selo-revelado-conquista";
       wrapper.appendChild(img);
       corpo.appendChild(wrapper);
     });
@@ -5602,7 +5615,7 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
   const caminhoColorido = `assets/img/conquistas/${chave}.webp`;
   const caminhoCapa = `assets/img/conquistas/${chave}fundo.webp`;
   carregarImagem(caminhoColorido).then((existeColorido) => {
-    const imageUrl = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 200);
+    const imageUrl = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 76);
     const usarCapa = existeColorido
       ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
       : Promise.resolve(null);
@@ -5612,7 +5625,8 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
         containerId: `conquista-selo-${chave}`,
         imageUrl,
         imageUrlCapa,
-        tamanho: 200,
+        tamanho: 76,
+        raioPincel: 10,
         onComplete: () => {
           marcarConquistaComoRevelada(chave);
           return false; // conquistas nao entram no sorteio de brilhante

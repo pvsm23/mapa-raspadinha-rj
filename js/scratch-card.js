@@ -92,10 +92,20 @@ function initScratchCard({
     };
     imgCapa.src = imageUrlCapa;
   } else {
-    ctxRaspagem.fillStyle = "#9ca3af";
+    // Fundo metálico (gradiente radial) em vez de cinza chapado --
+    // fica melhor tanto no selo grande quanto no medalhão pequeno das
+    // Conquistas (ver initScratchCard com tamanho: 76).
+    const gradiente = ctxRaspagem.createRadialGradient(
+      tamanho * 0.32, tamanho * 0.28, tamanho * 0.05,
+      tamanho * 0.5, tamanho * 0.5, tamanho * 0.7
+    );
+    gradiente.addColorStop(0, "#c7ccd4");
+    gradiente.addColorStop(0.5, "#8b929c");
+    gradiente.addColorStop(1, "#4a4f57");
+    ctxRaspagem.fillStyle = gradiente;
     ctxRaspagem.fillRect(0, 0, tamanho, tamanho);
-    ctxRaspagem.fillStyle = "#6b7280";
-    ctxRaspagem.font = "14px sans-serif";
+    ctxRaspagem.fillStyle = "rgba(0, 0, 0, 0.55)";
+    ctxRaspagem.font = `${Math.max(9, Math.round(tamanho * 0.07))}px sans-serif`;
     ctxRaspagem.textAlign = "center";
     ctxRaspagem.fillText("raspe aqui", tamanho / 2, tamanho / 2 + 4);
   }
