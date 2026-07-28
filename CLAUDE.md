@@ -27,6 +27,9 @@ Regras fixas:
 - Selo "dourado" (texto visível) = `brilhante` (código/ids internos,
   não renomear).
 - AdSense: não ativar sem pedido explícito.
+- **Tema**: desde v0.11.16 o app tem Claro/Escuro/Sistema/Automático
+  (era só dark fixo antes disso) — ver seção de tema abaixo antes de
+  presumir que "o app é dark-only" numa próxima sessão.
 
 ## Stack
 
@@ -37,10 +40,62 @@ Netlify (web) · GitHub Releases (APK, via `tools/publicar-apk.ps1`).
 Build APK: `node tools/montar-www.js && npx cap sync android && cd
 android && ./gradlew assembleDebug bundleRelease`.
 
-## Última funcionalidade (v0.11.14)
+## Última funcionalidade (v0.11.16)
 
-**Onda de redesign visual** (v0.11.6 a v0.11.14) — a maior parte das
-telas do app passou por uma limpeza de UI, todas seguindo o mesmo
+**Tema Claro/Escuro/Sistema/Automático** (v0.11.16): o app não tinha
+nenhum sistema de tema até aqui (só dark fixo). Agora `css/styles.css`
+tem um bloco `:root` completo de variáveis (`--bg`/`--surf`/`--surf2`/
+`--linha`/`--txt`/`--fraco`/`--vidro`/`--backdrop`, além das já
+existentes `--verde`/`--ouro`/`--erro`) espelhado num
+`:root[data-theme="light"]` + `@media (prefers-color-scheme: light)`
+pro modo "Sistema". ~350 cores hexadecimais soltas (a maioria herdada
+de antes dessa variável existir) foram convertidas pra usar essas
+variáveis. `--verde-tinta` (texto escuro sobre botão verde) e as
+cores dos selos/municípios no mapa (verde=visitado, dourado=brilhante,
+cinza=bloqueado) ficam **iguais nos dois temas** de propósito — são
+cor de estado, não decoração.
+- JS (`aplicarDataTheme`/`definirTema`/`configurarAparencia` em
+  `js/script.js`): grava em `localStorage` (`desbrava_tema`) e escreve
+  `data-theme` em `<html>` (`"light"`/`"dark"`/ausente pro Sistema).
+  Depois de mudar o atributo, força `void raiz.offsetHeight` --
+  necessário mesmo em navegador de verdade, não só no preview
+  (confirmado durante o desenvolvimento: sem isso, pelo menos um
+  elemento com `color: var(--txt)` direto no seletor não repintava
+  sozinho até o próximo repaint natural).
+- Seletor "Aparência" (Sistema/Claro/Escuro/Automático) no Card 2 de
+  Configurações (`#select-aparencia`).
+- **"Automático"** liga o `AmbientLightSensor` do aparelho (permissão
+  + zona-morta 400-1000 lux pra não piscar em sombra passageira) e
+  escreve `data-theme` sozinho a cada leitura. **Essa API foi removida
+  do Chrome em 2021 (fingerprinting) e nunca existiu no Safari/iOS** —
+  ou seja, o `catch` (alerta + volta pra "Sistema" sozinho) é o
+  caminho principal na prática pra quase todo aparelho real, não uma
+  borda rara. `sensor.stop()` sempre que sai do modo Automático.
+
+**Mapa (tela principal)** (v0.11.16): ícone de "Configurações" trocado
+de um sol (confundia com toggle de tema) pra uma engrenagem de
+verdade, mesmo id/comportamento. Modo Viagem virou FAB primário
+(verde sólido, ícone branco, 58px vs. 48px da bússola, mais espaço
+até ela — antes os dois quase se tocavam). Dica "Arraste para
+mover..." some sozinha 4s depois de abrir (`configurarDicaMapa`).
+
+## Última funcionalidade anterior (v0.11.15)
+
+**Garagem Virtual redesenhada** (v0.11.15): as 3 abas (Criar/Editar/
+Estatísticas) viraram um segmented control (só a ativa ganha
+destaque, em vez de 3 botões soltos). A lista de motos empilhada —
+que duplicava o nome da moto selecionada — deu lugar a um "Card
+Seletor" compacto (`renderizarSeletorGaragem`): moto atual + estrela
+dourada se for a ativa + setas pra trocar, só quando há 2+ motos. Aba
+Estatísticas virou um dashboard de verdade: odômetro como herói
+(`Math.round().toLocaleString("pt-BR")`, ex. "1.250 km"), viagens/
+última viagem num grid 2 colunas com ícones. "Excluir moto" virou
+ghost (só texto vermelho, sem contorno) pra não competir com "Salvar
+alterações" (full width).
+
+## Onda de redesign visual (v0.11.6 a v0.11.14)
+
+A maior parte das telas do app passou por uma limpeza de UI, todas seguindo o mesmo
 padrão minimalista de tabs (texto cinza inativo, branco + risco verde
 embaixo quando ativo — classe `.social-aba`, reaplicada em
 `.ranking-aba`/`.biblioteca-aba`/`.rotas-aba`) e um componente de
