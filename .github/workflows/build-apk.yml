@@ -78,9 +78,14 @@ jobs:
           node tools/montar-www.js
           npx cap sync android
 
+      # chmod porque o repo é mantido no Windows, que não guarda o bit
+      # de execução no Git -- sem isso o runner Linux para com exit 126
+      # (permission denied) antes de o Gradle sequer começar.
       - name: Compila o APK debug
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --console=plain
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --console=plain
 
       # A versão manda na tag: mesma fonte que o publicar-apk.ps1 usa,
       # pra web e APK nunca divergirem.
