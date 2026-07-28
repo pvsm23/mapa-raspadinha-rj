@@ -5789,66 +5789,125 @@ body.modo-rota-ativo #toast-onde-estou {
 
 /* ---- Ranking ---- */
 
+/* Tabs minimalistas: mesmo padrão de #social-abas, ver override
+   escopado (#ranking-abas .ranking-aba) mais abaixo no arquivo, que é
+   quem realmente define a cor/risco -- isso aqui é só a base/layout. */
 #ranking-abas {
   display: flex;
-  gap: 8px;
-  margin: 12px 0;
+  gap: 24px;
+  margin: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .ranking-aba {
-  flex: 1;
-  background: #0F1216;
-  color: #8E97A3;
-  border: none;
-  padding: 8px;
-  border-radius: 8px;
+  flex: none;
+  padding: 10px 2px;
+  margin-bottom: -1px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
 }
 
-.ranking-aba-ativa {
-  background: #2BD576;
-  color: #0F1216;
-  font-weight: 600;
-}
-
-#ranking-minha-posicao {
-  color: #8E97A3;
-  font-size: 0.85rem;
-  margin: 0 0 12px;
-}
-
+/* Lista com altura própria e rolagem própria: é o que dá pra
+   .ranking-me-fixa grudar (position: sticky) no rodapé de forma
+   previsível, sem depender de quanto o resto do modal ocupa. */
 #ranking-lista {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  max-height: 54vh;
+  overflow-y: auto;
   text-align: left;
+  margin-top: 6px;
 }
 
+/* Linha "chapada": sem cartão fechado, só uma divisória fina embaixo
+   -- mesmo espírito do feed da Comunidade. */
 .ranking-linha {
   display: grid;
-  grid-template-columns: 2.4em 1fr auto;
+  grid-template-columns: 2.2em 34px 1fr auto;
   align-items: center;
-  gap: 8px;
-  background: #0F1216;
-  border-radius: 8px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 9px 4px;
   font-size: 0.85rem;
-}
-
-.ranking-linha-atual {
-  border: 1px solid #2BD576;
-  background: rgba(43, 213, 118, 0.12);
+  border-bottom: 1px solid #1A1E24;
+  cursor: pointer;
 }
 
 .ranking-posicao {
   color: #8E97A3;
   font-weight: 600;
+  text-align: center;
+}
+
+/* Pódio: 1º/2º/3º viram medalha, sem precisar de número -- o próprio
+   emoji já "é" a cor metálica (dourado/prata/bronze). */
+.ranking-medalha {
+  font-size: 1.15rem;
+  font-weight: normal;
+}
+
+.ranking-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ranking-apelido {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-pontos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  line-height: 1.1;
 }
 
 .ranking-count {
-  color: #2BD576;
-  font-weight: 600;
+  color: var(--verde);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.ranking-selos-label {
+  color: #6B7480;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Linha do próprio usuário: fundo verde bem translúcido + borda,
+   pra destacar sem virar um cartão pesado. */
+.ranking-me {
+  background: rgba(43, 213, 118, 0.1);
+  border-bottom-color: rgba(43, 213, 118, 0.3);
+  border-radius: 10px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Só quando o usuário NÃO está no top 50 renderizado: a linha dele é
+   anexada no fim e fica "presa" no rodapé da lista (que tem scroll
+   próprio, ver #ranking-lista) -- nunca some, mesmo na posição #45. */
+.ranking-me-fixa {
+  position: sticky;
+  bottom: 0;
+  margin-top: 4px;
+  background: #171B21;
+  box-shadow: 0 -8px 12px -4px rgba(0, 0, 0, 0.5);
+  border-bottom: none;
+}
+.ranking-me-fixa.ranking-me {
+  background: rgba(23, 27, 33, 0.97);
 }
 
 .badge-pro {
@@ -5995,50 +6054,63 @@ body.modo-rota-ativo #toast-onde-estou {
 
 /* ---- Amigos ---- */
 
-/* Botão "Me adicione como amigo(a)" -- gera o link ?amigo=<uid>. */
-.btn-link-amigo {
-  display: block;
-  width: 100%;
-  background: rgba(43, 213, 118, 0.15);
-  color: var(--verde);
-  border: 1px solid rgba(43, 213, 118, 0.45);
-  padding: 10px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 700;
-  margin: 0 0 14px;
-}
-
-.btn-link-amigo:hover {
-  background: rgba(43, 213, 118, 0.25);
-}
-
+/* Barra de busca (input com lupa interna) + botão quadrado do link
+   "me adicione" ao lado -- substitui o bloco gigante antigo. */
 #amigos-busca {
   display: flex;
   gap: 8px;
   margin-bottom: 10px;
 }
 
-#input-busca-amigo {
+#amigos-busca-campo {
   flex: 1;
-  padding: 10px 12px;
-  border-radius: 8px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 10px;
   border: 1px solid #1E232B;
   background: #0F1216;
+  color: #8E97A3;
+}
+
+#amigos-busca-campo .ico-svg {
+  flex-shrink: 0;
+}
+
+#input-busca-amigo {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 11px 0;
   color: #F2F5F7;
   font-size: 0.9rem;
 }
 
-#btn-buscar-amigo {
-  background: #2BD576;
-  color: #0F1216;
-  border: none;
-  padding: 0 16px;
-  border-radius: 8px;
+#input-busca-amigo:focus {
+  outline: none;
+}
+
+/* Botão "Me adicione como amigo(a)": virou um quadrado de ícone ao
+   lado da busca, mesmo id/handler (compartilharLinkAmigo). */
+.btn-link-amigo {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(43, 213, 118, 0.15);
+  color: var(--verde);
+  border: 1px solid rgba(43, 213, 118, 0.45);
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.85rem;
+}
+
+.btn-link-amigo:hover {
+  background: rgba(43, 213, 118, 0.25);
 }
 
 #amigos-resultado-busca:not(:empty) {
@@ -6048,21 +6120,55 @@ body.modo-rota-ativo #toast-onde-estou {
 .amigo-resultado-item,
 .amigo-pedido-item,
 .amigo-item {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   background: #0F1216;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 10px;
+  padding: 9px 10px;
   font-size: 0.85rem;
   margin-bottom: 6px;
   text-align: left;
 }
 
+/* Avatar circular (foto ou, na falta dela, iniciais sobre um
+   gradiente determinístico -- mesmo padrão de .post-avatar na
+   Comunidade, ver corAvatar/iniciaisApelido em js/script.js). */
+.amigo-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.amigo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.amigo-apelido {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--txt);
+  cursor: pointer;
+}
+
+.amigo-count {
+  color: #8E97A3;
+  font-size: 0.78rem;
+}
+
 .btn-adicionar-amigo,
-.btn-aceitar-pedido,
-.btn-remover-amigo {
+.btn-aceitar-pedido {
   background: #2BD576;
   color: #0F1216;
   border: none;
@@ -6080,15 +6186,78 @@ body.modo-rota-ativo #toast-onde-estou {
   cursor: not-allowed;
 }
 
-.btn-recusar-pedido,
-.btn-remover-amigo {
-  background: #F0616D;
-  color: white;
-  margin-left: 6px;
+.btn-recusar-pedido {
+  background: transparent;
+  color: #8E97A3;
+  border: 1px solid var(--linha);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.amigo-pedido-item {
-  flex-wrap: wrap;
+.amigo-pedido-acoes {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+/* "⋮" no lugar do antigo botão vermelho "Remover" -- abre um
+   dropdown pequeno em vez de expor a ação destrutiva direto na
+   linha. */
+.amigo-btn-menu {
+  flex: none;
+  background: transparent;
+  border: none;
+  color: #8E97A3;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.amigo-btn-menu:hover {
+  color: #F2F5F7;
+}
+
+.amigo-menu {
+  position: absolute;
+  top: calc(100% + 2px);
+  right: 6px;
+  z-index: 5;
+  background: #1E232B;
+  border: 1px solid #2A303A;
+  border-radius: 12px;
+  padding: 4px;
+  min-width: 230px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.amigo-menu.oculto {
+  display: none;
+}
+
+.amigo-menu-op {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--txt);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.amigo-menu-op:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.amigo-menu-desfazer {
+  color: #F0616D;
 }
 
 #amigos-pedidos h3,
@@ -6099,9 +6268,23 @@ body.modo-rota-ativo #toast-onde-estou {
   text-align: left;
 }
 
-.amigo-count {
-  color: #8E97A3;
-  font-size: 0.8rem;
+/* Empty state elegante: nada de texto solto -- ícone sutil + frase
+   curta, centralizados, num cinza mais discreto que o texto normal. */
+.amigos-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 12px;
+  color: #6B7480;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.amigos-vazio .ico-svg {
+  width: 28px;
+  height: 28px;
+  opacity: 0.55;
 }
 
 /* ---- Marca de selo brilhante na biblioteca/perfil ---- */
@@ -6348,7 +6531,6 @@ a {
 #btn-confirmar-apelido,
 #btn-salvar-apelido-config,
 #btn-abrir-nova-sugestao,
-#btn-buscar-amigo,
 #btn-compartilhar-de-fato,
 #btn-fechar-boas-vindas,
 #btn-instalar-pwa,
@@ -6356,7 +6538,6 @@ a {
 #btn-copiar-pix,
 #btn-fechar-aviso-desenvolvimento,
 #cartao-progresso-acoes button,
-.ranking-aba-ativa,
 .destino-btn-maps,
 .post-card-novo-comentario button,
 .sugestao-card-novo-comentario button {
@@ -6411,13 +6592,21 @@ select:focus {
   outline: none;
 }
 
-/* ---- Abas inativas ---- */
-.ranking-aba:not(.ranking-aba-ativa) {
-  background: var(--surf2) !important;
-  color: var(--fraco) !important;
-  border: 1px solid var(--linha) !important;
+/* Ranking migrou pro mesmo padrão minimalista de #social-abas (ver
+   comentário lá): sem fundo em nenhum dos dois estados, só texto +
+   risco embaixo quando ativo. */
+#ranking-abas .ranking-aba {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
   box-shadow: none !important;
-  border-radius: 11px !important;
+  border-radius: 0 !important;
+  color: var(--fraco) !important;
+  font-weight: 600 !important;
+}
+#ranking-abas .ranking-aba-ativa {
+  color: var(--txt) !important;
+  border-bottom-color: var(--verde) !important;
 }
 
 /* Tabs da Comunidade (#social-abas) são o único caso minimalista --

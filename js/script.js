@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.8";
+const VERSAO_APP = "0.11.9";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.8";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.9", itens: ["Amigos e Ranking com visual novo: avatares, busca contínua (sem botão), menu '⋮' no lugar do botão vermelho de remover amigo, pódio com medalhas no Ranking, e sua linha sempre visível mesmo fora do topo 50."] },
   { versao: "0.11.8", itens: ["Comunidade com visual novo, estilo Instagram/Threads: tabs minimalistas, feed sem cartões pesados (só uma linha fina separando os posts), foto ocupando a largura toda, e um botão redondo (FAB) pra postar no canto da tela. Menções @assim agora aparecem destacadas em verde."] },
   { versao: "0.11.7", itens: ["Configurações com visual novo: cartões organizados (Perfil, Preferências, Recursos, Conta), toggles no lugar das caixinhas de marcar, e só o botão 'Salvar apelido' fica verde vibrante agora."] },
   { versao: "0.11.6", itens: ["Menu reorganizado: 'Minha Jornada', 'Explorar' e 'Sistema', mais fácil de achar as coisas. Perfil saiu do Menu (já abre pelo avatar no topo) e o Check-in semanal saiu de circulação."] },
@@ -709,11 +710,29 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-amigos").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-amigos") fecharAmigos();
   });
-  document.getElementById("btn-buscar-amigo").addEventListener("click", buscarAmigoPorTexto);
+  // Busca contínua: dispara sozinha ~350ms depois de parar de digitar
+  // (debounce, evita 1 consulta por tecla), ou na hora com Enter --
+  // sem botão "Buscar" separado.
+  document.getElementById("input-busca-amigo").addEventListener("input", () => {
+    clearTimeout(temporizadorBuscaAmigo);
+    const texto = document.getElementById("input-busca-amigo").value.trim();
+    if (!texto) {
+      document.getElementById("amigos-resultado-busca").innerHTML = "";
+      return;
+    }
+    temporizadorBuscaAmigo = setTimeout(buscarAmigoPorTexto, 350);
+  });
   document.getElementById("input-busca-amigo").addEventListener("keydown", (evento) => {
-    if (evento.key === "Enter") buscarAmigoPorTexto();
+    if (evento.key === "Enter") {
+      clearTimeout(temporizadorBuscaAmigo);
+      buscarAmigoPorTexto();
+    }
   });
   document.getElementById("btn-link-amigo").addEventListener("click", () => exigirLogin(compartilharLinkAmigo));
+  // Fecha qualquer menu "⋮" de amigo aberto ao tocar fora dele.
+  document.addEventListener("click", (evento) => {
+    if (!evento.target.closest(".amigo-item")) fecharTodosMenusAmigo();
+  });
 
   // ---- Feedback e colaboração ----
   document.getElementById("btn-feedback").addEventListener("click", abrirFeedback);
@@ -5617,15 +5636,32 @@ function alternarAbaRanking(aba) {
   carregarRanking();
 }
 
-function renderizarLinhaRanking(lista, item, indice, meuUid) {
+/**
+ * Uma linha do ranking. `posicaoReal` é a colocação de verdade (não o
+ * índice na lista renderizada) -- pras 3 primeiras vira medalha
+ * (🥇🥈🥉) em vez de número. `fixa` marca a linha "presa" no rodapé
+ * (ver ranking-me-fixa no CSS) -- usada só quando o usuário nem
+ * aparece no top 50 exibido, ver carregarRanking.
+ */
+function renderizarLinhaRanking(lista, item, posicaoReal, meuUid, fixa = false) {
   const linha = document.createElement("div");
-  linha.className = "ranking-linha" + (item.uid === meuUid ? " ranking-linha-atual" : "");
+  linha.className =
+    "ranking-linha" + (item.uid === meuUid ? " ranking-me" : "") + (fixa ? " ranking-me-fixa" : "");
+
+  const medalha = posicaoReal === 1 ? "🥇" : posicaoReal === 2 ? "🥈" : posicaoReal === 3 ? "🥉" : null;
+  const posicaoHtml = medalha
+    ? `<span class="ranking-posicao ranking-medalha">${medalha}</span>`
+    : `<span class="ranking-posicao">#${posicaoReal}</span>`;
+
   linha.innerHTML = `
-    <span class="ranking-posicao">#${indice + 1}</span>
+    ${posicaoHtml}
+    <div class="ranking-avatar" style="background:${corAvatar(item.apelido)}">${escaparHtml(iniciaisApelido(item.apelido))}</div>
     <span class="ranking-apelido">${escaparHtml(item.apelido)}${item.ehPro ? '<span class="badge-pro" title="Conta PRO">PRO</span>' : ""}</span>
-    <span class="ranking-count">${item.count}</span>
+    <span class="ranking-pontos">
+      <span class="ranking-count">${item.count}</span>
+      <span class="ranking-selos-label">selos</span>
+    </span>
   `;
-  linha.style.cursor = "pointer";
   linha.addEventListener("click", () => {
     fecharRanking();
     abrirPerfil(item.uid);
@@ -5635,9 +5671,7 @@ function renderizarLinhaRanking(lista, item, indice, meuUid) {
 
 async function carregarRanking() {
   const lista = document.getElementById("ranking-lista");
-  const minhaPosicaoEl = document.getElementById("ranking-minha-posicao");
   lista.innerHTML = '<div class="spinner spinner-grande"></div>';
-  minhaPosicaoEl.textContent = "";
 
   try {
     const meuUid = window.raspadinhaAuth.usuarioAtual.uid;
@@ -5657,11 +5691,10 @@ async function carregarRanking() {
 
       lista.innerHTML = "";
       if (ranking.length <= 1) {
-        lista.innerHTML = "<p>Adicione amigos pra ver o ranking entre vocês.</p>";
+        lista.innerHTML = `<div class="amigos-vazio">${ICONE_VAZIO_AMIGOS}<span>Adicione amigos pra ver o ranking entre vocês.</span></div>`;
       } else {
-        ranking.forEach((item, indice) => renderizarLinhaRanking(lista, item, indice, meuUid));
+        ranking.forEach((item, indice) => renderizarLinhaRanking(lista, item, indice + 1, meuUid));
       }
-      minhaPosicaoEl.textContent = "";
       return;
     }
 
@@ -5673,11 +5706,29 @@ async function carregarRanking() {
     lista.innerHTML = "";
     if (!ranking.length) {
       lista.innerHTML = "<p>Ninguém no ranking ainda. Seja o primeiro a raspar!</p>";
-    } else {
-      ranking.forEach((item, indice) => renderizarLinhaRanking(lista, item, indice, meuUid));
+      return;
     }
+    ranking.forEach((item, indice) => renderizarLinhaRanking(lista, item, indice + 1, meuUid));
 
-    minhaPosicaoEl.textContent = `Sua posição: #${minhaPosicao} (${meuCount} municípios)`;
+    // Se eu não apareço no top 50 exibido, fixa minha linha de
+    // verdade (posição real, via buscarMinhaPosicao) grudada no
+    // rodapé da lista -- sempre visível, mesmo na posição #45. Troca
+    // o antigo texto solto "Sua posição: #X".
+    const jaApareco = ranking.some((item) => item.uid === meuUid);
+    if (!jaApareco) {
+      renderizarLinhaRanking(
+        lista,
+        {
+          uid: meuUid,
+          apelido: window.raspadinhaAuth.apelido,
+          count: meuCount,
+          ehPro: window.raspadinhaAuth.contaEhPro,
+        },
+        minhaPosicao,
+        meuUid,
+        true
+      );
+    }
   } catch (erro) {
     console.error("Falha ao carregar ranking:", erro);
     lista.innerHTML = "<p>Não foi possível carregar o ranking agora. Tente de novo mais tarde.</p>";
@@ -5703,6 +5754,8 @@ function abrirAmigos() {
 function fecharAmigos() {
   document.getElementById("modal-amigos").classList.add("oculto");
 }
+
+let temporizadorBuscaAmigo = null;
 
 async function buscarAmigoPorTexto() {
   const texto = document.getElementById("input-busca-amigo").value.trim();
@@ -5743,13 +5796,24 @@ async function buscarAmigoPorTexto() {
   }
 }
 
+const ICONE_VAZIO_PEDIDOS =
+  '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>';
+const ICONE_VAZIO_AMIGOS =
+  '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+
+/** Fecha qualquer menu "⋮" de amigo que esteja aberto -- chamado antes
+ * de abrir outro (só um por vez) e ao tocar fora de qualquer .amigo-item. */
+function fecharTodosMenusAmigo() {
+  document.querySelectorAll(".amigo-menu").forEach((menu) => menu.classList.add("oculto"));
+}
+
 async function carregarPedidosAmizade() {
   const lista = document.getElementById("amigos-pedidos-lista");
   lista.innerHTML = '<div class="spinner spinner-grande"></div>';
   try {
     const pedidos = await window.raspadinhaAuth.listarPedidosRecebidos();
     if (!pedidos.length) {
-      lista.innerHTML = "<p>Nenhum pedido de amizade pendente.</p>";
+      lista.innerHTML = `<div class="amigos-vazio">${ICONE_VAZIO_PEDIDOS}<span>Nenhum pedido de amizade pendente.</span></div>`;
       return;
     }
     lista.innerHTML = "";
@@ -5757,9 +5821,14 @@ async function carregarPedidosAmizade() {
       const item = document.createElement("div");
       item.className = "amigo-pedido-item";
       item.innerHTML = `
-        <span>${escaparHtml(pedido.apelido)}</span>
-        <button type="button" class="btn-aceitar-pedido">Aceitar</button>
-        <button type="button" class="btn-recusar-pedido">Recusar</button>
+        <div class="amigo-avatar" style="background:${corAvatar(pedido.apelido)}">${escaparHtml(iniciaisApelido(pedido.apelido))}</div>
+        <div class="amigo-info">
+          <span class="amigo-apelido">${escaparHtml(pedido.apelido)}</span>
+        </div>
+        <div class="amigo-pedido-acoes">
+          <button type="button" class="btn-aceitar-pedido">Aceitar</button>
+          <button type="button" class="btn-recusar-pedido">Recusar</button>
+        </div>
       `;
       item.querySelector(".btn-aceitar-pedido").addEventListener("click", async () => {
         await window.raspadinhaAuth.aceitarPedidoAmizade(pedido.uid);
@@ -5784,7 +5853,7 @@ async function carregarListaAmigos() {
   try {
     const amigos = await window.raspadinhaAuth.listarAmigos();
     if (!amigos.length) {
-      lista.innerHTML = "<p>Você ainda não tem amigos adicionados.</p>";
+      lista.innerHTML = `<div class="amigos-vazio">${ICONE_VAZIO_AMIGOS}<span>Você ainda não tem amigos adicionados.</span></div>`;
       return;
     }
     lista.innerHTML = "";
@@ -5794,17 +5863,38 @@ async function carregarListaAmigos() {
         const item = document.createElement("div");
         item.className = "amigo-item";
         item.innerHTML = `
-          <span class="amigo-apelido">${escaparHtml(amigo.apelido)}</span>
-          <span class="amigo-count">${amigo.count} municípios</span>
-          <button type="button" class="btn-remover-amigo">Remover</button>
+          <div class="amigo-avatar" style="background:${corAvatar(amigo.apelido)}">${escaparHtml(iniciaisApelido(amigo.apelido))}</div>
+          <div class="amigo-info">
+            <span class="amigo-apelido">${escaparHtml(amigo.apelido)}</span>
+            <span class="amigo-count">${amigo.count} município${amigo.count === 1 ? "" : "s"} desbravado${amigo.count === 1 ? "" : "s"}</span>
+          </div>
+          <button type="button" class="amigo-btn-menu" aria-label="Mais opções">⋮</button>
+          <div class="amigo-menu oculto">
+            <button type="button" class="amigo-menu-op amigo-menu-parceiro">🏍️ Marcar como Parceiro(a) de Estrada</button>
+            <button type="button" class="amigo-menu-op amigo-menu-desfazer">🗑️ Desfazer amizade</button>
+          </div>
         `;
-        item.querySelector(".amigo-apelido").style.cursor = "pointer";
         item.querySelector(".amigo-apelido").addEventListener("click", () => {
           fecharAmigos();
           abrirPerfil(amigo.uid);
         });
-        item.querySelector(".btn-remover-amigo").addEventListener("click", async () => {
-          if (!confirm(`Remover ${amigo.apelido} da sua lista de amigos?`)) return;
+        item.querySelector(".amigo-btn-menu").addEventListener("click", (evento) => {
+          evento.stopPropagation();
+          const menu = item.querySelector(".amigo-menu");
+          const estavaOculto = menu.classList.contains("oculto");
+          fecharTodosMenusAmigo();
+          if (estavaOculto) menu.classList.remove("oculto");
+        });
+        // Placeholder de propósito: vincular contas de "parceiro de
+        // estrada" é uma feature futura, ainda sem dado nenhum pra
+        // gravar -- só avisa que está vindo, não faz nada de verdade.
+        item.querySelector(".amigo-menu-parceiro").addEventListener("click", () => {
+          fecharTodosMenusAmigo();
+          alert("🏍️ Em breve você vai poder marcar parceiros de estrada!");
+        });
+        item.querySelector(".amigo-menu-desfazer").addEventListener("click", async () => {
+          fecharTodosMenusAmigo();
+          if (!confirm(`Desfazer amizade com ${amigo.apelido}?`)) return;
           await window.raspadinhaAuth.removerAmigo(amigo.uid);
           carregarListaAmigos();
         });
@@ -5815,13 +5905,6 @@ async function carregarListaAmigos() {
     lista.innerHTML = "<p>Não foi possível carregar seus amigos agora.</p>";
   }
 }
-
-/* ============================================================
-   Check-in semanal: marca os dias da semana (dom-sáb) em que o app
-   foi aberto. Semanal (não mensal) porque é um app de viagem -- os
-   acessos são poucos e espaçados, então uma semana é uma unidade de
-   progresso mais realista que um mês inteiro.
-   ============================================================ */
 
 /* ============================================================
    Feedback e colaboração: relatar bug, dar sugestão, ou colaborar

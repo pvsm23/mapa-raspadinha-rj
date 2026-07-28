@@ -1309,7 +1309,10 @@
         <button type="button" id="btn-ranking-global" class="ranking-aba ranking-aba-ativa">Global</button>
         <button type="button" id="btn-ranking-amigos" class="ranking-aba">Amigos</button>
       </div>
-      <p id="ranking-minha-posicao"></p>
+      <!-- Sem texto "Sua posição: #X" solto -- a própria linha do
+           usuário (.ranking-me) já se destaca na lista, e fica fixa
+           embaixo (position: sticky) quando ele nem aparece no topo
+           50 exibido, ver carregarRanking em js/script.js. -->
       <div id="ranking-lista"></div>
     </div>
   </div>
@@ -1330,14 +1333,20 @@
       <button id="btn-fechar-amigos" aria-label="Fechar">✕</button>
       <h2>👥 Amigos</h2>
 
-      <!-- Link "me adicione": gera um link com ?amigo=<meu-uid>. Quem
-           abrir e estiver logado manda um pedido de amizade pra você
-           automaticamente (ver processarAmigoPendente em js/script.js). -->
-      <button type="button" id="btn-link-amigo" class="btn-link-amigo">🔗 Me adicione como amigo(a)</button>
-
+      <!-- Barra de busca (contínua ao digitar/Enter, ver
+           buscarAmigoPorTexto em js/script.js) + atalho pra gerar o
+           link "me adicione" (?amigo=<meu-uid>, ver
+           compartilharLinkAmigo) -- mesmo id/handler de sempre, só
+           virou um botão quadrado ao lado da busca em vez de um bloco
+           gigante no topo. -->
       <div id="amigos-busca">
-        <input type="text" id="input-busca-amigo" placeholder="Buscar por e-mail ou apelido">
-        <button id="btn-buscar-amigo">Buscar</button>
+        <div id="amigos-busca-campo">
+          <svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="input-busca-amigo" placeholder="Buscar por e-mail ou apelido">
+        </div>
+        <button type="button" id="btn-link-amigo" class="btn-link-amigo" aria-label="Me adicione como amigo(a)" title="Me adicione como amigo(a)">
+          <svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </button>
       </div>
       <div id="amigos-resultado-busca"></div>
 
