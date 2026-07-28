@@ -1016,24 +1016,43 @@
        em js/script.js) -->
   <button type="button" id="btn-sair-rota" class="oculto">✕ Sair da rota</button>
 
+  <!-- Biblioteca de selos: álbum de colecionador, 3 abas (Municípios/
+       Regiões/Rotas -- Conquistas saiu daqui, já tem modal próprio
+       em #modal-conquistas) + filtro de status. Ver
+       configurarBiblioteca/abrirBibliotecaSelos em js/script.js. -->
   <div id="biblioteca-selos" class="oculto">
     <div id="biblioteca-conteudo">
       <button id="btn-fechar-biblioteca" aria-label="Fechar">✕</button>
-      <h2>Biblioteca de selos</h2>
+      <h2>📖 Biblioteca de selos</h2>
+
+      <div id="biblioteca-abas">
+        <button type="button" id="btn-biblioteca-aba-municipios" class="biblioteca-aba biblioteca-aba-ativa" data-aba="municipios">Municípios</button>
+        <button type="button" id="btn-biblioteca-aba-regioes" class="biblioteca-aba" data-aba="regioes">Regiões</button>
+        <button type="button" id="btn-biblioteca-aba-rotas" class="biblioteca-aba" data-aba="rotas">Rotas</button>
+      </div>
+
+      <div id="biblioteca-filtros">
+        <button type="button" class="biblioteca-filtro biblioteca-filtro-ativo" data-filtro="todos">Todos</button>
+        <button type="button" class="biblioteca-filtro" data-filtro="conquistados">Conquistados</button>
+        <button type="button" class="biblioteca-filtro" data-filtro="faltam">Faltam</button>
+      </div>
+
       <p id="biblioteca-contador">0 / 92 selos coletados</p>
       <div id="biblioteca-barra">
         <div id="biblioteca-barra-preenchida"></div>
       </div>
-      <div id="biblioteca-grade"></div>
 
-      <h3 id="biblioteca-titulo-regioes">Selos de região</h3>
-      <div id="biblioteca-grade-regioes"></div>
+      <div id="biblioteca-painel-municipios" class="biblioteca-painel">
+        <div id="biblioteca-grade" class="biblioteca-grade biblioteca-grade-3"></div>
+      </div>
 
-      <h3 id="biblioteca-titulo-rotas">Selos de rota</h3>
-      <div id="biblioteca-grade-rotas"></div>
+      <div id="biblioteca-painel-regioes" class="biblioteca-painel oculto">
+        <div id="biblioteca-grade-regioes" class="biblioteca-grade biblioteca-grade-2"></div>
+      </div>
 
-      <h3 id="biblioteca-titulo-conquistas">Conquistas</h3>
-      <div id="biblioteca-grade-conquistas"></div>
+      <div id="biblioteca-painel-rotas" class="biblioteca-painel oculto">
+        <div id="biblioteca-grade-rotas" class="biblioteca-grade biblioteca-grade-2"></div>
+      </div>
     </div>
   </div>
 

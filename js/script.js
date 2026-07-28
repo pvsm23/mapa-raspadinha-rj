@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.9";
+const VERSAO_APP = "0.11.10";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.9";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.10", itens: ["Biblioteca de selos virou um álbum de colecionador: abas (Municípios/Regiões/Rotas) e filtro (Todos/Conquistados/Faltam). Selos bloqueados agora têm o mesmo visual em todo lugar, sem cadeado amarelo espalhado pelo texto."] },
   { versao: "0.11.9", itens: ["Amigos e Ranking com visual novo: avatares, busca contínua (sem botão), menu '⋮' no lugar do botão vermelho de remover amigo, pódio com medalhas no Ranking, e sua linha sempre visível mesmo fora do topo 50."] },
   { versao: "0.11.8", itens: ["Comunidade com visual novo, estilo Instagram/Threads: tabs minimalistas, feed sem cartões pesados (só uma linha fina separando os posts), foto ocupando a largura toda, e um botão redondo (FAB) pra postar no canto da tela. Menções @assim agora aparecem destacadas em verde."] },
   { versao: "0.11.7", itens: ["Configurações com visual novo: cartões organizados (Perfil, Preferências, Recursos, Conta), toggles no lugar das caixinhas de marcar, e só o botão 'Salvar apelido' fica verde vibrante agora."] },
@@ -915,6 +916,7 @@ document.addEventListener("DOMContentLoaded", () => {
   configurarCompartilharViagem();
   configurarLoja();
   configurarLojaAdmin();
+  configurarBiblioteca();
   esconderTelaCarregamento();
 });
 
@@ -5043,6 +5045,87 @@ function fecharModalRaspadinha() {
  * contador e barra de progresso no topo.
  * Clicar num item reaproveita a mesma lógica de abrir o selo.
  */
+/* ============================================================
+   BIBLIOTECA DE SELOS: álbum de colecionador com 3 abas (Municípios/
+   Regiões/Rotas -- Conquistas tem modal próprio, ver abrirConquistas,
+   não duplica aqui) + filtro de status (Todos/Conquistados/Faltam).
+   Cada .selo-item ganha .locked ou .unlocked (ver CSS) além das
+   classes que já existiam -- é isso que o filtro liga/desliga.
+   ============================================================ */
+let bibliotecaAbaAtual = "municipios";
+let bibliotecaFiltroAtual = "todos";
+// Contagem "atual/total" de cada aba, preenchida na hora de montar
+// cada grade -- usada só pra atualizar o texto/barra do topo quando
+// a pessoa troca de aba, sem precisar recalcular tudo de novo.
+let bibliotecaContagens = {
+  municipios: { atual: 0, total: 0 },
+  regioes: { atual: 0, total: 0 },
+  rotas: { atual: 0, total: 0 },
+};
+
+function configurarBiblioteca() {
+  document.querySelectorAll("#biblioteca-abas .biblioteca-aba").forEach((botao) => {
+    botao.addEventListener("click", () => mudarAbaBiblioteca(botao.dataset.aba));
+  });
+  document.querySelectorAll("#biblioteca-filtros .biblioteca-filtro").forEach((botao) => {
+    botao.addEventListener("click", () => mudarFiltroBiblioteca(botao.dataset.filtro));
+  });
+}
+
+function mudarAbaBiblioteca(aba) {
+  bibliotecaAbaAtual = aba;
+  document.querySelectorAll("#biblioteca-abas .biblioteca-aba").forEach((b) => {
+    b.classList.toggle("biblioteca-aba-ativa", b.dataset.aba === aba);
+  });
+  document.getElementById("biblioteca-painel-municipios").classList.toggle("oculto", aba !== "municipios");
+  document.getElementById("biblioteca-painel-regioes").classList.toggle("oculto", aba !== "regioes");
+  document.getElementById("biblioteca-painel-rotas").classList.toggle("oculto", aba !== "rotas");
+  atualizarContadorBiblioteca();
+}
+
+function mudarFiltroBiblioteca(filtro) {
+  bibliotecaFiltroAtual = filtro;
+  document.querySelectorAll("#biblioteca-filtros .biblioteca-filtro").forEach((b) => {
+    b.classList.toggle("biblioteca-filtro-ativo", b.dataset.filtro === filtro);
+  });
+  aplicarFiltroBiblioteca();
+}
+
+/** Esconde/mostra cada .selo-item conforme o filtro de status ativo
+ * -- roda nos 3 grids de uma vez (só o da aba visível importa de
+ * verdade, mas filtrar todos junto é mais simples e barato). */
+function aplicarFiltroBiblioteca() {
+  document.querySelectorAll("#biblioteca-conteudo .selo-item").forEach((item) => {
+    const mostrar =
+      bibliotecaFiltroAtual === "todos" ||
+      (bibliotecaFiltroAtual === "conquistados" && item.classList.contains("unlocked")) ||
+      (bibliotecaFiltroAtual === "faltam" && item.classList.contains("locked"));
+    item.classList.toggle("selo-item-oculto-filtro", !mostrar);
+  });
+}
+
+function atualizarContadorBiblioteca() {
+  const { atual, total } = bibliotecaContagens[bibliotecaAbaAtual] || { atual: 0, total: 0 };
+  const rotulos = { municipios: "selos coletados", regioes: "regiões conquistadas", rotas: "rotas conquistadas" };
+  document.getElementById("biblioteca-contador").textContent =
+    `${atual} / ${total} ${rotulos[bibliotecaAbaAtual] || ""}`;
+  document.getElementById("biblioteca-barra-preenchida").style.width =
+    `${total ? (atual / total) * 100 : 0}%`;
+}
+
+/** Envolve a <img> num container .selo-placeholder-box (ver CSS) --
+ * assim, enquanto o src ainda não chegou (ou não existe arte
+ * nenhuma), aparece o círculo com emoji em vez de espaço vazio/ícone
+ * de imagem quebrada. A variante muda a cor/emoji do placeholder;
+ * "bloqueado" é escolhida à parte via classe .locked no item pai. */
+function envolverComPlaceholder(img, variante) {
+  const box = document.createElement("div");
+  box.className = "selo-placeholder-box" + (variante ? ` selo-placeholder-${variante}` : "");
+  img.classList.add("selo-placeholder-img");
+  box.appendChild(img);
+  return box;
+}
+
 function abrirBibliotecaSelos() {
   const grade = document.getElementById("biblioteca-grade");
   grade.innerHTML = "";
@@ -5051,11 +5134,8 @@ function abrirBibliotecaSelos() {
     .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const totalVisitados = municipios.filter((m) => estaVerificado(m.id)).length;
-  document.getElementById("biblioteca-contador").textContent =
-    `${totalVisitados} / ${municipios.length} selos coletados`;
-  document.getElementById("biblioteca-barra-preenchida").style.width =
-    `${(totalVisitados / municipios.length) * 100}%`;
+  const totalVisitados = municipios.filter((m) => !!estadoMapa[m.id]?.visitado).length;
+  bibliotecaContagens.municipios = { atual: totalVisitados, total: municipios.length };
 
   municipios.forEach(({ id, nome }) => {
     const visitado = !!estadoMapa[id]?.visitado;
@@ -5066,6 +5146,7 @@ function abrirBibliotecaSelos() {
     item.type = "button";
     item.className =
       "selo-item" +
+      (visitado ? " unlocked" : " locked") +
       (brilhante ? " selo-item-brilhante" : "") +
       (visitado && !verificado ? " selo-item-nao-verificado" : "");
     item.title = !verificado && visitado
@@ -5087,7 +5168,7 @@ function abrirBibliotecaSelos() {
     const legenda = document.createElement("span");
     legenda.textContent = nome;
 
-    item.appendChild(img);
+    item.appendChild(envolverComPlaceholder(img, "verde"));
     if (visitado && !verificado) {
       const alerta = document.createElement("span");
       alerta.className = "selo-marca-alerta";
@@ -5105,7 +5186,11 @@ function abrirBibliotecaSelos() {
 
   renderizarGradeRegioesNaBiblioteca();
   renderizarGradeRotasNaBiblioteca();
-  renderizarGradeConquistasNaBiblioteca();
+
+  bibliotecaAbaAtual = "municipios";
+  bibliotecaFiltroAtual = "todos";
+  mudarAbaBiblioteca("municipios");
+  mudarFiltroBiblioteca("todos");
 
   document.getElementById("biblioteca-selos").classList.remove("oculto");
 }
@@ -5140,8 +5225,7 @@ function renderizarGradeRegioesNaBiblioteca() {
     (regioesInfo[a]?.nome || a).localeCompare(regioesInfo[b]?.nome || b, "pt-BR")
   );
   const completas = idsRegioes.filter((id) => regiaoEstaCompleta(id)).length;
-  document.getElementById("biblioteca-titulo-regioes").textContent =
-    `Selos de região (${completas} / ${idsRegioes.length})`;
+  bibliotecaContagens.regioes = { atual: completas, total: idsRegioes.length };
 
   idsRegioes.forEach((id) => {
     const nome = regioesInfo[id]?.nome || id;
@@ -5151,7 +5235,8 @@ function renderizarGradeRegioesNaBiblioteca() {
 
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
+    item.className =
+      "selo-item" + (completa ? " unlocked" : " locked") + (brilhante ? " selo-item-brilhante" : "");
     item.title = brilhante ? `${nome} 🌟 (mega-selo dourado!)` : nome;
 
     const img = document.createElement("img");
@@ -5169,9 +5254,9 @@ function renderizarGradeRegioesNaBiblioteca() {
     item.addEventListener("click", () => abrirSeloLightbox(img.src, nome));
 
     const legenda = document.createElement("span");
-    legenda.textContent = completa ? nome : `🔒 ${nome}`;
+    legenda.textContent = nome;
 
-    item.appendChild(img);
+    item.appendChild(envolverComPlaceholder(img, "dourado"));
     if (brilhante) {
       const marca = document.createElement("span");
       marca.className = "selo-marca-brilhante";
@@ -5195,8 +5280,7 @@ function renderizarGradeRotasNaBiblioteca() {
     (rotasInfo[a]?.nome || a).localeCompare(rotasInfo[b]?.nome || b, "pt-BR")
   );
   const completas = idsRotas.filter((id) => rotaEstaCompleta(id)).length;
-  document.getElementById("biblioteca-titulo-rotas").textContent =
-    `Selos de rota (${completas} / ${idsRotas.length})`;
+  bibliotecaContagens.rotas = { atual: completas, total: idsRotas.length };
 
   idsRotas.forEach((id) => {
     const nome = rotasInfo[id]?.nome || id;
@@ -5206,7 +5290,8 @@ function renderizarGradeRotasNaBiblioteca() {
 
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "selo-item" + (brilhante ? " selo-item-brilhante" : "");
+    item.className =
+      "selo-item" + (completa ? " unlocked" : " locked") + (brilhante ? " selo-item-brilhante" : "");
     item.title = brilhante ? `${nome} 🌟 (selo de rota dourado!)` : nome;
 
     const img = document.createElement("img");
@@ -5224,66 +5309,15 @@ function renderizarGradeRotasNaBiblioteca() {
     item.addEventListener("click", () => abrirSeloLightbox(img.src, nome));
 
     const legenda = document.createElement("span");
-    legenda.textContent = completa ? nome : `🔒 ${nome}`;
+    legenda.textContent = nome;
 
-    item.appendChild(img);
+    item.appendChild(envolverComPlaceholder(img, "dourado"));
     if (brilhante) {
       const marca = document.createElement("span");
       marca.className = "selo-marca-brilhante";
       marca.textContent = "✨";
       item.appendChild(marca);
     }
-    item.appendChild(legenda);
-    grade.appendChild(item);
-  });
-}
-
-/**
- * Selos de conquista dentro da biblioteca -- mesma ideia dos selos
- * de região: cadeado até desbloquear.
- */
-function renderizarGradeConquistasNaBiblioteca() {
-  const grade = document.getElementById("biblioteca-grade-conquistas");
-  grade.innerHTML = "";
-
-  const ctx = calcularContextoConquistas();
-  const desbloqueadas = DEFINICOES_CONQUISTAS.filter((def) => {
-    const { atual, meta } = progressoConquista(def, ctx);
-    return atual >= meta;
-  }).length;
-  document.getElementById("biblioteca-titulo-conquistas").textContent =
-    `Conquistas (${desbloqueadas} / ${DEFINICOES_CONQUISTAS.length})`;
-
-  DEFINICOES_CONQUISTAS.forEach((def) => {
-    const { chave, titulo, descricao } = def;
-    const { atual, meta } = progressoConquista(def, ctx);
-    const desbloqueada = atual >= meta;
-    const revelado = desbloqueada && !!estadoConquistas[chave]?.revelado;
-
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "selo-item";
-    item.title = `${titulo} — ${descricao}`;
-
-    const img = document.createElement("img");
-    img.alt = titulo;
-    img.className = revelado ? "selo-colorido" : "selo-cinza";
-
-    const caminhoColorido = `assets/img/conquistas/${chave}.webp`;
-    if (revelado) {
-      carregarImagem(caminhoColorido).then((existeColorido) => {
-        img.src = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo);
-      });
-    } else {
-      img.src = gerarSeloPlaceholder(chave, titulo);
-    }
-
-    item.addEventListener("click", () => abrirSeloLightbox(img.src, titulo));
-
-    const legenda = document.createElement("span");
-    legenda.textContent = desbloqueada ? titulo : `🔒 ${titulo}`;
-
-    item.appendChild(img);
     item.appendChild(legenda);
     grade.appendChild(item);
   });

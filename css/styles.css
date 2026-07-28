@@ -3342,23 +3342,84 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   transition: width 0.3s ease;
 }
 
-#biblioteca-grade,
-#biblioteca-grade-regioes,
-#biblioteca-grade-rotas,
-#biblioteca-grade-conquistas {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
+/* ---- Abas de categoria (Municípios/Regiões/Rotas) -- mesmo padrão
+   minimalista de #social-abas/#ranking-abas: sem fundo, texto cinza
+   inativo, branco + risco verde embaixo quando ativo. Base aqui,
+   override com !important escopado mais abaixo no arquivo (perto de
+   #social-abas/#ranking-abas). ---- */
+#biblioteca-abas {
+  display: flex;
+  gap: 20px;
+  margin: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-#biblioteca-titulo-regioes,
-#biblioteca-titulo-rotas,
-#biblioteca-titulo-conquistas {
-  font-size: 0.9rem;
-  color: #8E97A3;
-  margin: 20px 0 0;
-  text-align: left;
+.biblioteca-aba {
+  flex: none;
+  padding: 10px 2px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  font-size: 0.86rem;
+}
+
+.biblioteca-painel.oculto {
+  display: none;
+}
+
+/* ---- Filtro de status: pílulas roláveis horizontalmente ---- */
+#biblioteca-filtros {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 4px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+#biblioteca-filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.biblioteca-filtro {
+  flex: none;
+  background: var(--surf2);
+  color: var(--fraco);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.biblioteca-filtro-ativo {
+  background: var(--verde-esc);
+  color: var(--verde);
+  border-color: rgba(43, 213, 118, 0.4);
+}
+
+/* ---- Grids: municípios em 3 colunas, regiões/rotas em 2 (títulos
+   longos precisam de mais espaço horizontal por item, ver ponto 5). ---- */
+.biblioteca-grade {
+  display: grid;
+  gap: 16px 10px;
+  margin-top: 14px;
+}
+
+.biblioteca-grade-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.biblioteca-grade-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Item escondido pelo filtro de status (ver aplicarFiltroBiblioteca
+   em js/script.js) -- display:none direto, não anima (lista pode ter
+   90+ itens, não vale a pena). */
+.selo-item-oculto-filtro {
+  display: none !important;
 }
 
 .selo-item {
@@ -3386,6 +3447,93 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 .selo-item img.selo-cinza {
   filter: grayscale(1);
   opacity: 0.6;
+}
+
+/* ============================================================
+   PLACEHOLDER genérico pra selo/medalha SEM ARTE AINDA -- CSS puro,
+   não depende de canvas nem de nenhum JS. Cobre o caso de uma <img>
+   sem "src" (ou com "src" vazio): em vez de um buraco/ícone de
+   imagem quebrada, mostra um círculo com gradiente escuro + um emoji
+   centralizado (via ::after no container, nunca no próprio <img>).
+
+   Uso: envolva a <img> num container com esta classe --
+     <div class="selo-placeholder-box">
+       <img class="selo-placeholder-img" alt="Nome do selo">
+     </div>
+   Assim que a <img> ganhar um "src" de verdade (a arte final), ela
+   cobre o placeholder pixel a pixel (mesmo tamanho/raio,
+   position:absolute por cima) -- não precisa trocar classe nem
+   remover nada na hora de colocar a imagem definitiva.
+
+   Observação honesta: CSS sozinho só detecta "sem src"/"src vazio"
+   (seletor abaixo) -- ele NÃO detecta uma imagem que tenta carregar e
+   falha (404 etc), isso exigiria um pingo de JS (ex: atributo
+   onerror="this.removeAttribute('src')"). Não usado, então, se um dia
+   quiser cobrir link quebrado também, é só isso.
+   ============================================================ */
+.selo-placeholder-box {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+  background: radial-gradient(circle at 32% 28%, #3a3f47 0%, #1a1d22 72%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.06), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.selo-placeholder-box::after {
+  content: "🏆";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  line-height: 1;
+  opacity: 0.55;
+}
+
+/* Variantes de cor/emoji -- mesma paleta escura, só muda o tom
+   (metálico cinza / dourado escuro / verde do app) e o símbolo. */
+.selo-placeholder-box.selo-placeholder-dourado {
+  background: radial-gradient(circle at 32% 28%, #4a3a18 0%, #241b09 72%);
+}
+.selo-placeholder-box.selo-placeholder-dourado::after {
+  content: "🏆";
+}
+
+.selo-placeholder-box.selo-placeholder-verde {
+  background: radial-gradient(circle at 32% 28%, #1c3a2a 0%, #0f1216 72%);
+}
+.selo-placeholder-box.selo-placeholder-verde::after {
+  content: "📍";
+}
+
+.selo-placeholder-box.selo-placeholder-bloqueado {
+  background: radial-gradient(circle at 32% 28%, #1c1e22 0%, #0b0c0e 72%);
+}
+.selo-placeholder-box.selo-placeholder-bloqueado::after {
+  content: "🔒";
+  font-size: 1.1rem;
+  opacity: 0.5;
+}
+
+.selo-placeholder-img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Sem src (ou src vazio): a <img> fica invisível -- o ::after do
+   container já preenche o espaço. Some sozinha assim que o src chegar. */
+.selo-placeholder-img:not([src]),
+.selo-placeholder-img[src=""] {
+  visibility: hidden;
 }
 
 /* Lightbox: clicar num selo da biblioteca abre a imagem grande aqui
@@ -3453,6 +3601,58 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 
 .selo-item span {
   line-height: 1.2;
+  text-align: center;
+  font-size: 0.75rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* ============================================================
+   ESTADO BLOQUEADO/DESBLOQUEADO -- padrão único nos 3 grids da
+   Biblioteca (Municípios/Regiões/Rotas), ver .locked/.unlocked
+   aplicadas em js/script.js.
+   ============================================================ */
+
+/* Bloqueado: filtro escuro direto na imagem (real ou o placeholder
+   canvas gerado por gerarSeloPlaceholder -- na prática É o caminho
+   mais comum, já que quase todo selo ainda usa esse placeholder em
+   vez de arte final) -- nada de cadeado amarelo solto no texto. */
+.selo-item.locked img {
+  filter: brightness(0.2) grayscale(100%);
+  border-color: #1E232B;
+  box-shadow: none;
+}
+
+.selo-item.locked span {
+  color: #777;
+  font-weight: 400;
+}
+
+/* Sem imagem NENHUMA ainda (nem o placeholder canvas chegou) --
+   reaproveita o placeholder de CSS puro (.selo-placeholder-box),
+   variante bloqueada: círculo bem escuro + cadeado cinza centralizado. */
+.selo-item.locked .selo-placeholder-box {
+  background: radial-gradient(circle at 32% 28%, #1c1e22 0%, #0b0c0e 72%);
+}
+.selo-item.locked .selo-placeholder-box::after {
+  content: "🔒";
+  font-size: 1rem;
+  opacity: 0.45;
+}
+
+/* Desbloqueado: sem borda sólida pesada -- só um brilho de fundo
+   (box-shadow leve) pra dar profundidade. .selo-item-brilhante
+   (dourado) fica de fora de propósito, tem o próprio box-shadow
+   dourado mais abaixo no arquivo e não pode ser sobrescrito por isso. */
+.selo-item.unlocked:not(.selo-item-brilhante) img {
+  border-color: transparent;
+  box-shadow: 0 0 8px 1px rgba(43, 213, 118, 0.35);
+}
+
+.selo-item.unlocked span {
+  color: var(--txt);
+  font-weight: 500;
 }
 
 /* Configurações */
@@ -6605,6 +6805,21 @@ select:focus {
   font-weight: 600 !important;
 }
 #ranking-abas .ranking-aba-ativa {
+  color: var(--txt) !important;
+  border-bottom-color: var(--verde) !important;
+}
+
+/* Biblioteca de selos: mesmo padrão minimalista. */
+#biblioteca-abas .biblioteca-aba {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: var(--fraco) !important;
+  font-weight: 600 !important;
+}
+#biblioteca-abas .biblioteca-aba-ativa {
   color: var(--txt) !important;
   border-bottom-color: var(--verde) !important;
 }
