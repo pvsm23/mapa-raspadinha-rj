@@ -5437,6 +5437,10 @@ body.modo-rota-ativo #toast-onde-estou {
    do selo pra fora, tipo um sol -- raios girando devagar (::before)
    por trás de um brilho pulsante (::after), tudo via CSS puro (sem
    nenhuma partícula criada por JS). */
+/* Selo dourado: efeito "light sweep" -- uma faixa de luz diagonal que
+   varre o selo de tempos em tempos (tipo reflexo em cartão holográfico),
+   recortada num círculo pra seguir o formato do selo. Substitui os
+   antigos raios girantes (removidos). */
 .selo-brilhante {
   position: relative;
   /* isolation: cria um contexto de empilhamento próprio -- sem isso,
@@ -5445,13 +5449,13 @@ body.modo-rota-ativo #toast-onde-estou {
      eram pintados ATRÁS do fundo opaco de #modal-conteudo, ficando
      escondidos mesmo com a animação rodando normalmente. */
   isolation: isolate;
-}
-
-/* Selo dourado: efeito "light sweep" -- uma faixa de luz diagonal que
-   varre o selo de tempos em tempos (tipo reflexo em cartão holográfico),
-   recortada num círculo pra seguir o formato do selo. Substitui os
-   antigos raios girantes (removidos). Ver .selo-brilhante-luz. */
-.selo-brilhante {
+  /* O border-radius é o que faltava: com overflow:hidden num elemento
+     SEM raio, o recorte era um retângulo, e os quatro cantos do
+     "quadrado invisível" apareciam por trás do selo redondo sempre que
+     a luz passava por eles. O aspect-ratio garante que 50% seja
+     círculo de verdade, e não elipse, se a altura vier do conteúdo. */
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
 }
 
@@ -6800,10 +6804,15 @@ body.modo-rota-ativo #toast-onde-estou {
   width: 200px;
 }
 
+/* Quadrado explícito: a imagem já é 1/1, mas o wrapper tirava a altura
+   do conteúdo. Sem isso, o border-radius:50% do .selo-brilhante virava
+   elipse enquanto a imagem não tivesse carregado, e o anel de "não
+   verificado" (::before, inset:-6px) ficava ovalado junto. */
 .selo-revelado-wrapper {
   position: relative;
   width: 300px;
   max-width: 100%;
+  aspect-ratio: 1 / 1;
   margin: 0 auto;
 }
 

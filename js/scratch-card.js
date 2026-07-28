@@ -47,20 +47,27 @@ function initScratchCard({
 
   const wrapper = document.createElement("div");
   wrapper.style.position = "relative";
-  wrapper.style.width = `${tamanho}px`;
-  wrapper.style.height = `${tamanho}px`;
+  // Quadrado que ENCOLHE se a tela for estreita (o selo de região/rota
+  // pede 400px, mais que a largura útil de um celular). Antes era
+  // width/height fixos: o wrapper estourava o modal e o canvas era
+  // espremido pelo CSS, então o desenho e o dedo paravam de coincidir.
+  wrapper.style.width = `min(${tamanho}px, 100%)`;
+  wrapper.style.aspectRatio = "1 / 1";
   wrapper.style.margin = "0 auto";
+  wrapper.style.borderRadius = "50%";
   wrapper.style.touchAction = "none"; // evita rolar a página ao raspar no celular
 
   const canvasImagem = document.createElement("canvas");
   const canvasRaspagem = document.createElement("canvas");
 
   [canvasImagem, canvasRaspagem].forEach((c) => {
-    c.width = tamanho;
-    c.height = tamanho;
+    // Tamanho VISUAL: sempre o wrapper inteiro, nos dois canvases. É o
+    // que garante que a área raspável e o selo por baixo tenham
+    // exatamente as mesmas dimensões.
     c.style.position = "absolute";
-    c.style.top = "0";
-    c.style.left = "0";
+    c.style.inset = "0";
+    c.style.width = "100%";
+    c.style.height = "100%";
     c.style.borderRadius = "50%";
     // Sem isso, arrastar o dedo pra raspar dentro de um painel que
     // rola (a folha deslizante do popup) vira ROLAGEM em vez de
@@ -72,8 +79,49 @@ function initScratchCard({
   wrapper.appendChild(canvasRaspagem);
   container.appendChild(wrapper);
 
+  /* ---- Resolução real (devicePixelRatio) ----
+     O buffer interno do canvas precisa ter os pixels FÍSICOS da tela,
+     não os lógicos do CSS: num celular com DPR 3, um canvas de 190
+     pixels internos esticado pra 190px de CSS é ampliado 3x pela GPU e
+     sai borrado. Teto de 3 porque acima disso o ganho é imperceptível
+     e o getImageData (que roda a cada movimento do dedo) fica caro.
+
+     A medição vem do wrapper JÁ NO DOM, não do parâmetro `tamanho`:
+     com o min() acima, o lado real pode ser menor que o pedido. O
+     fallback cobre o caso de o container estar oculto na hora (rect 0).
+
+     Depois disso, todo o resto do arquivo continua desenhando em
+     unidades de `tamanho` -- o setTransform faz a conversão. */
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const ladoCss = Math.round(wrapper.getBoundingClientRect().width) || tamanho;
+  const ladoBuffer = Math.round(ladoCss * dpr);
+
   const ctxImagem = canvasImagem.getContext("2d");
   const ctxRaspagem = canvasRaspagem.getContext("2d");
+
+  [canvasImagem, canvasRaspagem].forEach((c) => {
+    c.width = ladoBuffer;
+    c.height = ladoBuffer;
+    const ctx = c.getContext("2d");
+    ctx.setTransform(ladoBuffer / tamanho, 0, 0, ladoBuffer / tamanho, 0, 0);
+    // As artes são 768x768 e aparecem a ~190px: sem interpolação boa, o
+    // downscale come os detalhes finos do selo.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+  });
+
+  /** Recorta o que já está pintado no contexto num círculo perfeito.
+   *  Usado na capa: o canvas é quadrado e só o círculo aparece
+   *  (border-radius), mas os cantos continuavam OPACOS no bitmap --
+   *  contavam como "por raspar" numa área que o dedo nem alcança. */
+  function recortarEmCirculo(ctx) {
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.beginPath();
+    ctx.arc(tamanho / 2, tamanho / 2, tamanho / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
   // 1. Carrega e desenha o selo colorido
   const img = new Image();
@@ -83,12 +131,20 @@ function initScratchCard({
   };
   img.src = imageUrl;
 
+  // Quantos pixels a capa tinha ANTES de qualquer raspagem. Precisa
+  // estar declarado ACIMA do bloco que pinta a capa: no ramo sem
+  // imagem, medirCapaInicial() roda de imediato (não espera onload) e
+  // esbarraria na temporal dead zone do `let`.
+  let pixelsCapaInicial = 0;
+
   // 2. Pinta a "capa" que sera raspada
   if (imageUrlCapa) {
     const imgCapa = new Image();
     imgCapa.crossOrigin = "anonymous";
     imgCapa.onload = () => {
       ctxRaspagem.drawImage(imgCapa, 0, 0, tamanho, tamanho);
+      recortarEmCirculo(ctxRaspagem);
+      medirCapaInicial();
     };
     imgCapa.src = imageUrlCapa;
   } else {
@@ -108,22 +164,41 @@ function initScratchCard({
     ctxRaspagem.font = `${Math.max(9, Math.round(tamanho * 0.07))}px sans-serif`;
     ctxRaspagem.textAlign = "center";
     ctxRaspagem.fillText("raspe aqui", tamanho / 2, tamanho / 2 + 4);
+    recortarEmCirculo(ctxRaspagem);
+    medirCapaInicial();
   }
 
   let raspando = false;
   let concluido = false;
   let primeiroToqueDisparado = false;
 
+  function contarPixelsOpacos() {
+    // getImageData trabalha em pixels FÍSICOS: ignora o setTransform.
+    const dados = ctxRaspagem.getImageData(0, 0, canvasRaspagem.width, canvasRaspagem.height).data;
+    let opacos = 0;
+    // Amostragem: 1 pixel a cada 4 (i += 16 bytes) -- roda a cada
+    // movimento do dedo, precisa ser barato.
+    for (let i = 3; i < dados.length; i += 16) {
+      if (dados[i] !== 0) opacos++;
+    }
+    return opacos;
+  }
+
+  function medirCapaInicial() {
+    pixelsCapaInicial = contarPixelsOpacos();
+  }
+
   function coordenadasEvento(evento) {
     const rect = canvasRaspagem.getBoundingClientRect();
     const ponto = evento.touches ? evento.touches[0] : evento;
-    // considera a escala entre o tamanho real do canvas e o
-    // tamanho exibido na tela (importante se o CSS redimensionar)
-    const escalaX = canvasRaspagem.width / rect.width;
-    const escalaY = canvasRaspagem.height / rect.height;
+    // rect vem em px de CSS; o desenho acontece em unidades de
+    // `tamanho`. Essa razão é o que mantém o pincel exatamente debaixo
+    // do dedo mesmo quando o wrapper encolheu pelo min() (celular
+    // estreito) -- e vale 1 quando não encolheu.
+    const escala = tamanho / (rect.width || tamanho);
     return {
-      x: (ponto.clientX - rect.left) * escalaX,
-      y: (ponto.clientY - rect.top) * escalaY,
+      x: (ponto.clientX - rect.left) * escala,
+      y: (ponto.clientY - rect.top) * escala,
     };
   }
 
@@ -135,16 +210,21 @@ function initScratchCard({
     if (typeof tocarSomRaspar === "function") tocarSomRaspar();
   }
 
+  /* Progresso relativo à CAPA, não ao quadrado do canvas.
+     Antes o cálculo era "pixels transparentes / área total do
+     quadrado", e isso quebrava de dois jeitos:
+     - os cantos fora do círculo nunca podiam ser raspados (o
+       border-radius não deixa o dedo chegar lá), mas contavam como
+       área a raspar -- são ~21% do quadrado, então com o limiar em
+       0.92 a capa cinza lisa era IMPOSSÍVEL de concluir;
+     - a moldura transparente do webp já entrava como "raspado" de
+       graça, então cada arte terminava numa hora diferente.
+     Medindo contra a capa real, 100% quer dizer "a capa acabou",
+     qualquer que seja o formato dela. */
   function calcularPorcentagemRaspada() {
-    const dados = ctxRaspagem.getImageData(0, 0, tamanho, tamanho).data;
-    let transparentes = 0;
-    const totalPixels = dados.length / 4;
-
-    // Amostragem a cada 4 pixels para performance
-    for (let i = 3; i < dados.length; i += 16) {
-      if (dados[i] === 0) transparentes++;
-    }
-    return transparentes / (totalPixels / 4);
+    if (!pixelsCapaInicial) return 0;
+    const restantes = contarPixelsOpacos();
+    return 1 - restantes / pixelsCapaInicial;
   }
 
   function revelarTudo() {
