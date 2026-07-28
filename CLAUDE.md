@@ -37,55 +37,65 @@ Netlify (web) · GitHub Releases (APK, via `tools/publicar-apk.ps1`).
 Build APK: `node tools/montar-www.js && npx cap sync android && cd
 android && ./gradlew assembleDebug bundleRelease`.
 
-## Última funcionalidade (v0.11.5)
+## Última funcionalidade (v0.11.11)
 
-- **Loja Desbrava**: e-commerce gamificado, SEM gateway de pagamento
-  real (`criarPedido` só registra a intenção de compra no Firestore,
-  coleção `pedidos`, não cobra nada de verdade). Catálogo em
-  `produtos` (nome/descrição/imagemUrl/tipo físico-digital/estoque/
-  valorBase/regraDesbloqueio/status oculto-em_breve-ativo), CRUD só
-  pelo admin (`UID_DONO`) num painel dentro de `#modal-admin`.
-  - **Gamificação (silhueta)**: produto "ativo" com município da
-    `regraDesbloqueio` ainda não raspado (`estaVerificado`) aparece
-    com filtro escuro + cadeado na vitrine, botão de compra desativado.
-  - **Voucher do Motoclube**: `souMembroMotoclube()` ganha R$4,90/mês,
-    não cumulativo (`ultimoMesUsoVoucher` em `usuarios/{uid}`),
-    aplicado automaticamente no resumo do checkout.
-  - **Frete mockado via ViaCEP**: físico RJ=R$15, outros estados=R$35,
-    digital=grátis.
-- **3 recursos PRO do Motoclube ligados ao Modo Viagem** (gate
-  `souMembroMotoclube()`, mesma regra de "gratuito por enquanto" do
-  Motoclube):
-  - **Garagem Virtual** (até 3 motos por usuário, `garagem/{uid}/motos/{id}`,
-    com abas Criar/Editar/Estatísticas): marca/modelo/apelido + odômetro
-    somado sozinho pela moto "ativa" ao encerrar um Modo Viagem.
-    Estritamente privado (regra Firestore só permite o dono
-    ler/escrever) — nunca aparece em perfil público.
-  - **Trilha do trajeto**: Modo Viagem grava as coordenadas percorridas;
-    ao encerrar, dá pra salvar como `rotasPersonalizadas` (campo
-    `trilha`), privada por padrão (`publica: false` — aviso: a leitura
-    dessa coleção continua liberada por id pra qualquer logado, é o
-    que faz o link compartilhado funcionar; "privada" aqui é só não
-    aparecer em listagem nenhuma).
-  - **Resumo + compartilhamento**: tela com km/tempo/municípios e
-    geração de imagem via `<canvas>` (cartão do app ou por cima de
-    foto escolhida no aparelho), pra postar na Comunidade (reusa
-    `criarPost`) ou compartilhar fora do app (Web Share API).
-  - Log privado das viagens: coleção `viagens` (append-only, só o dono
-    lê; ganhou o campo `motoId` pra estatística por moto).
-- **Modo Viagem** (base, gratuita pra todos): substituiu de vez o
-  rastreio em segundo plano (`@capacitor/background-runner`, removido
-  do projeto). Foreground service explícito
-  (`@capacitor-community/background-geolocation`), ligado só pelo
-  botão flutuante acima da bússola, com notificação fixa enquanto
-  ativo. Sem `ACCESS_BACKGROUND_LOCATION` no manifest (motivo da
-  rejeição na Play Store). Município detectado vira
-  `municipiosPendentesVerificados` (localStorage) até a pessoa tocar
-  pra raspar.
-- Firestore com `persistentLocalCache` (grava progresso offline, em
-  estrada sem sinal, e sincroniza sozinho depois).
-- Motoclube Desbrava: dicas/lojas (peças, oficinas, acessórios...) com
-  filtro de marca/modelo, coleção `motoclubeItens`. Gratuito hoje,
-  preparado pra cobrança futura (ver regra fixa acima).
-- Rotas personalizadas (sem selo): criar/salvar/compartilhar (link ou
-  post na Comunidade), coleção `rotasPersonalizadas`.
+**Onda de redesign visual** (v0.11.6 a v0.11.11) — a maior parte das
+telas do app passou por uma limpeza de UI, todas seguindo o mesmo
+padrão minimalista de tabs (texto cinza inativo, branco + risco verde
+embaixo quando ativo — classe `.social-aba`, reaplicada em
+`.ranking-aba`/`.biblioteca-aba`) e um componente de avatar circular
+reutilizável (`corAvatar`/`iniciaisApelido` em `js/script.js`, iniciais
+sobre gradiente determinístico):
+- **Menu inferior**: reorganizado em seções (Minha Jornada/Explorar/
+  Sistema); Check-in semanal descontinuado por completo (removido de
+  HTML/JS/CSS/README); Perfil só abre pelo avatar da topbar.
+- **Configurações**: virou cards (`.settings-card`) com toggles CSS
+  (`.settings-toggle-switch`) no lugar de checkbox nativo.
+- **Comunidade**: feed estilo Instagram/Threads, sem cartões pesados
+  (só `border-bottom` fino entre posts), FAB circular pra postar,
+  menções `@nome` destacadas (`destacarMencoes` em `js/script.js`).
+- **Amigos**: busca contínua (sem botão), avatar, menu "⋮" no lugar do
+  botão vermelho de remover (`.amigo-menu`, com "Marcar como Parceiro
+  de Estrada" como placeholder pra feature futura).
+- **Ranking**: pódio com medalha (🥇🥈🥉) nos 3 primeiros, linha do
+  usuário (`.ranking-me`) fixa no rodapé (`position: sticky`) quando
+  ele não aparece no topo 50.
+- **Biblioteca de selos**: virou álbum com 3 abas (Municípios/Regiões/
+  Rotas — Conquistas saiu daqui, já tem modal próprio) + filtro de
+  status (Todos/Conquistados/Faltam via classes `.locked`/`.unlocked`).
+  Estado bloqueado padronizado (`filter: brightness(0.2) grayscale(100%)`
+  na imagem, sem cadeado amarelo no texto).
+- **Placeholder CSS puro** (`.selo-placeholder-box`/`.selo-placeholder-img`
+  em `css/styles.css`): círculo com gradiente + emoji via `::after`
+  pra qualquer selo/medalha sem arte ainda — a imagem real cobre
+  perfeitamente assim que ganha `src`, sem trocar classe.
+- **Perfil**: crachá "👑 Membro Desbrava"/"Desbravador" (via
+  `souMembroMotoclube()`), dashboard 2x2 (Municípios/Selos Dourados/
+  Rotas Concluídas/Regiões), minimapa com cantos arredondados, e só os
+  4 selos mais recentes (`renderizarUltimosConquistadosPerfil`) no
+  lugar da Biblioteca inteira repetida — com botão "Ver Biblioteca
+  Completa" (só no próprio perfil).
+
+**Loja Desbrava** (v0.11.5): e-commerce gamificado, SEM gateway de
+pagamento real (`criarPedido` só registra a intenção de compra,
+coleção `pedidos`). Catálogo em `produtos`, CRUD só pelo admin
+(`UID_DONO`). Produto bloqueado (município da `regraDesbloqueio` não
+raspado) aparece em silhueta. Voucher do Motoclube (R$4,90/mês, não
+cumulativo) aplicado no checkout. Frete mockado via ViaCEP.
+
+**3 recursos PRO do Motoclube ligados ao Modo Viagem** (v0.11.3-0.11.4):
+Garagem Virtual (até 3 motos, odômetro somado sozinho pela moto
+"ativa"), trilha do trajeto salvável como `rotasPersonalizadas`,
+resumo + compartilhamento via `<canvas>`.
+
+**Modo Viagem** (v0.11.2, base gratuita pra todos): substituiu o
+rastreio em segundo plano (`@capacitor/background-runner`, removido —
+exigia `ACCESS_BACKGROUND_LOCATION`, motivo de rejeição na Play
+Store) por foreground service explícito
+(`@capacitor-community/background-geolocation`), ligado só pelo botão
+flutuante acima da bússola.
+
+Firestore com `persistentLocalCache`. Motoclube Desbrava (dicas/lojas,
+coleção `motoclubeItens`) e rotas personalizadas (sem selo, coleção
+`rotasPersonalizadas`) gratuitos, mesma regra do Plano PRO pra cobrança
+futura.
