@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.16";
+const VERSAO_APP = "0.11.17";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.16";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.17", itens: ["A escolha de tema virou quatro botõezinhos lado a lado (Sistema/Claro/Escuro/Auto), no lugar da listinha cinza do celular que destoava do app. Na primeira vez que você abre o Desbrava, ele pergunta se pode usar o sensor de luz pra clarear o mapa no sol — e agora os avisos aparecem como mensagem flutuante, sem caixa do sistema travando a tela."] },
   { versao: "0.11.16", itens: ["Tema Claro (e Automático, via sensor de luz do aparelho quando suportado) nas Configurações, ícone de configurações trocado de sol pra engrenagem, Modo Viagem virou um botão flutuante verde de destaque, e a dica de arrastar/zoom some sozinha depois de alguns segundos."] },
   { versao: "0.11.15", itens: ["Garagem Virtual com cara de painel automotivo: abas viraram um segmented control contínuo, a lista de motos duplicada deu lugar a um card seletor (moto atual + setas pra trocar), e a aba Estatísticas ganhou um dashboard de verdade com o odômetro em destaque."] },
   { versao: "0.11.14", itens: ["Conquistas em lista horizontal (medalha + descrição lado a lado) em vez dos cards gigantes de antes — cabe muito mais na tela, sem cadeado amarelo enorme, com selo de raridade colorido por nível e barra de progresso mais fina."] },
@@ -487,7 +488,7 @@ async function ligarSensorLuz() {
         // já estava funcionando e caiu no meio do caminho -- avisa e
         // volta pro Sistema sozinho, do mesmo jeito que uma falha
         // logo de cara.
-        alert("O sensor de luz parou de funcionar nesse aparelho. Voltando pro tema Sistema.");
+        mostrarToastApp("O sensor de luz parou de funcionar. Voltando pro tema Sistema.");
         definirTema("sistema");
       }
     });
@@ -501,34 +502,73 @@ async function ligarSensorLuz() {
 }
 
 /**
- * Ponto de entrada único pra trocar de tema -- chamado pelo
- * #select-aparencia em Configurações e na inicialização (pra
+ * Toast flutuante de rodapé (#toast-app), genérico. Existe porque
+ * alert()/confirm() nativos quebram o visual do app no Android (caixa
+ * do sistema, com o domínio do site no cabeçalho) e travam a tela até
+ * o usuário tocar em OK.
+ * Chamadas seguidas reaproveitam o mesmo elemento: o timer anterior é
+ * cancelado, senão o toast novo sumiria junto com o antigo.
+ */
+let timerToastApp = null;
+function mostrarToastApp(mensagem, duracao = 3200) {
+  const toast = document.getElementById("toast-app");
+  if (!toast) return;
+  clearTimeout(timerToastApp);
+  toast.textContent = mensagem;
+  toast.classList.remove("oculto", "toast-saindo");
+  void toast.offsetHeight; // reinicia a animação de entrada
+  timerToastApp = setTimeout(() => {
+    toast.classList.add("toast-saindo");
+    timerToastApp = setTimeout(() => toast.classList.add("oculto"), 220);
+  }, duracao);
+}
+
+/** Marca qual botão do segmented control está ativo (visual +
+ *  aria-checked pro leitor de tela). */
+function sincronizarAparenciaUI(modo) {
+  document.querySelectorAll(".aparencia-opcao").forEach((botao) => {
+    const ativo = botao.dataset.tema === modo;
+    botao.classList.toggle("active", ativo);
+    botao.setAttribute("aria-checked", ativo ? "true" : "false");
+  });
+}
+
+/**
+ * Ponto de entrada único pra trocar de tema -- chamado pelo segmented
+ * control em Configurações, pelo onboarding e na inicialização (pra
  * restaurar o que ficou salvo). Sempre para o sensor primeiro: só o
  * modo "automatico" pode religá-lo.
+ * `silencioso` desliga o toast de erro: o onboarding cai pra "sistema"
+ * sem avisar nada (o usuário só pediu pra tentar), enquanto em
+ * Configurações ele escolheu "Auto" de propósito e merece saber por
+ * que o botão voltou sozinho.
+ * Devolve o modo que REALMENTE valeu no fim -- quem chama não pode
+ * assumir que "automatico" pegou.
  */
-async function definirTema(modo) {
+async function definirTema(modo, { silencioso = false } = {}) {
   pararSensorLuz();
-  const select = document.getElementById("select-aparencia");
   const status = document.getElementById("aparencia-status");
 
   if (modo === "automatico") {
-    if (status) {
+    if (status && !silencioso) {
       status.textContent = "Pedindo acesso ao sensor de luz do aparelho...";
       status.classList.remove("oculto");
     }
     try {
       await ligarSensorLuz();
       localStorage.setItem(CHAVE_TEMA, modo);
-      if (select) select.value = modo;
+      sincronizarAparenciaUI(modo);
+      // Esse texto vale mesmo no modo silencioso: se o sensor pegou na
+      // inicialização, Configurações precisa explicar por que a tela
+      // troca de tema sozinha quando o usuário abrir mais tarde.
       if (status) {
         status.textContent = "Automático: acompanhando a luz do ambiente pra trocar de tema sozinho.";
+        status.classList.remove("oculto");
       }
-      return;
+      return modo;
     } catch (erro) {
       console.error("Não foi possível ligar o sensor de luz:", erro);
-      alert(
-        "Esse aparelho não suporta o sensor de luz ambiente (é o caso de todo iPhone, e da maioria dos Android) ou a permissão foi negada. Voltando para o tema Sistema."
-      );
+      if (!silencioso) mostrarToastApp("Seu dispositivo não suporta o sensor de luz.");
       modo = "sistema";
     }
   }
@@ -536,21 +576,97 @@ async function definirTema(modo) {
   if (status) status.classList.add("oculto");
   aplicarDataTheme(modo);
   localStorage.setItem(CHAVE_TEMA, modo);
-  if (select) select.value = modo;
+  sincronizarAparenciaUI(modo);
+  return modo;
 }
 
-/** Restaura o tema salvo (ou "sistema" por padrão) e liga o
- *  select de Configurações. */
+/* A primeira abertura do app já tem uma FILA de modais: boas-vindas ->
+   aviso de "em desenvolvimento" (ver mostrarBoasVindasSeNecessario).
+   O convite do sensor entra no fim dessa fila, nunca por cima dela --
+   por isso a flag: configurarAparencia só marca que está pendente, e
+   quem fecha a última modal da fila é que chama de fato. */
+let aparenciaPendenteOnboarding = false;
+
+function talvezAbrirOnboardingSensor() {
+  if (!aparenciaPendenteOnboarding) return;
+  aparenciaPendenteOnboarding = false;
+  abrirOnboardingSensor();
+}
+
+/**
+ * Onboarding do sensor de luz, uma única vez (primeira abertura, quando
+ * ainda não há nada em desbrava_tema). Os dois botões gravam alguma
+ * coisa no localStorage justamente pra essa modal não voltar nunca
+ * mais -- inclusive quando o sensor falha.
+ */
+function abrirOnboardingSensor() {
+  const modal = document.getElementById("modal-sensor-luz");
+  const btnPermitir = document.getElementById("btn-sensor-permitir");
+  const btnNegar = document.getElementById("btn-sensor-negar");
+  if (!modal || !btnPermitir || !btnNegar) {
+    // Sem a modal no HTML, não deixa o app sem preferência salva.
+    definirTema("sistema");
+    return;
+  }
+
+  const fechar = () => modal.classList.add("oculto");
+
+  btnPermitir.addEventListener(
+    "click",
+    async () => {
+      btnPermitir.disabled = true;
+      // Silencioso: se não rolar (iPhone, Chrome moderno, permissão
+      // negada), cai pra "sistema" sem toast -- ver definirTema.
+      await definirTema("automatico", { silencioso: true });
+      fechar();
+    },
+    { once: true }
+  );
+
+  btnNegar.addEventListener("click", () => {
+    definirTema("sistema");
+    fechar();
+  }, { once: true });
+
+  modal.classList.remove("oculto");
+}
+
+/** Restaura o tema salvo e liga o segmented control de Configurações.
+ *  Sem nada salvo = primeira abertura: aplica "sistema" na hora (pra
+ *  tela não ficar sem tema enquanto a modal está aberta) e propõe o
+ *  sensor de luz. */
 function configurarAparencia() {
-  const select = document.getElementById("select-aparencia");
-  const salvo = localStorage.getItem(CHAVE_TEMA) || "sistema";
+  const salvo = localStorage.getItem(CHAVE_TEMA);
+
+  document.querySelectorAll(".aparencia-opcao").forEach((botao) => {
+    botao.addEventListener("click", () => definirTema(botao.dataset.tema));
+  });
+
+  if (!salvo) {
+    // Tema aplicado na hora pra tela não ficar "sem tema" enquanto a
+    // fila de modais da 1ª abertura roda; a pergunta do sensor fica
+    // pendente e sai no fim da fila (ver talvezAbrirOnboardingSensor).
+    aplicarDataTheme("sistema");
+    sincronizarAparenciaUI("sistema");
+    aparenciaPendenteOnboarding = true;
+    // Quem já usava o app (atualizou de uma versão sem tema) não passa
+    // mais por aquela fila -- pra esse caso, abre direto, com um
+    // respiro pro mapa pintar antes.
+    if (
+      localStorage.getItem(CHAVE_BOAS_VINDAS_VISTAS) &&
+      localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)
+    ) {
+      setTimeout(talvezAbrirOnboardingSensor, 800);
+    }
+    return;
+  }
+
   if (salvo === "automatico") {
-    definirTema("automatico");
+    definirTema("automatico", { silencioso: true });
   } else {
     aplicarDataTheme(salvo);
-    if (select) select.value = salvo;
+    sincronizarAparenciaUI(salvo);
   }
-  select?.addEventListener("change", (evento) => definirTema(evento.target.value));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -6337,13 +6453,19 @@ const CHAVE_AVISO_DESENVOLVIMENTO_VISTO = "scratchMapRJ_aviso_dev_visto_v1";
  * das boas-vindas (ver mostrarBoasVindasSeNecessario/fecharBoasVindas).
  */
 function mostrarAvisoDesenvolvimentoSeNecessario() {
-  if (localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)) return;
+  if (localStorage.getItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO)) {
+    // Fim da fila sem ter nada pra mostrar: passa a vez pro convite do
+    // sensor de luz, se estiver pendente.
+    talvezAbrirOnboardingSensor();
+    return;
+  }
   document.getElementById("modal-aviso-desenvolvimento").classList.remove("oculto");
 }
 
 function fecharAvisoDesenvolvimento() {
   localStorage.setItem(CHAVE_AVISO_DESENVOLVIMENTO_VISTO, "true");
   document.getElementById("modal-aviso-desenvolvimento").classList.add("oculto");
+  talvezAbrirOnboardingSensor();
 }
 
 /* ============================================================

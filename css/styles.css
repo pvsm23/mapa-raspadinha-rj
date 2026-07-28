@@ -6084,6 +6084,68 @@ body.modo-rota-ativo #toast-onde-estou {
   margin: 0 0 6px;
 }
 
+/* ---- Aparência: segmented control (4 opções) ----
+   Mesmo padrão das abas da Garagem (#garagem-abas): uma trilha
+   contínua em var(--bg) com os botões transparentes por cima, então
+   os inativos "afundam" no recesso escuro sem precisar de um
+   rgba() fixo -- que inverteria errado no tema Claro. Só o ativo
+   ganha pill, aqui no verde do app em vez do cinza da Garagem,
+   porque tema é uma escolha ligada/desligada, não navegação. */
+/* Tudo aqui é escopado em #configuracoes-conteudo e com !important de
+   propósito: a "CAMADA UI MODERNA" (fim deste arquivo) força
+   background/color/border/box-shadow em TODO #configuracoes-conteudo
+   button, e ela vence por especificidade + !important. Sem isso, o
+   botão ativo sai cinza (var(--surf2)) em vez de verde. */
+#configuracoes-conteudo #aparencia-opcoes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  padding: 3px;
+  margin: 2px 0 0;
+}
+
+#configuracoes-conteudo .aparencia-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: auto;
+  margin: 0;
+  padding: 7px 2px;
+  background: transparent !important;
+  color: var(--fraco) !important;
+  border: none !important;
+  border-radius: 9px !important;
+  box-shadow: none !important;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.aparencia-opcao-icone {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* var(--verde-tinta) (e não #FFF) é o texto sobre o verde vibrante:
+   fica legível nos dois temas, já que o verde não muda. */
+#configuracoes-conteudo .aparencia-opcao.active {
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+  box-shadow: 0 1px 5px rgba(43, 213, 118, 0.3) !important;
+}
+
+#configuracoes-conteudo .aparencia-opcao:active {
+  transform: scale(0.96);
+}
+
 #aparencia-status {
   font-size: 0.78rem;
   color: var(--fraco);
@@ -6092,6 +6154,140 @@ body.modo-rota-ativo #toast-onde-estou {
 
 #aparencia-status.oculto {
   display: none;
+}
+
+/* ---- Onboarding do sensor de luz (1ª abertura do app) ---- */
+#modal-sensor-luz {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Acima da fila de modais da 1ª abertura (boas-vindas = 250): elas
+     não devem coexistir (ver talvezAbrirOnboardingSensor), mas se
+     alguma demorar a fechar, o convite não pode ficar enterrado. */
+  z-index: 260;
+  padding: 20px;
+  animation: janela-fade 0.2s ease;
+}
+
+#modal-sensor-luz.oculto {
+  display: none;
+}
+
+#sensor-luz-conteudo {
+  background: var(--surf);
+  border: 1px solid var(--linha);
+  border-radius: 20px;
+  padding: 26px 22px 20px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#sensor-luz-icone {
+  font-size: 2.4rem;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+#sensor-luz-conteudo h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  color: var(--txt);
+}
+
+#sensor-luz-conteudo p {
+  margin: 0 0 20px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+#sensor-luz-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#sensor-luz-acoes button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#btn-sensor-permitir {
+  background: var(--verde);
+  color: var(--verde-tinta);
+}
+
+/* Recusar é ghost (só texto): não compete com "Permitir", mas
+   continua com área de toque cheia. */
+#btn-sensor-negar {
+  background: transparent;
+  color: var(--fraco);
+  font-weight: 600;
+}
+
+/* ---- Toast de rodapé, genérico (mostrarToastApp) ----
+   Os toasts que já existiam (#toast-onde-estou, #toast-login) são de
+   mapa/login e ficam no topo/canto; este nasceu pra erro dentro de
+   modal, por isso rodapé + z-index acima de tudo. Centralizado por
+   margin auto, não por translateX -- assim a animação de entrada
+   pode usar transform sem brigar com a centralização. */
+#toast-app {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  max-width: min(88vw, 340px);
+  z-index: 460;
+  background: var(--vidro);
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  padding: 11px 18px;
+  color: var(--txt);
+  font-size: 0.82rem;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  animation: entrar-toast-rodape 0.22s ease;
+}
+
+#toast-app.oculto {
+  display: none;
+}
+
+/* Saída: some sozinho depois do timer (ver mostrarToastApp). */
+#toast-app.toast-saindo {
+  animation: sair-toast-rodape 0.22s ease forwards;
+}
+
+@keyframes entrar-toast-rodape {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes sair-toast-rodape {
+  to {
+    transform: translateY(14px);
+    opacity: 0;
+  }
 }
 
 /* ---- Perfil no estilo do app (cabeçalho + dashboard + minimapa +
