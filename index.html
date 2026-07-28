@@ -410,8 +410,9 @@
 
       <!-- FAB (Floating Action Button) fixo no canto inferior direito
            do painel -- mesmo id/handler de sempre
-           (alternarFormularioCriarPost em js/script.js), só mudou de
-           bloco cheio no topo pra um botão circular flutuante. -->
+           só mudou de bloco cheio no topo pra um botão circular
+           flutuante. Hoje abre o sheet #modal-novo-post
+           (abrirModalNovoPost em js/script.js). -->
       <button type="button" id="btn-abrir-criar-post" aria-label="Postar uma foto" title="Postar uma foto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -420,32 +421,9 @@
         </svg>
       </button>
 
-      <div id="social-form-post" class="oculto">
-        <label for="input-foto-post">Foto</label>
-        <input type="file" id="input-foto-post" accept="image/*">
-        <img id="preview-foto-post" class="oculto" alt="Prévia da foto">
-
-        <textarea id="input-legenda-post" rows="3" maxlength="500" placeholder="Escreva uma legenda..."></textarea>
-
-        <label for="select-municipio-post">Marcar município (opcional)</label>
-        <select id="select-municipio-post">
-          <option value="">Nenhum</option>
-        </select>
-
-        <label for="input-marcar-pessoa">Marcar pessoas (opcional)</label>
-        <div id="social-marcar-pessoas">
-          <input type="text" id="input-marcar-pessoa" placeholder="Apelido de quem marcar">
-          <button type="button" id="btn-marcar-pessoa">Adicionar</button>
-        </div>
-        <div id="lista-pessoas-marcadas"></div>
-        <p id="social-form-erro" class="oculto"></p>
-
-        <button type="button" id="btn-publicar-post">
-          <span class="btn-texto">Publicar</span>
-          <span class="spinner oculto"></span>
-        </button>
-        <p id="social-form-status" class="oculto"></p>
-      </div>
+      <!-- O formulário de criar post saiu daqui: virou o bottom sheet
+           #modal-novo-post, no fim deste arquivo. Inline, ele empurrava
+           o feed inteiro pra baixo toda vez que o FAB era tocado. -->
 
       <div id="social-feed"></div>
       <button type="button" id="btn-social-carregar-mais" class="oculto">Carregar mais</button>
@@ -1019,53 +997,33 @@
        usuários, um feed PRÓPRIO POR MUNICÍPIO (ver
        abrirSugestoesComunidade em js/script.js). Sempre ordenado por
        mais curtido primeiro; dá pra trocar de município de dentro do
-       próprio modal (select-sugestoes-municipio), sem precisar fechar
-       e abrir outro no mapa. -->
+       próprio modal (#btn-municipio-sugestoes abre o seletor com
+       busca), sem precisar fechar e abrir outro no mapa. -->
   <div id="modal-sugestoes-comunidade" class="oculto">
     <div id="sugestoes-comunidade-conteudo">
       <button id="btn-fechar-sugestoes-comunidade" aria-label="Fechar">✕</button>
       <h2>💡 Sugestões da Comunidade</h2>
 
-      <label for="select-sugestoes-municipio">Município</label>
-      <select id="select-sugestoes-municipio"></select>
+      <!-- Município: botão que abre o seletor com busca
+           (#modal-escolher-municipio, reaproveitado pelo Novo Post) --
+           o <select> nativo com 92 opções era uma roleta gigante
+           desenhada pelo sistema, sem busca. -->
+      <button type="button" id="btn-municipio-sugestoes" class="campo-seletor">
+        <span class="campo-seletor-rotulo">Município</span>
+        <span class="campo-seletor-valor" id="btn-municipio-sugestoes-valor">—</span>
+        <svg class="campo-seletor-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
 
-      <label for="select-sugestoes-categoria">Categoria</label>
-      <select id="select-sugestoes-categoria">
-        <option value="">Todas as categorias</option>
-      </select>
+      <!-- Categorias: barra rolável de chips. Preenchida por
+           renderizarChipsCategoriaSugestao (js/script.js) a partir de
+           CATEGORIAS_SUGESTAO, com "Todas" na frente. -->
+      <div id="sugestoes-chips" class="chip-barra" role="tablist" aria-label="Filtrar por categoria"></div>
 
       <button type="button" id="btn-abrir-nova-sugestao">➕ Sugerir um lugar</button>
 
-      <div id="sugestoes-form" class="oculto">
-        <label for="input-titulo-sugestao">Nome do lugar</label>
-        <input type="text" id="input-titulo-sugestao" maxlength="80" placeholder="Ex: Cachoeira do Corumbá">
-
-        <label for="select-categoria-sugestao">Categoria</label>
-        <select id="select-categoria-sugestao"></select>
-
-        <label for="input-descricao-sugestao">Descrição</label>
-        <textarea id="input-descricao-sugestao" rows="3" maxlength="500" placeholder="Conte um pouco sobre o lugar..."></textarea>
-
-        <label for="input-link-maps-sugestao">Link do Google Maps (opcional)</label>
-        <input type="url" id="input-link-maps-sugestao" placeholder="https://maps.app.goo.gl/...">
-
-        <label for="input-foto-sugestao">Foto (opcional)</label>
-        <input type="file" id="input-foto-sugestao" accept="image/*">
-        <img id="preview-foto-sugestao" class="oculto" alt="Prévia da foto">
-
-        <label id="label-anonimo-sugestao">
-          <input type="checkbox" id="check-anonimo-sugestao">
-          Postar de forma anônima
-        </label>
-
-        <p id="sugestao-form-erro" class="oculto"></p>
-        <button type="button" id="btn-publicar-sugestao">
-          <span class="btn-texto">Publicar sugestão</span>
-          <span class="spinner oculto"></span>
-        </button>
-        <p id="sugestao-form-status" class="oculto"></p>
-      </div>
-
+      <!-- Grid de cards estilo guia de viagem (ver
+           renderizarCardSugestao). O formulário que ficava aqui virou
+           o bottom sheet #modal-nova-sugestao. -->
       <div id="sugestoes-lista"></div>
     </div>
   </div>
@@ -1663,6 +1621,148 @@
       <button id="btn-fechar-novidades" aria-label="Fechar">✕</button>
       <h2>O que mudou</h2>
       <div id="novidades-lista"></div>
+    </div>
+  </div>
+
+  <!-- ================= BOTTOM SHEETS ==================
+       Três folhas deslizantes que substituíram formulários inline.
+       Todas seguem a mesma casca (.sheet-overlay > .sheet), com
+       cabeçalho fixo e corpo rolável, e fecham tocando no fundo.
+       Ver abrirSheet/fecharSheet em js/script.js.
+       IMPORTANTE: os ids dos campos são os MESMOS de antes (ex.
+       #input-foto-post), então publicarPost/publicarSugestao seguem
+       lendo os mesmos elementos -- só mudou onde eles moram. -->
+
+  <!-- Nova publicação (aberta pelo FAB do feed) -->
+  <div id="modal-novo-post" class="sheet-overlay oculto">
+    <div id="novo-post-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="novo-post-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="novo-post-titulo">Nova publicação</h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-novo-post" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <!-- O input nativo fica escondido; quem aparece é o .dropzone
+             logo abaixo, ligado a ele por label[for]. -->
+        <input type="file" id="input-foto-post" accept="image/*" class="input-arquivo-oculto">
+        <label class="dropzone" for="input-foto-post" id="dropzone-post">
+          <svg class="dropzone-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="dropzone-texto">Toque para escolher uma foto</span>
+        </label>
+
+        <textarea id="input-legenda-post" class="campo-material" rows="3" maxlength="500" placeholder="Escreva uma legenda..."></textarea>
+
+        <button type="button" id="btn-municipio-post" class="campo-seletor">
+          <span class="campo-seletor-rotulo">Marcar município</span>
+          <span class="campo-seletor-valor" id="btn-municipio-post-valor">Nenhum</span>
+          <svg class="campo-seletor-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <div id="social-marcar-pessoas">
+          <input type="text" id="input-marcar-pessoa" class="campo-material" placeholder="Marcar pessoas (apelido)">
+          <button type="button" id="btn-marcar-pessoa">Adicionar</button>
+        </div>
+        <div id="lista-pessoas-marcadas"></div>
+
+        <p id="social-form-erro" class="oculto"></p>
+        <button type="button" id="btn-publicar-post" class="sheet-btn-primario">
+          <span class="btn-texto">Publicar</span>
+          <span class="spinner oculto"></span>
+        </button>
+        <p id="social-form-status" class="oculto"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sugerir um lugar -->
+  <div id="modal-nova-sugestao" class="sheet-overlay oculto">
+    <div id="nova-sugestao-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="nova-sugestao-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="nova-sugestao-titulo">Sugerir um lugar</h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-nova-sugestao" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <input type="text" id="input-titulo-sugestao" class="campo-material" maxlength="80" placeholder="Nome do lugar (ex: Cachoeira do Corumbá)">
+
+        <!-- Mesma barra de chips do filtro, aqui em modo de escolha
+             única (preenchida por renderizarChipsCategoriaSugestao). -->
+        <span class="campo-rotulo">Categoria</span>
+        <div id="nova-sugestao-chips" class="chip-barra" role="radiogroup" aria-label="Categoria do lugar"></div>
+
+        <textarea id="input-descricao-sugestao" class="campo-material" rows="3" maxlength="500" placeholder="Conte um pouco sobre o lugar..."></textarea>
+        <input type="url" id="input-link-maps-sugestao" class="campo-material" placeholder="Link do Google Maps (opcional)">
+
+        <input type="file" id="input-foto-sugestao" accept="image/*" class="input-arquivo-oculto">
+        <label class="dropzone" for="input-foto-sugestao" id="dropzone-sugestao">
+          <svg class="dropzone-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <span class="dropzone-texto">Toque para escolher uma foto (opcional)</span>
+        </label>
+
+        <label class="settings-toggle" id="label-anonimo-sugestao">
+          <span class="settings-toggle-texto">
+            <span class="settings-toggle-titulo">Postar como anônimo</span>
+            <span class="settings-toggle-desc">Seu apelido não aparece na sugestão</span>
+          </span>
+          <span class="settings-toggle-switch">
+            <input type="checkbox" id="check-anonimo-sugestao">
+            <span class="settings-toggle-slider"></span>
+          </span>
+        </label>
+
+        <p id="sugestao-form-erro" class="oculto"></p>
+        <button type="button" id="btn-publicar-sugestao" class="sheet-btn-primario">
+          <span class="btn-texto">Publicar sugestão</span>
+          <span class="spinner oculto"></span>
+        </button>
+        <p id="sugestao-form-status" class="oculto"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalhe de uma sugestão. Existe porque o card do grid é pequeno
+       demais pra segurar descrição + thread de comentários; tocar no
+       card abre isto (ver abrirDetalheSugestao). -->
+  <div id="modal-sugestao-detalhe" class="sheet-overlay oculto">
+    <div id="sugestao-detalhe-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sugestao-detalhe-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="sugestao-detalhe-titulo"></h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-sugestao-detalhe" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <img id="sugestao-detalhe-foto" class="oculto" alt="">
+        <p id="sugestao-detalhe-descricao"></p>
+        <a id="sugestao-detalhe-maps" class="oculto" target="_blank" rel="noopener">📍 Abrir no Maps</a>
+        <div id="sugestao-detalhe-comentarios"></div>
+        <div id="sugestao-detalhe-novo-comentario">
+          <input type="text" id="input-comentario-sugestao" class="campo-material" placeholder="Escreva um comentário..." maxlength="500">
+          <button type="button" id="btn-enviar-comentario-sugestao">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seletor de município com busca, compartilhado pelas Sugestões e
+       pelo Novo Post (ver abrirEscolherMunicipio, que recebe um
+       callback com o id escolhido). -->
+  <div id="modal-escolher-municipio" class="sheet-overlay oculto">
+    <div id="escolher-municipio-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="escolher-municipio-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="escolher-municipio-titulo">Escolher município</h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-escolher-municipio" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <input type="search" id="input-busca-municipio" class="campo-material" placeholder="Buscar município..." autocomplete="off">
+        <div id="lista-escolher-municipio" role="listbox"></div>
+      </div>
     </div>
   </div>
 

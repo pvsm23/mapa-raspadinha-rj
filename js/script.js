@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.20";
+const VERSAO_APP = "0.11.21";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.20";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.21", itens: ["Sugestões da Comunidade repaginadas: as categorias viraram uma faixa de pílulas deslizantes, o município agora se escolhe numa lista com busca (some a listinha do celular com 92 opções), e os lugares aparecem num mosaico de cartões com a foto de fundo. Publicar uma foto ou sugerir um lugar abre uma janelinha que sobe de baixo, em vez de esticar a tela, e escolher a foto virou um quadro que já mostra a prévia."] },
   { versao: "0.11.20", itens: ["A opção de tema \"Automático\" (que tentava clarear a tela no sol) foi removida: o Android bloqueia o sensor de luz dentro do app, então ela não funcionava em aparelho nenhum. Ficaram Sistema, Claro e Escuro. De quebra, a barra de status do celular agora acompanha o tema, em vez de ficar sempre preta."] },
   { versao: "0.11.19", itens: ["Selos muito mais nítidos na hora de raspar (antes ficavam borrados nas telas de celular), a área de raspagem agora bate exatamente com o selo — sem precisar raspar o vazio em volta — e o brilho dos selos dourados parou de vazar pelos cantos. Raspadinhas de capa cinza, como as das Conquistas, que não davam pra concluir, agora completam normalmente."] },
   { versao: "0.11.18", itens: ["Correção na atualização do app: o arquivo baixado agora tem o número da versão no nome. Antes todo download salvava por cima do mesmo Desbrava.apk, e o celular acabava oferecendo o arquivo antigo pra instalar, dizendo que já era a mesma versão."] },
@@ -184,6 +185,10 @@ let cursorFeedSocial = null; // ultimo doc da pagina atual, pra "carregar mais"
 let feedSocialAcabou = false;
 let blobUrlsFotosPosts = []; // URL.createObjectURL ativos, revogados ao fechar o painel
 let pessoasMarcadasForm = []; // { uid, apelido } marcados no formulario de criar post
+// Município marcado no Novo Post. Virou variável quando o <select>
+// nativo deu lugar ao seletor com busca (#modal-escolher-municipio):
+// não há mais um .value pra ler na hora de publicar.
+let municipioNovoPost = null;
 
 // ---- Sugestões da Comunidade (por município) ----
 // Categorias agrupadas (evita ter uma categoria quase vazia pra cada
@@ -203,6 +208,12 @@ const CATEGORIAS_SUGESTAO = [
   { chave: "outro", label: "📌 Outro" },
 ];
 const LABEL_CATEGORIA_SUGESTAO = Object.fromEntries(CATEGORIAS_SUGESTAO.map((c) => [c.chave, c.label]));
+// Categoria escolhida no formulário de nova sugestão -- mesma história
+// do municipioNovoPost: os chips substituíram o <select>.
+let categoriaNovaSugestao = "outro";
+// Sugestão aberta no sheet de detalhe (o card do grid é pequeno demais
+// pra descrição + comentários).
+let sugestaoDetalheAtual = null;
 
 // Motoclube Desbrava: categorias de estabelecimento e marcas comuns no
 // Brasil (a lista de marcas alimenta tanto o filtro quanto os chips do
@@ -978,7 +989,22 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-social-amigos").addEventListener("click", () => alternarAbaSocial("amigos"));
   document.getElementById("btn-atalho-sugestoes").addEventListener("click", abrirSugestoesPeloAtalho);
   document.getElementById("btn-limpar-filtro-municipio").addEventListener("click", () => abrirPainelSocial());
-  document.getElementById("btn-abrir-criar-post").addEventListener("click", alternarFormularioCriarPost);
+  document.getElementById("btn-abrir-criar-post").addEventListener("click", abrirModalNovoPost);
+  document.getElementById("btn-fechar-novo-post").addEventListener("click", fecharModalNovoPost);
+  document.getElementById("modal-novo-post").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-novo-post") fecharModalNovoPost();
+  });
+  document.getElementById("btn-municipio-post").addEventListener("click", () =>
+    abrirEscolherMunicipio({
+      selecionado: municipioNovoPost,
+      permitirNenhum: true,
+      aoEscolher: (id) => {
+        municipioNovoPost = id;
+        document.getElementById("btn-municipio-post-valor").textContent =
+          id ? idParaNomeMunicipio[id] : "Nenhum";
+      },
+    })
+  );
   document.getElementById("input-foto-post").addEventListener("change", aoEscolherFotoPost);
   document.getElementById("btn-marcar-pessoa").addEventListener("click", aoMarcarPessoaPost);
   document.getElementById("input-marcar-pessoa").addEventListener("keydown", (evento) => {
@@ -998,14 +1024,38 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-sugestoes-comunidade").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-sugestoes-comunidade") fecharSugestoesComunidade();
   });
-  document.getElementById("select-sugestoes-municipio").addEventListener("change", (evento) => {
-    abrirSugestoesComunidade(evento.target.value);
+  document.getElementById("btn-municipio-sugestoes").addEventListener("click", () =>
+    abrirEscolherMunicipio({
+      selecionado: municipioAtualSugestoes,
+      aoEscolher: (id) => abrirSugestoesComunidade(id),
+    })
+  );
+  document.getElementById("btn-abrir-nova-sugestao").addEventListener("click", abrirModalNovaSugestao);
+  document.getElementById("btn-fechar-nova-sugestao").addEventListener("click", fecharModalNovaSugestao);
+  document.getElementById("modal-nova-sugestao").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-nova-sugestao") fecharModalNovaSugestao();
   });
-  document.getElementById("select-sugestoes-categoria").addEventListener("change", (evento) => {
-    filtroCategoriaSugestaoAtual = evento.target.value;
-    renderizarListaSugestoes();
+
+  // ---- Seletor de município compartilhado ----
+  document.getElementById("btn-fechar-escolher-municipio").addEventListener("click", fecharEscolherMunicipio);
+  document.getElementById("modal-escolher-municipio").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-escolher-municipio") fecharEscolherMunicipio();
   });
-  document.getElementById("btn-abrir-nova-sugestao").addEventListener("click", alternarFormularioNovaSugestao);
+  document
+    .getElementById("input-busca-municipio")
+    .addEventListener("input", (evento) => renderizarListaEscolherMunicipio(evento.target.value));
+
+  // ---- Detalhe de uma sugestão ----
+  document.getElementById("btn-fechar-sugestao-detalhe").addEventListener("click", fecharDetalheSugestao);
+  document.getElementById("modal-sugestao-detalhe").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-sugestao-detalhe") fecharDetalheSugestao();
+  });
+  document
+    .getElementById("btn-enviar-comentario-sugestao")
+    .addEventListener("click", enviarComentarioDetalheSugestao);
+  document.getElementById("input-comentario-sugestao").addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") enviarComentarioDetalheSugestao();
+  });
   document.getElementById("input-foto-sugestao").addEventListener("change", aoEscolherFotoSugestao);
   document.getElementById("btn-publicar-sugestao").addEventListener("click", publicarSugestao);
 
@@ -8737,21 +8787,9 @@ function construirSlugsDeMunicipios() {
     slugParaMunicipioId[slugMunicipio(nome)] = id;
     idParaNomeMunicipio[id] = nome;
   });
-  preencherSelectMunicipiosPost();
-}
-
-function preencherSelectMunicipiosPost() {
-  const select = document.getElementById("select-municipio-post");
-  const opcoes = Object.entries(idParaNomeMunicipio).sort((a, b) =>
-    a[1].localeCompare(b[1], "pt-BR")
-  );
-  select.innerHTML = '<option value="">Nenhum</option>';
-  opcoes.forEach(([id, nome]) => {
-    const opcao = document.createElement("option");
-    opcao.value = id;
-    opcao.textContent = nome;
-    select.appendChild(opcao);
-  });
+  // Antes daqui saía um preencherSelectMunicipiosPost(): o <select> de
+  // município do Novo Post virou o seletor com busca, que lê
+  // idParaNomeMunicipio direto na hora de abrir.
 }
 
 /**
@@ -8771,7 +8809,7 @@ function abrirPainelSocial(municipioId = null) {
   }
 
   document.getElementById("modal-social").classList.remove("oculto");
-  document.getElementById("social-form-post").classList.add("oculto");
+  fecharModalNovoPost();
   carregarFeedSocial(true);
 }
 
@@ -9134,11 +9172,9 @@ function abrirSugestoesComunidade(municipioId) {
   municipioAtualSugestoes = municipioId;
   filtroCategoriaSugestaoAtual = "";
 
-  preencherSelectsDeSugestao();
-  document.getElementById("select-sugestoes-municipio").value = municipioId;
-  document.getElementById("select-sugestoes-categoria").value = "";
-  document.getElementById("sugestoes-form").classList.add("oculto");
-  resetarFormularioNovaSugestao();
+  document.getElementById("btn-municipio-sugestoes-valor").textContent =
+    idParaNomeMunicipio[municipioId] || "—";
+  renderizarChipsCategoriaSugestao();
 
   document.getElementById("modal-sugestoes-comunidade").classList.remove("oculto");
   carregarSugestoes();
@@ -9149,41 +9185,144 @@ function fecharSugestoesComunidade() {
 }
 
 /**
- * Preenche o select de município (mesma lista/ordem alfabética de
- * preencherSelectMunicipiosPost) e o select de categoria (fixo, ver
- * CATEGORIAS_SUGESTAO) -- só precisa fazer isso uma vez de verdade,
- * mas rodar de novo não tem custo real (poucas dezenas de opções).
+ * Monta as duas barras de chips de categoria a partir de
+ * CATEGORIAS_SUGESTAO: a do filtro (com "Todas" na frente, valor "")
+ * e a do formulário de nova sugestão (sem "Todas" -- lá a escolha é
+ * obrigatória e cai em "outro" por padrão).
+ *
+ * Só o rótulo curto entra no chip: os labels completos ("🏛️ Atrações
+ * Culturais e Históricas") ocupariam meia tela cada um numa barra
+ * horizontal. O emoji + primeira palavra já identifica, e o label
+ * inteiro continua no `title` e no card.
  */
-function preencherSelectsDeSugestao() {
-  const selectMunicipio = document.getElementById("select-sugestoes-municipio");
-  if (!selectMunicipio.dataset.preenchido) {
-    const opcoes = Object.entries(idParaNomeMunicipio).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
-    selectMunicipio.innerHTML = "";
-    opcoes.forEach(([id, nome]) => {
-      const opcao = document.createElement("option");
-      opcao.value = id;
-      opcao.textContent = nome;
-      selectMunicipio.appendChild(opcao);
-    });
-    selectMunicipio.dataset.preenchido = "1";
+function renderizarChipsCategoriaSugestao() {
+  const barraFiltro = document.getElementById("sugestoes-chips");
+  const barraForm = document.getElementById("nova-sugestao-chips");
+
+  const criarChip = (chave, label, ativo, aoClicar) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip" + (ativo ? " chip-ativo" : "");
+    chip.dataset.chave = chave;
+    chip.textContent = rotuloCurtoCategoria(label);
+    chip.title = label;
+    chip.setAttribute("role", "radio");
+    chip.setAttribute("aria-checked", ativo ? "true" : "false");
+    chip.addEventListener("click", () => aoClicar(chave));
+    return chip;
+  };
+
+  barraFiltro.innerHTML = "";
+  barraFiltro.appendChild(
+    criarChip("", "✨ Todas", filtroCategoriaSugestaoAtual === "", (chave) => {
+      filtroCategoriaSugestaoAtual = chave;
+      renderizarChipsCategoriaSugestao();
+      renderizarListaSugestoes();
+    })
+  );
+  CATEGORIAS_SUGESTAO.forEach((cat) => {
+    barraFiltro.appendChild(
+      criarChip(cat.chave, cat.label, filtroCategoriaSugestaoAtual === cat.chave, (chave) => {
+        filtroCategoriaSugestaoAtual = chave;
+        renderizarChipsCategoriaSugestao();
+        renderizarListaSugestoes();
+      })
+    );
+  });
+
+  barraForm.innerHTML = "";
+  CATEGORIAS_SUGESTAO.forEach((cat) => {
+    barraForm.appendChild(
+      criarChip(cat.chave, cat.label, categoriaNovaSugestao === cat.chave, (chave) => {
+        categoriaNovaSugestao = chave;
+        renderizarChipsCategoriaSugestao();
+      })
+    );
+  });
+}
+
+/** "🥾 Trilhas e Caminhadas" -> "🥾 Trilhas". Emoji + primeira palavra
+ *  significativa, que é o que cabe num chip. */
+function rotuloCurtoCategoria(label) {
+  const partes = label.trim().split(/\s+/);
+  return partes.slice(0, 2).join(" ").replace(/[,:]$/, "");
+}
+
+/* ============================================================
+   Seletor de município com busca (#modal-escolher-municipio)
+   ------------------------------------------------------------
+   Compartilhado pelas Sugestões (troca o município do feed) e pelo
+   Novo Post (marca um município opcional). Substituiu dois <select>
+   nativos de 92 opções, que no Android viravam uma roleta do sistema
+   sem busca nenhuma.
+   ============================================================ */
+let escolherMunicipioContexto = null; // { selecionado, permitirNenhum, aoEscolher }
+
+/** Minúsculas e sem acento, pros dois lados da busca: digitar
+ *  "sao goncalo" tem que achar "São Gonçalo". */
+function normalizarBusca(texto) {
+  return String(texto)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function abrirEscolherMunicipio({ selecionado = null, permitirNenhum = false, aoEscolher }) {
+  escolherMunicipioContexto = { selecionado, permitirNenhum, aoEscolher };
+  const busca = document.getElementById("input-busca-municipio");
+  busca.value = "";
+  renderizarListaEscolherMunicipio("");
+  document.getElementById("modal-escolher-municipio").classList.remove("oculto");
+}
+
+function fecharEscolherMunicipio() {
+  document.getElementById("modal-escolher-municipio").classList.add("oculto");
+  escolherMunicipioContexto = null;
+}
+
+function renderizarListaEscolherMunicipio(termo) {
+  const lista = document.getElementById("lista-escolher-municipio");
+  const ctx = escolherMunicipioContexto;
+  if (!ctx) return;
+
+  const alvo = normalizarBusca(termo || "");
+  const opcoes = Object.entries(idParaNomeMunicipio)
+    .filter(([, nome]) => !alvo || normalizarBusca(nome).includes(alvo))
+    .sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+
+  lista.innerHTML = "";
+
+  if (ctx.permitirNenhum && !alvo) {
+    lista.appendChild(criarOpcaoMunicipio("", "Nenhum", ctx.selecionado === null || ctx.selecionado === ""));
   }
 
-  const selectCategoriaFiltro = document.getElementById("select-sugestoes-categoria");
-  const selectCategoriaForm = document.getElementById("select-categoria-sugestao");
-  if (!selectCategoriaForm.dataset.preenchido) {
-    CATEGORIAS_SUGESTAO.forEach((cat) => {
-      const opcaoFiltro = document.createElement("option");
-      opcaoFiltro.value = cat.chave;
-      opcaoFiltro.textContent = cat.label;
-      selectCategoriaFiltro.appendChild(opcaoFiltro);
-
-      const opcaoForm = document.createElement("option");
-      opcaoForm.value = cat.chave;
-      opcaoForm.textContent = cat.label;
-      selectCategoriaForm.appendChild(opcaoForm);
-    });
-    selectCategoriaForm.dataset.preenchido = "1";
+  if (!opcoes.length) {
+    const vazio = document.createElement("p");
+    vazio.className = "municipio-opcao-vazio";
+    vazio.textContent = "Nenhum município com esse nome.";
+    lista.appendChild(vazio);
+    return;
   }
+
+  opcoes.forEach(([id, nome]) => {
+    lista.appendChild(criarOpcaoMunicipio(id, nome, ctx.selecionado === id));
+  });
+}
+
+function criarOpcaoMunicipio(id, nome, ativo) {
+  const opcao = document.createElement("button");
+  opcao.type = "button";
+  opcao.className = "municipio-opcao" + (ativo ? " municipio-opcao-ativa" : "");
+  opcao.setAttribute("role", "option");
+  opcao.setAttribute("aria-selected", ativo ? "true" : "false");
+  opcao.innerHTML = `<span>${escaparHtml(nome)}</span>${ativo ? "<span>✓</span>" : ""}`;
+  opcao.addEventListener("click", () => {
+    const aoEscolher = escolherMunicipioContexto?.aoEscolher;
+    fecharEscolherMunicipio();
+    if (typeof aoEscolher === "function") aoEscolher(id || null);
+  });
+  return opcao;
 }
 
 /**
@@ -9219,35 +9358,62 @@ function renderizarListaSugestoes() {
   sugestoesFiltradas.forEach((sugestao) => listaEl.appendChild(renderizarCardSugestao(sugestao)));
 }
 
-function alternarFormularioNovaSugestao() {
-  document.getElementById("sugestoes-form").classList.toggle("oculto");
+function abrirModalNovaSugestao() {
+  resetarFormularioNovaSugestao();
+  renderizarChipsCategoriaSugestao();
+  document.getElementById("modal-nova-sugestao").classList.remove("oculto");
+}
+
+function fecharModalNovaSugestao() {
+  document.getElementById("modal-nova-sugestao").classList.add("oculto");
 }
 
 function resetarFormularioNovaSugestao() {
   document.getElementById("input-titulo-sugestao").value = "";
-  document.getElementById("select-categoria-sugestao").value = "outro";
+  categoriaNovaSugestao = "outro";
   document.getElementById("input-descricao-sugestao").value = "";
   document.getElementById("input-link-maps-sugestao").value = "";
   document.getElementById("input-foto-sugestao").value = "";
-  document.getElementById("preview-foto-sugestao").classList.add("oculto");
+  limparDropzone("dropzone-sugestao", "Toque para escolher uma foto (opcional)");
   document.getElementById("check-anonimo-sugestao").checked = false;
   document.getElementById("sugestao-form-erro").classList.add("oculto");
 }
 
+/* ---- Dropzone: o <input type=file> nativo fica escondido
+   (.input-arquivo-oculto) e quem aparece é o retângulo tracejado,
+   ligado a ele por label[for]. A prévia da foto escolhida vira o
+   background-image DESSE retângulo -- é aqui que se mexe pra mudar
+   como o preview aparece. ---- */
+function mostrarFotoNoDropzone(idDropzone, arquivo, textoComFoto) {
+  const zona = document.getElementById(idDropzone);
+  if (!zona) return;
+  const url = URL.createObjectURL(arquivo);
+  blobUrlsFotosPosts.push(url); // revogado ao fechar o painel social
+  zona.style.backgroundImage = `url("${url}")`;
+  zona.classList.add("dropzone-com-foto");
+  zona.querySelector(".dropzone-texto").textContent = textoComFoto;
+}
+
+function limparDropzone(idDropzone, textoPadrao) {
+  const zona = document.getElementById(idDropzone);
+  if (!zona) return;
+  zona.style.backgroundImage = "";
+  zona.classList.remove("dropzone-com-foto");
+  zona.querySelector(".dropzone-texto").textContent = textoPadrao;
+}
+
 function aoEscolherFotoSugestao(evento) {
   const arquivo = evento.target.files[0];
-  const preview = document.getElementById("preview-foto-sugestao");
   if (!arquivo) {
-    preview.classList.add("oculto");
+    limparDropzone("dropzone-sugestao", "Toque para escolher uma foto (opcional)");
     return;
   }
-  preview.src = URL.createObjectURL(arquivo);
-  preview.classList.remove("oculto");
+  mostrarFotoNoDropzone("dropzone-sugestao", arquivo, "Trocar foto");
 }
 
 async function publicarSugestao() {
   const titulo = document.getElementById("input-titulo-sugestao").value.trim();
-  const categoria = document.getElementById("select-categoria-sugestao").value;
+  const categoria = categoriaNovaSugestao;
   const descricao = document.getElementById("input-descricao-sugestao").value.trim();
   const linkMaps = document.getElementById("input-link-maps-sugestao").value.trim();
   const arquivo = document.getElementById("input-foto-sugestao").files[0] || null;
@@ -9281,7 +9447,7 @@ async function publicarSugestao() {
       anonimo,
     });
     resetarFormularioNovaSugestao();
-    document.getElementById("sugestoes-form").classList.add("oculto");
+    fecharModalNovaSugestao();
     carregarSugestoes();
   } catch (erro) {
     console.error("Falha ao publicar sugestão:", erro);
@@ -9312,42 +9478,141 @@ function renderizarCardSugestao(sugestao) {
   const nomeAutor = sugestao.anonimo ? "🕵️ Anônimo" : sugestao.autorApelido;
   const labelCategoria = LABEL_CATEGORIA_SUGESTAO[sugestao.categoria] || LABEL_CATEGORIA_SUGESTAO.outro;
 
+  // A foto vira o FUNDO do card (estilo guia de viagem), com o véu
+  // escuro do ::before garantindo contraste do título branco. Sem
+  // foto, o CSS aplica um gradiente próprio.
+  if (sugestao.fotoUrl) {
+    card.style.backgroundImage = `url("${encodeURI(sugestao.fotoUrl)}")`;
+  } else {
+    card.classList.add("sugestao-card-sem-foto");
+  }
+
   card.innerHTML = `
-    <div class="sugestao-card-cabecalho">
-      <span class="sugestao-card-categoria">${escaparHtml(labelCategoria)}</span>
-      <span class="sugestao-card-autor">${escaparHtml(nomeAutor)}</span>
-    </div>
+    <span class="sugestao-card-categoria">${escaparHtml(rotuloCurtoCategoria(labelCategoria))}</span>
     <h3 class="sugestao-card-titulo">${escaparHtml(sugestao.titulo)}</h3>
-    ${sugestao.fotoUrl ? `<img class="sugestao-card-foto" src="${escaparHtml(sugestao.fotoUrl)}" alt="Foto de ${escaparHtml(sugestao.titulo)}">` : ""}
-    ${sugestao.descricao ? `<p class="sugestao-card-descricao">${escaparHtml(sugestao.descricao)}</p>` : ""}
-    ${sugestao.linkMaps ? `<a class="sugestao-card-maps" href="${escaparHtml(sugestao.linkMaps)}" target="_blank" rel="noopener">📍 Abrir no Maps</a>` : ""}
-    <div class="sugestao-card-acoes">
+    <span class="sugestao-card-autor">${escaparHtml(nomeAutor)}</span>
+    <div class="sugestao-card-rodape">
       <button type="button" class="sugestao-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span class="sugestao-card-curtidas">${curtidoPor.length}</span></button>
       <button type="button" class="sugestao-card-comentar">${ICONE_COMENTAR} <span class="sugestao-card-num-comentarios">${sugestao.numComentarios || 0}</span></button>
-      ${souAutor ? '<button type="button" class="sugestao-card-excluir">Excluir</button>' : ""}
-    </div>
-    <div class="sugestao-card-comentarios oculto">
-      <div class="sugestao-card-lista-comentarios"></div>
-      <div class="sugestao-card-novo-comentario">
-        <input type="text" placeholder="Escreva um comentário..." maxlength="500">
-        <button type="button">Enviar</button>
-      </div>
+      ${souAutor ? '<button type="button" class="sugestao-card-excluir" aria-label="Excluir sugestão">✕</button>' : ""}
     </div>
   `;
 
-  card.querySelector(".sugestao-card-curtir").addEventListener("click", () => aoCurtirSugestao(sugestao, card));
-  card.querySelector(".sugestao-card-comentar").addEventListener("click", () => aoAbrirComentariosSugestao(sugestao, card));
-  card.querySelector(".sugestao-card-excluir")?.addEventListener("click", () => aoExcluirSugestao(sugestao, card));
+  const curtirBtn = card.querySelector(".sugestao-card-curtir");
+  const comentarBtn = card.querySelector(".sugestao-card-comentar");
+  const excluirBtn = card.querySelector(".sugestao-card-excluir");
 
-  const inputComentario = card.querySelector(".sugestao-card-novo-comentario input");
-  card.querySelector(".sugestao-card-novo-comentario button").addEventListener("click", () =>
-    enviarComentarioSugestao(sugestao, card, inputComentario)
-  );
-  inputComentario.addEventListener("keydown", (evento) => {
-    if (evento.key === "Enter") enviarComentarioSugestao(sugestao, card, inputComentario);
+  // stopPropagation nos botões do rodapé: sem isso, curtir também
+  // abriria o detalhe, porque o card inteiro é clicável.
+  curtirBtn.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    aoCurtirSugestao(sugestao, card);
+  });
+  comentarBtn.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    abrirDetalheSugestao(sugestao);
+  });
+  excluirBtn?.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    aoExcluirSugestao(sugestao, card);
   });
 
+  card.addEventListener("click", () => abrirDetalheSugestao(sugestao));
+
   return card;
+}
+
+/* ============================================================
+   Detalhe da sugestão (#modal-sugestao-detalhe)
+   ------------------------------------------------------------
+   O card do grid só cabe capa + título + contadores. Descrição,
+   link do Maps e a thread de comentários moram aqui.
+   ============================================================ */
+function abrirDetalheSugestao(sugestao) {
+  sugestaoDetalheAtual = sugestao;
+
+  document.getElementById("sugestao-detalhe-titulo").textContent = sugestao.titulo;
+
+  const foto = document.getElementById("sugestao-detalhe-foto");
+  foto.classList.toggle("oculto", !sugestao.fotoUrl);
+  if (sugestao.fotoUrl) {
+    foto.src = sugestao.fotoUrl;
+    foto.alt = `Foto de ${sugestao.titulo}`;
+  }
+
+  const descricao = document.getElementById("sugestao-detalhe-descricao");
+  const labelCategoria = LABEL_CATEGORIA_SUGESTAO[sugestao.categoria] || LABEL_CATEGORIA_SUGESTAO.outro;
+  const autor = sugestao.anonimo ? "🕵️ Anônimo" : sugestao.autorApelido;
+  descricao.textContent = sugestao.descricao || "";
+  descricao.insertAdjacentHTML(
+    "afterbegin",
+    `<span class="sugestao-card-categoria" style="position:static;display:inline-block;margin-bottom:10px">${escaparHtml(
+      labelCategoria
+    )}</span><br><small style="color:var(--fraco)">por ${escaparHtml(autor)}</small><br><br>`
+  );
+
+  const maps = document.getElementById("sugestao-detalhe-maps");
+  maps.classList.toggle("oculto", !sugestao.linkMaps);
+  if (sugestao.linkMaps) maps.href = sugestao.linkMaps;
+
+  document.getElementById("input-comentario-sugestao").value = "";
+  document.getElementById("modal-sugestao-detalhe").classList.remove("oculto");
+  carregarComentariosDetalheSugestao();
+}
+
+function fecharDetalheSugestao() {
+  document.getElementById("modal-sugestao-detalhe").classList.add("oculto");
+  sugestaoDetalheAtual = null;
+}
+
+async function carregarComentariosDetalheSugestao() {
+  const lista = document.getElementById("sugestao-detalhe-comentarios");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  try {
+    const comentarios = await window.raspadinhaAuth.listarComentariosSugestao(
+      municipioAtualSugestoes,
+      sugestaoDetalheAtual.id
+    );
+    lista.innerHTML = comentarios.length ? "" : "<p class='municipio-opcao-vazio'>Nenhum comentário ainda.</p>";
+    comentarios.forEach((c) => {
+      const linha = document.createElement("p");
+      linha.className = "comentario-linha";
+      linha.innerHTML = `<b>${escaparHtml(c.autorApelido)}:</b> ${escaparHtml(c.texto)}`;
+      lista.appendChild(linha);
+    });
+  } catch (erro) {
+    console.error("Falha ao carregar comentários:", erro);
+    lista.innerHTML = "<p class='municipio-opcao-vazio'>Não foi possível carregar os comentários.</p>";
+  }
+}
+
+async function enviarComentarioDetalheSugestao() {
+  const input = document.getElementById("input-comentario-sugestao");
+  const texto = input.value.trim();
+  if (!texto || !sugestaoDetalheAtual) return;
+
+  input.disabled = true;
+  try {
+    await window.raspadinhaAuth.comentarSugestao(municipioAtualSugestoes, sugestaoDetalheAtual.id, texto);
+    input.value = "";
+    sugestaoDetalheAtual.numComentarios = (sugestaoDetalheAtual.numComentarios || 0) + 1;
+
+    // Mantém o contador do card lá atrás em dia, sem recarregar o grid.
+    const card = document.querySelector(`.sugestao-card[data-item-id="${sugestaoDetalheAtual.id}"]`);
+    const contador = card?.querySelector(".sugestao-card-num-comentarios");
+    if (contador) contador.textContent = sugestaoDetalheAtual.numComentarios;
+
+    const lista = document.getElementById("sugestao-detalhe-comentarios");
+    if (lista.querySelector(".municipio-opcao-vazio")) lista.innerHTML = "";
+    const linha = document.createElement("p");
+    linha.className = "comentario-linha";
+    linha.innerHTML = `<b>${escaparHtml(window.raspadinhaAuth.apelido)}:</b> ${escaparHtml(texto)}`;
+    lista.appendChild(linha);
+  } catch (erro) {
+    alert(erro?.message || "Não foi possível enviar o comentário.");
+  } finally {
+    input.disabled = false;
+  }
 }
 
 async function aoCurtirSugestao(sugestao, card) {
@@ -9370,56 +9635,6 @@ async function aoCurtirSugestao(sugestao, card) {
     console.error("Falha ao curtir sugestão:", erro);
     botao.classList.toggle("curtido", jaCurtido);
     contador.textContent = Number(contador.textContent) + (novoEstado ? -1 : 1);
-  }
-}
-
-async function aoAbrirComentariosSugestao(sugestao, card) {
-  const painel = card.querySelector(".sugestao-card-comentarios");
-  const abrindo = painel.classList.contains("oculto");
-  painel.classList.toggle("oculto", !abrindo);
-  if (!abrindo) return;
-
-  const lista = card.querySelector(".sugestao-card-lista-comentarios");
-  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
-  try {
-    const comentarios = await window.raspadinhaAuth.listarComentariosSugestao(municipioAtualSugestoes, sugestao.id);
-    lista.innerHTML = comentarios.length ? "" : "<p>Nenhum comentário ainda.</p>";
-    comentarios.forEach((c) => {
-      const linha = document.createElement("p");
-      linha.className = "comentario-linha";
-      linha.innerHTML = `<b>${escaparHtml(c.autorApelido)}:</b> ${escaparHtml(c.texto)}`;
-      lista.appendChild(linha);
-    });
-  } catch (erro) {
-    console.error("Falha ao carregar comentários:", erro);
-    lista.innerHTML = "<p>Não foi possível carregar os comentários.</p>";
-  }
-}
-
-async function enviarComentarioSugestao(sugestao, card, input) {
-  const texto = input.value.trim();
-  if (!texto) return;
-
-  input.disabled = true;
-  try {
-    await window.raspadinhaAuth.comentarSugestao(municipioAtualSugestoes, sugestao.id, texto);
-    input.value = "";
-
-    sugestao.numComentarios = (sugestao.numComentarios || 0) + 1;
-    card.querySelector(".sugestao-card-num-comentarios").textContent = sugestao.numComentarios;
-
-    const lista = card.querySelector(".sugestao-card-lista-comentarios");
-    if (lista.children.length === 1 && lista.children[0].tagName === "P" && !lista.children[0].className) {
-      lista.innerHTML = "";
-    }
-    const linha = document.createElement("p");
-    linha.className = "comentario-linha";
-    linha.innerHTML = `<b>${escaparHtml(window.raspadinhaAuth.apelido)}:</b> ${escaparHtml(texto)}`;
-    lista.appendChild(linha);
-  } catch (erro) {
-    alert(erro?.message || "Não foi possível enviar o comentário.");
-  } finally {
-    input.disabled = false;
   }
 }
 
@@ -9479,7 +9694,7 @@ function abrirPostDoLinkSeExistir(usuario) {
 async function abrirPainelSocialComPost(postId) {
   filtroMunicipioSocialId = null;
   document.getElementById("social-filtro-municipio").classList.add("oculto");
-  document.getElementById("social-form-post").classList.add("oculto");
+  fecharModalNovoPost();
   document.getElementById("btn-social-carregar-mais").classList.add("oculto");
   document.getElementById("modal-social").classList.remove("oculto");
 
@@ -9502,19 +9717,22 @@ async function abrirPainelSocialComPost(postId) {
 
 /* ---- Criar post ---- */
 
-function alternarFormularioCriarPost() {
-  document.getElementById("social-form-post").classList.toggle("oculto");
+function abrirModalNovoPost() {
+  resetarFormularioCriarPost();
+  document.getElementById("modal-novo-post").classList.remove("oculto");
+}
+
+function fecharModalNovoPost() {
+  document.getElementById("modal-novo-post").classList.add("oculto");
 }
 
 function aoEscolherFotoPost(evento) {
   const arquivo = evento.target.files[0];
-  const preview = document.getElementById("preview-foto-post");
   if (!arquivo) {
-    preview.classList.add("oculto");
+    limparDropzone("dropzone-post", "Toque para escolher uma foto");
     return;
   }
-  preview.src = URL.createObjectURL(arquivo);
-  preview.classList.remove("oculto");
+  mostrarFotoNoDropzone("dropzone-post", arquivo, "Trocar foto");
 }
 
 async function aoMarcarPessoaPost() {
@@ -9622,7 +9840,7 @@ function comprimirFotoPost(arquivo, { ladoMaximo = 1600, qualidade = 0.72 } = {}
 async function publicarPost() {
   const arquivo = document.getElementById("input-foto-post").files[0];
   const texto = document.getElementById("input-legenda-post").value.trim();
-  const municipioId = document.getElementById("select-municipio-post").value || null;
+  const municipioId = municipioNovoPost || null;
   const erroEl = document.getElementById("social-form-erro");
   const statusEl = document.getElementById("social-form-status");
   const botao = document.getElementById("btn-publicar-post");
@@ -9649,7 +9867,7 @@ async function publicarPost() {
       pessoasMarcadas: pessoasMarcadasForm,
     });
     resetarFormularioCriarPost();
-    document.getElementById("social-form-post").classList.add("oculto");
+    fecharModalNovoPost();
     carregarFeedSocial(true);
   } catch (erro) {
     console.error("Falha ao publicar post:", erro);
@@ -9665,9 +9883,11 @@ async function publicarPost() {
 function resetarFormularioCriarPost() {
   document.getElementById("input-foto-post").value = "";
   document.getElementById("input-legenda-post").value = "";
-  document.getElementById("select-municipio-post").value = "";
-  document.getElementById("preview-foto-post").classList.add("oculto");
+  municipioNovoPost = null;
+  document.getElementById("btn-municipio-post-valor").textContent = "Nenhum";
+  limparDropzone("dropzone-post", "Toque para escolher uma foto");
   document.getElementById("input-marcar-pessoa").value = "";
+  document.getElementById("social-form-erro").classList.add("oculto");
   pessoasMarcadasForm = [];
   renderizarPessoasMarcadasForm();
 }

@@ -943,50 +943,11 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   transform: scale(0.94);
 }
 
-#social-form-post {
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 14px;
-  margin-bottom: 16px;
-}
 
-#social-form-post.oculto {
-  display: none;
-}
 
-#social-form-post label {
-  display: block;
-  color: var(--fraco);
-  font-size: 0.78rem;
-  margin: 10px 0 4px;
-}
 
-#social-form-post input[type="file"],
-#social-form-post input[type="text"],
-#social-form-post textarea,
-#social-form-post select {
-  width: 100%;
-  background: var(--surf);
-  border: 1px solid var(--linha);
-  color: var(--txt);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  font-family: inherit;
-}
 
-#preview-foto-post {
-  display: block;
-  width: 100%;
-  max-height: 220px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-top: 8px;
-}
 
-#preview-foto-post.oculto {
-  display: none;
-}
 
 #social-marcar-pessoas {
   display: flex;
@@ -1421,20 +1382,6 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 }
 
 #sugestoes-comunidade-conteudo > select,
-#sugestoes-form input[type="file"],
-#sugestoes-form input[type="text"],
-#sugestoes-form input[type="url"],
-#sugestoes-form textarea,
-#sugestoes-form select {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--linha);
-  color: var(--txt);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  font-family: inherit;
-}
 
 #btn-abrir-nova-sugestao {
   display: block;
@@ -1454,16 +1401,7 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   background: #1FA85C;
 }
 
-#sugestoes-form {
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 14px;
-  margin-bottom: 16px;
-}
 
-#sugestoes-form.oculto {
-  display: none;
-}
 
 #preview-foto-sugestao {
   display: block;
@@ -8524,4 +8462,590 @@ select:focus {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+/* =========================================================
+   BOTTOM SHEETS, CHIPS, DROPZONE E CAMPOS "MATERIAL"
+   Componentes compartilhados que substituíram os formulários
+   inline e os controles nativos (<select>, <input type=file>) das
+   Sugestões da Comunidade e do Novo Post.
+
+   Este bloco fica no FIM do arquivo de propósito: a "CAMADA UI
+   MODERNA" acima força estilo em vários seletores genéricos
+   (inclusive `[id$="-conteudo"]`), e é por isso que as folhas aqui
+   NÃO usam ids terminados em "-conteudo" -- se usassem, herdariam
+   `border-radius: 20px !important` nos quatro cantos e a folha
+   deixaria de encostar no rodapé.
+   ========================================================= */
+
+/* ---- Casca da folha deslizante ---- */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200; /* acima do painel social (100) e do modal de sugestões */
+  background: var(--backdrop);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: sheet-fade 0.2s ease;
+}
+
+.sheet-overlay.oculto {
+  display: none;
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  /* Teto de 88vh: sempre sobra um naco do fundo visível, que é o que
+     comunica "isso é uma folha por cima, dá pra fechar tocando fora". */
+  max-height: 88vh;
+  background: var(--surf);
+  border: 1px solid var(--linha);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -12px 44px rgba(0, 0, 0, 0.55);
+  animation: sheet-subir 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sheet-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheet-subir {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.sheet-cabecalho {
+  position: relative;
+  flex: none;
+  padding: 16px 52px 12px 20px;
+  border-bottom: 1px solid var(--linha);
+}
+
+/* Alcinha cinza do topo: só sinaliza "isto desliza". */
+.sheet-alca {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--linha);
+}
+
+.sheet-cabecalho h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.sheet-fechar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surf2);
+  color: var(--fraco);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sheet-fechar:active {
+  transform: scale(0.92);
+}
+
+/* O corpo é quem rola -- o cabeçalho fica preso no topo. */
+.sheet-corpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px calc(env(safe-area-inset-bottom, 0px) + 22px);
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet-btn-primario {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sheet-btn-primario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sheet-btn-primario:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+/* ---- Campos "Material" escuro: sem caixa, só um traço embaixo ---- */
+.campo-rotulo {
+  display: block;
+  margin: 16px 0 8px;
+  color: var(--fraco);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Tag junto (input./textarea.) E !important, os dois de propósito: a
+   camada "UI moderna" tem um `input[type="text"], ..., textarea,
+   select` que pinta fundo e borda de CAIXA com !important. Sem a tag
+   a classe perde por especificidade; sem o !important perde pra
+   prioridade. É a mesma armadilha do segmented control de Aparência. */
+input.campo-material,
+textarea.campo-material {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 2px;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--linha) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--txt) !important;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease;
+}
+
+input.campo-material::placeholder,
+textarea.campo-material::placeholder {
+  color: var(--fraco);
+}
+
+input.campo-material:focus,
+textarea.campo-material:focus {
+  outline: none;
+  border-bottom-color: var(--verde) !important;
+}
+
+textarea.campo-material {
+  resize: vertical;
+  min-height: 68px;
+  line-height: 1.45;
+}
+
+/* Botão que abre um seletor (município). Faz o papel do <select>
+   nativo sem herdar o widget do sistema operacional. */
+.campo-seletor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.campo-seletor-rotulo {
+  flex: none;
+  color: var(--fraco);
+  font-size: 0.78rem;
+}
+
+.campo-seletor-valor {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.campo-seletor-seta {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--fraco);
+}
+
+.campo-seletor:active {
+  transform: scale(0.99);
+}
+
+/* ---- Chips roláveis (categorias) ---- */
+.chip-barra {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-bottom: 6px;
+  overflow-x: auto;
+  /* Sem isso a barra vira uma pilha vertical no primeiro chip longo. */
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chip-barra::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: none;
+  padding: 8px 14px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  color: var(--fraco);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.chip.chip-ativo {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: var(--verde-tinta);
+}
+
+.chip:active {
+  transform: scale(0.96);
+}
+
+/* ---- Dropzone de foto ---- */
+.input-arquivo-oculto {
+  display: none;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 160px;
+  margin-top: 4px;
+  padding: 20px;
+  background: var(--surf2);
+  border: 1.5px dashed var(--linha);
+  border-radius: 16px;
+  color: var(--fraco);
+  text-align: center;
+  cursor: pointer;
+  /* Preenchidos por JS quando há foto escolhida (ver
+     aoEscolherFotoPost / aoEscolherFotoSugestao). */
+  background-size: cover;
+  background-position: center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dropzone:hover {
+  border-color: var(--verde);
+}
+
+.dropzone-icone {
+  width: 34px;
+  height: 34px;
+}
+
+.dropzone-texto {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+/* Com foto: a imagem vira o fundo e o texto sai da frente, sobrando
+   só uma faixa discreta pra trocar. */
+.dropzone.dropzone-com-foto {
+  border-style: solid;
+  border-color: var(--verde);
+  justify-content: flex-end;
+  min-height: 200px;
+}
+
+.dropzone.dropzone-com-foto .dropzone-icone {
+  display: none;
+}
+
+.dropzone.dropzone-com-foto .dropzone-texto {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(15, 18, 22, 0.72);
+  color: #F2F5F7;
+  font-size: 0.75rem;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+/* ---- Lista do seletor de município ---- */
+#lista-escolher-municipio {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.municipio-opcao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--linha);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.municipio-opcao:active {
+  background: var(--surf2);
+}
+
+.municipio-opcao.municipio-opcao-ativa {
+  color: var(--verde);
+  font-weight: 700;
+}
+
+.municipio-opcao-vazio {
+  padding: 20px 4px;
+  color: var(--fraco);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ---- Sugestões: grid de cards estilo guia de viagem ---- */
+#sugestoes-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+/* A mensagem de "nenhuma sugestão" não pode virar uma coluna do grid. */
+#sugestoes-lista > p {
+  grid-column: 1 / -1;
+  color: var(--fraco);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 24px 0;
+}
+
+#sugestoes-lista > .spinner {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+.sugestao-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 172px;
+  padding: 12px;
+  border: 1px solid var(--linha);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surf2);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+}
+
+/* Véu escuro: garante contraste do título branco sobre QUALQUER foto,
+   inclusive as claras. Fica no ::before pra não brigar com o
+   background-image do card. */
+.sugestao-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10, 12, 15, 0.92) 0%,
+    rgba(10, 12, 15, 0.55) 45%,
+    rgba(10, 12, 15, 0.12) 100%
+  );
+  pointer-events: none;
+}
+
+/* Sem foto: gradiente próprio, pra card vazio não virar um buraco. */
+.sugestao-card.sugestao-card-sem-foto {
+  background-image: radial-gradient(circle at 30% 20%, #2A313C 0%, #171B21 70%);
+}
+
+.sugestao-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sugestao-card-categoria {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  max-width: calc(100% - 20px);
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(15, 18, 22, 0.7);
+  color: #F2F5F7;
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  backdrop-filter: blur(4px);
+}
+
+.sugestao-card-titulo {
+  margin: 0 0 4px;
+  color: #FFFFFF;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+  /* Título longo não pode empurrar as ações pra fora do card. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sugestao-card-autor {
+  color: rgba(242, 245, 247, 0.72);
+  font-size: 0.7rem;
+}
+
+.sugestao-card-rodape {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.sugestao-card-rodape button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: rgba(242, 245, 247, 0.85);
+  font-family: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.sugestao-card-rodape button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sugestao-card-curtir.curtido {
+  color: #F0616D;
+}
+
+.sugestao-card-excluir {
+  margin-left: auto;
+  color: rgba(240, 97, 109, 0.9) !important;
+}
+
+/* ---- Detalhe da sugestão (abre ao tocar no card) ---- */
+#sugestao-detalhe-foto {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+
+#sugestao-detalhe-foto.oculto {
+  display: none;
+}
+
+#sugestao-detalhe-descricao {
+  color: var(--txt);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+#sugestao-detalhe-maps {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: var(--verde);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#sugestao-detalhe-maps.oculto {
+  display: none;
+}
+
+/* ---- Marcar pessoas, no sheet do Novo Post ---- */
+#social-marcar-pessoas {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+#social-marcar-pessoas .campo-material {
+  flex: 1;
+}
+
+#btn-marcar-pessoa {
+  flex: none;
+  padding: 9px 14px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---- Ajustes no painel de Sugestões que hospeda tudo isso ---- */
+#btn-abrir-nova-sugestao {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--verde);
+  border: none;
+  border-radius: 12px;
+  color: var(--verde-tinta);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
 }

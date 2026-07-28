@@ -27,22 +27,101 @@ Regras fixas:
 - Selo "dourado" (texto visível) = `brilhante` (código/ids internos,
   não renomear).
 - AdSense: não ativar sem pedido explícito.
-- **Tema**: desde v0.11.16 o app tem Claro/Escuro/Sistema/Automático
-  (era só dark fixo antes disso) — ver seção de tema abaixo antes de
-  presumir que "o app é dark-only" numa próxima sessão.
+- **Tema**: desde v0.11.16 o app tem Sistema/Claro/Escuro (era só dark
+  fixo antes disso) — ver seção de tema abaixo antes de presumir que
+  "o app é dark-only" numa próxima sessão.
+- **Sensor de luz**: existiu um 4º modo de tema ("Automático", via
+  `AmbientLightSensor`) da v0.11.16 até a v0.11.20, quando foi removido
+  por completo. A WebView do Android bloqueia essa API, o Chrome a
+  removeu em 2021 (fingerprinting) e o iOS nunca teve — **não existe
+  aparelho real em que funcione, não re-sugerir**.
 
 ## Stack
 
 HTML/CSS/JS sem bundler · Firebase Auth+Firestore (Spark) · Fotos no
 Google Drive via Apps Script · Capacitor (Android) · GitHub Pages +
-Netlify (web) · GitHub Releases (APK, via `tools/publicar-apk.ps1`).
+Netlify (web) · GitHub Releases (APK).
 
-Build APK: `node tools/montar-www.js && npx cap sync android && cd
-android && ./gradlew assembleDebug bundleRelease`.
+**Build do APK: pelo CI** (`.github/workflows/build-apk.yml`, desde
+v0.11.18). Push na `main` → `npm ci` → `montar-www.js` → `cap sync` →
+`assembleDebug` → publica no Releases. O Gradle **não roda no ambiente
+do Claude** (o launcher bifurca um daemon e conversa por socket
+loopback, bloqueado lá — nem `--no-daemon` nem desligar o sandbox
+resolvem), então mover esse passo pro CI é o que permite entregar uma
+versão sem ninguém abrir o PowerShell.
+- Dois Secrets no repo: `GOOGLE_SERVICES_JSON` e `DEBUG_KEYSTORE_B64`
+  (os dois arquivos são gitignorados). O segundo existe porque o
+  runner assinaria com uma `debug.keystore` própria, e o Android
+  recusa instalar por cima de um app assinado com outra chave.
+- Armadilhas já resolvidas, não repetir: Node **22+** (o Capacitor CLI
+  recusa o 20), `chmod +x gradlew` (o Windows não guarda o bit no Git),
+  e a `signingConfig` de release só pode ser montada se
+  `keystore.properties` existir (senão `file('')` derruba até o
+  `assembleDebug`).
+- O release leva **dois** arquivos: `Desbrava.apk` (que o link
+  `latest/download` serve) e `Desbrava-v<ver>.apk`. O nome fixo fazia
+  todo download cair por cima do mesmo arquivo em Downloads, e o
+  celular acabava oferecendo o APK antigo pra instalar.
 
-## Última funcionalidade (v0.11.16)
+Build local (Windows, mais rápido, opcional): `node
+tools/montar-www.js && npx cap sync android && cd android &&
+./gradlew assembleDebug bundleRelease` — precisa de `JAVA_HOME`
+apontando pro JBR do Android Studio. `tools/publicar-apk.ps1` publica o
+release à mão (usa o `gh`, instalado em `C:\Program Files\GitHub CLI`,
+fora do PATH).
 
-**Tema Claro/Escuro/Sistema/Automático** (v0.11.16): o app não tinha
+## Última funcionalidade (v0.11.17 a v0.11.20)
+
+**Aparência sem `<select>`, e depois sem sensor** (v0.11.17 → v0.11.20):
+o `<select>` nativo de tema virou um segmented control
+(`#aparencia-opcoes` / `.aparencia-opcao`, botão ativo em `var(--verde)`
+com texto `var(--verde-tinta)`). Na 0.11.17 eram 4 opções, com uma
+modal de onboarding perguntando pelo sensor de luz na primeira
+abertura; na **0.11.20 o modo "Automático" saiu inteiro** (ver Regras
+fixas) e sobraram 3. Valor legado `"automatico"` no `localStorage` cai
+em `"sistema"` e é regravado (`TEMAS_VALIDOS` em `configurarAparencia`).
+- As regras do segmented control são escopadas em
+  `#configuracoes-conteudo` **com `!important`** de propósito: a
+  "CAMADA UI MODERNA" no fim do `styles.css` força
+  `background: var(--surf2) !important` em todo `button` de lá, e sem
+  isso o botão ativo sai cinza em vez de verde. Vale pra qualquer
+  componente novo dentro de Configurações.
+- `<meta name="theme-color">` era fixo em `#000000` (barra de status
+  preta com o app branco). Agora `temaEfetivo()` resolve o modo
+  "sistema" via `matchMedia("(prefers-color-scheme: dark)")` e
+  sincroniza a cor, com listener de `change`.
+
+**Raspadinha: nitidez, alinhamento e brilho** (v0.11.19, em
+`js/scratch-card.js`): o buffer do canvas passou a ser
+`ladoCSS × devicePixelRatio` (teto 3), com `setTransform` convertendo —
+o resto do arquivo continua desenhando em unidades de `tamanho`. As
+artes já eram 768×768, então **a fonte nunca foi o problema**; não
+importar os PNGs de 7 MB do Drive (5 arquivos = ~36 MB, mais que o
+`www/` inteiro) sem ganho visível.
+- O wrapper virou `min(tamanho, 100%)` + `aspect-ratio: 1/1`, com os
+  dois canvases a 100% dele — antes o selo de 400px (região/rota)
+  estourava o modal no celular e o dedo saía do lugar.
+- **Bug de fundo, achado aqui**: a capa era pintada no quadrado
+  inteiro, mas o `border-radius` impede o dedo de alcançar os cantos
+  (~21% da área). Com o limiar em 0.92, a capa cinza (Conquistas,
+  municípios sem `fundo.webp`) era **impossível de concluir**. Agora a
+  capa é recortada em círculo (`destination-in`) e o progresso é medido
+  contra a capa real, não contra o quadrado.
+- `.selo-brilhante` tinha `overflow: hidden` **sem** `border-radius` —
+  era isso que mostrava os cantos retangulares quando a luz passava.
+
+**Atualização do APK** (v0.11.18): ver Stack. `descobrirUrlApkVersionado`
+em `js/script.js` procura o asset `Desbrava-v*.apk` no último release e
+o `baixarApk()` prefere esse nome; sem rede, cai no `URL_APK`.
+- Nota de campo: trocar a chave de assinatura **impede** instalar por
+  cima ("conflito com um pacote já existente"). Aconteceu na migração
+  de dispositivo e o Paulo teve que desinstalar/reinstalar uma vez. O
+  progresso volta no login (`carregarEstadoDoUsuario` →
+  `buscarMeuEstadoCompleto`), o que torna isso seguro.
+
+## Anterior: tema e mapa (v0.11.16)
+
+**Tema Claro/Escuro/Sistema** (v0.11.16): o app não tinha
 nenhum sistema de tema até aqui (só dark fixo). Agora `css/styles.css`
 tem um bloco `:root` completo de variáveis (`--bg`/`--surf`/`--surf2`/
 `--linha`/`--txt`/`--fraco`/`--vidro`/`--backdrop`, além das já
@@ -62,15 +141,8 @@ cor de estado, não decoração.
   (confirmado durante o desenvolvimento: sem isso, pelo menos um
   elemento com `color: var(--txt)` direto no seletor não repintava
   sozinho até o próximo repaint natural).
-- Seletor "Aparência" (Sistema/Claro/Escuro/Automático) no Card 2 de
-  Configurações (`#select-aparencia`).
-- **"Automático"** liga o `AmbientLightSensor` do aparelho (permissão
-  + zona-morta 400-1000 lux pra não piscar em sombra passageira) e
-  escreve `data-theme` sozinho a cada leitura. **Essa API foi removida
-  do Chrome em 2021 (fingerprinting) e nunca existiu no Safari/iOS** —
-  ou seja, o `catch` (alerta + volta pra "Sistema" sozinho) é o
-  caminho principal na prática pra quase todo aparelho real, não uma
-  borda rara. `sensor.stop()` sempre que sai do modo Automático.
+- Seletor "Aparência" no Card 2 de Configurações — era um `<select>`
+  nativo (`#select-aparencia`), virou segmented control na v0.11.17.
 
 **Mapa (tela principal)** (v0.11.16): ícone de "Configurações" trocado
 de um sol (confundia com toggle de tema) pra uma engrenagem de
@@ -79,7 +151,7 @@ verdade, mesmo id/comportamento. Modo Viagem virou FAB primário
 até ela — antes os dois quase se tocavam). Dica "Arraste para
 mover..." some sozinha 4s depois de abrir (`configurarDicaMapa`).
 
-## Última funcionalidade anterior (v0.11.15)
+## Anterior: Garagem Virtual (v0.11.15)
 
 **Garagem Virtual redesenhada** (v0.11.15): as 3 abas (Criar/Editar/
 Estatísticas) viraram um segmented control (só a ativa ganha
