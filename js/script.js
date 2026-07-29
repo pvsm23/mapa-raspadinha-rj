@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.24";
+const VERSAO_APP = "0.11.25";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.24";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.25", itens: ["O voucher mensal da Loja subiu para R$ 9,90 — o mesmo valor da assinatura do Motoclube. Ou seja: todo mês você recebe de volta, em desconto na Loja, o que pagou pela assinatura."] },
   { versao: "0.11.24", itens: ["O Motoclube Desbrava virou assinatura: R$ 9,90 por mês, com pagamento por Pix dentro do próprio app (QR Code e código pra copiar). Assinando, você libera o Modo Viagem, o mapa offline, as dicas e lojas do Motoclube, a Garagem Virtual e o voucher mensal da Loja."] },
   { versao: "0.11.23", itens: ["\"Baixar dados offline\" saiu do \"em breve\" e funciona: assinantes PRO guardam mapa, selos e dados no aparelho, com barra de progresso, e o app abre sem internet. As imagens também passaram a carregar do aparelho antes de ir na rede, deixando a abertura mais rápida. Mais um punhado de acabamentos: botões respondem ao toque, e janelas e gavetas agora fecham com animação em vez de sumir de uma vez."] },
   { versao: "0.11.22", itens: ["Correção: as fotos dos posts não apareciam no feed. O app estava interceptando o carregamento das imagens por engano — agora elas carregam normalmente."] },
@@ -2026,8 +2027,9 @@ async function compartilharResumoViagemExternamente() {
    Firestore (ver criarPedido em js/auth.js), não cobra nada de
    verdade. Produto "ativo" com municípios da regraDesbloqueio ainda
    não raspados (ver estaVerificado) aparece em silhueta na vitrine.
-   Membro do Motoclube (souMembroMotoclube) ganha 1 voucher de R$4,90
-   por mês, não cumulativo (ver ultimoMesUsoVoucher em usuarios/{uid}).
+   Membro do Motoclube (souMembroMotoclube) ganha 1 voucher por mês,
+   não cumulativo (ver ultimoMesUsoVoucher em usuarios/{uid}), no
+   MESMO valor da assinatura (VALOR_VOUCHER_MOTOCLUBE).
    ============================================================ */
 
 let lojaProdutos = [];
@@ -2080,7 +2082,18 @@ function voucherDisponivelAgora() {
   return window.raspadinhaAuth?.ultimoMesUsoVoucher !== mesAtual;
 }
 
+/** Escreve o valor do voucher nos dois textos da Loja. Vem do JS pra
+ *  não voltar a divergir do desconto aplicado no checkout. */
+function atualizarTextosVoucher() {
+  const valor = formatarReais(VALOR_VOUCHER_MOTOCLUBE);
+  const banner = document.getElementById("loja-voucher-banner");
+  if (banner) banner.textContent = `🎁 Seu Voucher Mensal de ${valor} está disponível!`;
+  const label = document.getElementById("texto-checkout-voucher");
+  if (label) label.textContent = `🎁 Usar meu Voucher Mensal (${valor})`;
+}
+
 function atualizarBannerVoucherLoja() {
+  atualizarTextosVoucher();
   document.getElementById("loja-voucher-banner")?.classList.toggle("oculto", !voucherDisponivelAgora());
 }
 
@@ -2258,7 +2271,7 @@ function atualizarResumoCheckout() {
   if (!produto) return;
 
   const usarVoucher = voucherDisponivelAgora() && document.getElementById("check-checkout-voucher").checked;
-  const valorVoucher = usarVoucher ? Math.min(4.9, produto.valorBase) : 0;
+  const valorVoucher = usarVoucher ? Math.min(VALOR_VOUCHER_MOTOCLUBE, produto.valorBase) : 0;
   const frete = lojaFreteCalculado?.valor ?? 0;
   const total = Math.max(0, produto.valorBase - valorVoucher) + frete;
 
@@ -2284,7 +2297,7 @@ async function confirmarPedidoLoja() {
   botao.textContent = "Confirmando...";
 
   const usarVoucher = voucherDisponivelAgora() && document.getElementById("check-checkout-voucher").checked;
-  const valorVoucher = usarVoucher ? Math.min(4.9, produto.valorBase) : 0;
+  const valorVoucher = usarVoucher ? Math.min(VALOR_VOUCHER_MOTOCLUBE, produto.valorBase) : 0;
   const total = Math.max(0, produto.valorBase - valorVoucher) + lojaFreteCalculado.valor;
 
   try {
@@ -3642,6 +3655,12 @@ const URL_COBRANCA_PIX = "SUBSTITUA_AQUI_PELA_URL_DO_APPS_SCRIPT_DE_COBRANCA";
    cobrança faz outra. */
 const PRECO_MOTOCLUBE = 9.9;
 const PERIODO_MOTOCLUBE = "por mês";
+
+/* Voucher mensal da Loja = o PRÓPRIO valor da assinatura, de
+   propósito: a ideia é que o membro sempre sinta que recebe de volta
+   o que pagou. Por isso é uma referência a PRECO_MOTOCLUBE e não um
+   número solto -- mudou o preço, o voucher acompanha sozinho. */
+const VALOR_VOUCHER_MOTOCLUBE = PRECO_MOTOCLUBE;
 
 // Cobrança aberta no momento (id do Asaas + copia e cola).
 let cobrancaAtual = null;
@@ -7926,8 +7945,9 @@ async function compartilharRotaPersonalizadaNaComunidade() {
    souMembroMotoclube(), logo abaixo, que exige `ehPro` ligado E
    `proAte` no futuro.
 
-   O R$ 4,90 que aparece na Loja é outra coisa: é o voucher mensal de
-   desconto que o membro ganha, não o preço da assinatura.
+   O voucher mensal da Loja vale o MESMO que a assinatura
+   (VALOR_VOUCHER_MOTOCLUBE = PRECO_MOTOCLUBE), de propósito: o membro
+   sente que recebe de volta o que pagou.
    ============================================================ */
 
 /**

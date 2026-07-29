@@ -726,7 +726,7 @@
 
       <!-- Só aparece pra membro do Motoclube (souMembroMotoclube) que
            ainda não usou o voucher do mês, ver atualizarBannerVoucherLoja. -->
-      <div id="loja-voucher-banner" class="oculto">🎁 Seu Voucher Mensal de R$ 4,90 está disponível!</div>
+      <div id="loja-voucher-banner" class="oculto"></div>
 
       <div id="loja-abas">
         <button type="button" class="loja-aba loja-aba-ativa" id="btn-loja-aba-fisicos" data-tipo="fisico">📦 Físicos</button>
@@ -753,9 +753,13 @@
       </div>
       <p id="checkout-loja-frete-status" class="oculto"></p>
 
+      <!-- O valor é escrito por atualizarTextosVoucher() em
+           js/script.js, a partir de VALOR_VOUCHER_MOTOCLUBE -- que por
+           sua vez é o próprio preço da assinatura. Deixar o número no
+           HTML já fez ele divergir do desconto real uma vez. -->
       <label id="label-checkout-voucher" class="oculto">
         <input type="checkbox" id="check-checkout-voucher" checked>
-        🎁 Usar meu Voucher Mensal (R$ 4,90)
+        <span id="texto-checkout-voucher">🎁 Usar meu Voucher Mensal</span>
       </label>
 
       <div id="checkout-loja-resumo">

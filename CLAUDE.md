@@ -27,8 +27,10 @@ Regras fixas:
   `PRECO_MOTOCLUBE` (js/script.js, só exibição), `PRECO_PRO`
   (tools/apps-script-gerar-cobranca.gs, o que cobra) e
   `MESES_POR_PAGAMENTO` (tools/apps-script-asaas.gs, quanto libera).
-  O R$ 4,90 da Loja é outra coisa: o voucher mensal de desconto do
-  membro, não o preço da assinatura.
+  O voucher mensal da Loja vale o MESMO que a assinatura — é uma
+  referência (`VALOR_VOUCHER_MOTOCLUBE = PRECO_MOTOCLUBE`), não um
+  número solto, porque a ideia do produto é o membro sentir que recebe
+  de volta o que pagou. Não "conserte" isso achando que é duplicação.
 - Selo "dourado" (texto visível) = `brilhante` (código/ids internos,
   não renomear).
 - AdSense: não ativar sem pedido explícito.
@@ -281,8 +283,8 @@ avatar circular reutilizável (`corAvatar`/`iniciaisApelido` em
 pagamento real (`criarPedido` só registra a intenção de compra,
 coleção `pedidos`). Catálogo em `produtos`, CRUD só pelo admin
 (`UID_DONO`). Produto bloqueado (município da `regraDesbloqueio` não
-raspado) aparece em silhueta. Voucher do Motoclube (R$4,90/mês, não
-cumulativo) aplicado no checkout. Frete mockado via ViaCEP.
+raspado) aparece em silhueta. Voucher do Motoclube (mensal, não
+cumulativo, no valor da assinatura) aplicado no checkout. Frete mockado via ViaCEP.
 
 **3 recursos PRO do Motoclube ligados ao Modo Viagem** (v0.11.3-0.11.4):
 Garagem Virtual (até 3 motos, odômetro somado sozinho pela moto
