@@ -153,15 +153,14 @@ window.raspadinhaAuth = {
   subirFotoPerfil: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
-  // Distintivo "PRO" no ranking (ver README.md, seção Plano PRO) --
-  // booleano, não confundir com a função `ehPro()` mais abaixo neste
-  // mesmo objeto (stub antigo do recurso de download offline, um
-  // propósito totalmente diferente). Nomes parecidos de propósito
-  // (ambos ligados a "ser PRO"), mas ESTE aqui precisa de um nome
-  // próprio, senão a atribuição booleana em onAuthStateChanged
-  // sobrescreveria a função e quebraria ehUsuarioPro() em
-  // js/script.js assim que alguém logasse.
+  // Assinante PRO: preenchido no login a partir de
+  // `usuarios/{uid}.ehPro` (ver onAuthStateChanged). Vale tanto pro
+  // distintivo no Ranking quanto pro gate do download offline
+  // (ehUsuarioPro em js/script.js). Quem liga esse campo é o webhook
+  // do Asaas (tools/apps-script-asaas.gs) ou a ativação manual pelo
+  // codigoAtivacaoPro.
   contaEhPro: false,
+  proAte: null,
   db: null,
   boostsBrilhantesPendentes: 0,
   entrarComEmail: async () => {
@@ -238,10 +237,6 @@ window.raspadinhaAuth = {
   reautenticarEExcluirConta: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
-  // TODO(PRO): trocar por uma verificação real (ex: campo no
-  // Firestore ligado ao usuário logado) quando o controle de
-  // assinatura PRO existir.
-  ehPro: () => false,
 };
 
 if (CONFIGURADO) {
@@ -1944,6 +1939,7 @@ if (CONFIGURADO) {
     if (!usuario) {
       window.raspadinhaAuth.apelido = null;
       window.raspadinhaAuth.contaEhPro = false;
+      window.raspadinhaAuth.proAte = null;
       document.dispatchEvent(new CustomEvent("auth-mudou", { detail: null }));
       return;
     }
@@ -1966,6 +1962,11 @@ if (CONFIGURADO) {
       const apelido = snap.exists() ? snap.data().apelido : null;
       window.raspadinhaAuth.apelido = apelido || null;
       window.raspadinhaAuth.contaEhPro = !!snap.data()?.ehPro;
+      // Vencimento da assinatura do Motoclube, gravado pelo webhook do
+      // Asaas (tools/apps-script-asaas.gs). Pode vir como Timestamp do
+      // Firestore ou string ISO -- quem normaliza é
+      // parsearDataAssinatura em js/script.js.
+      window.raspadinhaAuth.proAte = snap.data()?.proAte || null;
       window.raspadinhaAuth.fotoPerfil = snap.data()?.fotoPerfil || null;
       window.raspadinhaAuth.ultimoMesUsoVoucher = snap.data()?.ultimoMesUsoVoucher || null;
 

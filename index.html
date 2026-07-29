@@ -940,7 +940,6 @@
     <div id="motoclube-conteudo">
       <button id="btn-fechar-motoclube" aria-label="Fechar">✕</button>
       <h2>🏍️ Motoclube Desbrava</h2>
-      <p id="motoclube-aviso-gratis">🎉 Gratuito por enquanto! No futuro, o Motoclube passa a custar R$ 4,90/mês.</p>
 
       <button type="button" id="btn-motoclube-adicionar" class="btn-link-amigo">+ Adicionar loja ou dica</button>
 
@@ -1177,12 +1176,16 @@
            daqui: a explicação agora mora no próprio modal do mapa,
            não precisa duplicar em Configurações. -->
       <div class="settings-card">
-        <h3 class="settings-card-titulo">⭐ Recursos</h3>
+        <h3 class="settings-card-titulo">🏍️ Recursos do Motoclube</h3>
         <!-- Baixa selos, mapas SVG e os JSONs de dados pro cache do
              navegador, pra usar o app sem internet. Só pra PRO
              (ehUsuarioPro em js/script.js). O que entra no pacote vem
              de data/offline-manifest.json, GERADO no build por
              tools/montar-www.js -- não é lista escrita à mão. -->
+        <!-- Só aparece pra quem AINDA não é PRO (ver
+             atualizarBotaoAssinarPro em js/script.js). -->
+        <button id="btn-assinar-pro" class="oculto">🏍️ Entrar para o Motoclube Desbrava</button>
+
         <button id="btn-baixar-offline">⬇️ Baixar dados offline</button>
         <div id="offline-progresso" class="oculto">
           <div id="offline-barra"><div id="offline-barra-preenchida"></div></div>
@@ -1722,6 +1725,89 @@
           <span class="spinner oculto"></span>
         </button>
         <p id="sugestao-form-status" class="oculto"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paywall do Motoclube. Aberto por abrirPaywallMotoclube() sempre
+       que alguém sem assinatura ativa toca num recurso pago (Modo
+       Viagem, download offline, aba Motoclube). -->
+  <div id="modal-paywall" class="sheet-overlay oculto">
+    <div id="paywall-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="paywall-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="paywall-titulo-cabecalho">Motoclube Desbrava</h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-paywall" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <div id="paywall-icone" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l7 3v6c0 4.5-3 8.5-7 11-4-2.5-7-6.5-7-11V5z"/>
+            <circle cx="8.5" cy="12" r="2"/>
+            <circle cx="15.5" cy="12" r="2"/>
+            <path d="M10.5 12h3l-1-2.5h-2"/>
+          </svg>
+        </div>
+
+        <h2 id="paywall-titulo">Junte-se ao Motoclube Desbrava</h2>
+        <p id="paywall-subtitulo">Desbloqueie a experiência completa para suas viagens.</p>
+
+        <ul id="paywall-beneficios">
+          <li><span class="paywall-check" aria-hidden="true">✓</span> <span><b>Navegação offline</b> — baixe mapas e selos no aparelho</span></li>
+          <li><span class="paywall-check" aria-hidden="true">✓</span> <span><b>Modo Viagem</b> — rastreio do rolê, km e resumo</span></li>
+          <li><span class="paywall-check" aria-hidden="true">✓</span> <span><b>Dicas e lojas</b> do Motoclube, com filtro por marca</span></li>
+          <li><span class="paywall-check" aria-hidden="true">✓</span> <span><b>Garagem Virtual</b> e voucher mensal na Loja</span></li>
+        </ul>
+
+        <div id="paywall-preco">
+          <span id="paywall-preco-valor"></span>
+          <span id="paywall-preco-periodo"></span>
+        </div>
+
+        <button type="button" id="btn-paywall-assinar" class="sheet-btn-primario">Quero fazer parte</button>
+        <p id="paywall-rodape">Pagamento por Pix. A liberação é automática assim que o pagamento cair.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Pix. A chave da API do Asaas NÃO vive aqui: o app só
+       chama o Apps Script (URL_COBRANCA_PIX em js/script.js), que fala
+       com o Asaas e devolve o QR Code. Ver
+       tools/apps-script-gerar-cobranca.gs. -->
+  <div id="modal-checkout" class="sheet-overlay oculto">
+    <div id="checkout-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="checkout-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="checkout-titulo">Checkout Desbrava</h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-checkout" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <p id="checkout-descricao"></p>
+
+        <!-- Etapa 1: CPF (o Asaas exige um cliente com CPF pra emitir Pix) -->
+        <div id="checkout-etapa-cpf">
+          <label class="campo-rotulo" for="input-cpf-checkout">Seu CPF</label>
+          <input type="tel" id="input-cpf-checkout" class="campo-material" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="off">
+          <p id="checkout-erro" class="oculto"></p>
+          <button type="button" id="btn-gerar-pix" class="sheet-btn-primario">Gerar Pix</button>
+        </div>
+
+        <!-- Etapa 2: carregando (skeleton, ver .skeleton-pulse) -->
+        <div id="checkout-etapa-carregando" class="oculto">
+          <div class="skeleton-pulse" id="checkout-skeleton-qr"></div>
+          <div class="skeleton-pulse skeleton-linha media"></div>
+          <div class="skeleton-pulse skeleton-linha curta"></div>
+          <p id="checkout-carregando-texto">Gerando seu Pix...</p>
+        </div>
+
+        <!-- Etapa 3: QR Code pronto -->
+        <div id="checkout-etapa-pix" class="oculto">
+          <img id="checkout-qr" alt="QR Code do Pix">
+          <p id="checkout-valor"></p>
+          <button type="button" id="btn-copiar-pix" class="sheet-btn-primario">Copiar código Pix</button>
+          <p id="checkout-aviso">Assim que o pagamento cair, a liberação é automática — pode levar alguns segundos.</p>
+          <button type="button" id="btn-ja-paguei">Já paguei / Fechar</button>
+        </div>
       </div>
     </div>
   </div>

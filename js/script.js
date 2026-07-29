@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.23";
+const VERSAO_APP = "0.11.24";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.23";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.24", itens: ["O Motoclube Desbrava virou assinatura: R$ 9,90 por mês, com pagamento por Pix dentro do próprio app (QR Code e código pra copiar). Assinando, você libera o Modo Viagem, o mapa offline, as dicas e lojas do Motoclube, a Garagem Virtual e o voucher mensal da Loja."] },
   { versao: "0.11.23", itens: ["\"Baixar dados offline\" saiu do \"em breve\" e funciona: assinantes PRO guardam mapa, selos e dados no aparelho, com barra de progresso, e o app abre sem internet. As imagens também passaram a carregar do aparelho antes de ir na rede, deixando a abertura mais rápida. Mais um punhado de acabamentos: botões respondem ao toque, e janelas e gavetas agora fecham com animação em vez de sumir de uma vez."] },
   { versao: "0.11.22", itens: ["Correção: as fotos dos posts não apareciam no feed. O app estava interceptando o carregamento das imagens por engano — agora elas carregam normalmente."] },
   { versao: "0.11.21", itens: ["Sugestões da Comunidade repaginadas: as categorias viraram uma faixa de pílulas deslizantes, o município agora se escolhe numa lista com busca (some a listinha do celular com 92 opções), e os lugares aparecem num mosaico de cartões com a foto de fundo. Publicar uma foto ou sugerir um lugar abre uma janelinha que sobe de baixo, em vez de esticar a tela, e escolher a foto virou um quadro que já mostra a prévia."] },
@@ -704,6 +705,29 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-baixar-offline")
     .addEventListener("click", baixarDadosOffline);
 
+  // ---- Paywall do Motoclube ----
+  document.getElementById("btn-assinar-pro").addEventListener("click", abrirPaywallMotoclube);
+  document.getElementById("btn-fechar-paywall").addEventListener("click", fecharPaywallMotoclube);
+  document.getElementById("btn-paywall-assinar").addEventListener("click", aoAssinarPeloPaywall);
+  document.getElementById("modal-paywall").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-paywall") fecharPaywallMotoclube();
+  });
+
+  // ---- Checkout Pix ----
+  document.getElementById("btn-fechar-checkout").addEventListener("click", fecharCheckout);
+  document.getElementById("btn-ja-paguei").addEventListener("click", fecharCheckout);
+  document.getElementById("modal-checkout").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-checkout") fecharCheckout();
+  });
+  document.getElementById("btn-gerar-pix").addEventListener("click", aoGerarPix);
+  document.getElementById("btn-copiar-pix").addEventListener("click", copiarCodigoPix);
+  document.getElementById("input-cpf-checkout").addEventListener("input", (evento) => {
+    evento.target.value = formatarCpf(evento.target.value);
+  });
+  // O botão só existe pra quem não é PRO, e isso só se sabe depois do
+  // login carregar o perfil.
+  document.addEventListener("auth-mudou", atualizarBotaoAssinarPro);
+
   document
     .getElementById("btn-confirmar-apelido")
     .addEventListener("click", confirmarApelido);
@@ -1230,8 +1254,15 @@ function configurarModoViagem() {
   botao.classList.remove("oculto");
 
   botao.addEventListener("click", () => {
-    if (viagemAtiva) pararModoViagem();
-    else abrirConfirmacaoModoViagem();
+    // Parar uma viagem em andamento NUNCA é barrado: se a assinatura
+    // vencesse no meio do rolê, a pessoa ficaria com o rastreio ligado
+    // sem conseguir desligar pelo app.
+    if (viagemAtiva) {
+      pararModoViagem();
+      return;
+    }
+    if (!exigirMotoclube()) return;
+    abrirConfirmacaoModoViagem();
   });
 
   document.getElementById("btn-fechar-confirmar-viagem")?.addEventListener("click", fecharConfirmacaoModoViagem);
@@ -3590,6 +3621,225 @@ async function fecharModalApelidoComAleatorio() {
 // cada atualização.
 const CACHE_OFFLINE = "desbrava-offline-v1";
 
+/* ============================================================
+   CHECKOUT PIX (Asaas)
+   ------------------------------------------------------------
+   A chave da API do Asaas NÃO existe aqui, de propósito: qualquer
+   pessoa lê o JS do app. Quem fala com o Asaas é um Apps Script
+   (tools/apps-script-gerar-cobranca.gs), e o app só pede a cobrança.
+   O preço também é decidido lá -- se viesse daqui, bastaria trocar
+   no DevTools pra assinar por um centavo.
+
+   Depois de implantar aquele script, cole a URL /exec abaixo.
+   ============================================================ */
+const URL_COBRANCA_PIX = "SUBSTITUA_AQUI_PELA_URL_DO_APPS_SCRIPT_DE_COBRANCA";
+
+/* Preço e período do Motoclube, só pra EXIBIÇÃO.
+   ATENÇÃO: quem cobra de verdade é PRECO_PRO em
+   tools/apps-script-gerar-cobranca.gs, e quem decide quanto tempo
+   libera é MESES_POR_PAGAMENTO em tools/apps-script-asaas.gs. Se
+   mexer aqui, mexa lá também -- senão a tela promete uma coisa e a
+   cobrança faz outra. */
+const PRECO_MOTOCLUBE = 9.9;
+const PERIODO_MOTOCLUBE = "por mês";
+
+// Cobrança aberta no momento (id do Asaas + copia e cola).
+let cobrancaAtual = null;
+
+/**
+ * Pede uma cobrança Pix ao Apps Script e devolve
+ * { id, payloadCode, encodedImage, valor }.
+ *
+ * `Content-Type: text/plain` NÃO é descuido: com application/json o
+ * navegador dispara um preflight OPTIONS, que o Apps Script não sabe
+ * responder, e a chamada morre em erro de CORS. Como não dá pra
+ * escrever cabeçalho de resposta no ContentService, o jeito é não
+ * provocar o preflight. Mesmo truque do enviarParaPlanilha em
+ * js/auth.js.
+ */
+async function solicitarPix({ tipo = "pro", valor, descricao, cpf, uid, nome }) {
+  if (!URL_COBRANCA_PIX || URL_COBRANCA_PIX.startsWith("SUBSTITUA")) {
+    throw new Error("O checkout ainda não foi configurado.");
+  }
+
+  const resposta = await fetch(URL_COBRANCA_PIX, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ tipo, valor, descricao, cpf, uid, nome }),
+  });
+
+  if (!resposta.ok) throw new Error("Não foi possível falar com o servidor de pagamento.");
+  const dados = await resposta.json();
+  if (!dados.ok) throw new Error(dados.erro || "Não foi possível gerar o Pix.");
+  return dados;
+}
+
+/** Abre o checkout. `tipo` é "pro" ou "loja". */
+function abrirCheckout({ tipo = "pro", valor = null, descricao = "Assinatura Motoclube Desbrava" } = {}) {
+  if (!window.raspadinhaAuth?.usuarioAtual) {
+    alert("Faça login antes de assinar.");
+    return;
+  }
+
+  cobrancaAtual = { tipo, valor, descricao };
+  document.getElementById("checkout-descricao").textContent = descricao;
+  document.getElementById("input-cpf-checkout").value = "";
+  document.getElementById("checkout-erro").classList.add("oculto");
+  mostrarEtapaCheckout("cpf");
+  document.getElementById("modal-checkout").classList.remove("oculto");
+}
+
+function fecharCheckout() {
+  fecharComAnimacao(document.getElementById("modal-checkout"));
+  cobrancaAtual = null;
+}
+
+function mostrarEtapaCheckout(etapa) {
+  ["cpf", "carregando", "pix"].forEach((nome) => {
+    document
+      .getElementById(`checkout-etapa-${nome}`)
+      .classList.toggle("oculto", nome !== etapa);
+  });
+}
+
+/** 12345678909 -> 123.456.789-09, enquanto a pessoa digita. */
+function formatarCpf(valor) {
+  const d = String(valor).replace(/\D/g, "").slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+}
+
+async function aoGerarPix() {
+  const erroEl = document.getElementById("checkout-erro");
+  const cpf = document.getElementById("input-cpf-checkout").value.replace(/\D/g, "");
+
+  erroEl.classList.add("oculto");
+  if (cpf.length !== 11) {
+    erroEl.textContent = "Digite os 11 números do CPF.";
+    erroEl.classList.remove("oculto");
+    return;
+  }
+
+  mostrarEtapaCheckout("carregando");
+
+  try {
+    const dados = await solicitarPix({
+      tipo: cobrancaAtual?.tipo || "pro",
+      valor: cobrancaAtual?.valor,
+      descricao: cobrancaAtual?.descricao,
+      cpf,
+      uid: window.raspadinhaAuth.usuarioAtual.uid,
+      nome: window.raspadinhaAuth.apelido || "Desbravador",
+    });
+
+    cobrancaAtual = { ...cobrancaAtual, ...dados };
+
+    // O Asaas devolve o PNG em base64, sem o prefixo data:.
+    document.getElementById("checkout-qr").src = `data:image/png;base64,${dados.encodedImage}`;
+    document.getElementById("checkout-valor").textContent = `R$ ${Number(dados.valor)
+      .toFixed(2)
+      .replace(".", ",")}`;
+    mostrarEtapaCheckout("pix");
+  } catch (erro) {
+    console.error("Falha ao gerar Pix:", erro);
+    erroEl.textContent = erro.message || "Não foi possível gerar o Pix.";
+    erroEl.classList.remove("oculto");
+    mostrarEtapaCheckout("cpf");
+  }
+}
+
+async function copiarCodigoPix() {
+  const codigo = cobrancaAtual?.payloadCode;
+  if (!codigo) return;
+  const botao = document.getElementById("btn-copiar-pix");
+
+  try {
+    await navigator.clipboard.writeText(codigo);
+  } catch (erro) {
+    // clipboard exige contexto seguro e, em WebView, nem sempre está
+    // disponível -- este fallback é o que salva no APK.
+    const campo = document.createElement("textarea");
+    campo.value = codigo;
+    campo.style.position = "fixed";
+    campo.style.opacity = "0";
+    document.body.appendChild(campo);
+    campo.select();
+    try {
+      document.execCommand("copy");
+    } catch (erro2) {
+      console.error("Não foi possível copiar o código Pix:", erro2);
+    }
+    campo.remove();
+  }
+
+  botao.textContent = "✓ Código copiado!";
+  setTimeout(() => (botao.textContent = "Copiar código Pix"), 2200);
+}
+
+/* ============================================================
+   PAYWALL DO MOTOCLUBE
+   ------------------------------------------------------------
+   Tela de venda única, aberta por exigirMotoclube() sempre que
+   alguém sem assinatura ativa toca num recurso pago. Quem já pagou
+   nunca vê isto.
+   ============================================================ */
+function abrirPaywallMotoclube() {
+  if (!window.raspadinhaAuth?.usuarioAtual) {
+    exigirLogin(() => abrirPaywallMotoclube());
+    return;
+  }
+
+  const renovando = assinaturaMotoclubeVencida();
+
+  document.getElementById("paywall-titulo").textContent = renovando
+    ? "Sua assinatura venceu"
+    : "Junte-se ao Motoclube Desbrava";
+  document.getElementById("paywall-subtitulo").textContent = renovando
+    ? "Renove para voltar a usar o Modo Viagem, o mapa offline e as dicas do Motoclube."
+    : "Desbloqueie a experiência completa para suas viagens.";
+  document.getElementById("btn-paywall-assinar").textContent = renovando
+    ? "Renovar acesso"
+    : "Quero fazer parte";
+
+  document.getElementById("paywall-preco-valor").textContent = `R$ ${PRECO_MOTOCLUBE.toFixed(2).replace(".", ",")}`;
+  document.getElementById("paywall-preco-periodo").textContent = PERIODO_MOTOCLUBE;
+
+  document.getElementById("modal-paywall").classList.remove("oculto");
+}
+
+function fecharPaywallMotoclube() {
+  fecharComAnimacao(document.getElementById("modal-paywall"));
+}
+
+/** Do paywall pro checkout: fecha um, abre o outro. */
+function aoAssinarPeloPaywall() {
+  const renovando = assinaturaMotoclubeVencida();
+  fecharPaywallMotoclube();
+  abrirCheckout({
+    tipo: "pro",
+    descricao: renovando ? "Renovação Motoclube Desbrava" : "Assinatura Motoclube Desbrava",
+  });
+}
+
+/** Esconde o botão de assinar pra quem já tem assinatura ativa, e
+ *  reaparece com "Renovar" quando o prazo passa. */
+function atualizarBotaoAssinarPro() {
+  const botao = document.getElementById("btn-assinar-pro");
+  if (!botao) return;
+  const logado = !!window.raspadinhaAuth?.usuarioAtual;
+  botao.classList.toggle("oculto", !logado || souMembroMotoclube());
+  botao.textContent = assinaturaMotoclubeVencida()
+    ? "🏍️ Renovar acesso ao Motoclube"
+    : "🏍️ Entrar para o Motoclube Desbrava";
+
+  // A Garagem só aparece no menu pra membro, e essa decisão era
+  // tomada uma vez só na inicialização -- antes do login terminar.
+  // Reavaliada aqui, a cada mudança de conta.
+  document.getElementById("menu-abrir-garagem")?.classList.toggle("oculto", !souMembroMotoclube());
+}
+
 /**
  * Baixa selos, mapas SVG e os JSONs de dados pro CacheStorage, pra
  * usar o app sem internet. Recurso do PRO.
@@ -3602,12 +3852,7 @@ const CACHE_OFFLINE = "desbrava-offline-v1";
  * o que está aqui é encontrado sem nenhuma gambiarra.
  */
 async function baixarDadosOffline() {
-  if (!ehUsuarioPro()) {
-    alert(
-      "Baixar dados offline é um recurso do Desbrava PRO.\n\nCom ele, o mapa e os selos funcionam sem internet."
-    );
-    return;
-  }
+  if (!exigirMotoclube()) return;
 
   const botao = document.getElementById("btn-baixar-offline");
   const painel = document.getElementById("offline-progresso");
@@ -3667,11 +3912,12 @@ async function baixarDadosOffline() {
 }
 
 /**
- * TODO(PRO): trocar por uma verificação real de assinatura (ex:
- * campo no Firestore ligado ao usuário logado) quando existir.
+ * Apelido histórico de souMembroMotoclube(). O produto pago virou um
+ * só ("Motoclube Desbrava"), então não existem mais dois níveis --
+ * mantido só pra não reescrever as chamadas antigas.
  */
 function ehUsuarioPro() {
-  return window.raspadinhaAuth?.ehPro() ?? false;
+  return souMembroMotoclube();
 }
 
 /**
@@ -7673,22 +7919,77 @@ async function compartilharRotaPersonalizadaNaComunidade() {
 
 /* ============================================================
    Motoclube Desbrava: dicas/lojas de peças, oficinas e afins pra
-   motociclistas, com filtro de marca/modelo. GRATUITO por enquanto --
-   souMembroMotoclube() sempre retorna true hoje; quando a cobrança
-   (R$ 4,90/mês) for ativada de verdade, é só trocar essa função pra
-   checar um campo tipo usuarios/{uid}.motoclubeAtivo (mesmo padrão do
-   Plano PRO: campo/código nunca hardcoded aqui, ativação manual via
-   Firestore). NÃO implementar checkout/cobrança sem o Paulo pedir de
-   novo -- mesma regra do Plano PRO.
+   motociclistas, com filtro de marca/modelo.
+
+   PAGO desde a v0.11.24 (R$ 9,90/mês). É o ÚNICO produto pago do app
+   -- o que antes se chamava "Desbrava PRO" virou isto. Quem manda é
+   souMembroMotoclube(), logo abaixo, que exige `ehPro` ligado E
+   `proAte` no futuro.
+
+   O R$ 4,90 que aparece na Loja é outra coisa: é o voucher mensal de
+   desconto que o membro ganha, não o preço da assinatura.
    ============================================================ */
 
 /**
- * Hoje sempre `true` (Motoclube gratuito pra todo mundo). Todo o resto
- * do código já trata isso como um "gate" -- é só trocar o `return`
- * daqui quando a cobrança for ativada de verdade.
+ * Fonte ÚNICA de verdade sobre "essa pessoa pagou?". Todo o resto do
+ * app pergunta por aqui (perfil, garagem, voucher, extras do Modo
+ * Viagem, download offline).
+ *
+ * Dois requisitos, não um: `ehPro` ligado E a assinatura dentro do
+ * prazo. Só o booleano dava acesso vitalício no primeiro pagamento.
  */
 function souMembroMotoclube() {
-  return true;
+  if (window.raspadinhaAuth?.contaEhPro !== true) return false;
+
+  const ate = parsearDataAssinatura(window.raspadinhaAuth?.proAte);
+  // Sem data: conta ativada à mão (codigoAtivacaoPro), de antes de
+  // existir cobrança. Essas não expiram -- tirar acesso de quem já
+  // tinha seria pior do que deixar passar.
+  if (!ate) return true;
+
+  return ate.getTime() > Date.now();
+}
+
+/** Era PRO, mas o prazo passou. Serve pra trocar "Entrar" por
+ *  "Renovar" no paywall e no checkout. */
+function assinaturaMotoclubeVencida() {
+  if (window.raspadinhaAuth?.contaEhPro !== true) return false;
+  const ate = parsearDataAssinatura(window.raspadinhaAuth?.proAte);
+  return !!ate && ate.getTime() <= Date.now();
+}
+
+/**
+ * Normaliza o `proAte` venha ele como for. O mesmo campo pode chegar
+ * como Timestamp do Firestore (com .toDate() ou {seconds}), string
+ * ISO (é o que o Apps Script grava) ou Date. Data inválida devolve
+ * null, e null aqui significa "não expira" -- errar pro lado de
+ * liberar é melhor do que trancar quem pagou por causa de um formato
+ * inesperado.
+ */
+function parsearDataAssinatura(valor) {
+  if (!valor) return null;
+  try {
+    if (typeof valor.toDate === "function") return valor.toDate();
+    if (typeof valor.seconds === "number") return new Date(valor.seconds * 1000);
+    if (valor instanceof Date) return isNaN(valor.getTime()) ? null : valor;
+    const data = new Date(valor);
+    return isNaN(data.getTime()) ? null : data;
+  } catch (erro) {
+    console.error("proAte em formato inesperado:", valor, erro);
+    return null;
+  }
+}
+
+/**
+ * Porta de entrada dos recursos pagos. Devolve `true` se pode seguir;
+ * se não, abre o paywall e devolve `false`.
+ *
+ * Uso: `if (!exigirMotoclube()) return;`
+ */
+function exigirMotoclube() {
+  if (souMembroMotoclube()) return true;
+  abrirPaywallMotoclube();
+  return false;
 }
 
 let itensMotoclubeCache = [];
@@ -7727,6 +8028,7 @@ function popularFormulariosMotoclubeSeNecessario() {
 }
 
 async function abrirMotoclube() {
+  if (!exigirMotoclube()) return;
   popularFormulariosMotoclubeSeNecessario();
   document.getElementById("modal-motoclube").classList.remove("oculto");
   const lista = document.getElementById("motoclube-lista");

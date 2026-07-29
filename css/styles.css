@@ -8246,17 +8246,6 @@ select:focus {
   color: var(--txt);
 }
 
-#motoclube-aviso-gratis {
-  background: rgba(233, 185, 73, 0.15);
-  color: #E9B949;
-  border: 1px solid rgba(233, 185, 73, 0.4);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 0.8rem;
-  margin: 0 0 14px;
-  text-align: left;
-}
-
 #motoclube-filtros {
   display: flex;
   gap: 8px;
@@ -9264,4 +9253,205 @@ button:disabled:active {
   margin: 6px 0 0;
   color: var(--fraco);
   font-size: 0.76rem;
+}
+
+/* ---- Checkout Pix (modal-checkout) ---- */
+#checkout-descricao {
+  margin: 0 0 4px;
+  color: var(--txt);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+#checkout-etapa-cpf.oculto,
+#checkout-etapa-carregando.oculto,
+#checkout-etapa-pix.oculto {
+  display: none;
+}
+
+#checkout-erro {
+  margin: 8px 0 0;
+  color: var(--erro);
+  font-size: 0.8rem;
+}
+
+#checkout-erro.oculto {
+  display: none;
+}
+
+/* Skeleton no formato do QR: quadrado, pra tela não "pular" quando a
+   imagem de verdade chegar. */
+#checkout-skeleton-qr {
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+}
+
+#checkout-carregando-texto {
+  color: var(--fraco);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* O QR fica sempre sobre FUNDO BRANCO, mesmo no tema escuro: o
+   leitor da câmera precisa do contraste original: pretos sobre
+   branco. Invertido, muitos apps de banco não leem. */
+#checkout-qr {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto 14px;
+  padding: 10px;
+  background: #FFFFFF;
+  border-radius: 14px;
+}
+
+#checkout-valor {
+  margin: 0 0 4px;
+  color: var(--txt);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+#checkout-aviso {
+  margin: 12px 0 0;
+  color: var(--fraco);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+#btn-ja-paguei {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: var(--fraco);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-assinar-pro {
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+  border: none !important;
+  font-weight: 700;
+}
+
+#btn-assinar-pro.oculto {
+  display: none;
+}
+
+/* ---- Paywall do Motoclube ---- */
+#paywall-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin: 4px auto 14px;
+  border-radius: 50%;
+  /* Aro dourado sobre verde: o dourado no app é reservado ao que é
+     raro (selo brilhante), e é exatamente essa leitura que a gente
+     quer emprestar aqui. */
+  background: radial-gradient(circle at 35% 28%, rgba(43, 213, 118, 0.28), rgba(43, 213, 118, 0.06));
+  border: 1px solid rgba(233, 185, 73, 0.5);
+  color: var(--verde);
+}
+
+#paywall-icone svg {
+  width: 38px;
+  height: 38px;
+}
+
+#paywall-titulo {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--txt);
+}
+
+#paywall-subtitulo {
+  margin: 0 0 18px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--fraco);
+}
+
+#paywall-beneficios {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+#paywall-beneficios li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--linha);
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--txt);
+}
+
+#paywall-beneficios li:last-child {
+  border-bottom: none;
+}
+
+.paywall-check {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+#paywall-preco {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+}
+
+#paywall-preco-valor {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--txt);
+  line-height: 1;
+}
+
+#paywall-preco-periodo {
+  font-size: 0.85rem;
+  color: var(--fraco);
+}
+
+#paywall-rodape {
+  margin: 12px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--fraco);
 }

@@ -20,10 +20,15 @@ Regras fixas:
   1º/2º dígito só quando o Paulo pedir.
 - Segredo do Plano PRO: nunca em arquivo do repo (só na regra do
   Firestore, à mão).
-- **Motoclube Desbrava**: gratuito hoje (`souMembroMotoclube()` em
-  `js/script.js` sempre `true`), mas já estruturado como feature paga
-  (R$ 4,90/mês). **Não implementar cobrança/checkout real nem
-  endurecer o gate sem o Paulo pedir de novo** — mesma regra do Plano PRO.
+- **Motoclube Desbrava**: PAGO desde a v0.11.24, **R$ 9,90/mês**. É o
+  único produto pago — o que se chamava "Desbrava PRO" virou isto
+  (`ehUsuarioPro()` é só um apelido de `souMembroMotoclube()`). O
+  preço aparece em TRÊS lugares que precisam mudar juntos:
+  `PRECO_MOTOCLUBE` (js/script.js, só exibição), `PRECO_PRO`
+  (tools/apps-script-gerar-cobranca.gs, o que cobra) e
+  `MESES_POR_PAGAMENTO` (tools/apps-script-asaas.gs, quanto libera).
+  O R$ 4,90 da Loja é outra coisa: o voucher mensal de desconto do
+  membro, não o preço da assinatura.
 - Selo "dourado" (texto visível) = `brilhante` (código/ids internos,
   não renomear).
 - AdSense: não ativar sem pedido explícito.
@@ -70,7 +75,57 @@ apontando pro JBR do Android Studio. `tools/publicar-apk.ps1` publica o
 release à mão (usa o `gh`, instalado em `C:\Program Files\GitHub CLI`,
 fora do PATH).
 
-## Última funcionalidade (v0.11.17 a v0.11.20)
+## Última funcionalidade (v0.11.21 a v0.11.24)
+
+**Pagamento do Motoclube, via Apps Script** (v0.11.24): Cloud Functions
+exigem Blaze, então os dois backends são Apps Script publicados como
+App da Web, cada um num projeto separado (o `doPost` do
+`apps-script-feedback.gs` roteia por `tipo` e brigaria; além disso a
+URL dele está no repo público, e endpoint de pagamento não pode ficar
+exposto). Nenhum segredo nos arquivos — tudo em Propriedades do script.
+- `tools/apps-script-gerar-cobranca.gs`: cria a cobrança Pix. No Asaas
+  **não existe Pix avulso** — toda cobrança exige um `customer`, e o
+  QR Code vem numa chamada SEPARADA (`GET /payments/{id}/pixQrCode`);
+  criar a cobrança devolve só o id. O preço é decidido no servidor:
+  se viesse do app, bastaria trocar pra 0,01 no DevTools.
+- `tools/apps-script-asaas.gs`: webhook. Escreve `ehPro` + `proAte`
+  via API REST do Firestore, autenticado por `ScriptApp.getOAuthToken()`
+  (a Web API Key do Firebase **não serve** pra isso). Esse token é
+  administrativo, então ignora as Regras do Firestore — inclusive a do
+  `codigoAtivacaoPro`. Tem idempotência por id de cobrança:
+  PAYMENT_CONFIRMED e PAYMENT_RECEIVED chegam pra mesma cobrança.
+- **Não dá pra "configurar CORS" no Apps Script** (o ContentService não
+  escreve cabeçalho). O que funciona é não provocar o preflight:
+  `Content-Type: text/plain`, mesmo truque que o feedback já usava.
+- Paywall (`abrirPaywallMotoclube`) + checkout Pix com QR Code e copia
+  e cola (com fallback de `execCommand` porque `navigator.clipboard`
+  falha em WebView).
+- `souMembroMotoclube()` deixou de ser `return true` e virou a fonte
+  única: exige `ehPro` E `proAte` no futuro. Casos deliberados: conta
+  sem `proAte` (ativação manual antiga) **não expira**, e `proAte` em
+  formato inválido **libera** — trancar quem pagou é o pior erro.
+- Limite conhecido: o gate é client-side; quem abrir o DevTools passa.
+  E revogar `ehPro` pelo app é impossível (a regra do Firestore proíbe
+  true→false) — a limpeza teria que ser um gatilho no Apps Script.
+
+**Modo offline (PRO)** (v0.11.23): `baixarDadosOffline()` guarda 125
+arquivos (selos, SVGs, JSONs) no CacheStorage, em lotes de 6, a partir
+de `data/offline-manifest.json` **gerado** por `tools/montar-www.js` —
+na raiz, não em `www/`, porque o site é servido da raiz. O `sw.js` virou
+cache-first **só pra imagem**: HTML/CSS/JS seguem network-first de
+propósito, senão um deploy novo não apareceria.
+
+**Correção das fotos do feed** (v0.11.22): o `sw.js` interceptava
+requisição de OUTROS domínios; resposta de imagem cross-origin é opaca
+e o `cache.put()` rejeita com TypeError, quebrando a foto. Agora só
+trata GET de mesma origem. Reproduzido servindo o app por HTTP local.
+
+**Sugestões e Novo Post** (v0.11.21): chips de categoria, seletor de
+município com busca, grid de cards com foto de fundo, e os formulários
+inline viraram bottom sheets. Campos `.campo-material` precisam de
+tag + classe + `!important` pra vencer a camada "UI moderna".
+
+## Anterior: aparência e raspadinha (v0.11.17 a v0.11.20)
 
 **Aparência sem `<select>`, e depois sem sensor** (v0.11.17 → v0.11.20):
 o `<select>` nativo de tema virou um segmented control
