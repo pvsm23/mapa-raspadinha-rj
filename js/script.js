@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.25";
+const VERSAO_APP = "0.11.26";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.25";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.26", itens: ["Correção importante: município que já teve a presença confirmada por GPS fica verificado pra sempre. Antes, desmarcar e raspar de novo longe do lugar apagava a confirmação, e era preciso voltar lá fisicamente."] },
   { versao: "0.11.25", itens: ["O voucher mensal da Loja subiu para R$ 9,90 — o mesmo valor da assinatura do Motoclube. Ou seja: todo mês você recebe de volta, em desconto na Loja, o que pagou pela assinatura."] },
   { versao: "0.11.24", itens: ["O Motoclube Desbrava virou assinatura: R$ 9,90 por mês, com pagamento por Pix dentro do próprio app (QR Code e código pra copiar). Assinando, você libera o Modo Viagem, o mapa offline, as dicas e lojas do Motoclube, a Garagem Virtual e o voucher mensal da Loja."] },
   { versao: "0.11.23", itens: ["\"Baixar dados offline\" saiu do \"em breve\" e funciona: assinantes PRO guardam mapa, selos e dados no aparelho, com barra de progresso, e o app abre sem internet. As imagens também passaram a carregar do aparelho antes de ir na rede, deixando a abertura mais rápida. Mais um punhado de acabamentos: botões respondem ao toque, e janelas e gavetas agora fecham com animação em vez de sumir de uma vez."] },
@@ -3214,6 +3215,12 @@ function estadoPublicoMunicipio(id) {
     visitado: !!dados?.visitado,
     verificado: estaVerificado(id),
     brilhante: !!(dados?.visitado && dados?.brilhante),
+    // Histórico, não estado atual: "o GPS já confirmou presença aqui
+    // alguma vez". Diferente de `verificado`, que some quando o
+    // município está desmarcado. É o que faz a verificação sobreviver
+    // a desmarcar + reinstalar o app (o registro local se perde, mas
+    // este campo volta da nuvem).
+    jaVerificado: !!dados?.verificado,
   };
 }
 
@@ -4395,14 +4402,20 @@ function abrirSeloPorId(id, nome) {
  * persiste o resultado, nunca sorteia nada sozinha.
  */
 function marcarComoVisitado(id, nome, brilhante, verificado) {
+  // `|| jaVerificado`: raspar de novo não pode apagar uma verificação
+  // que já aconteceu. O registro do município sobrevive ao desmarcar
+  // (ver desmarcarMunicipioAtual), então esse flag continua lá.
+  const jaVerificado = !!estadoMapa[id]?.verificado;
+  const ficaVerificado = !!verificado || jaVerificado;
+
   estadoMapa[id] = {
     ...estadoMapa[id],
     visitado: true,
     dataVisita: new Date().toISOString(),
     brilhante: !!brilhante,
     chanceDecidida: true,
-    verificado: !!verificado,
-    motivoNaoVerificado: verificado ? "" : "Verificando sua localização...",
+    verificado: ficaVerificado,
+    motivoNaoVerificado: ficaVerificado ? "" : "Verificando sua localização...",
   };
 
   salvarEstado();
@@ -4612,8 +4625,16 @@ async function verificarPresencaNoMunicipio(id) {
  */
 function atualizarVerificacaoMunicipio(id, verificado, motivo) {
   if (!estadoMapa[id]) return;
-  estadoMapa[id].verificado = verificado;
-  estadoMapa[id].motivoNaoVerificado = verificado ? "" : motivo || "";
+
+  // Verificação NUNCA é rebaixada: uma vez que o GPS confirmou que a
+  // pessoa esteve fisicamente ali, isso é um fato do passado e não
+  // deixa de ser verdade porque ela tentou de novo de casa. Sem esta
+  // guarda, desmarcar e raspar de novo longe do município apagava a
+  // prova de presença (foi o que aconteceu em Rio Bonito).
+  const jaEra = !!estadoMapa[id].verificado;
+  estadoMapa[id].verificado = jaEra || !!verificado;
+  estadoMapa[id].motivoNaoVerificado = estadoMapa[id].verificado ? "" : motivo || "";
+  verificado = estadoMapa[id].verificado;
   // Consome a presença pré-confirmada assim que ela vira uma
   // verificação de verdade (ou quando uma nova verificação ao vivo
   // dá certo) -- não faz sentido mais um pendente depois disso.
@@ -5138,6 +5159,11 @@ function abrirModalRaspadinha(id, nome) {
       tamanho: 190,
       onPrimeiroToque: () => travarSorteNaPrimeiraRaspada(id, brilhante),
       onComplete: () => {
+        // Precisa ser lido ANTES de marcarComoVisitado, que já
+        // preserva o flag: aqui a pergunta é "esse município JÁ tinha
+        // sido verificado numa visita anterior?".
+        const jaVerificadoAntes = !!estadoMapa[id]?.verificado;
+
         // Marca como raspado na hora (selo revelado, sorte já
         // decidida), mas ainda "nao verificado" -- so conta de
         // verdade depois que a localizacao confirmar que a pessoa
@@ -5155,9 +5181,13 @@ function abrirModalRaspadinha(id, nome) {
           brilhante ? "🌟 Raspadinha DOURADA! Confirmando sua localização..." : "📍 Confirmando sua localização..."
         );
 
-        const promessaVerificacao = presencaJaConfirmada
-          ? Promise.resolve({ verificado: true, motivo: "" })
-          : verificarPresencaNoMunicipio(id);
+        // Quem já foi verificado uma vez não precisa provar de novo:
+        // nem pede GPS, nem espera. Isso vale pra sempre, de propósito
+        // -- estar lá aconteceu, e desmarcar não desfaz o passado.
+        const promessaVerificacao =
+          jaVerificadoAntes || presencaJaConfirmada
+            ? Promise.resolve({ verificado: true, motivo: "" })
+            : verificarPresencaNoMunicipio(id);
 
         promessaVerificacao.then(({ verificado, motivo }) => {
           atualizarVerificacaoMunicipio(id, verificado, motivo);
@@ -8735,7 +8765,11 @@ async function carregarEstadoDoUsuario(uid) {
           // confirmado antes. `verificado` só vai de false pra true,
           // nunca o contrário (fora o desmarcar, que apaga o registro
           // inteiro), então esse OR é sempre seguro.
-          verificado: !!dados.verificado || !!estadoMapa[id]?.verificado,
+          // `jaVerificado` entra no OR porque `verificado` vai pra
+          // nuvem como false quando o município está desmarcado --
+          // sem ele, desmarcar + reinstalar apagaria a prova de
+          // presença de vez.
+          verificado: !!dados.verificado || !!dados.jaVerificado || !!estadoMapa[id]?.verificado,
           // O Firestore só reflete o "brilhante" de verdade enquanto o
           // município está visitado (ver estadoPublicoMunicipio em
           // sincronizarMunicipioOnline) -- desmarcado, ele sempre manda
