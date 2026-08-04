@@ -1808,7 +1808,15 @@
         <div id="checkout-etapa-pix" class="oculto">
           <img id="checkout-qr" alt="QR Code do Pix">
           <p id="checkout-valor"></p>
-          <button type="button" id="btn-copiar-pix" class="sheet-btn-primario">Copiar código Pix</button>
+          <!-- id distinto do "btn-copiar-pix" do painel Colaborar: dois
+               elementos com o mesmo id fazem o getElementById devolver
+               sempre o primeiro, e este aqui ficava sem listener. -->
+          <button type="button" id="btn-copiar-codigo-pix" class="sheet-btn-primario">Copiar código Pix</button>
+          <!-- Rede de segurança: quem paga PELO PRÓPRIO celular não
+               consegue escanear o QR da própria tela, então o copia e
+               cola é o único caminho. Se o botão falhar (WebView recusa
+               clipboard às vezes), ainda dá pra selecionar à mão. -->
+          <code id="checkout-codigo-pix"></code>
           <p id="checkout-aviso">Assim que o pagamento cair, a liberação é automática — pode levar alguns segundos.</p>
           <button type="button" id="btn-ja-paguei">Já paguei / Fechar</button>
         </div>

@@ -9317,6 +9317,28 @@ button:disabled:active {
   text-align: center;
 }
 
+/* O código Pix por extenso. `user-select: all` faz um toque longo
+   selecionar tudo de uma vez -- selecionar 200 caracteres com o dedo,
+   palavra por palavra, seria impraticável. */
+#checkout-codigo-pix {
+  display: block;
+  max-height: 62px;
+  overflow-y: auto;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  background: var(--surf2);
+  color: var(--fraco);
+  font-family: monospace;
+  font-size: 0.66rem;
+  line-height: 1.45;
+  text-align: left;
+  word-break: break-all;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
 #checkout-aviso {
   margin: 12px 0 0;
   color: var(--fraco);

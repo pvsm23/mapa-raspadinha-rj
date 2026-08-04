@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.27";
+const VERSAO_APP = "0.11.28";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.27";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.28", itens: ["O botão de copiar o código Pix voltou a funcionar, e agora o código também aparece por extenso na tela — dá pra selecionar à mão se a cópia falhar."] },
   { versao: "0.11.27", itens: ["O checkout do Motoclube passou a gerar Pix de verdade: QR Code e copia e cola na hora, direto na tela de assinatura."] },
   { versao: "0.11.26", itens: ["Correção importante: município que já teve a presença confirmada por GPS fica verificado pra sempre. Antes, desmarcar e raspar de novo longe do lugar apagava a confirmação, e era preciso voltar lá fisicamente."] },
   { versao: "0.11.25", itens: ["O voucher mensal da Loja subiu para R$ 9,90 — o mesmo valor da assinatura do Motoclube. Ou seja: todo mês você recebe de volta, em desconto na Loja, o que pagou pela assinatura."] },
@@ -723,7 +724,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (evento.target.id === "modal-checkout") fecharCheckout();
   });
   document.getElementById("btn-gerar-pix").addEventListener("click", aoGerarPix);
-  document.getElementById("btn-copiar-pix").addEventListener("click", copiarCodigoPix);
+  document.getElementById("btn-copiar-codigo-pix").addEventListener("click", copiarCodigoPix);
   document.getElementById("input-cpf-checkout").addEventListener("input", (evento) => {
     evento.target.value = formatarCpf(evento.target.value);
   });
@@ -3769,6 +3770,7 @@ async function aoGerarPix() {
     document.getElementById("checkout-valor").textContent = `R$ ${Number(dados.valor)
       .toFixed(2)
       .replace(".", ",")}`;
+    document.getElementById("checkout-codigo-pix").textContent = dados.payloadCode || "";
     mostrarEtapaCheckout("pix");
   } catch (erro) {
     console.error("Falha ao gerar Pix:", erro);
@@ -3781,10 +3783,12 @@ async function aoGerarPix() {
 async function copiarCodigoPix() {
   const codigo = cobrancaAtual?.payloadCode;
   if (!codigo) return;
-  const botao = document.getElementById("btn-copiar-pix");
+  const botao = document.getElementById("btn-copiar-codigo-pix");
 
+  let copiou = false;
   try {
     await navigator.clipboard.writeText(codigo);
+    copiou = true;
   } catch (erro) {
     // clipboard exige contexto seguro e, em WebView, nem sempre está
     // disponível -- este fallback é o que salva no APK.
@@ -3795,15 +3799,19 @@ async function copiarCodigoPix() {
     document.body.appendChild(campo);
     campo.select();
     try {
-      document.execCommand("copy");
+      // execCommand devolve false quando o navegador recusa em vez de
+      // lançar -- sem checar o retorno, a falha passava batida.
+      copiou = document.execCommand("copy");
     } catch (erro2) {
       console.error("Não foi possível copiar o código Pix:", erro2);
     }
     campo.remove();
   }
 
-  botao.textContent = "✓ Código copiado!";
-  setTimeout(() => (botao.textContent = "Copiar código Pix"), 2200);
+  // Dizer "copiado" sem ter copiado é pior que admitir a falha: a
+  // pessoa cola nada no banco e acha que o app travou.
+  botao.textContent = copiou ? "✓ Código copiado!" : "Não consegui copiar — use o QR Code";
+  setTimeout(() => (botao.textContent = "Copiar código Pix"), 2600);
 }
 
 /* ============================================================
