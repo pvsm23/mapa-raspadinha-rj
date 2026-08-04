@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.30";
+const VERSAO_APP = "0.11.31";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.30";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.31", itens: ["Quem já pagou pode recuperar o acesso pelo botão \"Já sou membro\" no paywall, mesmo tendo trocado de aparelho ou reinstalado o app."] },
   { versao: "0.11.30", itens: ["O app agora confere sozinho se o Pix caiu, sem depender de aviso externo, e tem um botão \"Já paguei\" pra checar na hora. Ninguém mais paga e fica esperando."] },
   { versao: "0.11.29", itens: ["Assim que o Pix é confirmado, o app avisa na hora com uma tela de boas-vindas e libera os recursos do Motoclube — não precisa mais fechar e abrir."] },
   { versao: "0.11.28", itens: ["O botão de copiar o código Pix voltou a funcionar, e agora o código também aparece por extenso na tela — dá pra selecionar à mão se a cópia falhar."] },
@@ -729,6 +730,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-copiar-codigo-pix").addEventListener("click", copiarCodigoPix);
   document.getElementById("btn-sucesso-fechar").addEventListener("click", fecharCheckout);
   document.getElementById("btn-ja-paguei-verificar").addEventListener("click", aoClicarJaPaguei);
+  document.getElementById("btn-paywall-ja-paguei").addEventListener("click", aoRecuperarAssinatura);
   document.getElementById("input-cpf-checkout").addEventListener("input", (evento) => {
     evento.target.value = formatarCpf(evento.target.value);
   });
@@ -3770,22 +3772,51 @@ const LIMITE_VERIFICACAO_PIX = 10 * 60 * 1000;
  * que chegar primeiro.
  */
 async function verificarPagamentoAgora() {
-  const id = cobrancaAtual?.id;
-  if (!id || !URL_COBRANCA_PIX || URL_COBRANCA_PIX.startsWith("SUBSTITUA")) return false;
+  const id = cobrancaAtual?.id || null;
+  // O uid vai junto de propósito: sem ele, só a cobrança desta sessão
+  // seria consultada, e quem pagou numa sessão anterior (fechou o app,
+  // reinstalou, trocou de aparelho) nunca seria encontrado -- a tela
+  // sempre gera uma cobrança nova. Com o uid, o servidor procura
+  // QUALQUER pagamento da pessoa.
+  const uid = window.raspadinhaAuth?.usuarioAtual?.uid || null;
+  if ((!id && !uid) || !URL_COBRANCA_PIX || URL_COBRANCA_PIX.startsWith("SUBSTITUA")) return false;
 
   try {
     const resposta = await fetch(URL_COBRANCA_PIX, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ acao: "verificar", id }),
+      body: JSON.stringify({ acao: "verificar", id, uid }),
     });
-    const dados = await resposta.json();
-    return !!dados.pago;
+    // Devolve a resposta INTEIRA, não só um booleano. "Pago mas não
+    // liberado" (Firestore recusou, projeto não configurado) precisa
+    // ser distinguível de "não pago" -- tratar os dois igual foi o que
+    // fez uma falha de configuração parecer que nada acontecia.
+    return await resposta.json();
   } catch (erro) {
     // Sem rede, sem drama: o próximo ciclo tenta de novo.
     console.warn("Falha ao verificar o pagamento:", erro);
-    return false;
+    return null;
   }
+}
+
+/**
+ * Encerra o checkout como vitória: marca a conta, destranca a UI e
+ * mostra a tela de sucesso.
+ *
+ * Chamado tanto pelo listener do Firestore quanto pela verificação
+ * ativa. A verificação não espera o listener de propósito -- se o
+ * servidor já confirmou que liberou, depender de mais um caminho pra
+ * exibir a notícia só cria mais um jeito de falhar.
+ */
+function concluirCheckoutComSucesso() {
+  pararDeObservarAssinatura?.();
+  pararDeObservarAssinatura = null;
+  clearInterval(timerVerificacaoPix);
+  timerVerificacaoPix = null;
+
+  if (window.raspadinhaAuth) window.raspadinhaAuth.contaEhPro = true;
+  mostrarEtapaCheckout("sucesso");
+  atualizarBotaoAssinarPro();
 }
 
 /**
@@ -3808,7 +3839,9 @@ function observarPagamentoDoCheckout() {
       timerVerificacaoPix = null;
       return;
     }
-    verificarPagamentoAgora();
+    verificarPagamentoAgora().then((dados) => {
+      if (dados?.pago && dados?.liberado) concluirCheckoutComSucesso();
+    });
   }, INTERVALO_VERIFICACAO_PIX);
 
   // Caminho 1: o Firestore avisando. Os dois terminam aqui.
@@ -3891,19 +3924,72 @@ async function aoClicarJaPaguei() {
   botao.disabled = true;
   botao.textContent = "Verificando...";
 
-  const pago = await verificarPagamentoAgora();
+  const dados = await verificarPagamentoAgora();
 
-  // Pago: o listener assume daqui e troca pra tela de sucesso.
-  if (!pago) {
-    botao.textContent = "Ainda não caiu — tente em instantes";
-    setTimeout(() => {
-      botao.textContent = original;
-      botao.disabled = false;
-    }, 2600);
+  if (dados?.pago && dados?.liberado) {
+    concluirCheckoutComSucesso();
     return;
   }
-  botao.disabled = false;
-  botao.textContent = original;
+
+  // Pagamento existe, mas o servidor não conseguiu gravar a liberação.
+  // Quase sempre é configuração do Apps Script (FIREBASE_PROJECT_ID
+  // ausente ou escopo do Firestore não autorizado). Dizer "ainda não
+  // caiu" aqui seria mentir e esconder o problema real.
+  console.warn("Verificação de pagamento sem sucesso. Resposta do servidor:", dados);
+  const mensagem = dados?.pago
+    ? "Pagamento encontrado, mas a liberação falhou"
+    : dados?.ok === false
+      ? "Erro no servidor de pagamento"
+      : "Ainda não caiu — tente em instantes";
+
+  botao.textContent = mensagem;
+  setTimeout(() => {
+    botao.textContent = original;
+    botao.disabled = false;
+  }, 3200);
+}
+
+/**
+ * "Já sou membro / já paguei", no paywall.
+ *
+ * Procura qualquer pagamento da conta no Asaas, sem criar cobrança
+ * nova. É a saída pra quem pagou e voltou depois -- reinstalou o app,
+ * trocou de aparelho, ou simplesmente fechou a tela do Pix.
+ */
+async function aoRecuperarAssinatura() {
+  const botao = document.getElementById("btn-paywall-ja-paguei");
+  const original = "Já sou membro / já paguei";
+
+  botao.disabled = true;
+  botao.textContent = "Procurando seu pagamento...";
+
+  const dados = await verificarPagamentoAgora();
+
+  if (dados?.pago && dados?.liberado) {
+    fecharPaywallMotoclube();
+    if (window.raspadinhaAuth) window.raspadinhaAuth.contaEhPro = true;
+    atualizarBotaoAssinarPro();
+    // Reaproveita o toast do login (é o único genérico do app) e some
+    // sozinho -- ele não tem auto-hide próprio.
+    mostrarToastLogin("🏍️ Bem-vindo de volta ao Motoclube!");
+    atualizarToastLogin("sucesso", "🏍️ Bem-vindo de volta ao Motoclube!");
+    setTimeout(esconderToastLogin, 3200);
+    return;
+  }
+
+  // Log completo: é o que permite distinguir "não pagou" de "consultei
+  // a conta errada" sem abrir o servidor.
+  console.error("Recuperação de assinatura falhou. Resposta do servidor:", dados);
+
+  botao.textContent = dados?.pago
+    ? "Pagamento encontrado, mas a liberação falhou"
+    : dados?.ok === false
+      ? "Erro no servidor de pagamento"
+      : "Nenhum pagamento encontrado nesta conta";
+  setTimeout(() => {
+    botao.textContent = original;
+    botao.disabled = false;
+  }, 3200);
 }
 
 async function copiarCodigoPix() {

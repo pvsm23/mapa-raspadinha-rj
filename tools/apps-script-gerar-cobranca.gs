@@ -120,7 +120,33 @@ function doPost(e) {
     // O app pergunta "essa cobrança já foi paga?". Existe pra que o
     // acesso NÃO dependa do webhook conseguir chegar até aqui: quem
     // pagou pergunta por conta própria e é liberado na hora.
-    if (pedido.acao === "verificar") return verificarPagamento_(pedido);
+    if (pedido.acao === "verificar") {
+      // try/catch próprio: um erro aqui NÃO pode cair no catch lá
+      // embaixo e virar "Não foi possível gerar o Pix agora" -- ler
+      // status e criar cobrança são coisas diferentes, e confundir as
+      // duas escondeu um 404 de ambiente errado por uma noite inteira.
+      try {
+        return verificarPagamento_(pedido);
+      } catch (erroVerificacao) {
+        console.log("ERRO ao verificar: " + (erroVerificacao && erroVerificacao.message));
+        return responder_({
+          ok: false,
+          contexto: "verificar",
+          erro: String(erroVerificacao && erroVerificacao.message),
+        });
+      }
+    }
+
+    // Chegou uma ação que este script não conhece. Antes isso caía no
+    // caminho de criar cobrança e gerava um Pix novo a cada tentativa,
+    // sem que ninguém percebesse -- pior ainda quando o app já foi
+    // atualizado e o script implantado ainda não.
+    if (pedido.acao) {
+      return responder_({
+        ok: false,
+        erro: "Ação desconhecida: " + pedido.acao + ". O script implantado está desatualizado.",
+      });
+    }
 
     var uid = String(pedido.uid || "").trim();
     var cpf = soDigitos_(pedido.cpf);
@@ -250,27 +276,73 @@ function obterQrCode_(idCobranca) {
  */
 function verificarPagamento_(pedido) {
   var id = String(pedido.id || "").trim();
-  if (!id) return responder_({ ok: false, erro: "Cobrança não informada." });
+  var uid = String(pedido.uid || "").trim();
+  if (!id && !uid) return responder_({ ok: false, erro: "Nada a verificar." });
 
-  var pagamento = chamarAsaas_("/payments/" + encodeURIComponent(id), "get");
-
-  // RECEIVED = caiu na conta; CONFIRMED = confirmado, ainda liquidando.
-  // Os dois valem: o Asaas manda webhook pros dois, e segurar o acesso
-  // até liquidar seria punir quem já pagou.
-  var pago =
-    pagamento.status === "RECEIVED" ||
-    pagamento.status === "CONFIRMED" ||
-    pagamento.status === "RECEIVED_IN_CASH";
-
-  if (!pago) return responder_({ ok: true, pago: false, status: pagamento.status });
-
-  var uid = pagamento.externalReference;
-  if (!uid) {
-    console.log("Cobrança " + id + " paga, mas sem externalReference.");
-    return responder_({ ok: true, pago: true, liberado: false });
+  // 1) A cobrança desta sessão, se houver.
+  if (id) {
+    var pagamento = chamarAsaas_("/payments/" + encodeURIComponent(id), "get");
+    if (ehPago_(pagamento) && pagamento.externalReference) {
+      return responder_({
+        ok: true,
+        pago: true,
+        liberado: liberarMotoclube_(pagamento.externalReference, pagamento.id),
+      });
+    }
   }
 
-  return responder_({ ok: true, pago: true, liberado: liberarMotoclube_(uid, id) });
+  // 2) QUALQUER cobrança paga deste usuário.
+  //
+  // Sem isto, quem pagasse e fechasse o app ficaria sem acesso pra
+  // sempre: ao voltar, o checkout gera uma cobrança NOVA, e a antiga --
+  // a que foi paga de verdade -- nunca mais seria consultada. Foi
+  // exatamente o que aconteceu no primeiro pagamento real.
+  if (!uid) return responder_({ ok: true, pago: false });
+
+  var lista = chamarAsaas_(
+    "/payments?externalReference=" + encodeURIComponent(uid) + "&limit=100",
+    "get"
+  );
+  var pagamentos = (lista && lista.data) || [];
+
+  for (var i = 0; i < pagamentos.length; i++) {
+    if (ehPago_(pagamentos[i])) {
+      return responder_({
+        ok: true,
+        pago: true,
+        liberado: liberarMotoclube_(uid, pagamentos[i].id),
+      });
+    }
+  }
+
+  // Devolve o que FOI encontrado, não só "não pago". Se o Asaas mostra
+  // o pagamento e aqui aparece zero cobrança, a conta consultada é
+  // outra -- e isso precisa ficar visível sem abrir o log do servidor.
+  var statusEncontrados = [];
+  for (var j = 0; j < pagamentos.length; j++) statusEncontrados.push(pagamentos[j].status);
+
+  return responder_({
+    ok: true,
+    pago: false,
+    cobrancasEncontradas: pagamentos.length,
+    statusEncontrados: statusEncontrados,
+    ambiente: config_().base,
+  });
+}
+
+/**
+ * RECEIVED = caiu na conta; CONFIRMED = confirmado, ainda liquidando;
+ * RECEIVED_IN_CASH = baixa manual. Os três valem: o Asaas dispara
+ * webhook pros dois primeiros, e segurar o acesso até a liquidação
+ * seria punir quem já pagou.
+ */
+function ehPago_(pagamento) {
+  if (!pagamento) return false;
+  return (
+    pagamento.status === "RECEIVED" ||
+    pagamento.status === "CONFIRMED" ||
+    pagamento.status === "RECEIVED_IN_CASH"
+  );
 }
 
 /**
@@ -364,6 +436,54 @@ function responder_(objeto) {
 // ---------------------------------------------------------------
 // Teste manual (rodar daqui, sem depender do app)
 // ---------------------------------------------------------------
+/**
+ * RODE ISTO PRIMEIRO quando um pagamento "sumir".
+ *
+ * Responde, num log só, a pergunta que separa todas as hipóteses:
+ * a chave configurada aqui enxerga a conta onde o dinheiro entrou?
+ *
+ * Um pagamento feito em PRODUÇÃO é invisível pra uma chave de SANDBOX
+ * (e vice-versa) -- são contas diferentes, com bases diferentes. Se a
+ * lista abaixo vier vazia ou sem o seu pagamento, o problema não é
+ * webhook, nem token, nem Firestore: é a chave apontando pro lugar
+ * errado. Nenhum conserto no Apps Script resolve isso.
+ */
+function diagnosticar() {
+  var cfg = config_();
+  console.log("Base da API: " + cfg.base);
+  console.log("Chave configurada: " + (cfg.chave ? "sim (" + cfg.chave.slice(0, 12) + "...)" : "NÃO"));
+  console.log(
+    "FIREBASE_PROJECT_ID: " +
+      (PropertiesService.getScriptProperties().getProperty("FIREBASE_PROJECT_ID") || "NÃO CONFIGURADO")
+  );
+
+  try {
+    var saldo = chamarAsaas_("/finance/balance", "get");
+    console.log("Saldo na conta: R$ " + saldo.balance);
+  } catch (erro) {
+    console.log("Não consegui ler o saldo: " + erro.message);
+  }
+
+  var lista = chamarAsaas_("/payments?limit=20", "get");
+  var pagamentos = (lista && lista.data) || [];
+  console.log("Cobranças nesta conta: " + pagamentos.length);
+
+  for (var i = 0; i < pagamentos.length; i++) {
+    var p = pagamentos[i];
+    console.log(
+      "  " + p.dateCreated + " | " + p.id + " | R$ " + p.value + " | " + p.status +
+        " | uid=" + (p.externalReference || "(vazio)")
+    );
+  }
+
+  if (!pagamentos.length) {
+    console.log(
+      "NENHUMA cobrança aqui. Se você pagou, foi em OUTRO ambiente -- " +
+        "troque ASAAS_API_KEY/ASAAS_AMBIENTE pro ambiente certo."
+    );
+  }
+}
+
 function testarCobranca() {
   var e = {
     postData: {

@@ -76,6 +76,22 @@
  *             https://script.google.com/.../exec?token=SUA_SENHA
  *        Eventos: PAYMENT_RECEIVED e PAYMENT_CONFIRMED
  *
+ *      O ASAAS VAI RECLAMAR MESMO QUANDO DER CERTO. Todo App da Web do
+ *      Apps Script responde 302: ele roda o script e redireciona pro
+ *      script.googleusercontent.com, que serve o resultado. O Asaas não
+ *      segue esse redirect e trata 302 como falha -- manda e-mail de
+ *      "Erro ao sincronizar" e reenvia. Mas o script JÁ RODOU quando o
+ *      302 sai (comprovado: o log do Apps Script registrou a execução
+ *      no mesmo segundo em que o Asaas acusou erro). Os reenvios são
+ *      absorvidos pela idempotência.
+ *      Consequência prática: o Asaas pode acabar pausando o webhook por
+ *      "falhas" consecutivas. Por isso o app não depende dele -- ver a
+ *      ação `verificar` em tools/apps-script-gerar-cobranca.gs, que é
+ *      hoje o caminho principal de liberação.
+ *      Se o barulho incomodar, a saída definitiva é hospedar o webhook
+ *      onde dê pra responder 200 de verdade (uma Netlify Function, por
+ *      exemplo) -- o Apps Script não permite escolher o código HTTP.
+ *
  *      ATENÇÃO -- o token TEM que ir na URL, não no campo "Token de
  *      autenticação" do Asaas. O Asaas manda aquele campo como
  *      cabeçalho HTTP (asaas-access-token), e o Apps Script NÃO expõe
