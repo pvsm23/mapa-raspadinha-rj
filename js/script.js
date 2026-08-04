@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.29";
+const VERSAO_APP = "0.11.30";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.29";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.30", itens: ["O app agora confere sozinho se o Pix caiu, sem depender de aviso externo, e tem um botão \"Já paguei\" pra checar na hora. Ninguém mais paga e fica esperando."] },
   { versao: "0.11.29", itens: ["Assim que o Pix é confirmado, o app avisa na hora com uma tela de boas-vindas e libera os recursos do Motoclube — não precisa mais fechar e abrir."] },
   { versao: "0.11.28", itens: ["O botão de copiar o código Pix voltou a funcionar, e agora o código também aparece por extenso na tela — dá pra selecionar à mão se a cópia falhar."] },
   { versao: "0.11.27", itens: ["O checkout do Motoclube passou a gerar Pix de verdade: QR Code e copia e cola na hora, direto na tela de assinatura."] },
@@ -727,6 +728,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-gerar-pix").addEventListener("click", aoGerarPix);
   document.getElementById("btn-copiar-codigo-pix").addEventListener("click", copiarCodigoPix);
   document.getElementById("btn-sucesso-fechar").addEventListener("click", fecharCheckout);
+  document.getElementById("btn-ja-paguei-verificar").addEventListener("click", aoClicarJaPaguei);
   document.getElementById("input-cpf-checkout").addEventListener("input", (evento) => {
     evento.target.value = formatarCpf(evento.target.value);
   });
@@ -3727,6 +3729,8 @@ function fecharCheckout() {
   // cada checkout aberto.
   pararDeObservarAssinatura?.();
   pararDeObservarAssinatura = null;
+  clearInterval(timerVerificacaoPix);
+  timerVerificacaoPix = null;
 }
 
 function mostrarEtapaCheckout(etapa) {
@@ -3741,6 +3745,49 @@ function mostrarEtapaCheckout(etapa) {
    js/auth.js). Guardado aqui pra ser desligado ao fechar o checkout. */
 let pararDeObservarAssinatura = null;
 
+/* Timer da verificação ativa (ver verificarPagamentoAgora). */
+let timerVerificacaoPix = null;
+
+/* De quanto em quanto tempo o app pergunta se a cobrança foi paga, e
+   por quanto tempo insiste. 8s cobre o Pix (que confirma em segundos)
+   sem torrar a cota de UrlFetch do Apps Script; depois de 10 minutos
+   quem ainda não pagou provavelmente desistiu, e sobra o botão "Já
+   paguei" pra forçar. */
+const INTERVALO_VERIFICACAO_PIX = 8000;
+const LIMITE_VERIFICACAO_PIX = 10 * 60 * 1000;
+
+/**
+ * Pergunta ao servidor se a cobrança já foi paga.
+ *
+ * Esta é a rede de segurança do webhook. Se o Asaas não conseguir
+ * avisar o Apps Script, quem pagou ficaria sem nada e sem explicação --
+ * foi o que aconteceu na estreia. Aqui o app não espera ser avisado:
+ * ele pergunta.
+ *
+ * Quando o servidor libera, ele escreve no Firestore, e é o listener de
+ * observarPagamentoDoCheckout que troca a tela. Ou seja: os dois
+ * caminhos (webhook e verificação) desembocam no mesmo lugar, e vale o
+ * que chegar primeiro.
+ */
+async function verificarPagamentoAgora() {
+  const id = cobrancaAtual?.id;
+  if (!id || !URL_COBRANCA_PIX || URL_COBRANCA_PIX.startsWith("SUBSTITUA")) return false;
+
+  try {
+    const resposta = await fetch(URL_COBRANCA_PIX, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ acao: "verificar", id }),
+    });
+    const dados = await resposta.json();
+    return !!dados.pago;
+  } catch (erro) {
+    // Sem rede, sem drama: o próximo ciclo tenta de novo.
+    console.warn("Falha ao verificar o pagamento:", erro);
+    return false;
+  }
+}
+
 /**
  * Fica de olho no Firestore enquanto o QR Code está na tela e comemora
  * sozinho quando o pagamento cai.
@@ -3751,11 +3798,27 @@ let pararDeObservarAssinatura = null;
  */
 function observarPagamentoDoCheckout() {
   pararDeObservarAssinatura?.();
+
+  // Caminho 2: perguntar de tempos em tempos, sem depender do webhook.
+  clearInterval(timerVerificacaoPix);
+  const comecou = Date.now();
+  timerVerificacaoPix = setInterval(() => {
+    if (Date.now() - comecou > LIMITE_VERIFICACAO_PIX) {
+      clearInterval(timerVerificacaoPix);
+      timerVerificacaoPix = null;
+      return;
+    }
+    verificarPagamentoAgora();
+  }, INTERVALO_VERIFICACAO_PIX);
+
+  // Caminho 1: o Firestore avisando. Os dois terminam aqui.
   pararDeObservarAssinatura = window.raspadinhaAuth?.observarAssinatura?.(() => {
     if (!souMembroMotoclube()) return;
 
     pararDeObservarAssinatura?.();
     pararDeObservarAssinatura = null;
+    clearInterval(timerVerificacaoPix);
+    timerVerificacaoPix = null;
     mostrarEtapaCheckout("sucesso");
     // Destranca o que estava atrás do paywall sem exigir reabrir o app:
     // esconde o botão de assinar e revela a Garagem no menu. O crachá do
@@ -3812,6 +3875,35 @@ async function aoGerarPix() {
     erroEl.classList.remove("oculto");
     mostrarEtapaCheckout("cpf");
   }
+}
+
+/**
+ * "Já paguei": verifica na hora, em vez de esperar o próximo ciclo.
+ *
+ * Se o pagamento realmente caiu, quem troca a tela é o listener do
+ * Firestore -- aqui só damos o retorno de que a consulta aconteceu,
+ * pra ninguém ficar clicando achando que o botão está morto.
+ */
+async function aoClicarJaPaguei() {
+  const botao = document.getElementById("btn-ja-paguei-verificar");
+  const original = "Já paguei — verificar agora";
+
+  botao.disabled = true;
+  botao.textContent = "Verificando...";
+
+  const pago = await verificarPagamentoAgora();
+
+  // Pago: o listener assume daqui e troca pra tela de sucesso.
+  if (!pago) {
+    botao.textContent = "Ainda não caiu — tente em instantes";
+    setTimeout(() => {
+      botao.textContent = original;
+      botao.disabled = false;
+    }, 2600);
+    return;
+  }
+  botao.disabled = false;
+  botao.textContent = original;
 }
 
 async function copiarCodigoPix() {

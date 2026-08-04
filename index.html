@@ -1819,6 +1819,10 @@
           <code id="checkout-codigo-pix"></code>
           <p id="checkout-aviso">Assim que o pagamento cair, a liberação é automática — pode levar alguns segundos.</p>
           <p id="checkout-esperando"><span class="checkout-ponto"></span>Aguardando o pagamento…</p>
+          <!-- Força a verificação na hora, sem esperar o próximo ciclo.
+               É a saída pra quem pagou depois de 10 minutos, quando a
+               checagem automática já parou. -->
+          <button type="button" id="btn-ja-paguei-verificar">Já paguei — verificar agora</button>
           <button type="button" id="btn-ja-paguei">Fechar</button>
         </div>
 

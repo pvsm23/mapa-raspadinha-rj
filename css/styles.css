@@ -9369,6 +9369,25 @@ button:disabled:active {
   .checkout-ponto { animation: none; }
 }
 
+#btn-ja-paguei-verificar {
+  display: block;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 11px 14px;
+  border: 1px solid var(--verde);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--verde);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-ja-paguei-verificar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 #checkout-etapa-sucesso {
   padding: 12px 0 4px;
   text-align: center;

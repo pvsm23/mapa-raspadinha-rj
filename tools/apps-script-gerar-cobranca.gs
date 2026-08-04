@@ -46,8 +46,27 @@
  *    responsabilidades diferentes.
  *
  * 2) Propriedades do script (engrenagem → Propriedades do script):
- *      ASAAS_API_KEY   = sua chave do Asaas ($aact_...)
- *      ASAAS_AMBIENTE  = sandbox     (troque pra "producao" depois de testar)
+ *      ASAAS_API_KEY        = sua chave do Asaas ($aact_...)
+ *      ASAAS_AMBIENTE       = sandbox   (troque pra "producao" depois de testar)
+ *      FIREBASE_PROJECT_ID  = mapa-raspadinha-rj
+ *
+ *    O FIREBASE_PROJECT_ID é pra rota `verificar`, que libera o
+ *    Motoclube direto no Firestore quando o app pergunta se a cobrança
+ *    foi paga (ver verificarPagamento_ lá embaixo).
+ *
+ * 2.1) DECLARAR O ESCOPO DO FIRESTORE (senão o PATCH volta 403)
+ *    - Configurações do projeto → marque "Mostrar o arquivo de
+ *      manifesto appsscript.json no editor".
+ *    - Em appsscript.json:
+ *
+ *      "oauthScopes": [
+ *        "https://www.googleapis.com/auth/script.external_request",
+ *        "https://www.googleapis.com/auth/datastore"
+ *      ]
+ *
+ *    - Depois de mexer no manifesto, rode qualquer função uma vez no
+ *      editor pra reautorizar -- o Google só pede as permissões novas
+ *      na próxima execução manual.
  *
  * 3) Implantar → Nova implantação → App da Web:
  *      Executar como: Eu
@@ -71,6 +90,14 @@ var TETO_LOJA = 500;
 // Dias até o vencimento do Pix.
 var DIAS_VENCIMENTO = 1;
 
+// Quantos meses cada pagamento libera. TEM que ser igual ao
+// MESES_POR_PAGAMENTO do tools/apps-script-asaas.gs: os dois scripts
+// liberam acesso, e valores diferentes fariam o prazo mudar conforme
+// quem chegasse primeiro, o webhook ou a verificação do app. Não dá
+// pra compartilhar a constante -- são projetos separados do Apps
+// Script, sem código em comum.
+var MESES_POR_PAGAMENTO = 1;
+
 function config_() {
   var props = PropertiesService.getScriptProperties();
   var ambiente = props.getProperty("ASAAS_AMBIENTE") || "sandbox";
@@ -89,6 +116,11 @@ function config_() {
 function doPost(e) {
   try {
     var pedido = JSON.parse(e.postData.contents);
+
+    // O app pergunta "essa cobrança já foi paga?". Existe pra que o
+    // acesso NÃO dependa do webhook conseguir chegar até aqui: quem
+    // pagou pergunta por conta própria e é liberado na hora.
+    if (pedido.acao === "verificar") return verificarPagamento_(pedido);
 
     var uid = String(pedido.uid || "").trim();
     var cpf = soDigitos_(pedido.cpf);
@@ -196,6 +228,124 @@ function criarCobrancaPix_(clienteId, valor, descricao, uid) {
 /** O QR Code vem numa chamada SEPARADA -- criar a cobrança não devolve. */
 function obterQrCode_(idCobranca) {
   return chamarAsaas_("/payments/" + idCobranca + "/pixQrCode", "get");
+}
+
+// ---------------------------------------------------------------
+// Verificação por conta própria (rede de segurança do webhook)
+// ---------------------------------------------------------------
+/**
+ * Pergunta ao Asaas se a cobrança foi paga e, se foi, libera o
+ * Motoclube na hora.
+ *
+ * Por que isto existe: o webhook (tools/apps-script-asaas.gs) é um
+ * ponto único de falha. Se o Asaas não conseguir alcançá-lo -- token
+ * errado, script fora do ar, implantação velha -- quem pagou fica sem
+ * nada e sem aviso. Aconteceu na estreia. Com esta rota, o próprio app
+ * pergunta enquanto o QR está na tela, e o webhook vira só um atalho.
+ *
+ * Segurança: o UID sai do `externalReference` da COBRANÇA, nunca do
+ * que o app mandou. Assim, mesmo que alguém invente um id de cobrança
+ * alheia, quem é liberado é o dono legítimo daquele pagamento -- não
+ * quem fez a chamada.
+ */
+function verificarPagamento_(pedido) {
+  var id = String(pedido.id || "").trim();
+  if (!id) return responder_({ ok: false, erro: "Cobrança não informada." });
+
+  var pagamento = chamarAsaas_("/payments/" + encodeURIComponent(id), "get");
+
+  // RECEIVED = caiu na conta; CONFIRMED = confirmado, ainda liquidando.
+  // Os dois valem: o Asaas manda webhook pros dois, e segurar o acesso
+  // até liquidar seria punir quem já pagou.
+  var pago =
+    pagamento.status === "RECEIVED" ||
+    pagamento.status === "CONFIRMED" ||
+    pagamento.status === "RECEIVED_IN_CASH";
+
+  if (!pago) return responder_({ ok: true, pago: false, status: pagamento.status });
+
+  var uid = pagamento.externalReference;
+  if (!uid) {
+    console.log("Cobrança " + id + " paga, mas sem externalReference.");
+    return responder_({ ok: true, pago: true, liberado: false });
+  }
+
+  return responder_({ ok: true, pago: true, liberado: liberarMotoclube_(uid, id) });
+}
+
+/**
+ * Liga `ehPro`/`proAte` no Firestore, com a mesma técnica do webhook:
+ * API REST + ScriptApp.getOAuthToken(), que é token do DONO do projeto
+ * e por isso ignora as Regras de Segurança (inclusive a que exige
+ * codigoAtivacaoPro). A Web API Key do Firebase não serve aqui.
+ *
+ * Idempotente por `ultimoPagamentoAsaas`: o app pergunta de poucos em
+ * poucos segundos, e sem essa trava cada pergunta empurraria o
+ * vencimento pra frente enquanto a tela estivesse aberta.
+ *
+ * Renovação soma em cima do que ainda resta: quem renova antes do
+ * vencimento não perde os dias que já pagou.
+ */
+function liberarMotoclube_(uid, idCobranca) {
+  var projectId = PropertiesService.getScriptProperties().getProperty("FIREBASE_PROJECT_ID");
+  if (!projectId) {
+    console.log("FIREBASE_PROJECT_ID não configurado nas Propriedades do script.");
+    return false;
+  }
+
+  var base =
+    "https://firestore.googleapis.com/v1/projects/" +
+    projectId +
+    "/databases/(default)/documents/usuarios/" +
+    encodeURIComponent(uid);
+  var auth = { Authorization: "Bearer " + ScriptApp.getOAuthToken() };
+
+  var atual = UrlFetchApp.fetch(base, { headers: auth, muteHttpExceptions: true });
+  var campos = {};
+  if (atual.getResponseCode() === 200) {
+    campos = (JSON.parse(atual.getContentText()) || {}).fields || {};
+  }
+
+  if (campos.ultimoPagamentoAsaas && campos.ultimoPagamentoAsaas.stringValue === idCobranca) {
+    return true; // esta cobrança já foi creditada
+  }
+
+  // Parte do que ainda resta, se ainda restar algo.
+  var vence = new Date();
+  var atualAte = campos.proAte && campos.proAte.timestampValue;
+  if (atualAte) {
+    var restante = new Date(atualAte);
+    if (!isNaN(restante.getTime()) && restante > vence) vence = restante;
+  }
+  vence.setMonth(vence.getMonth() + MESES_POR_PAGAMENTO);
+
+  var resposta = UrlFetchApp.fetch(
+    base +
+      "?updateMask.fieldPaths=ehPro&updateMask.fieldPaths=proAte" +
+      "&updateMask.fieldPaths=ultimoPagamentoAsaas",
+    {
+      method: "patch",
+      contentType: "application/json",
+      headers: auth,
+      payload: JSON.stringify({
+        fields: {
+          ehPro: { booleanValue: true },
+          proAte: { timestampValue: vence.toISOString() },
+          ultimoPagamentoAsaas: { stringValue: idCobranca },
+        },
+      }),
+      muteHttpExceptions: true,
+    }
+  );
+
+  var codigo = resposta.getResponseCode();
+  if (codigo >= 200 && codigo < 300) {
+    console.log("Motoclube liberado para " + uid + " até " + vence.toISOString());
+    return true;
+  }
+
+  console.log("Firestore recusou o PATCH de " + uid + " (HTTP " + codigo + "): " + resposta.getContentText());
+  return false;
 }
 
 // ---------------------------------------------------------------

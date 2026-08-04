@@ -72,9 +72,19 @@
  *
  * 7) APONTAR O ASAAS PRA CÁ
  *    - Asaas → Integrações → Webhooks → Adicionar:
- *        URL: a URL /exec do passo 6
- *        Token de autenticação: a MESMA senha do ASAAS_WEBHOOK_TOKEN
+ *        URL: a URL /exec do passo 6, COM O TOKEN GRUDADO NO FIM:
+ *             https://script.google.com/.../exec?token=SUA_SENHA
  *        Eventos: PAYMENT_RECEIVED e PAYMENT_CONFIRMED
+ *
+ *      ATENÇÃO -- o token TEM que ir na URL, não no campo "Token de
+ *      autenticação" do Asaas. O Asaas manda aquele campo como
+ *      cabeçalho HTTP (asaas-access-token), e o Apps Script NÃO expõe
+ *      cabeçalho nenhum: o objeto `e` do doPost tem parameter,
+ *      postData e contentLength, e ponto final. Usando aquele campo, o
+ *      token chega num lugar que este script é incapaz de ler, todo
+ *      evento cai no "Webhook recusado", e o pagamento do cliente some
+ *      sem deixar rastro. Aconteceu de verdade na estreia.
+ *      Preencher os DOIS (URL e campo) não atrapalha.
  *    - Use primeiro o ambiente de SANDBOX do Asaas pra testar, e só
  *      depois troque pra produção.
  *
@@ -190,7 +200,20 @@ function doPost(e) {
 
     if (!cfg.tokenWebhook || tokenRecebido !== cfg.tokenWebhook) {
       logar_("Webhook recusado: token inválido ou ausente.");
-      return ContentService.createTextOutput("OK"); // não entrega pista a quem sondar
+      // Lançar (em vez de responder OK) é DE PROPÓSITO, e o try/catch
+      // lá embaixo relança pelo mesmo motivo.
+      //
+      // O Apps Script não deixa escolher código HTTP: ContentService
+      // sempre devolve 200. A única forma de sinalizar erro é estourar,
+      // o que vira um 500 -- e 500 é o que faz o Asaas REENVIAR e
+      // marcar a falha no painel.
+      //
+      // Antes isto respondia "OK" pra não dar pista a quem sondasse a
+      // URL. O preço foi alto: o pagamento de estreia foi recusado por
+      // token, o Asaas achou que tinha entregue, nunca repetiu, e o
+      // cliente ficou sem o que pagou. Um bisbilhoteiro descobrir que
+      // existe um token é um dano muito menor que uma venda sumir.
+      throw new Error("TOKEN_INVALIDO");
     }
 
     var payload = JSON.parse(e.postData.contents);
@@ -217,6 +240,15 @@ function doPost(e) {
       return ContentService.createTextOutput("OK");
     }
 
+    // ORDEM IMPORTA: libera primeiro, registra depois.
+    //
+    // A idempotência acima usa a planilha como memória. Se a linha
+    // fosse escrita antes e o Firestore falhasse, o reenvio do Asaas
+    // veria "já registrada" e desistiria -- deixando quem pagou sem
+    // acesso, pra sempre. Liberando primeiro, uma falha do Firestore
+    // estoura antes de qualquer registro, e a retentativa refaz tudo.
+    atualizarProNoFirestore_(uid);
+
     registrarTransacao_({
       uid: uid,
       email: pagamento.customer || "",
@@ -225,16 +257,30 @@ function doPost(e) {
       idCobranca: idCobranca || "",
     });
 
-    atualizarProNoFirestore_(uid);
-
     return ContentService.createTextOutput("OK");
   } catch (erro) {
     logar_("ERRO no webhook: " + (erro && erro.message));
-    return ContentService.createTextOutput("OK");
+    // Relança pra virar HTTP 500 e o Asaas reenviar. Engolir o erro
+    // devolvendo 200 era o que transformava qualquer falha nossa
+    // (Firestore fora do ar, planilha travada, token errado) numa
+    // venda perdida em silêncio.
+    //
+    // A fila de reenvio do Asaas é limitada, então isto não vira loop
+    // infinito -- e o que dispara o reenvio é justamente o que a gente
+    // quer que aconteça: tentar de novo até dar certo.
+    throw erro;
   }
 }
 
-/** Cabeçalho HTTP do request, quando o Apps Script o expõe. */
+/**
+ * Cabeçalho HTTP do request -- que na prática o Apps Script NUNCA
+ * entrega. O objeto `e` do doPost não tem `headers`, então isto sempre
+ * devolve null. Fica aqui só por segurança caso o Google passe a
+ * expor: quem realmente autentica é o ?token= da URL.
+ *
+ * Foi confiar nisto que fez a estreia falhar -- o token estava no
+ * campo do Asaas, viajando como cabeçalho, invisível daqui.
+ */
 function cabecalho_(e, nome) {
   if (!e || !e.headers) return null;
   var alvo = String(nome).toLowerCase();
@@ -329,12 +375,15 @@ function atualizarProNoFirestore_(uid) {
   var codigo = resposta.getResponseCode();
   if (codigo >= 200 && codigo < 300) {
     logar_("PRO liberado para " + uid + " até " + vence.toISOString());
-  } else {
-    // Não relança: a venda já está na planilha, e derrubar o webhook
-    // aqui só faria o Asaas reenviar tudo. Melhor registrar e você
-    // liberar à mão se for preciso.
-    logar_("Firestore recusou o PATCH de " + uid + " (HTTP " + codigo + "): " + resposta.getContentText());
+    return;
   }
+
+  // Estoura de propósito: liberar o acesso é a razão de existir deste
+  // webhook, então falhar aqui tem que virar 500 e fazer o Asaas
+  // reenviar. Só engolir e registrar no log significaria alguém pagar,
+  // a venda entrar na planilha e o acesso nunca chegar.
+  logar_("Firestore recusou o PATCH de " + uid + " (HTTP " + codigo + "): " + resposta.getContentText());
+  throw new Error("FIRESTORE_" + codigo);
 }
 
 function logar_(mensagem) {
