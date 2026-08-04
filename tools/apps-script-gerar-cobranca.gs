@@ -105,7 +105,9 @@ function doPost(e) {
     var descricao;
     if (tipo === "pro") {
       valor = PRECO_PRO;
-      descricao = "Assinatura Desbrava PRO";
+      // Esse texto aparece no app do banco do assinante na hora de
+      // pagar -- tem que bater com o nome do produto no app.
+      descricao = "Assinatura Motoclube Desbrava";
     } else {
       valor = Number(pedido.valor || 0);
       descricao = String(pedido.descricao || "Pedido Loja Desbrava").slice(0, 100);

@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.26";
+const VERSAO_APP = "0.11.27";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.26";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.27", itens: ["O checkout do Motoclube passou a gerar Pix de verdade: QR Code e copia e cola na hora, direto na tela de assinatura."] },
   { versao: "0.11.26", itens: ["Correção importante: município que já teve a presença confirmada por GPS fica verificado pra sempre. Antes, desmarcar e raspar de novo longe do lugar apagava a confirmação, e era preciso voltar lá fisicamente."] },
   { versao: "0.11.25", itens: ["O voucher mensal da Loja subiu para R$ 9,90 — o mesmo valor da assinatura do Motoclube. Ou seja: todo mês você recebe de volta, em desconto na Loja, o que pagou pela assinatura."] },
   { versao: "0.11.24", itens: ["O Motoclube Desbrava virou assinatura: R$ 9,90 por mês, com pagamento por Pix dentro do próprio app (QR Code e código pra copiar). Assinando, você libera o Modo Viagem, o mapa offline, as dicas e lojas do Motoclube, a Garagem Virtual e o voucher mensal da Loja."] },
@@ -3652,7 +3653,8 @@ const CACHE_OFFLINE = "desbrava-offline-v1";
 
    Depois de implantar aquele script, cole a URL /exec abaixo.
    ============================================================ */
-const URL_COBRANCA_PIX = "SUBSTITUA_AQUI_PELA_URL_DO_APPS_SCRIPT_DE_COBRANCA";
+const URL_COBRANCA_PIX =
+  "https://script.google.com/macros/s/AKfycbxcd1uXU78pQp8FSwH8ZYTpZI8uthVUluooxfiuXYpvYin-c7VfuuJfpHl8EFVLKoHi/exec";
 
 /* Preço e período do Motoclube, só pra EXIBIÇÃO.
    ATENÇÃO: quem cobra de verdade é PRECO_PRO em
