@@ -163,6 +163,10 @@ window.raspadinhaAuth = {
   proAte: null,
   db: null,
   boostsBrilhantesPendentes: 0,
+  // Sem Firebase configurado não há o que observar. Devolve um
+  // cancelador vazio em vez de lançar: quem chama sempre invoca o
+  // retorno ao fechar o checkout.
+  observarAssinatura: () => () => {},
   entrarComEmail: async () => {
     throw new Error(AVISO_NAO_CONFIGURADO);
   },
@@ -816,6 +820,39 @@ if (CONFIGURADO) {
       "A conexão está lenta demais pra subir a foto. Verifique sua internet e tente de novo."
     );
     return fotoUrl;
+  };
+
+  /**
+   * Observa a assinatura do Motoclube em tempo real.
+   *
+   * Existe porque `contaEhPro` só era lido UMA vez, no login: quem
+   * pagava o Pix com o app aberto continuava vendo o paywall até
+   * fechar e abrir de novo -- e, sem aviso nenhum na tela, parecia que
+   * o pagamento tinha se perdido.
+   *
+   * Quem escreve `ehPro`/`proAte` é o webhook do Asaas
+   * (tools/apps-script-asaas.gs), do lado de fora do app. Este
+   * listener é justamente a ponte entre aquela escrita e a tela.
+   *
+   * Devolve uma função pra cancelar -- chame-a ao fechar o checkout,
+   * senão o listener fica de pé consumindo cota à toa.
+   */
+  window.raspadinhaAuth.observarAssinatura = (aoMudar) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return () => {};
+
+    return onSnapshot(
+      doc(db, "usuarios", usuario.uid),
+      (snap) => {
+        const dados = snap.data() || {};
+        // Mantém o objeto global em dia: é dele que souMembroMotoclube()
+        // lê, então atualizar aqui já destranca os recursos pagos.
+        window.raspadinhaAuth.contaEhPro = !!dados.ehPro;
+        window.raspadinhaAuth.proAte = dados.proAte || null;
+        aoMudar?.({ ehPro: !!dados.ehPro, proAte: dados.proAte || null });
+      },
+      (erro) => console.error("Falha ao observar a assinatura:", erro)
+    );
   };
 
   /**

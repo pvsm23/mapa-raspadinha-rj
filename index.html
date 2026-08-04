@@ -1818,7 +1818,18 @@
                clipboard às vezes), ainda dá pra selecionar à mão. -->
           <code id="checkout-codigo-pix"></code>
           <p id="checkout-aviso">Assim que o pagamento cair, a liberação é automática — pode levar alguns segundos.</p>
-          <button type="button" id="btn-ja-paguei">Já paguei / Fechar</button>
+          <p id="checkout-esperando"><span class="checkout-ponto"></span>Aguardando o pagamento…</p>
+          <button type="button" id="btn-ja-paguei">Fechar</button>
+        </div>
+
+        <!-- Etapa 4: pagamento confirmado. Aparece sozinha assim que o
+             webhook do Asaas liga o `ehPro` no Firestore -- ninguém
+             precisa fechar e reabrir o app. -->
+        <div id="checkout-etapa-sucesso" class="oculto">
+          <div id="checkout-sucesso-selo">🏍️</div>
+          <h3 id="checkout-sucesso-titulo">Pagamento confirmado!</h3>
+          <p id="checkout-sucesso-texto">Bem-vindo ao Motoclube Desbrava. O Modo Viagem, o mapa offline e as dicas já estão liberados.</p>
+          <button type="button" id="btn-sucesso-fechar" class="sheet-btn-primario">Começar a usar</button>
         </div>
       </div>
     </div>

@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.28";
+const VERSAO_APP = "0.11.29";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.28";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.29", itens: ["Assim que o Pix é confirmado, o app avisa na hora com uma tela de boas-vindas e libera os recursos do Motoclube — não precisa mais fechar e abrir."] },
   { versao: "0.11.28", itens: ["O botão de copiar o código Pix voltou a funcionar, e agora o código também aparece por extenso na tela — dá pra selecionar à mão se a cópia falhar."] },
   { versao: "0.11.27", itens: ["O checkout do Motoclube passou a gerar Pix de verdade: QR Code e copia e cola na hora, direto na tela de assinatura."] },
   { versao: "0.11.26", itens: ["Correção importante: município que já teve a presença confirmada por GPS fica verificado pra sempre. Antes, desmarcar e raspar de novo longe do lugar apagava a confirmação, e era preciso voltar lá fisicamente."] },
@@ -725,6 +726,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btn-gerar-pix").addEventListener("click", aoGerarPix);
   document.getElementById("btn-copiar-codigo-pix").addEventListener("click", copiarCodigoPix);
+  document.getElementById("btn-sucesso-fechar").addEventListener("click", fecharCheckout);
   document.getElementById("input-cpf-checkout").addEventListener("input", (evento) => {
     evento.target.value = formatarCpf(evento.target.value);
   });
@@ -3721,13 +3723,44 @@ function abrirCheckout({ tipo = "pro", valor = null, descricao = "Assinatura Mot
 function fecharCheckout() {
   fecharComAnimacao(document.getElementById("modal-checkout"));
   cobrancaAtual = null;
+  // Sem isto o listener sobrevive ao fechamento e vai se acumulando a
+  // cada checkout aberto.
+  pararDeObservarAssinatura?.();
+  pararDeObservarAssinatura = null;
 }
 
 function mostrarEtapaCheckout(etapa) {
-  ["cpf", "carregando", "pix"].forEach((nome) => {
+  ["cpf", "carregando", "pix", "sucesso"].forEach((nome) => {
     document
       .getElementById(`checkout-etapa-${nome}`)
       .classList.toggle("oculto", nome !== etapa);
+  });
+}
+
+/* Cancelador do listener da assinatura (ver observarAssinatura em
+   js/auth.js). Guardado aqui pra ser desligado ao fechar o checkout. */
+let pararDeObservarAssinatura = null;
+
+/**
+ * Fica de olho no Firestore enquanto o QR Code está na tela e comemora
+ * sozinho quando o pagamento cai.
+ *
+ * Quem confirma o Pix é o webhook do Asaas, fora do app -- então não há
+ * nada pra "esperar" no fetch do checkout. O caminho é o inverso: o
+ * webhook escreve `ehPro`, e o listener do Firestore avisa a tela.
+ */
+function observarPagamentoDoCheckout() {
+  pararDeObservarAssinatura?.();
+  pararDeObservarAssinatura = window.raspadinhaAuth?.observarAssinatura?.(() => {
+    if (!souMembroMotoclube()) return;
+
+    pararDeObservarAssinatura?.();
+    pararDeObservarAssinatura = null;
+    mostrarEtapaCheckout("sucesso");
+    // Destranca o que estava atrás do paywall sem exigir reabrir o app:
+    // esconde o botão de assinar e revela a Garagem no menu. O crachá do
+    // Perfil não precisa de refresh -- ele é montado em abrirPerfil().
+    atualizarBotaoAssinarPro();
   });
 }
 
@@ -3772,6 +3805,7 @@ async function aoGerarPix() {
       .replace(".", ",")}`;
     document.getElementById("checkout-codigo-pix").textContent = dados.payloadCode || "";
     mostrarEtapaCheckout("pix");
+    observarPagamentoDoCheckout();
   } catch (erro) {
     console.error("Falha ao gerar Pix:", erro);
     erroEl.textContent = erro.message || "Não foi possível gerar o Pix.";
