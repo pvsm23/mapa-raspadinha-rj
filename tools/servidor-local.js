@@ -43,6 +43,10 @@ http
       }
       res.writeHead(200, {
         "Content-Type": TIPOS[path.extname(alvo).toLowerCase()] || "application/octet-stream",
+        // Permite que uma página de outro domínio (ex.: o Gemini) leia
+        // um arquivo daqui. É servidor de desenvolvimento, só escuta em
+        // localhost e só serve o que já está no repositório público.
+        "Access-Control-Allow-Origin": "*",
       });
       res.end(conteudo);
     });

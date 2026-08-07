@@ -54,7 +54,23 @@
  *    Motoclube direto no Firestore quando o app pergunta se a cobrança
  *    foi paga (ver verificarPagamento_ lá embaixo).
  *
- * 2.1) DECLARAR O ESCOPO DO FIRESTORE (senão o PATCH volta 403)
+ * 2.1) LIGAR ESTE PROJETO AO GOOGLE CLOUD DO FIREBASE
+ *    Declarar o escopo NÃO BASTA. Todo projeto do Apps Script nasce
+ *    com um projeto do Google Cloud próprio e isolado; o token do
+ *    ScriptApp.getOAuthToken() vale pra ELE, não pro seu Firebase. Sem
+ *    associar os dois, o PATCH volta 403 com "PERMISSION_DENIED" ou
+ *    "Cloud Firestore API has not been used" -- e o app mostra
+ *    "Pagamento encontrado, mas a liberação falhou".
+ *
+ *    - Firebase → Configurações do projeto → copie o "Número do
+ *      projeto" (só dígitos).
+ *    - Apps Script → Configurações do projeto → "Projeto do Google
+ *      Cloud Platform (GCP)" → Alterar projeto → cole o número →
+ *      Definir projeto.
+ *    - Console do Google Cloud, COM ESSE PROJETO SELECIONADO → APIs e
+ *      serviços → Ativar → "Cloud Firestore API".
+ *
+ * 2.2) DECLARAR O ESCOPO DO FIRESTORE (senão o PATCH volta 403)
  *    - Configurações do projeto → marque "Mostrar o arquivo de
  *      manifesto appsscript.json no editor".
  *    - Em appsscript.json:

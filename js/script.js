@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.31";
+const VERSAO_APP = "0.11.32";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.31";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.32", itens: ["Selos novos de Paraty e Itatiaia, e mais 10 municípios ganharam a arte da raspadinha.", "Enquanto o pagamento por Pix não estiver no ar, o Motoclube pode ser liberado de graça para todo mundo."] },
   { versao: "0.11.31", itens: ["Quem já pagou pode recuperar o acesso pelo botão \"Já sou membro\" no paywall, mesmo tendo trocado de aparelho ou reinstalado o app."] },
   { versao: "0.11.30", itens: ["O app agora confere sozinho se o Pix caiu, sem depender de aviso externo, e tem um botão \"Já paguei\" pra checar na hora. Ninguém mais paga e fica esperando."] },
   { versao: "0.11.29", itens: ["Assim que o Pix é confirmado, o app avisa na hora com uma tela de boas-vindas e libera os recursos do Motoclube — não precisa mais fechar e abrir."] },
@@ -771,6 +772,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("check-anuncios-para-mim")
     .addEventListener("change", alternarAnuncioParaMim);
+  document
+    .getElementById("check-motoclube-liberado")
+    .addEventListener("change", alternarMotoclubeLiberado);
 
   // ---- Excluir conta ----
   document.getElementById("btn-abrir-excluir-conta").addEventListener("click", iniciarFluxoExclusaoConta);
@@ -3339,8 +3343,46 @@ async function atualizarCheckboxAnunciosGlobal() {
   try {
     const config = await window.raspadinhaAuth.buscarConfigGlobal();
     checkbox.checked = !!config?.anunciosAtivados;
+    // Mesmo documento: aproveita a leitura pra sincronizar o toggle do
+    // Motoclube também.
+    document.getElementById("check-motoclube-liberado").checked =
+      !!config?.motoclubeLiberadoParaTodos;
   } catch (erro) {
     console.error("Falha ao carregar configuração de anúncios:", erro);
+  } finally {
+    checkbox.disabled = false;
+  }
+}
+
+/**
+ * Liga/desliga o Motoclube pra todo mundo.
+ *
+ * Reflete na hora no aparelho do admin (atualizarBotaoAssinarPro), e
+ * nos outros aparelhos na próxima abertura do app -- é quando
+ * carregarChavePixGlobal relê configuracoes/global.
+ */
+async function alternarMotoclubeLiberado(evento) {
+  const checkbox = evento.target;
+  const status = document.getElementById("motoclube-admin-status");
+
+  checkbox.disabled = true;
+  status.classList.add("oculto");
+  try {
+    await window.raspadinhaAuth.definirMotoclubeLiberado(checkbox.checked);
+    atualizarBotaoAssinarPro();
+    status.textContent = checkbox.checked
+      ? "Motoclube liberado pra todo mundo, de graça."
+      : "Motoclube voltou a ser pago.";
+    status.className = "feedback-status status-sucesso";
+    status.classList.remove("oculto");
+  } catch (erro) {
+    console.error("Falha ao alternar liberação do Motoclube:", erro);
+    // Desfaz o visual: o estado real não mudou, e deixar o toggle
+    // ligado faria você achar que liberou quando não liberou.
+    checkbox.checked = !checkbox.checked;
+    status.textContent = erro?.message || "Não foi possível salvar agora.";
+    status.className = "feedback-status status-erro";
+    status.classList.remove("oculto");
   } finally {
     checkbox.disabled = false;
   }
@@ -6855,8 +6897,17 @@ async function carregarChavePixGlobal() {
     const config = await window.raspadinhaAuth?.buscarConfigGlobal?.();
     const chave = (config?.chavePix || "").trim();
     if (chave) CHAVE_PIX_COLABORACAO = chave;
+
+    // Mesma leitura serve pros dois: a liberação geral do Motoclube
+    // mora no mesmo documento. Aproveitar a chamada evita uma segunda
+    // ida ao Firestore em toda abertura do app.
+    if (window.raspadinhaAuth) {
+      window.raspadinhaAuth.motoclubeLiberadoParaTodos = !!config?.motoclubeLiberadoParaTodos;
+    }
+    // A decisão de mostrar ou não o botão de assinar depende disso.
+    atualizarBotaoAssinarPro();
   } catch (erro) {
-    console.warn("Não foi possível carregar a chave PIX global:", erro);
+    console.warn("Não foi possível carregar a configuração global:", erro);
   }
 }
 
@@ -8211,6 +8262,13 @@ async function compartilharRotaPersonalizadaNaComunidade() {
  * prazo. Só o booleano dava acesso vitalício no primeiro pagamento.
  */
 function souMembroMotoclube() {
+  // Liberação geral, ligada pelo admin (ver "Motoclube" em
+  // Configurações de admin). Enquanto o pagamento não estiver de pé,
+  // cobrar por um recurso que não destranca é pior que não cobrar.
+  // Vem de configuracoes/global no Firestore, então vale pra todo mundo
+  // e muda sem precisar de APK novo.
+  if (window.raspadinhaAuth?.motoclubeLiberadoParaTodos === true) return true;
+
   if (window.raspadinhaAuth?.contaEhPro !== true) return false;
 
   const ate = parsearDataAssinatura(window.raspadinhaAuth?.proAte);

@@ -200,6 +200,11 @@ window.raspadinhaAuth = {
   sincronizarRota: async () => {},
   buscarConfigGlobal: async () => ({ anunciosAtivados: false }),
   definirAnunciosGlobalAtivados: async () => {},
+  // Liberação geral do Motoclube (ver definirMotoclubeLiberado). Sem
+  // Firebase configurado fica desligada -- na dúvida, o app se comporta
+  // como se o produto fosse pago, que é o estado normal.
+  motoclubeLiberadoParaTodos: false,
+  definirMotoclubeLiberado: async () => {},
   definirChavePixColaboracao: async () => {},
   definirAnuncioPorUsuario: async () => {},
   buscarConfigAnuncio: async () => false,
@@ -705,6 +710,29 @@ if (CONFIGURADO) {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     await setDoc(doc(db, "configuracoes", "global"), { anunciosAtivados: !!ativado }, { merge: true });
+  };
+
+  /**
+   * Liga/desliga o Motoclube para TODO MUNDO, de graça.
+   *
+   * Existe porque o pagamento pode estar fora do ar (foi o caso na
+   * estreia: o webhook nunca chegava e quem pagava não recebia nada).
+   * Nessa situação, cobrar por um recurso que não destranca é pior que
+   * não cobrar -- então o dono libera geral com um toque, e volta a
+   * cobrar quando o Pix estiver de pé.
+   *
+   * Mora no mesmo `configuracoes/global` dos anúncios: leitura pública,
+   * escrita só pela conta dona. Não precisa de regra nova no Firestore.
+   */
+  window.raspadinhaAuth.definirMotoclubeLiberado = async (liberado) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await setDoc(
+      doc(db, "configuracoes", "global"),
+      { motoclubeLiberadoParaTodos: !!liberado },
+      { merge: true }
+    );
+    window.raspadinhaAuth.motoclubeLiberadoParaTodos = !!liberado;
   };
 
   /**
