@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.37";
+const VERSAO_APP = "0.11.38";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.37";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.38", itens: ["Nomes compridos no mapa agora quebram em duas linhas, em vez de atravessar os municípios vizinhos.", "Corrigida a liberação do Motoclube, que parecia desligar sozinha ao abrir o app."] },
   { versao: "0.11.37", itens: ["Os nomes no mapa ficaram bem maiores e mais fáceis de ler, sem se sobrepor."] },
   { versao: "0.11.36", itens: ["Os nomes no mapa ficaram menores e agora mantêm o mesmo tamanho na tela conforme você aproxima."] },
   { versao: "0.11.35", itens: ["Chegaram os grupos do Motoclube: um para cada município, com brasão próprio. Você entra em um, e o brasão passa a aparecer no seu perfil e ao lado do seu nome na Comunidade.", "Para trocar de grupo é preciso esperar 30 dias desde a entrada no anterior."] },
@@ -6910,12 +6911,11 @@ function abrirFeedback() {
   });
 }
 
-/**
- * Lê a chave PIX de colaboração salva pela conta dona em
- * configuracoes/global.chavePix e sobrescreve o padrão local. Silencia
- * qualquer erro (offline / Firebase não configurado): nesse caso fica
- * valendo o padrão de CHAVE_PIX_COLABORACAO.
- */
+/* Promessa da PRIMEIRA leitura de configuracoes/global. Guardada porque
+   quem chama carregarChavePixGlobal() espera poder dar `.then()` -- e
+   porque o observador só pode ser registrado UMA vez. */
+let promessaConfigGlobal = null;
+
 /**
  * Acompanha `configuracoes/global` (chave PIX + liberação do Motoclube)
  * enquanto o app estiver aberto.
@@ -6925,18 +6925,40 @@ function abrirFeedback() {
  * antiga do documento guardada no aparelho. Era assim que a liberação
  * do Motoclube se desligava sozinha, com o botão do admin continuando
  * marcado. Ver observarConfigGlobal em js/auth.js.
+ *
+ * Registra o observador UMA vez e devolve sempre a mesma promessa. Duas
+ * razões, as duas viraram bug de verdade:
+ *  - a função é chamada de quatro lugares, e cada chamada criava mais
+ *    um listener sobre o mesmo documento;
+ *  - quando ela virou observador, deixou de devolver Promise, e o
+ *    `.then()` do abrirFeedback passou a estourar TypeError, derrubando
+ *    o popup "Colaborar".
  */
 function carregarChavePixGlobal() {
-  try {
-    window.raspadinhaAuth?.observarConfigGlobal?.((config) => {
-      const chave = (config?.chavePix || "").trim();
-      if (chave) CHAVE_PIX_COLABORACAO = chave;
-      // Mostrar ou esconder o botão de assinar depende da liberação.
-      atualizarBotaoAssinarPro();
-    });
-  } catch (erro) {
-    console.warn("Não foi possível observar a configuração global:", erro);
-  }
+  if (promessaConfigGlobal) return promessaConfigGlobal;
+
+  promessaConfigGlobal = new Promise((resolver) => {
+    let primeira = true;
+    try {
+      window.raspadinhaAuth?.observarConfigGlobal?.((config) => {
+        const chave = (config?.chavePix || "").trim();
+        if (chave) CHAVE_PIX_COLABORACAO = chave;
+        // Mostrar ou esconder o botão de assinar depende da liberação.
+        atualizarBotaoAssinarPro();
+        if (primeira) {
+          primeira = false;
+          resolver();
+        }
+      });
+    } catch (erro) {
+      console.warn("Não foi possível observar a configuração global:", erro);
+      resolver();
+    }
+    // Rede lenta não pode travar quem espera essa promessa.
+    setTimeout(resolver, 4000);
+  });
+
+  return promessaConfigGlobal;
 }
 
 /**

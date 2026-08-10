@@ -281,9 +281,45 @@ const paths = featuresOrdenadas
 // na tela. 0.66 fica acima do pior caso medido.
 const FATOR_LARGURA_ROTULO = 0.66;
 
+/* A partir de quantos caracteres o nome vira duas linhas.
+ *
+ * "Sao Jose do Vale do Rio Preto" numa linha so vira uma tira que
+ * atravessa tres municipios. Quebrado no meio, ocupa quase metade da
+ * largura e cabe onde o municipio realmente esta. */
+const LIMITE_UMA_LINHA = 15;
+
+/**
+ * Divide o nome em duas linhas, cortando no espaco mais proximo do
+ * meio -- assim as duas linhas saem parecidas, em vez de uma curta e
+ * uma longa. Nome sem espaco (Itaperuna, Quissama) fica numa linha so,
+ * porque quebrar palavra seria pior que a linha comprida.
+ */
+function linhasDoNome(nome) {
+  if (nome.length <= LIMITE_UMA_LINHA) return [nome];
+  const palavras = nome.split(" ");
+  if (palavras.length < 2) return [nome];
+
+  const meio = nome.length / 2;
+  let corte = 1;
+  let melhor = Infinity;
+  let soma = 0;
+  for (let i = 0; i < palavras.length - 1; i++) {
+    soma += palavras[i].length + 1;
+    const dist = Math.abs(soma - meio);
+    if (dist < melhor) {
+      melhor = dist;
+      corte = i + 1;
+    }
+  }
+  return [palavras.slice(0, corte).join(" "), palavras.slice(corte).join(" ")];
+}
+
 function caixaDoRotulo(r) {
-  const largura = r.nome.length * FATOR_LARGURA_ROTULO * r.fonte;
-  const altura = r.fonte;
+  const linhas = linhasDoNome(r.nome);
+  // Largura da MAIOR linha, altura somando todas.
+  const maisLonga = Math.max(...linhas.map((l) => l.length));
+  const largura = maisLonga * FATOR_LARGURA_ROTULO * r.fonte;
+  const altura = r.fonte * linhas.length;
   return { x: r.x - largura / 2, y: r.y - altura / 2, w: largura, h: altura };
 }
 
@@ -315,8 +351,11 @@ const FATOR_TELA = 3.3;
 /** Caixa do rotulo como ela fica no SVG quando visto naquele zoom. */
 function caixaNoZoom(r, zoom) {
   const fonte = (r.fonte * FATOR_TELA) / zoom;
-  const largura = r.nome.length * FATOR_LARGURA_ROTULO * fonte;
-  return { x: r.x - largura / 2, y: r.y - fonte / 2, w: largura, h: fonte };
+  const linhas = linhasDoNome(r.nome);
+  const maisLonga = Math.max(...linhas.map((l) => l.length));
+  const largura = maisLonga * FATOR_LARGURA_ROTULO * fonte;
+  const altura = fonte * linhas.length;
+  return { x: r.x - largura / 2, y: r.y - altura / 2, w: largura, h: altura };
 }
 
 /**
@@ -443,12 +482,27 @@ const porNivel = atribuirNiveis(dadosRotulos);
  * fica do mesmo tamanho na tela em qualquer aproximação, que é o que
  * faz os nomes pararem de brigar quando se aproxima. */
 const rotulos = dadosRotulos
-  .map(
-    (r) =>
+  .map((r) => {
+    const linhas = linhasDoNome(r.nome);
+    const abre =
       `  <text class="rotulo-municipio" data-nivel="${r.nivel}" ` +
       `x="${r.x}" y="${r.y}" style="--rotulo-base:${r.fonte.toFixed(1)}" ` +
-      `pointer-events="none">${escaparAtributo(r.nome)}</text>`
-  )
+      `pointer-events="none">`;
+
+    if (linhas.length === 1) return `${abre}${escaparAtributo(r.nome)}</text>`;
+
+    /* Duas linhas em <tspan>, com dy em `em` pra acompanhar o tamanho da
+     * fonte -- que aqui muda com o zoom, entao valor fixo em px
+     * desalinharia. Com dominant-baseline: middle, a primeira sobe meia
+     * linha e a segunda desce uma inteira, deixando o par centrado no
+     * ponto calculado. */
+    return (
+      abre +
+      `<tspan x="${r.x}" dy="-0.5em">${escaparAtributo(linhas[0])}</tspan>` +
+      `<tspan x="${r.x}" dy="1em">${escaparAtributo(linhas[1])}</tspan>` +
+      `</text>`
+    );
+  })
   .join("\n");
 
 const svg =

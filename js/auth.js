@@ -203,7 +203,24 @@ window.raspadinhaAuth = {
   // Liberação geral do Motoclube (ver definirMotoclubeLiberado). Sem
   // Firebase configurado fica desligada -- na dúvida, o app se comporta
   // como se o produto fosse pago, que é o estado normal.
-  motoclubeLiberadoParaTodos: false,
+  /* Vale desde o PRIMEIRO instante, lendo a última resposta guardada no
+     aparelho -- não espera o Firestore.
+
+     Sem isso existia uma janela entre abrir o app e a nuvem responder
+     em que a liberação valia `false`. Tocar no Motoclube nesse intervalo
+     levava ao paywall, e a impressão era de que a liberação tinha se
+     desligado sozinha. Era o que obrigava a desligar e religar o botão
+     no admin toda hora.
+
+     O valor é só um palpite inicial: o observador corrige em seguida,
+     nos dois sentidos. */
+  motoclubeLiberadoParaTodos: (() => {
+    try {
+      return localStorage.getItem("desbrava_motoclube_liberado") === "1";
+    } catch {
+      return false;
+    }
+  })(),
   // Grupo do Motoclube da conta logada (ver entrarNoGrupoMotoclube).
   grupoMotoclube: null,
   grupoEntrouEm: null,
@@ -752,7 +769,15 @@ if (CONFIGURADO) {
       doc(db, "configuracoes", "global"),
       (snap) => {
         const dados = snap.exists() ? snap.data() : {};
-        window.raspadinhaAuth.motoclubeLiberadoParaTodos = !!dados.motoclubeLiberadoParaTodos;
+        const liberado = !!dados.motoclubeLiberadoParaTodos;
+        window.raspadinhaAuth.motoclubeLiberadoParaTodos = liberado;
+        // Guarda pro próximo início do app não ter janela de "bloqueado"
+        // enquanto a nuvem não responde.
+        try {
+          localStorage.setItem("desbrava_motoclube_liberado", liberado ? "1" : "0");
+        } catch {
+          /* modo privado, cota cheia: seguir sem cache é aceitável */
+        }
         aoMudar?.(dados);
       },
       (erro) => console.error("Falha ao observar a configuração global:", erro)
