@@ -163,7 +163,17 @@ function uploadFotoPost(dados) {
   var arquivo = pasta.createFile(blob);
   arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-  var fotoUrl = "https://drive.google.com/thumbnail?id=" + arquivo.getId() + "&sz=w1600";
+  // CDN do Google, e não o `drive.google.com/thumbnail?id=...` de antes.
+  //
+  // O endpoint de miniatura falhava de forma intermitente -- limite de
+  // taxa por IP, e erro enquanto o Google ainda não tinha gerado a
+  // miniatura do arquivo. O resultado no app eram fotos do mesmo
+  // usuário, umas abrindo e outras não.
+  //
+  // O app tenta os outros formatos sozinho se este falhar (ver
+  // aplicarFotoComFallback em js/script.js), então trocar aqui não
+  // quebra nada que já esteja gravado.
+  var fotoUrl = "https://lh3.googleusercontent.com/d/" + arquivo.getId() + "=w1600";
   return ContentService.createTextOutput(
     JSON.stringify({ ok: true, fotoUrl: fotoUrl, fotoId: arquivo.getId() })
   ).setMimeType(ContentService.MimeType.JSON);

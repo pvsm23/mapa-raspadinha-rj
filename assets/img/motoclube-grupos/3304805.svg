@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <path id="arco-cima" d="M 74 256 A 182 182 0 0 1 438 256" fill="none"/>
+    <path id="arco-baixo" d="M 37 256 A 219 219 0 0 0 475 256" fill="none"/>
+    <clipPath id="recorte-miolo">
+      <circle cx="256" cy="256" r="150"/>
+    </clipPath>
+  </defs>
+
+  <circle cx="256" cy="256" r="246" fill="#0F1216" stroke="#FFFFFF" stroke-width="12"/>
+  <circle cx="256" cy="256" r="162" fill="none" stroke="#FFFFFF" stroke-width="7"/>
+
+  <text x="256" y="244" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#FFFFFF"
+        font-size="22" letter-spacing="2">MOTOCLUBE</text>
+
+  <image xlink:href="data:image/png;base64,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"
+         x="140" y="252" width="232" height="28"/>
+
+  <text font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#FFFFFF"
+        font-size="40" letter-spacing="3">
+    <textPath xlink:href="#arco-cima" startOffset="50%" text-anchor="middle">BORA VIVER!</textPath>
+  </text>
+
+  <text font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#FFFFFF"
+        font-size="34" letter-spacing="1">
+    <textPath xlink:href="#arco-baixo" startOffset="50%" text-anchor="middle">SÃO FIDÉLIS - RJ</textPath>
+  </text>
+</svg>

@@ -9369,6 +9369,13 @@ button:disabled:active {
   .checkout-ponto { animation: none; }
 }
 
+/* Foto que não abriu em nenhum dos formatos do Drive. Sumir por
+   completo é melhor que deixar o navegador desenhar o ícone de imagem
+   quebrada com o texto alternativo ao lado. */
+.foto-indisponivel {
+  display: none !important;
+}
+
 #secao-motoclube-admin {
   margin-bottom: 22px;
   padding-bottom: 18px;

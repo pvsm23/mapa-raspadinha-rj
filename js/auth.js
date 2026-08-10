@@ -204,6 +204,7 @@ window.raspadinhaAuth = {
   // Firebase configurado fica desligada -- na dúvida, o app se comporta
   // como se o produto fosse pago, que é o estado normal.
   motoclubeLiberadoParaTodos: false,
+  observarConfigGlobal: () => () => {},
   definirMotoclubeLiberado: async () => {},
   definirChavePixColaboracao: async () => {},
   definirAnuncioPorUsuario: async () => {},
@@ -724,6 +725,34 @@ if (CONFIGURADO) {
    * Mora no mesmo `configuracoes/global` dos anúncios: leitura pública,
    * escrita só pela conta dona. Não precisa de regra nova no Firestore.
    */
+  /**
+   * Observa `configuracoes/global` ao vivo.
+   *
+   * Substitui a leitura única que existia antes, e conserta um bug que
+   * era difícil de enxergar: com persistentLocalCache, um getDoc pode
+   * ser respondido pelo CACHE LOCAL, com uma versão do documento
+   * anterior ao campo `motoclubeLiberadoParaTodos` existir. O campo
+   * vinha `undefined`, o app entendia "desligado" e o Motoclube
+   * fechava sozinho -- enquanto o botão do admin, lido do servidor,
+   * continuava marcado. Exatamente o "desativa sozinho mas continua
+   * mostrando ativado".
+   *
+   * Com onSnapshot o cache até responde primeiro, mas a versão do
+   * servidor chega logo atrás e corrige. De quebra, ligar ou desligar
+   * passa a valer nos outros aparelhos NA HORA, sem esperar o app ser
+   * reaberto.
+   */
+  window.raspadinhaAuth.observarConfigGlobal = (aoMudar) =>
+    onSnapshot(
+      doc(db, "configuracoes", "global"),
+      (snap) => {
+        const dados = snap.exists() ? snap.data() : {};
+        window.raspadinhaAuth.motoclubeLiberadoParaTodos = !!dados.motoclubeLiberadoParaTodos;
+        aoMudar?.(dados);
+      },
+      (erro) => console.error("Falha ao observar a configuração global:", erro)
+    );
+
   window.raspadinhaAuth.definirMotoclubeLiberado = async (liberado) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");

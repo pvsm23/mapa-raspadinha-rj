@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.32";
+const VERSAO_APP = "0.11.33";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.32";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.33", itens: ["As fotos da comunidade que não abriam voltaram a aparecer, inclusive as de posts antigos.", "O nome de cada município agora fica dentro dos próprios limites no mapa.", "Cada município ganhou o brasão do seu grupo do Motoclube."] },
   { versao: "0.11.32", itens: ["Selos novos de Paraty e Itatiaia, e mais 10 municípios ganharam a arte da raspadinha.", "Enquanto o pagamento por Pix não estiver no ar, o Motoclube pode ser liberado de graça para todo mundo."] },
   { versao: "0.11.31", itens: ["Quem já pagou pode recuperar o acesso pelo botão \"Já sou membro\" no paywall, mesmo tendo trocado de aparelho ou reinstalado o app."] },
   { versao: "0.11.30", itens: ["O app agora confere sozinho se o Pix caiu, sem depender de aviso externo, e tem um botão \"Já paguei\" pra checar na hora. Ninguém mais paga e fica esperando."] },
@@ -6892,22 +6893,26 @@ function abrirFeedback() {
  * qualquer erro (offline / Firebase não configurado): nesse caso fica
  * valendo o padrão de CHAVE_PIX_COLABORACAO.
  */
-async function carregarChavePixGlobal() {
+/**
+ * Acompanha `configuracoes/global` (chave PIX + liberação do Motoclube)
+ * enquanto o app estiver aberto.
+ *
+ * É um OBSERVADOR, não uma leitura única, e a diferença importa: com
+ * persistentLocalCache, um getDoc pode ser respondido por uma versão
+ * antiga do documento guardada no aparelho. Era assim que a liberação
+ * do Motoclube se desligava sozinha, com o botão do admin continuando
+ * marcado. Ver observarConfigGlobal em js/auth.js.
+ */
+function carregarChavePixGlobal() {
   try {
-    const config = await window.raspadinhaAuth?.buscarConfigGlobal?.();
-    const chave = (config?.chavePix || "").trim();
-    if (chave) CHAVE_PIX_COLABORACAO = chave;
-
-    // Mesma leitura serve pros dois: a liberação geral do Motoclube
-    // mora no mesmo documento. Aproveitar a chamada evita uma segunda
-    // ida ao Firestore em toda abertura do app.
-    if (window.raspadinhaAuth) {
-      window.raspadinhaAuth.motoclubeLiberadoParaTodos = !!config?.motoclubeLiberadoParaTodos;
-    }
-    // A decisão de mostrar ou não o botão de assinar depende disso.
-    atualizarBotaoAssinarPro();
+    window.raspadinhaAuth?.observarConfigGlobal?.((config) => {
+      const chave = (config?.chavePix || "").trim();
+      if (chave) CHAVE_PIX_COLABORACAO = chave;
+      // Mostrar ou esconder o botão de assinar depende da liberação.
+      atualizarBotaoAssinarPro();
+    });
   } catch (erro) {
-    console.warn("Não foi possível carregar a configuração global:", erro);
+    console.warn("Não foi possível observar a configuração global:", erro);
   }
 }
 
@@ -8420,13 +8425,17 @@ function montarCardMotoclube(item) {
     ${item.marcas?.length ? `<p class="motoclube-card-marcas">🏍️ ${item.marcas.map(escaparHtml).join(", ")}</p>` : ""}
     ${item.modelos ? `<p class="motoclube-card-modelos">${escaparHtml(item.modelos)}</p>` : ""}
     ${item.descricao ? `<p class="motoclube-card-descricao">${escaparHtml(item.descricao)}</p>` : ""}
-    ${item.fotoUrl ? `<img class="motoclube-card-foto" src="${escaparHtml(item.fotoUrl)}" alt="${escaparHtml(item.nome)}">` : ""}
+    ${item.fotoUrl ? `<img class="motoclube-card-foto" alt="${escaparHtml(item.nome)}">` : ""}
     ${item.linkMaps ? `<a class="motoclube-card-maps" href="${escaparHtml(item.linkMaps)}" target="_blank" rel="noopener">📍 Abrir no Maps</a>` : ""}
     <div class="motoclube-card-acoes">
       <button type="button" class="motoclube-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span>${(item.curtidoPor || []).length}</span></button>
       ${souAutor ? '<button type="button" class="motoclube-card-excluir">🗑️ Excluir</button>' : ""}
     </div>
   `;
+
+  // O src sai depois do innerHTML pra passar pela cadeia de fallback do
+  // Drive (ver aplicarFotoComFallback).
+  if (item.fotoUrl) aplicarFotoComFallback(card.querySelector(".motoclube-card-foto"), item.fotoUrl);
 
   card.querySelector(".motoclube-card-curtir").addEventListener("click", () => aoCurtirItemMotoclube(item, card));
   card.querySelector(".motoclube-card-excluir")?.addEventListener("click", () => excluirItemMotoclubeAtual(item, card));
@@ -9667,7 +9676,8 @@ function aplicarAvatar(el, fotoPerfil, apelido) {
   if (fotoPerfil && fotoPerfil.tipo === "foto" && fotoPerfil.url) {
     el.style.background = "";
     el.style.fontSize = "";
-    el.innerHTML = `<img class="avatar-img" alt="Foto de perfil" src="${escaparHtml(fotoPerfil.url)}">`;
+    el.innerHTML = '<img class="avatar-img" alt="Foto de perfil">';
+    aplicarFotoComFallback(el.querySelector(".avatar-img"), fotoPerfil.url);
     return;
   }
 
@@ -9753,11 +9763,11 @@ function renderizarCardPost(post) {
   // foto do Storage de forma assíncrona.
   const imgEl = card.querySelector(".post-card-foto");
   if (post.fotoUrl) {
-    imgEl.src = post.fotoUrl;
+    aplicarFotoComFallback(imgEl, post.fotoUrl);
   } else if (post.fotoStoragePath) {
     window.raspadinhaAuth.buscarFotoPost(post.fotoStoragePath).then((url) => {
       if (!url) return;
-      imgEl.src = url;
+      aplicarFotoComFallback(imgEl, url);
       blobUrlsFotosPosts.push(url);
     });
   }
@@ -9788,6 +9798,74 @@ function renderizarCardPost(post) {
   });
 
   return card;
+}
+
+/* ============================================================
+   FOTOS HOSPEDADAS NO GOOGLE DRIVE
+   ------------------------------------------------------------
+   As fotos de post, sugestão, Motoclube e perfil vivem no Drive (ver
+   subirFotoPostParaDrive em js/auth.js), e o Apps Script devolve a URL
+   no formato `drive.google.com/thumbnail?id=...`.
+
+   Esse endpoint é o de MINIATURA, e falha de forma intermitente: o
+   Google limita a taxa por IP e responde erro enquanto ainda não gerou
+   a miniatura daquele arquivo. O sintoma no app era exatamente esse --
+   fotos do mesmo usuário, umas abrindo e outras não, mostrando o texto
+   "Foto do post" no lugar da imagem.
+
+   O Drive serve o MESMO arquivo por outros dois caminhos, com limites
+   independentes. Tentar os três em sequência recupera inclusive os
+   posts que já estavam quebrados, sem precisar reenviar nada.
+   ============================================================ */
+
+/** Extrai o id do arquivo de qualquer um dos formatos de URL do Drive. */
+function idDoArquivoDrive(url) {
+  const s = String(url || "");
+  const m =
+    s.match(/[?&]id=([\w-]+)/) ||
+    s.match(/googleusercontent\.com\/d\/([\w-]+)/) ||
+    s.match(/\/file\/d\/([\w-]+)/);
+  return m ? m[1] : null;
+}
+
+function urlsAlternativasDaFoto(url) {
+  const tentativas = [url];
+  const id = idDoArquivoDrive(url);
+  if (id) {
+    // CDN do Google: costuma responder quando a miniatura falha.
+    tentativas.push(`https://lh3.googleusercontent.com/d/${id}=w1600`);
+    // Download direto: mais lento e sem redimensionar, mas é o que
+    // sobrevive quando os outros dois estão limitados.
+    tentativas.push(`https://drive.google.com/uc?export=view&id=${id}`);
+  }
+  return [...new Set(tentativas)];
+}
+
+/**
+ * Põe a foto no <img>, tentando as URLs alternativas em ordem.
+ *
+ * Esgotadas as tentativas, ESCONDE o elemento em vez de deixar o
+ * navegador desenhar o ícone de imagem quebrada com o texto alternativo
+ * ao lado -- um espaço vazio é menos feio e menos confuso que "Foto do
+ * post" escrito na tela.
+ */
+function aplicarFotoComFallback(imgEl, url) {
+  if (!imgEl || !url) return;
+  const tentativas = urlsAlternativasDaFoto(url);
+  let indice = 0;
+
+  imgEl.addEventListener("error", () => {
+    indice++;
+    if (indice < tentativas.length) {
+      imgEl.src = tentativas[indice];
+      return;
+    }
+    console.warn("Foto indisponível em todos os formatos do Drive:", url);
+    imgEl.classList.add("foto-indisponivel");
+  });
+
+  imgEl.addEventListener("load", () => imgEl.classList.remove("foto-indisponivel"));
+  imgEl.src = tentativas[0];
 }
 
 /**
@@ -10289,8 +10367,8 @@ function abrirDetalheSugestao(sugestao) {
   const foto = document.getElementById("sugestao-detalhe-foto");
   foto.classList.toggle("oculto", !sugestao.fotoUrl);
   if (sugestao.fotoUrl) {
-    foto.src = sugestao.fotoUrl;
     foto.alt = `Foto de ${sugestao.titulo}`;
+    aplicarFotoComFallback(foto, sugestao.fotoUrl);
   }
 
   const descricao = document.getElementById("sugestao-detalhe-descricao");
