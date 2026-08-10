@@ -260,23 +260,180 @@ const paths = featuresOrdenadas
   })
   .join("\n");
 
-// Rotulo com o nome de cada municipio, centralizado no bounding box.
-// pointer-events="none" faz o clique "atravessar" o texto e cair no
-// path por baixo. Tamanho da fonte varia um pouco com a largura do
-// municipio, para nomes longos em municipios pequenos nao dominarem
-// visualmente o mapa.
-const rotulos = featuresOrdenadas
-  .map((feature) => {
-    const codigoIbge = feature.properties.id;
-    const nome = feature.properties.name;
-    const { x, y, largura } = posicaoDoRotulo(feature);
-    const fonte = Math.max(3.5, Math.min(6, largura / 8));
-    return (
-      `  <text class="rotulo-municipio" x="${x}" y="${y}" ` +
-      `font-size="${fonte.toFixed(1)}" pointer-events="none">` +
-      `${escaparAtributo(nome)}</text>`
-    );
-  })
+/* ---- Rotulos, e a briga entre vizinhos ----
+ *
+ * pointer-events="none" faz o clique "atravessar" o texto e cair no
+ * path por baixo. A fonte varia com a largura do municipio, pra nome
+ * longo em municipio pequeno nao dominar o mapa.
+ *
+ * Posicionar cada nome DENTRO do proprio municipio (posicaoDoRotulo)
+ * resolve so metade do problema: na Baixada e nos Lagos os municipios
+ * sao pequenos e colados, entao dois nomes corretos ainda se encavalam.
+ * Por isso vem a passada de anticolisao abaixo.
+ */
+
+// Largura media de um caractere em relacao ao corpo da fonte, na fonte
+// que o app usa (system-ui, peso 600).
+//
+// Medido no navegador contra os 92 nomes reais: o pior caso deu 0.645.
+// Comecei com 0.52 e foi pouco -- o gerador achava os nomes mais
+// estreitos do que sao, dava a colisao por resolvida e ela continuava
+// na tela. 0.66 fica acima do pior caso medido.
+const FATOR_LARGURA_ROTULO = 0.66;
+
+function caixaDoRotulo(r) {
+  const largura = r.nome.length * FATOR_LARGURA_ROTULO * r.fonte;
+  const altura = r.fonte;
+  return { x: r.x - largura / 2, y: r.y - altura / 2, w: largura, h: altura };
+}
+
+function seCruzam(a, b) {
+  return !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+}
+
+/* ---- Em que zoom cada nome aparece ----
+ *
+ * O texto tem tamanho FIXO NA TELA (ver --zoom em css/styles.css): ao
+ * aproximar, o municipio cresce e a letra nao. Isso muda tudo -- em
+ * zoom maior sobra espaco de verdade, e nomes que nao cabiam passam a
+ * caber.
+ *
+ * Entao, em vez de espremer todo mundo no mesmo zoom, cada nome ganha
+ * o NIVEL em que ele passa a caber. Os grandes aparecem logo; os
+ * pequenos so quando a tela abre espaco pra eles. E como mapa de
+ * verdade funciona.
+ */
+const ZOOM_DOS_NIVEIS = [3.5, 5, 7, 10];
+
+/** Caixa do rotulo como ela fica no SVG quando visto naquele zoom. */
+function caixaNoZoom(r, zoom) {
+  const fonte = r.fonte / (zoom / ZOOM_DOS_NIVEIS[0]);
+  const largura = r.nome.length * FATOR_LARGURA_ROTULO * fonte;
+  return { x: r.x - largura / 2, y: r.y - fonte / 2, w: largura, h: fonte };
+}
+
+/**
+ * Atribui o nivel de cada nome, do municipio maior pro menor.
+ *
+ * Guloso e por area: quem tem mais territorio aparece antes. Um nome
+ * so entra num nivel se, NAQUELE zoom, ele nao encostar em nenhum dos
+ * que ja aparecem. Se nao couber em nivel nenhum, entra no ultimo
+ * mesmo assim -- municipio minusculo pode ter o nome passando um pouco
+ * por cima da divisa, desde que nao fique estranho, e nesse zoom a
+ * sobra de tela ja e grande.
+ */
+function atribuirNiveis(rotulos) {
+  const porArea = [...rotulos].sort((a, b) => b.area - a.area);
+  const colocados = [];
+  const contagem = [0, 0, 0, 0];
+
+  for (const r of porArea) {
+    let nivel = ZOOM_DOS_NIVEIS.length - 1;
+
+    for (let n = 0; n < ZOOM_DOS_NIVEIS.length; n++) {
+      const zoom = ZOOM_DOS_NIVEIS[n];
+      const minha = caixaNoZoom(r, zoom);
+      // Nesse zoom aparecem os deste nivel e os de todos os anteriores.
+      const conflita = colocados
+        .filter((o) => o.nivel <= n)
+        .some((o) => seCruzam(minha, caixaNoZoom(o, zoom)));
+      if (!conflita) {
+        nivel = n;
+        break;
+      }
+    }
+
+    r.nivel = nivel;
+    contagem[nivel]++;
+    colocados.push(r);
+  }
+
+  return contagem;
+}
+
+/** O rotulo cabe nessa posicao sem sair do proprio municipio? */
+function cabeDentro(r, x, y) {
+  const meiaAltura = r.fonte / 2;
+  const meiaLargura = (r.nome.length * FATOR_LARGURA_ROTULO * r.fonte) / 2;
+  // Testa os dois extremos do texto, nao so o centro: um nome comprido
+  // cabe no centro e escapa pelas pontas.
+  return (
+    distanciaAteBorda(x - meiaLargura, y, r.aneis) > meiaAltura &&
+    distanciaAteBorda(x + meiaLargura, y, r.aneis) > meiaAltura &&
+    distanciaAteBorda(x, y, r.aneis) > meiaAltura
+  );
+}
+
+/**
+ * Empurra pro lado os nomes que nascem em cima de um vizinho.
+ *
+ * Roda ANTES dos niveis: um nome afastado alguns pixels costuma passar
+ * a caber num nivel mais baixo, ou seja, aparece mais cedo. Procura em
+ * aneis concentricos, do mais perto pro mais longe, pra sair o minimo
+ * possivel do ponto que o polo de inacessibilidade escolheu.
+ *
+ * Municipio minusculo pode ficar onde esta: nesses o nome passa por
+ * cima da divisa de qualquer jeito, e isso e aceitavel.
+ */
+function afastarSobrepostos(rotulos) {
+  const colideComAlguem = (r, x, y) => {
+    const caixa = caixaDoRotulo({ ...r, x, y });
+    return rotulos.some((o) => o !== r && seCruzam(caixa, caixaDoRotulo(o)));
+  };
+
+  let deslocados = 0;
+  for (const r of rotulos) {
+    if (!colideComAlguem(r, r.x, r.y)) continue;
+
+    let achou = null;
+    for (let raio = 1; raio <= 10 && !achou; raio++) {
+      for (let ang = 0; ang < 16 && !achou; ang++) {
+        const t = (ang / 16) * Math.PI * 2;
+        const x = r.x + Math.cos(t) * raio * 1.5;
+        const y = r.y + Math.sin(t) * raio * 1.5;
+        if (cabeDentro(r, x, y) && !colideComAlguem(r, x, y)) achou = { x, y };
+      }
+    }
+
+    if (achou) {
+      r.x = Number(achou.x.toFixed(CASAS_DECIMAIS));
+      r.y = Number(achou.y.toFixed(CASAS_DECIMAIS));
+      deslocados++;
+    }
+  }
+  return deslocados;
+}
+
+const dadosRotulos = featuresOrdenadas.map((feature) => {
+  const { x, y, largura } = posicaoDoRotulo(feature);
+  const aneis = feature.geometry.coordinates.map((anel) => anel.map(projetar));
+  return {
+    nome: feature.properties.name,
+    x,
+    y,
+    fonte: Math.max(3.5, Math.min(6, largura / 8)),
+    aneis,
+    // Area do maior anel: decide quem cede numa colisao.
+    area: Math.max(...aneis.map((anel) => Math.abs(areaDoAnel(anel)))),
+  };
+});
+
+const deslocados = afastarSobrepostos(dadosRotulos);
+const porNivel = atribuirNiveis(dadosRotulos);
+
+/* O tamanho vai como VARIAVEL CSS, não como font-size.
+ *
+ * Quem calcula o font-size final é o CSS, dividindo essa base pelo
+ * zoom atual (--zoom, escrito pelo app a cada movimento). Assim a letra
+ * fica do mesmo tamanho na tela em qualquer aproximação, que é o que
+ * faz os nomes pararem de brigar quando se aproxima. */
+const rotulos = dadosRotulos
+  .map(
+    (r) =>
+      `  <text class="rotulo-municipio" data-nivel="${r.nivel}" ` +
+      `x="${r.x}" y="${r.y}" style="--rotulo-base:${r.fonte.toFixed(1)}" ` +
+      `pointer-events="none">${escaparAtributo(r.nome)}</text>`
+  )
   .join("\n");
 
 const svg =
@@ -286,6 +443,43 @@ const svg =
 fs.mkdirSync(path.dirname(SAIDA), { recursive: true });
 fs.writeFileSync(SAIDA, svg, "utf8");
 
+/* ---- E o index.html, que é quem o app realmente usa ----
+ *
+ * O mapa do RJ está EMBUTIDO no index.html, não é carregado do arquivo
+ * acima. Enquanto isso dependia de alguém copiar e colar à mão, dava no
+ * que deu: a correção dos nomes saiu numa versão publicada, o .svg
+ * mudou, o app não -- e o bug continuou na tela do usuário.
+ *
+ * Agora um comando só atualiza os dois. Se o bloco não for encontrado,
+ * o script FALHA em vez de avisar baixinho: gerar o arquivo e deixar o
+ * app para trás é exatamente o erro que isto existe pra impedir.
+ */
+const INDEX = path.join(__dirname, "..", "index.html");
+const html = fs.readFileSync(INDEX, "utf8");
+
+const inicio = html.indexOf('<svg id="mapa-rj"');
+const fim = inicio === -1 ? -1 : html.indexOf("</svg>", inicio);
+if (inicio === -1 || fim === -1) {
+  console.error("ERRO: não achei o bloco <svg id=\"mapa-rj\"> no index.html.");
+  process.exit(1);
+}
+
+// Preserva a indentação do bloco original.
+const recuo = html.slice(html.lastIndexOf("\n", inicio) + 1, inicio);
+const svgIndentado = svg
+  .trimEnd()
+  .split("\n")
+  .map((linha, i) => (i === 0 ? linha : recuo + linha))
+  .join("\n");
+
+fs.writeFileSync(INDEX, html.slice(0, inicio) + svgIndentado + html.slice(fim + "</svg>".length), "utf8");
+
 console.log(`OK: ${geojson.features.length} municipios -> ${SAIDA}`);
+console.log(`index.html atualizado (e o app usa ESTE, nao o .svg)`);
 console.log(`viewBox: 0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}`);
+console.log(`rotulos deslocados: ${deslocados}`);
+console.log(
+  `nomes por nivel de zoom: ` +
+    ZOOM_DOS_NIVEIS.map((z, i) => `${z}x -> ${porNivel[i]}`).join(", ")
+);
 console.log(`tamanho do arquivo: ${(svg.length / 1024).toFixed(1)} KB`);

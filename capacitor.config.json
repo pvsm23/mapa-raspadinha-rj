@@ -6,6 +6,10 @@
     "backgroundColor": "#000000"
   },
   "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_desbrava",
+      "iconColor": "#2BD576"
+    },
     "SplashScreen": {
       "backgroundColor": "#000000",
       "showSpinner": false,

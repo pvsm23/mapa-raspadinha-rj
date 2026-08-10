@@ -132,6 +132,38 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
   display: block;
 }
 
+/* ---- Nomes com tamanho FIXO NA TELA ----
+
+   A base de cada nome vem do gerador em `--rotulo-base` (proporcional
+   ao tamanho do município), e o app escreve o zoom atual em `--zoom` a
+   cada movimento do mapa. Dividir um pelo outro faz a letra ficar do
+   MESMO tamanho na tela em qualquer aproximação.
+
+   Isso é o que faz os nomes pararem de brigar: antes o texto crescia
+   junto com o mapa, então dois nomes colados continuavam colados em
+   qualquer zoom. Agora, aproximar abre espaço de verdade entre eles.
+
+   O contorno branco também precisa encolher junto, senão engorda e
+   come a letra quando se aproxima. */
+   O 3.5 é o zoom em que os nomes começam a aparecer: nele a conta dá
+   exatamente `--rotulo-base`, ou seja, o tamanho que o gerador
+   calculou. Sem esse fator a letra nasceria 3,5 vezes menor. */
+svg#mapa-rj .rotulo-municipio {
+  font-size: calc(var(--rotulo-base, 4) * 3.5px / var(--zoom, 3.5));
+  stroke-width: calc(0.6px * 3.5 / var(--zoom, 3.5));
+}
+
+/* Nomes que só aparecem mais perto. O gerador calcula, por município,
+   o zoom em que o nome dele passa a caber sem encostar em ninguém, e
+   grava em data-nivel (ver atribuirNiveis em tools/geojson-to-svg.js).
+   Município minúsculo entra no último nível: lá o nome pode passar um
+   pouco por cima da divisa, mas há espaço de tela pra ele. */
+svg#mapa-rj:not(.zoom-n1) .rotulo-municipio[data-nivel="1"],
+svg#mapa-rj:not(.zoom-n2) .rotulo-municipio[data-nivel="2"],
+svg#mapa-rj:not(.zoom-n3) .rotulo-municipio[data-nivel="3"] {
+  display: none;
+}
+
 /* Modo regiões (mapa afastado): esconde as bordas de cada município
    (fica só o preenchimento contínuo por região) e mostra o contorno
    de cada região por cima (ver construirContornosDeRegiao em

@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.33";
+const VERSAO_APP = "0.11.34";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.33";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.34", itens: ["Os nomes no mapa pararam de se sobrepor: agora o texto mantém o tamanho na tela ao aproximar, e os municípios menores aparecem conforme sobra espaço.", "Dá pra dar bem mais zoom no mapa.", "O app ganhou ícone próprio na barra de notificações."] },
   { versao: "0.11.33", itens: ["As fotos da comunidade que não abriam voltaram a aparecer, inclusive as de posts antigos.", "O nome de cada município agora fica dentro dos próprios limites no mapa.", "Cada município ganhou o brasão do seu grupo do Motoclube."] },
   { versao: "0.11.32", itens: ["Selos novos de Paraty e Itatiaia, e mais 10 municípios ganharam a arte da raspadinha.", "Enquanto o pagamento por Pix não estiver no ar, o Motoclube pode ser liberado de graça para todo mundo."] },
   { versao: "0.11.31", itens: ["Quem já pagou pode recuperar o acesso pelo botão \"Já sou membro\" no paywall, mesmo tendo trocado de aparelho ou reinstalado o app."] },
@@ -4328,7 +4329,10 @@ function carregarRotasInfo() {
 function inicializarPanZoomDoMapa() {
   const viewport = document.getElementById("mapa-viewport");
   const svg = document.getElementById("mapa-rj");
-  const ESCALA_MAXIMA = 10;
+  // Subiu de 10 pra 18: agora que a letra tem tamanho fixo na tela,
+  // aproximar mais mostra mais nome em vez de só ampliar o borrão --
+  // e os nomes do último nível precisam desse espaço pra aparecer.
+  const ESCALA_MAXIMA = 18;
   const LIMIAR_ARRASTO = 5;
   // Fracao minima do mapa que precisa continuar visivel na tela,
   // mesmo arrastando para o canto mais longe possivel (nao pode
@@ -4613,9 +4617,25 @@ let modoRegioes = true;
  * Chamado a cada mudança de zoom: alterna entre visão de municípios
  * e de regiões, e mostra/esconde os nomes no mapa.
  */
+/* Zoom a partir do qual cada nível de nome aparece. TEM que bater com
+   ZOOM_DOS_NIVEIS em tools/geojson-to-svg.js: é lá que se decide, por
+   município, em qual nível o nome dele cabe. Valores diferentes fariam
+   nomes aparecerem antes de haver espaço, voltando a se encavalar. */
+const ZOOM_DOS_NIVEIS_ROTULO = [3.5, 5, 7, 10];
+
 function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
   const svg = document.getElementById("mapa-rj");
   svg.classList.toggle("mostrar-rotulos", escala >= limiarRotulos);
+
+  // O CSS divide o tamanho da letra por isto, deixando o texto do mesmo
+  // tamanho na tela em qualquer aproximação (ver .rotulo-municipio em
+  // css/styles.css). É o que faz aproximar realmente afastar os nomes.
+  svg.style.setProperty("--zoom", escala.toFixed(2));
+
+  // Cada nível libera os nomes dos municípios menores.
+  for (let n = 1; n < ZOOM_DOS_NIVEIS_ROTULO.length; n++) {
+    svg.classList.toggle(`zoom-n${n}`, escala >= ZOOM_DOS_NIVEIS_ROTULO[n]);
+  }
 
   const novoModoRegioes = escala < limiarMunicipios;
   // Sempre sincroniza a classe (nao so quando muda) pra garantir que
