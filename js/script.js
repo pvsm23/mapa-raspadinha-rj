@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.34";
+const VERSAO_APP = "0.11.35";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.34";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.35", itens: ["Chegaram os grupos do Motoclube: um para cada município, com brasão próprio. Você entra em um, e o brasão passa a aparecer no seu perfil e ao lado do seu nome na Comunidade.", "Para trocar de grupo é preciso esperar 30 dias desde a entrada no anterior."] },
   { versao: "0.11.34", itens: ["Os nomes no mapa pararam de se sobrepor: agora o texto mantém o tamanho na tela ao aproximar, e os municípios menores aparecem conforme sobra espaço.", "Dá pra dar bem mais zoom no mapa.", "O app ganhou ícone próprio na barra de notificações."] },
   { versao: "0.11.33", itens: ["As fotos da comunidade que não abriam voltaram a aparecer, inclusive as de posts antigos.", "O nome de cada município agora fica dentro dos próprios limites no mapa.", "Cada município ganhou o brasão do seu grupo do Motoclube."] },
   { versao: "0.11.32", itens: ["Selos novos de Paraty e Itatiaia, e mais 10 municípios ganharam a arte da raspadinha.", "Enquanto o pagamento por Pix não estiver no ar, o Motoclube pode ser liberado de graça para todo mundo."] },
@@ -7136,6 +7137,14 @@ async function abrirPerfil(uid) {
         <span class="perfil-badge ${souMembroMotoclube() ? "perfil-badge-pro" : "perfil-badge-free"}">
           ${souMembroMotoclube() ? "👑 Membro Desbrava" : "Desbravador"}
         </span>
+        ${
+          perfil.grupoMotoclube
+            ? `<div class="perfil-grupo">
+                 <img class="perfil-grupo-brasao" src="${escaparHtml(urlDoBrasao(perfil.grupoMotoclube))}" alt="">
+                 <span>Grupo ${escaparHtml(nomeDoMunicipio(perfil.grupoMotoclube))}</span>
+               </div>`
+            : ""
+        }
       </div>
 
       <div class="perfil-stats">
@@ -8382,9 +8391,142 @@ function popularFormulariosMotoclubeSeNecessario() {
   });
 }
 
+/* ============================================================
+   GRUPOS DO MOTOCLUBE
+   ------------------------------------------------------------
+   Um grupo por município (92), com brasão próprio em
+   assets/img/motoclube-grupos/. A pessoa participa de UM só.
+
+   Sair é livre. Entrar em outro exige 30 dias desde a ÚLTIMA
+   ENTRADA -- e não desde a saída, senão bastaria sair e entrar pra
+   trocar na hora.
+
+   Como todo gate do app, isto é client-side: quem abrir o DevTools
+   passa por cima. Vale o mesmo raciocínio do resto -- o objetivo é
+   dar sentido à escolha, não impedir fraude.
+   ============================================================ */
+const DIAS_CARENCIA_GRUPO = 30;
+
+function meuGrupoMotoclube() {
+  return window.raspadinhaAuth?.grupoMotoclube || null;
+}
+
+/** Quanto falta pra poder entrar em outro grupo. 0 = já pode. */
+function diasParaTrocarDeGrupo() {
+  const entrouEm = window.raspadinhaAuth?.grupoEntrouEm;
+  if (!entrouEm) return 0;
+
+  const entrada = new Date(entrouEm);
+  // Data inválida libera, em vez de trancar: o pior erro aqui seria
+  // deixar alguém preso num grupo por causa de um campo estragado.
+  if (isNaN(entrada.getTime())) return 0;
+
+  const passados = (Date.now() - entrada.getTime()) / 86400000;
+  return Math.max(0, Math.ceil(DIAS_CARENCIA_GRUPO - passados));
+}
+
+function nomeDoMunicipio(id) {
+  return document.querySelector(`#mapa-rj [data-municipio="${id}"]`)?.dataset.nome || id;
+}
+
+function urlDoBrasao(id) {
+  return `assets/img/motoclube-grupos/${id}.svg`;
+}
+
+/** Bloco "Meu grupo" no topo da aba Motoclube. */
+function renderizarMeuGrupo() {
+  const caixa = document.getElementById("motoclube-meu-grupo");
+  if (!caixa) return;
+
+  const grupo = meuGrupoMotoclube();
+  const faltam = diasParaTrocarDeGrupo();
+
+  if (!grupo) {
+    caixa.innerHTML = `
+      <p class="grupo-vazio-titulo">Você ainda não faz parte de um grupo</p>
+      <p class="grupo-vazio-texto">Escolha o município que representa sua estrada.</p>
+      <button type="button" id="btn-escolher-grupo" class="sheet-btn-primario">Escolher meu grupo</button>
+      ${faltam > 0 ? `<p class="grupo-aviso">Você poderá entrar em um grupo daqui a ${faltam} dia(s).</p>` : ""}
+    `;
+  } else {
+    caixa.innerHTML = `
+      <div class="grupo-atual">
+        <img class="grupo-brasao" src="${escaparHtml(urlDoBrasao(grupo))}" alt="Brasão do grupo">
+        <div>
+          <p class="grupo-atual-nome">${escaparHtml(nomeDoMunicipio(grupo))}</p>
+          <p class="grupo-atual-sub">Seu grupo no Motoclube</p>
+        </div>
+      </div>
+      <div class="grupo-acoes">
+        <button type="button" id="btn-trocar-grupo"${faltam > 0 ? " disabled" : ""}>Trocar de grupo</button>
+        <button type="button" id="btn-sair-grupo">Sair do grupo</button>
+      </div>
+      ${faltam > 0 ? `<p class="grupo-aviso">Você poderá trocar daqui a ${faltam} dia(s).</p>` : ""}
+    `;
+  }
+
+  caixa.querySelector("#btn-escolher-grupo")?.addEventListener("click", abrirEscolhaDeGrupo);
+  caixa.querySelector("#btn-trocar-grupo")?.addEventListener("click", abrirEscolhaDeGrupo);
+  caixa.querySelector("#btn-sair-grupo")?.addEventListener("click", aoSairDoGrupo);
+}
+
+function abrirEscolhaDeGrupo() {
+  if (diasParaTrocarDeGrupo() > 0) return;
+  // Reaproveita o seletor de município das Sugestões: mesma lista, mesma
+  // busca. Duplicar a tela só pra trocar o callback seria desperdício.
+  abrirEscolherMunicipio({
+    selecionado: meuGrupoMotoclube(),
+    permitirNenhum: false,
+    aoEscolher: (id) => {
+      fecharEscolherMunicipio();
+      aoEntrarNoGrupo(id);
+    },
+  });
+}
+
+async function aoEntrarNoGrupo(municipioId) {
+  const faltam = diasParaTrocarDeGrupo();
+  if (faltam > 0) {
+    mostrarToastLogin(`Você só poderá trocar de grupo daqui a ${faltam} dia(s).`);
+    atualizarToastLogin("erro", `Você só poderá trocar de grupo daqui a ${faltam} dia(s).`);
+    setTimeout(esconderToastLogin, 3200);
+    return;
+  }
+
+  try {
+    await window.raspadinhaAuth.entrarNoGrupoMotoclube(municipioId);
+    renderizarMeuGrupo();
+    mostrarToastLogin(`🏍️ Você entrou no grupo de ${nomeDoMunicipio(municipioId)}!`);
+    atualizarToastLogin("sucesso", `🏍️ Você entrou no grupo de ${nomeDoMunicipio(municipioId)}!`);
+    setTimeout(esconderToastLogin, 3200);
+  } catch (erro) {
+    console.error("Falha ao entrar no grupo:", erro);
+    mostrarToastLogin("Não foi possível entrar no grupo agora.");
+    atualizarToastLogin("erro", "Não foi possível entrar no grupo agora.");
+    setTimeout(esconderToastLogin, 3200);
+  }
+}
+
+async function aoSairDoGrupo() {
+  const faltam = diasParaTrocarDeGrupo();
+  const aviso =
+    faltam > 0
+      ? `Sair agora não adianta a fila: você só poderá entrar em outro grupo daqui a ${faltam} dia(s). Sair mesmo assim?`
+      : "Tem certeza que quer sair do seu grupo?";
+  if (!confirm(aviso)) return;
+
+  try {
+    await window.raspadinhaAuth.sairDoGrupoMotoclube();
+    renderizarMeuGrupo();
+  } catch (erro) {
+    console.error("Falha ao sair do grupo:", erro);
+  }
+}
+
 async function abrirMotoclube() {
   if (!exigirMotoclube()) return;
   popularFormulariosMotoclubeSeNecessario();
+  renderizarMeuGrupo();
   document.getElementById("modal-motoclube").classList.remove("oculto");
   const lista = document.getElementById("motoclube-lista");
   lista.innerHTML = '<div class="spinner spinner-grande"></div>';
@@ -9754,6 +9896,13 @@ function renderizarCardPost(post) {
       <div class="post-avatar" style="background:${corAvatar(post.autorApelido)}">${escaparHtml(iniciaisApelido(post.autorApelido))}</div>
       <div class="post-ident">
         <span class="post-card-autor">${escaparHtml(post.autorApelido)}</span>
+        ${
+          post.autorGrupo
+            ? `<img class="post-grupo-brasao" src="${escaparHtml(urlDoBrasao(post.autorGrupo))}" ` +
+              `alt="Grupo ${escaparHtml(nomeDoMunicipio(post.autorGrupo))}" ` +
+              `title="Grupo ${escaparHtml(nomeDoMunicipio(post.autorGrupo))}">`
+            : ""
+        }
         ${nomeMunicipio ? `<button type="button" class="post-card-municipio">📍 ${escaparHtml(nomeMunicipio)}</button>` : ""}
       </div>
       ${tempo ? `<span class="post-tempo">${tempo}</span>` : ""}

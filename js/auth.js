@@ -204,6 +204,11 @@ window.raspadinhaAuth = {
   // Firebase configurado fica desligada -- na dúvida, o app se comporta
   // como se o produto fosse pago, que é o estado normal.
   motoclubeLiberadoParaTodos: false,
+  // Grupo do Motoclube da conta logada (ver entrarNoGrupoMotoclube).
+  grupoMotoclube: null,
+  grupoEntrouEm: null,
+  entrarNoGrupoMotoclube: async () => {},
+  sairDoGrupoMotoclube: async () => {},
   observarConfigGlobal: () => () => {},
   definirMotoclubeLiberado: async () => {},
   definirChavePixColaboracao: async () => {},
@@ -826,6 +831,47 @@ if (CONFIGURADO) {
     ).catch((erro) => console.error("Falha ao salvar privacidade do perfil:", erro));
   };
 
+  /* ---- Grupos do Motoclube (um por município) ----
+   *
+   * A adesão mora no PRÓPRIO documento do usuário, e não numa coleção
+   * de grupos: a regra do Firestore que deixa a pessoa escrever no
+   * documento dela já cobre isso, então não precisa de regra nova. E
+   * como esse documento já é legível por qualquer autenticado, o
+   * crachá aparece na Comunidade sem nenhuma consulta extra.
+   *
+   * Dois campos, e o segundo é o que faz a regra dos 30 dias
+   * funcionar:
+   *   grupoMotoclube  -> município do grupo atual, ou null se saiu
+   *   grupoEntrouEm   -> quando entrou pela ÚLTIMA vez
+   *
+   * `grupoEntrouEm` NÃO é limpo ao sair, de propósito: a carência
+   * conta desde a entrada anterior. Se limpasse, bastaria sair e
+   * entrar de novo pra trocar de grupo na hora, e a regra viraria
+   * enfeite.
+   */
+  window.raspadinhaAuth.entrarNoGrupoMotoclube = async (municipioId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+
+    await setDoc(
+      doc(db, "usuarios", usuario.uid),
+      { grupoMotoclube: String(municipioId), grupoEntrouEm: new Date().toISOString() },
+      { merge: true }
+    );
+
+    window.raspadinhaAuth.grupoMotoclube = String(municipioId);
+    window.raspadinhaAuth.grupoEntrouEm = new Date().toISOString();
+  };
+
+  /** Sair é sempre permitido. A carência dos 30 dias segue correndo. */
+  window.raspadinhaAuth.sairDoGrupoMotoclube = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+
+    await setDoc(doc(db, "usuarios", usuario.uid), { grupoMotoclube: null }, { merge: true });
+    window.raspadinhaAuth.grupoMotoclube = null;
+  };
+
   /**
    * Busca o perfil público de OUTRO usuário (ranking, amigos). O
    * documento inteiro já é legível por qualquer autenticado (regra do
@@ -846,6 +892,8 @@ if (CONFIGURADO) {
       mapaSnapshot: dados.mapaSnapshot || null,
       mapaSnapshotData: dados.mapaSnapshotData || null,
       fotoPerfil: dados.fotoPerfil || null,
+      // Grupo do Motoclube: aparece como crachá no perfil.
+      grupoMotoclube: dados.grupoMotoclube || null,
     };
   };
 
@@ -1029,6 +1077,12 @@ if (CONFIGURADO) {
       setDoc(novoDocRef, {
         autorUid: usuario.uid,
         autorApelido: window.raspadinhaAuth.apelido || "?",
+        // Grupo do autor GRAVADO NO POST, e não consultado na hora de
+        // exibir: o feed traz 20 posts por página, e buscar o documento
+        // de cada autor seriam 20 leituras a cada rolagem. O preço é o
+        // crachá ficar congelado no grupo da época -- o que até combina,
+        // já que o post é daquele momento.
+        autorGrupo: window.raspadinhaAuth.grupoMotoclube || null,
         texto: (texto || "").slice(0, 500),
         fotoUrl,
         fotoDriveId: fotoId,
@@ -2034,6 +2088,8 @@ if (CONFIGURADO) {
       window.raspadinhaAuth.apelido = null;
       window.raspadinhaAuth.contaEhPro = false;
       window.raspadinhaAuth.proAte = null;
+      window.raspadinhaAuth.grupoMotoclube = null;
+      window.raspadinhaAuth.grupoEntrouEm = null;
       document.dispatchEvent(new CustomEvent("auth-mudou", { detail: null }));
       return;
     }
@@ -2062,6 +2118,8 @@ if (CONFIGURADO) {
       // parsearDataAssinatura em js/script.js.
       window.raspadinhaAuth.proAte = snap.data()?.proAte || null;
       window.raspadinhaAuth.fotoPerfil = snap.data()?.fotoPerfil || null;
+      window.raspadinhaAuth.grupoMotoclube = snap.data()?.grupoMotoclube || null;
+      window.raspadinhaAuth.grupoEntrouEm = snap.data()?.grupoEntrouEm || null;
       window.raspadinhaAuth.ultimoMesUsoVoucher = snap.data()?.ultimoMesUsoVoucher || null;
 
       if (apelido) {

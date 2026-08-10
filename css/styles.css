@@ -9408,6 +9408,111 @@ button:disabled:active {
   display: none !important;
 }
 
+/* ---- Grupos do Motoclube ---- */
+#motoclube-meu-grupo {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  background: var(--surf);
+}
+
+.grupo-vazio-titulo {
+  margin: 0 0 4px;
+  color: var(--txt);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.grupo-vazio-texto {
+  margin: 0 0 12px;
+  color: var(--fraco);
+  font-size: 0.84rem;
+}
+
+.grupo-atual {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.grupo-brasao {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.grupo-atual-nome {
+  margin: 0;
+  color: var(--txt);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.grupo-atual-sub {
+  margin: 2px 0 0;
+  color: var(--fraco);
+  font-size: 0.78rem;
+}
+
+.grupo-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.grupo-acoes button {
+  flex: 1;
+  padding: 9px 10px;
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  background: var(--surf2);
+  color: var(--txt);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grupo-acoes button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Aviso da carência de 30 dias. Âmbar, e não vermelho: é uma regra do
+   jogo, não um erro que a pessoa cometeu. */
+.grupo-aviso {
+  margin: 10px 0 0;
+  color: #E5A93C;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+/* Crachá no perfil */
+.perfil-grupo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 8px;
+  color: var(--fraco);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.perfil-grupo-brasao {
+  width: 26px;
+  height: 26px;
+}
+
+/* Crachá ao lado do nome na Comunidade. Pequeno de propósito: é
+   assinatura, não protagonista do post. */
+.post-grupo-brasao {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
 #secao-motoclube-admin {
   margin-bottom: 22px;
   padding-bottom: 18px;
