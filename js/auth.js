@@ -226,6 +226,7 @@ window.raspadinhaAuth = {
   grupoEntrouEm: null,
   entrarNoGrupoMotoclube: async () => {},
   sairDoGrupoMotoclube: async () => {},
+  contarMembrosDoGrupo: async () => 0,
   observarConfigGlobal: () => () => {},
   definirMotoclubeLiberado: async () => {},
   definirChavePixColaboracao: async () => {},
@@ -886,6 +887,23 @@ if (CONFIGURADO) {
 
     window.raspadinhaAuth.grupoMotoclube = String(municipioId);
     window.raspadinhaAuth.grupoEntrouEm = new Date().toISOString();
+  };
+
+  /**
+   * Quantas pessoas estão num grupo.
+   *
+   * Usa contagem AGREGADA (getCountFromServer): o Firestore devolve só
+   * o número, sem baixar documento nenhum. Contar buscando os docs
+   * ficaria caro do jeito errado -- o custo cresceria com o tamanho do
+   * grupo justamente quando ele fica popular.
+   */
+  window.raspadinhaAuth.contarMembrosDoGrupo = async (municipioId) => {
+    const consulta = query(
+      collection(db, "usuarios"),
+      where("grupoMotoclube", "==", String(municipioId))
+    );
+    const snap = await getCountFromServer(consulta);
+    return snap.data().count;
   };
 
   /** Sair é sempre permitido. A carência dos 30 dias segue correndo. */

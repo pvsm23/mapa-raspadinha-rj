@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.38";
+const VERSAO_APP = "0.11.39";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.38";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.39", itens: ["A aba do Motoclube e a Garagem agora abrem para todo mundo — a assinatura só é pedida na hora de entrar num grupo ou cadastrar uma moto.", "O card do grupo mostra quantos membros ele tem, e dá para abrir o brasão em tamanho grande e compartilhar."] },
   { versao: "0.11.38", itens: ["Nomes compridos no mapa agora quebram em duas linhas, em vez de atravessar os municípios vizinhos.", "Corrigida a liberação do Motoclube, que parecia desligar sozinha ao abrir o app."] },
   { versao: "0.11.37", itens: ["Os nomes no mapa ficaram bem maiores e mais fáceis de ler, sem se sobrepor."] },
   { versao: "0.11.36", itens: ["Os nomes no mapa ficaram menores e agora mantêm o mesmo tamanho na tela conforme você aproxima."] },
@@ -781,6 +782,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("check-motoclube-liberado")
     .addEventListener("change", alternarMotoclubeLiberado);
+  document.getElementById("btn-fechar-brasao").addEventListener("click", fecharBrasaoDoGrupo);
+  document.getElementById("btn-compartilhar-brasao").addEventListener("click", compartilharBrasaoDoGrupo);
+  document.getElementById("modal-brasao").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-brasao") fecharBrasaoDoGrupo();
+  });
 
   // ---- Excluir conta ----
   document.getElementById("btn-abrir-excluir-conta").addEventListener("click", iniciarFluxoExclusaoConta);
@@ -1521,8 +1527,11 @@ let garagemMotoSelecionadaEditar = null;
 let garagemMotoSelecionadaStats = null;
 
 function configurarGaragem() {
+  // A Garagem passou a aparecer no menu pra todo mundo (ver
+  // abrirGaragem): esconder o item fazia quem não assina nem descobrir
+  // que ela existe, e ninguém paga pelo que não sabe que tem.
   const itemMenu = document.getElementById("menu-abrir-garagem");
-  if (souMembroMotoclube()) itemMenu?.classList.remove("oculto");
+  itemMenu?.classList.remove("oculto");
 
   document.getElementById("btn-abrir-garagem")?.addEventListener("click", () => exigirLogin(abrirGaragem));
   document.getElementById("btn-fechar-garagem")?.addEventListener("click", fecharGaragem);
@@ -1556,8 +1565,10 @@ function configurarGaragem() {
   document.getElementById("btn-garagem-seletor-stats-proxima")?.addEventListener("click", () => navegarSeletorGaragem("stats", 1));
 }
 
+/* A Garagem ABRE pra qualquer um: quem não assina vê a tela e entende
+   o que ganha. O paywall entra em criarMotoForm, na hora de cadastrar
+   a primeira moto. */
 async function abrirGaragem() {
-  if (!souMembroMotoclube()) return;
   garagemMotosCarregadas = false;
   document.getElementById("modal-garagem")?.classList.remove("oculto");
   mudarAbaGaragem("criar");
@@ -1697,6 +1708,9 @@ function selecionarMotoStats(motoId) {
 }
 
 async function criarMotoForm() {
+  // Segundo ponto de cobrança do Motoclube: cadastrar moto.
+  if (!exigirMotoclube()) return;
+
   const erroEl = document.getElementById("garagem-criar-erro");
   erroEl.classList.add("oculto");
   const botao = document.getElementById("btn-criar-moto");
@@ -8475,10 +8489,13 @@ function renderizarMeuGrupo() {
   } else {
     caixa.innerHTML = `
       <div class="grupo-atual">
-        <img class="grupo-brasao" src="${escaparHtml(urlDoBrasao(grupo))}" alt="Brasão do grupo">
+        <button type="button" id="btn-ver-brasao" class="grupo-brasao-botao" aria-label="Ver brasão em tamanho grande">
+          <img class="grupo-brasao" src="${escaparHtml(urlDoBrasao(grupo))}" alt="Brasão do grupo">
+        </button>
         <div>
           <p class="grupo-atual-nome">${escaparHtml(nomeDoMunicipio(grupo))}</p>
           <p class="grupo-atual-sub">Seu grupo no Motoclube</p>
+          <p class="grupo-membros" id="grupo-membros">carregando membros...</p>
         </div>
       </div>
       <div class="grupo-acoes">
@@ -8487,6 +8504,8 @@ function renderizarMeuGrupo() {
       </div>
       ${faltam > 0 ? `<p class="grupo-aviso">Você poderá trocar daqui a ${faltam} dia(s).</p>` : ""}
     `;
+    caixa.querySelector("#btn-ver-brasao")?.addEventListener("click", () => abrirBrasaoDoGrupo(grupo));
+    mostrarNumeroDeMembros(grupo);
   }
 
   caixa.querySelector("#btn-escolher-grupo")?.addEventListener("click", abrirEscolhaDeGrupo);
@@ -8494,7 +8513,105 @@ function renderizarMeuGrupo() {
   caixa.querySelector("#btn-sair-grupo")?.addEventListener("click", aoSairDoGrupo);
 }
 
+/**
+ * Escreve "N membros" no card do grupo.
+ *
+ * Falha em silêncio: o número é enfeite, e sumir com ele incomoda menos
+ * que um erro vermelho por causa de uma contagem.
+ */
+async function mostrarNumeroDeMembros(municipioId) {
+  const el = document.getElementById("grupo-membros");
+  if (!el) return;
+  try {
+    const total = await window.raspadinhaAuth.contarMembrosDoGrupo(municipioId);
+    el.textContent = total === 1 ? "1 membro" : `${total} membros`;
+  } catch (erro) {
+    console.warn("Não foi possível contar os membros do grupo:", erro);
+    el.classList.add("oculto");
+  }
+}
+
+/** Brasão em tamanho grande, com opção de compartilhar. */
+function abrirBrasaoDoGrupo(municipioId) {
+  brasaoAberto = municipioId;
+  document.getElementById("brasao-grande").src = urlDoBrasao(municipioId);
+  document.getElementById("brasao-titulo").textContent = `Grupo ${nomeDoMunicipio(municipioId)}`;
+  document.getElementById("modal-brasao").classList.remove("oculto");
+}
+
+function fecharBrasaoDoGrupo() {
+  fecharComAnimacao(document.getElementById("modal-brasao"));
+  brasaoAberto = null;
+}
+
+/* Município cujo brasão está aberto -- guardado porque o compartilhar
+   precisa saber qual arquivo converter. */
+let brasaoAberto = null;
+
+/**
+ * Compartilha o brasão como PNG.
+ *
+ * O arquivo é SVG, e a maioria dos apps (WhatsApp, Instagram) não
+ * aceita SVG -- por isso o desenho é redesenhado num <canvas> e sai
+ * como PNG de 1024px. Sem Web Share com arquivo (desktop, navegador
+ * antigo), cai pro download, que resolve o mesmo problema.
+ */
+async function compartilharBrasaoDoGrupo() {
+  if (!brasaoAberto) return;
+  const nome = nomeDoMunicipio(brasaoAberto);
+  const botao = document.getElementById("btn-compartilhar-brasao");
+  botao.disabled = true;
+
+  try {
+    const svg = await fetch(urlDoBrasao(brasaoAberto)).then((r) => r.text());
+    const blob = await svgParaPngBlob(svg, 1024);
+    const arquivo = new File([blob], `motoclube-${nome}.png`, { type: "image/png" });
+
+    if (navigator.canShare?.({ files: [arquivo] })) {
+      await navigator.share({
+        files: [arquivo],
+        text: `Faço parte do Motoclube Desbrava — grupo ${nome}! 🏍️`,
+      });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = arquivo.name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  } catch (erro) {
+    // AbortError = a pessoa fechou a folha de compartilhamento. Não é
+    // falha, não merece aviso.
+    if (erro?.name !== "AbortError") console.error("Falha ao compartilhar o brasão:", erro);
+  } finally {
+    botao.disabled = false;
+  }
+}
+
+/** Rasteriza um SVG em PNG, via <img> + <canvas>. */
+function svgParaPngBlob(svg, lado) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    // data: URL em vez de blob: -- o canvas não fica "sujo" (tainted)
+    // assim, e o toBlob continua permitido.
+    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = lado;
+      canvas.height = lado;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, lado, lado);
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas vazio"))), "image/png");
+    };
+    img.onerror = () => reject(new Error("não consegui carregar o brasão"));
+  });
+}
+
 function abrirEscolhaDeGrupo() {
+  // Aqui é onde o Motoclube passou a cobrar: ver os grupos é livre,
+  // participar de um é que exige assinatura.
+  if (!exigirMotoclube()) return;
   if (diasParaTrocarDeGrupo() > 0) return;
   // Reaproveita o seletor de município das Sugestões: mesma lista, mesma
   // busca. Duplicar a tela só pra trocar o callback seria desperdício.
@@ -8547,8 +8664,13 @@ async function aoSairDoGrupo() {
   }
 }
 
+/* A aba do Motoclube é ABERTA a todo mundo desde a v0.11.39.
+ *
+ * Cobrar pra só OLHAR dicas e lojas afastava justamente quem ainda não
+ * conhece o produto. Agora a pessoa entra, vê o conteúdo e os grupos, e
+ * o paywall aparece na hora em que ela quer PARTICIPAR: entrar num
+ * grupo ou cadastrar uma moto na Garagem. */
 async function abrirMotoclube() {
-  if (!exigirMotoclube()) return;
   popularFormulariosMotoclubeSeNecessario();
   renderizarMeuGrupo();
   document.getElementById("modal-motoclube").classList.remove("oculto");
