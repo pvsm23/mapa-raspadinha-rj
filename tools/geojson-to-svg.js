@@ -310,7 +310,7 @@ const ZOOM_DOS_NIVEIS = [3.5, 5, 7, 10];
  * css/styles.css: e com ele que se calcula em que zoom cada nome para
  * de encostar no vizinho. Valores diferentes fariam nomes aparecerem
  * antes de haver espaco, e a colisao voltaria. */
-const FATOR_TELA = 2.2;
+const FATOR_TELA = 3.3;
 
 /** Caixa do rotulo como ela fica no SVG quando visto naquele zoom. */
 function caixaNoZoom(r, zoom) {
@@ -358,17 +358,21 @@ function atribuirNiveis(rotulos) {
   return contagem;
 }
 
-/** O rotulo cabe nessa posicao sem sair do proprio municipio? */
+/**
+ * O rotulo pode ficar nessa posicao?
+ *
+ * Exige so que o CENTRO do texto esteja dentro do municipio. As pontas
+ * podem passar por cima da divisa -- decisao do Paulo, e a certa: com a
+ * letra no tamanho legivel que ele pediu, exigir o nome inteiro dentro
+ * jogaria quase todo municipio pequeno pra um zoom altissimo, e o mapa
+ * ficaria vazio de nomes. Nome transbordando um pouco se le; nome que
+ * nao aparece, nao.
+ *
+ * O que continua proibido e o nome cair TOTALMENTE fora, que era o
+ * problema original do Resende.
+ */
 function cabeDentro(r, x, y) {
-  const meiaAltura = r.fonte / 2;
-  const meiaLargura = (r.nome.length * FATOR_LARGURA_ROTULO * r.fonte) / 2;
-  // Testa os dois extremos do texto, nao so o centro: um nome comprido
-  // cabe no centro e escapa pelas pontas.
-  return (
-    distanciaAteBorda(x - meiaLargura, y, r.aneis) > meiaAltura &&
-    distanciaAteBorda(x + meiaLargura, y, r.aneis) > meiaAltura &&
-    distanciaAteBorda(x, y, r.aneis) > meiaAltura
-  );
+  return distanciaAteBorda(x, y, r.aneis) > 0;
 }
 
 /**
@@ -418,7 +422,11 @@ const dadosRotulos = featuresOrdenadas.map((feature) => {
     nome: feature.properties.name,
     x,
     y,
-    fonte: Math.max(3.5, Math.min(6, largura / 8)),
+    // Faixa estreita (4.0 a 5.5) de proposito: com o texto de tamanho
+    // fixo na tela, essa base vira px direto (x FATOR_TELA). Uma faixa
+    // larga faria o municipio pequeno virar letra ilegivel enquanto o
+    // grande fica enorme. Assim fica entre ~13px e ~18px.
+    fonte: Math.max(4.0, Math.min(5.5, largura / 8)),
     aneis,
     // Area do maior anel: decide quem cede numa colisao.
     area: Math.max(...aneis.map((anel) => Math.abs(areaDoAnel(anel)))),
