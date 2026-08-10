@@ -144,13 +144,16 @@ svg#mapa-rj.mostrar-rotulos .rotulo-municipio {
    qualquer zoom. Agora, aproximar abre espaço de verdade entre eles.
 
    O contorno branco também precisa encolher junto, senão engorda e
-   come a letra quando se aproxima. */
-   O 3.5 é o zoom em que os nomes começam a aparecer: nele a conta dá
-   exatamente `--rotulo-base`, ou seja, o tamanho que o gerador
-   calculou. Sem esse fator a letra nasceria 3,5 vezes menor. */
+   come a letra quando se aproxima.
+
+   O 2.2 é o tamanho final na tela: `--rotulo-base` vale de 3.5 a 6,
+   então o texto fica entre ~8px e ~13px, independente do zoom. TEM que
+   ser igual ao FATOR_TELA de tools/geojson-to-svg.js -- é com ele que
+   o gerador calcula em que zoom cada nome para de encostar no vizinho.
+   Valores diferentes fariam nomes aparecerem antes de haver espaço. */
 svg#mapa-rj .rotulo-municipio {
-  font-size: calc(var(--rotulo-base, 4) * 3.5px / var(--zoom, 3.5));
-  stroke-width: calc(0.6px * 3.5 / var(--zoom, 3.5));
+  font-size: calc(var(--rotulo-base, 4) * 2.2px / var(--zoom, 3.5));
+  stroke-width: calc(0.6px * 2.2 / var(--zoom, 3.5));
 }
 
 /* Nomes que só aparecem mais perto. O gerador calcula, por município,

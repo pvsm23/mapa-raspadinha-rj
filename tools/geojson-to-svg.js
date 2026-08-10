@@ -305,9 +305,16 @@ function seCruzam(a, b) {
  */
 const ZOOM_DOS_NIVEIS = [3.5, 5, 7, 10];
 
+/* Tamanho final do texto NA TELA, em px, por unidade de --rotulo-base.
+ * TEM que ser igual ao 2.2 usado no font-size de .rotulo-municipio em
+ * css/styles.css: e com ele que se calcula em que zoom cada nome para
+ * de encostar no vizinho. Valores diferentes fariam nomes aparecerem
+ * antes de haver espaco, e a colisao voltaria. */
+const FATOR_TELA = 2.2;
+
 /** Caixa do rotulo como ela fica no SVG quando visto naquele zoom. */
 function caixaNoZoom(r, zoom) {
-  const fonte = r.fonte / (zoom / ZOOM_DOS_NIVEIS[0]);
+  const fonte = (r.fonte * FATOR_TELA) / zoom;
   const largura = r.nome.length * FATOR_LARGURA_ROTULO * fonte;
   return { x: r.x - largura / 2, y: r.y - fonte / 2, w: largura, h: fonte };
 }

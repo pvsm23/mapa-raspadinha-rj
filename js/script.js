@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.35";
+const VERSAO_APP = "0.11.36";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +37,7 @@ const VERSAO_APP = "0.11.35";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.11.36", itens: ["Os nomes no mapa ficaram menores e agora mantêm o mesmo tamanho na tela conforme você aproxima."] },
   { versao: "0.11.35", itens: ["Chegaram os grupos do Motoclube: um para cada município, com brasão próprio. Você entra em um, e o brasão passa a aparecer no seu perfil e ao lado do seu nome na Comunidade.", "Para trocar de grupo é preciso esperar 30 dias desde a entrada no anterior."] },
   { versao: "0.11.34", itens: ["Os nomes no mapa pararam de se sobrepor: agora o texto mantém o tamanho na tela ao aproximar, e os municípios menores aparecem conforme sobra espaço.", "Dá pra dar bem mais zoom no mapa.", "O app ganhou ícone próprio na barra de notificações."] },
   { versao: "0.11.33", itens: ["As fotos da comunidade que não abriam voltaram a aparecer, inclusive as de posts antigos.", "O nome de cada município agora fica dentro dos próprios limites no mapa.", "Cada município ganhou o brasão do seu grupo do Motoclube."] },
