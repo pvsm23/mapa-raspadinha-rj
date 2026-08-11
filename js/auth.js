@@ -61,6 +61,7 @@ import {
   getCountFromServer,
   onSnapshot,
   writeBatch,
+  runTransaction,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import {
   getStorage,
@@ -227,6 +228,9 @@ window.raspadinhaAuth = {
   entrarNoGrupoMotoclube: async () => {},
   sairDoGrupoMotoclube: async () => {},
   contarMembrosDoGrupo: async () => 0,
+  // Número de membro (ver garantirNumeroMotoclube). Vitalício.
+  numeroMotoclube: null,
+  garantirNumeroMotoclube: async () => null,
   observarConfigGlobal: () => () => {},
   definirMotoclubeLiberado: async () => {},
   definirChavePixColaboracao: async () => {},
@@ -889,6 +893,47 @@ if (CONFIGURADO) {
     window.raspadinhaAuth.grupoEntrouEm = new Date().toISOString();
   };
 
+  /* ---- Número de membro do Motoclube ----
+   *
+   * Sequencial e VITALÍCIO: quem recebe o #12 é o décimo segundo a
+   * entrar, e continua sendo mesmo se parar de pagar. O número some do
+   * perfil enquanto a assinatura não está ativa, mas nunca é devolvido
+   * pra fila nem reaproveitado -- ele é identidade, não licença.
+   *
+   * O contador vive em `contadores/motoclube.ultimo` e é incrementado
+   * dentro de uma TRANSAÇÃO junto com a gravação no usuário. Sem
+   * transação, duas pessoas entrando no mesmo segundo leriam o mesmo
+   * valor e sairiam com o mesmo número -- e número de membro repetido
+   * é pior que não ter número.
+   */
+  window.raspadinhaAuth.garantirNumeroMotoclube = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return null;
+    // Já tem: nunca renumera. É o que torna o número vitalício.
+    if (window.raspadinhaAuth.numeroMotoclube) return window.raspadinhaAuth.numeroMotoclube;
+
+    const refUsuario = doc(db, "usuarios", usuario.uid);
+    const refContador = doc(db, "contadores", "motoclube");
+
+    const numero = await runTransaction(db, async (tx) => {
+      const snapUsuario = await tx.get(refUsuario);
+      // Reconfere DENTRO da transação: entre a checagem acima e aqui a
+      // pessoa pode ter recebido número em outro aparelho.
+      const jaTem = snapUsuario.data()?.numeroMotoclube;
+      if (jaTem) return jaTem;
+
+      const snapContador = await tx.get(refContador);
+      const proximo = (snapContador.data()?.ultimo || 0) + 1;
+
+      tx.set(refContador, { ultimo: proximo }, { merge: true });
+      tx.set(refUsuario, { numeroMotoclube: proximo }, { merge: true });
+      return proximo;
+    });
+
+    window.raspadinhaAuth.numeroMotoclube = numero;
+    return numero;
+  };
+
   /**
    * Quantas pessoas estão num grupo.
    *
@@ -937,6 +982,11 @@ if (CONFIGURADO) {
       fotoPerfil: dados.fotoPerfil || null,
       // Grupo do Motoclube: aparece como crachá no perfil.
       grupoMotoclube: dados.grupoMotoclube || null,
+      numeroMotoclube: dados.numeroMotoclube || null,
+      // Necessário pra decidir se o número aparece: ele só é exibido
+      // enquanto a assinatura está ativa (ver montarNumeroMotoclube).
+      ehPro: dados.ehPro === true,
+      proAte: dados.proAte || null,
     };
   };
 
@@ -2133,6 +2183,7 @@ if (CONFIGURADO) {
       window.raspadinhaAuth.proAte = null;
       window.raspadinhaAuth.grupoMotoclube = null;
       window.raspadinhaAuth.grupoEntrouEm = null;
+      window.raspadinhaAuth.numeroMotoclube = null;
       document.dispatchEvent(new CustomEvent("auth-mudou", { detail: null }));
       return;
     }
@@ -2163,6 +2214,7 @@ if (CONFIGURADO) {
       window.raspadinhaAuth.fotoPerfil = snap.data()?.fotoPerfil || null;
       window.raspadinhaAuth.grupoMotoclube = snap.data()?.grupoMotoclube || null;
       window.raspadinhaAuth.grupoEntrouEm = snap.data()?.grupoEntrouEm || null;
+      window.raspadinhaAuth.numeroMotoclube = snap.data()?.numeroMotoclube || null;
       window.raspadinhaAuth.ultimoMesUsoVoucher = snap.data()?.ultimoMesUsoVoucher || null;
 
       if (apelido) {

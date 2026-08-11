@@ -64,6 +64,35 @@ svg#mapa-rj {
   transition: fill 0.35s ease, transform 0.15s ease;
 }
 
+/* ---- Divisas que AFINAM ao aproximar ----
+
+   `stroke-width: 2` é em unidades do desenho, então ela era ampliada
+   junto com o mapa: quanto mais perto, mais grossa a divisa na tela,
+   até virar uma tarja preta que engolia os municípios pequenos.
+
+   Dividir pelo `--zoom` (a mesma variável que os nomes já usam)
+   mantém a espessura constante na tela. E `--traco-base`, que desce a
+   cada faixa de aproximação, faz a linha ficar de fato mais FINA
+   conforme se chega perto -- abrindo espaço pro detalhe que vier a ser
+   desenhado por cima. De longe ela continua grossa, que é o que separa
+   um município do outro na visão geral. */
+svg#mapa-rj .municipio {
+  stroke-width: calc(var(--traco-base, 2) * 3.5px / var(--zoom, 3.5));
+}
+
+svg#mapa-rj.zoom-n1 .municipio {
+  --traco-base: 1.55;
+}
+svg#mapa-rj.zoom-n2 .municipio {
+  --traco-base: 1.2;
+}
+svg#mapa-rj.zoom-n3 .municipio {
+  --traco-base: 0.9;
+}
+svg#mapa-rj.zoom-n4 .municipio {
+  --traco-base: 0.65;
+}
+
 .municipio:hover {
   fill: #A5ADB8;
 }
@@ -95,8 +124,14 @@ svg#mapa-rj {
    sem precisar voltar no local. */
 .municipio.presenca-pendente {
   stroke: #38C6E8;
-  stroke-width: 3;
   stroke-dasharray: 4 3;
+}
+
+/* Precisa repetir aqui porque a regra de cima usa #mapa-rj e venceria
+   por especificidade, devolvendo a divisa tracejada à espessura
+   comum. Ela é 1,5x mais grossa de propósito: é um aviso. */
+svg#mapa-rj .municipio.presenca-pendente {
+  stroke-width: calc(var(--traco-base, 2) * 1.5 * 3.5px / var(--zoom, 3.5));
 }
 
 /* Município com selo brilhante (ver aplicarEstadoNoSVG) -- dourado
@@ -1125,12 +1160,110 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   padding-top: 2px;
 }
 
+/* ---- Foto do post: espaço reservado + carregando ----
+   Enquanto `carregando` está na moldura, ela tem altura própria
+   (4:5, proporção de foto de celular em pé) e segura o layout. Quando
+   a foto chega, a classe sai, a altura passa a ser a da imagem real e
+   ela entra com fade. Sem isso o feed pulava a cada foto que abria. */
+.post-foto-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  background: var(--surf2);
+}
+
+.post-foto-wrap.carregando {
+  aspect-ratio: 4 / 5;
+  max-height: 460px;
+}
+
 .post-card-foto {
   width: 100%;
   max-height: 460px;
   object-fit: cover;
   background: var(--surf2);
   display: block;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+
+.post-foto-wrap.carregando .post-card-foto {
+  opacity: 0;
+}
+
+.post-foto-carregando {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  /* Um degradê diagonal em vez de cinza chapado: dá profundidade e
+     combina com o resto do app sem chamar mais atenção que as fotos. */
+  background: linear-gradient(135deg, var(--surf2) 0%, var(--surf) 55%, var(--surf2) 100%);
+}
+
+.post-foto-wrap:not(.carregando) .post-foto-carregando {
+  display: none;
+}
+
+/* O brilho que atravessa a moldura -- é ele que diz "está vindo", em
+   vez de parecer um buraco parado. */
+.post-foto-brilho {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    color-mix(in srgb, var(--txt) 8%, transparent) 50%,
+    transparent 65%
+  );
+  transform: translateX(-100%);
+  animation: post-foto-varredura 1.6s ease-in-out infinite;
+}
+
+@keyframes post-foto-varredura {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.post-foto-marca {
+  width: 54px;
+  height: 54px;
+  fill: none;
+  stroke: var(--verde);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  opacity: 0.35;
+  animation: post-foto-pulso 1.6s ease-in-out infinite;
+}
+
+.post-foto-marca polygon {
+  fill: var(--verde);
+  stroke: none;
+}
+
+@keyframes post-foto-pulso {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+}
+
+/* Quem pediu menos movimento fica só com o degradê parado. */
+@media (prefers-reduced-motion: reduce) {
+  .post-foto-brilho,
+  .post-foto-marca {
+    animation: none;
+  }
+  .post-card-foto {
+    transition: none;
+  }
 }
 
 .post-card-acoes {
@@ -9439,9 +9572,21 @@ button:disabled:active {
   gap: 12px;
 }
 
+/* O brasão deixou de ser quadrado quando ganhou asas (1020x560, ver
+   tools/gerar-logos-motoclube.js). Todo lugar que o mostra dita a
+   ALTURA e deixa a largura seguir a proporção: assim o disco continua
+   do mesmo tamanho de antes em cada tela, e só o rastro das asas
+   ocupa espaço a mais. Amarrar pela largura encolheria o disco e o
+   crachá pequeno viraria uma bolinha ilegível. */
+.grupo-brasao,
+.perfil-grupo-brasao,
+.post-grupo-brasao {
+  width: auto;
+  object-fit: contain;
+}
+
 .grupo-brasao {
-  width: 60px;
-  height: 60px;
+  height: 58px;
   flex-shrink: 0;
 }
 
@@ -9463,6 +9608,29 @@ button:disabled:active {
   color: var(--verde);
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+/* Número de membro. Monoespaçado de propósito: são 11 dígitos, e com
+   fonte proporcional eles dançam a cada mudança de número. */
+.grupo-numero,
+.perfil-numero-motoclube {
+  font-family: ui-monospace, "SF Mono", "Roboto Mono", Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ouro);
+}
+
+.grupo-numero {
+  margin: 3px 0 0;
+}
+
+.perfil-numero-motoclube {
+  margin-top: 6px;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--ouro) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ouro) 12%, transparent);
 }
 
 .grupo-brasao-botao {
@@ -9497,7 +9665,9 @@ button:disabled:active {
 
 #brasao-grande {
   width: 100%;
-  max-width: 260px;
+  /* Mais largo desde que o brasão ganhou asas: com 260px o disco no
+     meio ficava menor do que era antes das asas existirem. */
+  max-width: 340px;
   height: auto;
 }
 
@@ -9564,15 +9734,13 @@ button:disabled:active {
 }
 
 .perfil-grupo-brasao {
-  width: 26px;
-  height: 26px;
+  height: 28px;
 }
 
 /* Crachá ao lado do nome na Comunidade. Pequeno de propósito: é
    assinatura, não protagonista do post. */
 .post-grupo-brasao {
-  width: 18px;
-  height: 18px;
+  height: 19px;
   vertical-align: middle;
   margin-left: 5px;
 }

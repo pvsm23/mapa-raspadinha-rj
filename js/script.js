@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.39";
+const VERSAO_APP = "0.11.40";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -126,6 +126,32 @@ const ICONE_COMPARTILHAR =
   '<svg class="ico-social ico-compartilhar" viewBox="0 0 24 24" aria-hidden="true">' +
   '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/>' +
   '<polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>';
+
+/**
+ * Moldura da foto do post, com o estado de carregando embutido.
+ *
+ * A foto vem do Drive, que é lento e às vezes precisa de duas ou três
+ * tentativas de URL (ver aplicarFotoComFallback). Sem nada no lugar, o
+ * feed rolava com buracos e a imagem "aparecia do nada", empurrando o
+ * conteúdo pra baixo enquanto a pessoa lia.
+ *
+ * A moldura reserva o espaço desde o primeiro quadro e mostra a marca
+ * do Desbrava com um brilho passando por cima. Quando a foto carrega,
+ * a classe `carregando` sai: o placeholder some, a altura passa a ser a
+ * da imagem de verdade e ela entra com fade.
+ */
+const MOLDURA_FOTO_POST =
+  '<div class="post-foto-wrap carregando">' +
+  '<div class="post-foto-carregando" aria-hidden="true">' +
+  '<span class="post-foto-brilho"></span>' +
+  // Bússola: o mesmo símbolo de "explorar" que o mapa já usa.
+  '<svg class="post-foto-marca" viewBox="0 0 48 48" aria-hidden="true">' +
+  '<circle cx="24" cy="24" r="18"/>' +
+  '<polygon points="31,17 26.5,26.5 17,31 21.5,21.5"/>' +
+  "</svg>" +
+  "</div>" +
+  '<img class="post-card-foto" alt="Foto do post">' +
+  "</div>";
 
 // Dono "atual" das chaves de localStorage acima -- "anon" enquanto
 // ninguém logou nesta aba, ou o uid de quem está logado. CRÍTICO:
@@ -4347,10 +4373,12 @@ function carregarRotasInfo() {
 function inicializarPanZoomDoMapa() {
   const viewport = document.getElementById("mapa-viewport");
   const svg = document.getElementById("mapa-rj");
-  // Subiu de 10 pra 18: agora que a letra tem tamanho fixo na tela,
-  // aproximar mais mostra mais nome em vez de só ampliar o borrão --
-  // e os nomes do último nível precisam desse espaço pra aparecer.
-  const ESCALA_MAXIMA = 18;
+  // 10 -> 18 -> 40. A letra tem tamanho fixo na tela e, a partir da
+  // v0.11.40, a divisa também afina conforme se aproxima (ver
+  // .municipio em css/styles.css). Sem essas duas coisas, aproximar
+  // mais só engordava traço e texto; com elas, o espaço extra vira
+  // lugar pra detalhe dentro do município.
+  const ESCALA_MAXIMA = 40;
   const LIMIAR_ARRASTO = 5;
   // Fracao minima do mapa que precisa continuar visivel na tela,
   // mesmo arrastando para o canto mais longe possivel (nao pode
@@ -4641,6 +4669,12 @@ let modoRegioes = true;
    nomes aparecerem antes de haver espaço, voltando a se encavalar. */
 const ZOOM_DOS_NIVEIS_ROTULO = [3.5, 5, 7, 10];
 
+/* Aproximação a partir da qual as divisas ficam ainda mais finas (ver
+   .municipio em css/styles.css). Fica FORA de ZOOM_DOS_NIVEIS_ROTULO
+   de propósito: aquele array é um acordo com tools/geojson-to-svg.js
+   -- mexer nele sem regerar o mapa faz nome voltar a se encavalar. */
+const ZOOM_TRACO_FINO = 16;
+
 function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
   const svg = document.getElementById("mapa-rj");
   svg.classList.toggle("mostrar-rotulos", escala >= limiarRotulos);
@@ -4654,6 +4688,9 @@ function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
   for (let n = 1; n < ZOOM_DOS_NIVEIS_ROTULO.length; n++) {
     svg.classList.toggle(`zoom-n${n}`, escala >= ZOOM_DOS_NIVEIS_ROTULO[n]);
   }
+  // Último degrau da espessura das divisas -- só CSS, não libera nome
+  // nenhum.
+  svg.classList.toggle("zoom-n4", escala >= ZOOM_TRACO_FINO);
 
   const novoModoRegioes = escala < limiarMunicipios;
   // Sempre sincroniza a classe (nao so quando muda) pra garantir que
@@ -7183,6 +7220,11 @@ async function abrirPerfil(uid) {
                </div>`
             : ""
         }
+        ${
+          motoclubeAtivoNoPerfil(perfil) && perfil.numeroMotoclube
+            ? `<div class="perfil-numero-motoclube">Membro ${escaparHtml(formatarNumeroMotoclube(perfil.numeroMotoclube))}</div>`
+            : ""
+        }
       </div>
 
       <div class="perfil-stats">
@@ -8463,6 +8505,48 @@ function diasParaTrocarDeGrupo() {
   return Math.max(0, Math.ceil(DIAS_CARENCIA_GRUPO - passados));
 }
 
+/* Casas do número de membro. 11 dígitos, como o Paulo pediu:
+   #00000000001. É folga de sobra e dá cara de credencial. */
+const CASAS_NUMERO_MOTOCLUBE = 11;
+
+function formatarNumeroMotoclube(numero) {
+  return "#" + String(numero).padStart(CASAS_NUMERO_MOTOCLUBE, "0");
+}
+
+/**
+ * O Motoclube está ativo PARA O DONO DAQUELE PERFIL?
+ *
+ * Diferente de souMembroMotoclube(), que responde sobre quem está
+ * usando o app. Visitando o perfil de outra pessoa, é a assinatura
+ * DELA que decide se o número aparece.
+ */
+function motoclubeAtivoNoPerfil(perfil) {
+  if (window.raspadinhaAuth?.motoclubeLiberadoParaTodos === true) return true;
+  if (perfil?.ehPro !== true) return false;
+  const ate = parsearDataAssinatura(perfil?.proAte);
+  if (!ate) return true; // ativação manual antiga, sem validade: não expira
+  return ate.getTime() > Date.now();
+}
+
+/**
+ * Garante que quem está num grupo tenha número, inclusive quem entrou
+ * antes de a numeração existir.
+ *
+ * Roda ao abrir o Motoclube e ao entrar num grupo. Não faz nada pra
+ * quem já tem -- o número é vitalício e nunca é reatribuído.
+ */
+async function garantirNumeroDoMembro() {
+  if (!meuGrupoMotoclube()) return null;
+  if (window.raspadinhaAuth?.numeroMotoclube) return null;
+  try {
+    return await window.raspadinhaAuth.garantirNumeroMotoclube();
+  } catch (erro) {
+    // Falhar aqui não pode impedir a pessoa de usar o Motoclube.
+    console.warn("Não foi possível atribuir o número de membro:", erro);
+    return null;
+  }
+}
+
 function nomeDoMunicipio(id) {
   return document.querySelector(`#mapa-rj [data-municipio="${id}"]`)?.dataset.nome || id;
 }
@@ -8496,6 +8580,13 @@ function renderizarMeuGrupo() {
           <p class="grupo-atual-nome">${escaparHtml(nomeDoMunicipio(grupo))}</p>
           <p class="grupo-atual-sub">Seu grupo no Motoclube</p>
           <p class="grupo-membros" id="grupo-membros">carregando membros...</p>
+          ${
+            // O número existe pra sempre, mas só APARECE com a
+            // assinatura ativa -- foi assim que o Paulo pediu.
+            window.raspadinhaAuth?.numeroMotoclube && souMembroMotoclube()
+              ? `<p class="grupo-numero">Membro ${escaparHtml(formatarNumeroMotoclube(window.raspadinhaAuth.numeroMotoclube))}</p>`
+              : ""
+          }
         </div>
       </div>
       <div class="grupo-acoes">
@@ -8560,48 +8651,78 @@ async function compartilharBrasaoDoGrupo() {
   if (!brasaoAberto) return;
   const nome = nomeDoMunicipio(brasaoAberto);
   const botao = document.getElementById("btn-compartilhar-brasao");
+  const rotuloOriginal = botao.textContent;
   botao.disabled = true;
+  botao.textContent = "Preparando...";
 
   try {
     const svg = await fetch(urlDoBrasao(brasaoAberto)).then((r) => r.text());
     const blob = await svgParaPngBlob(svg, 1024);
     const arquivo = new File([blob], `motoclube-${nome}.png`, { type: "image/png" });
+    const texto = `Faço parte do Motoclube Desbrava — grupo ${nome}! 🏍️`;
 
     if (navigator.canShare?.({ files: [arquivo] })) {
-      await navigator.share({
-        files: [arquivo],
-        text: `Faço parte do Motoclube Desbrava — grupo ${nome}! 🏍️`,
-      });
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = arquivo.name;
-      a.click();
-      URL.revokeObjectURL(url);
+      await navigator.share({ files: [arquivo], text: texto });
+      return;
     }
+
+    // Sem compartilhar COM ARQUIVO. Antes isto caía direto no truque do
+    // link com `download`, que na WebView do Android não faz nada
+    // visível -- o botão parecia simplesmente não funcionar. Agora tem
+    // dois degraus antes de desistir, e o último abre a imagem numa
+    // aba, onde dá pra segurar o dedo e salvar.
+    if (navigator.share) {
+      await navigator.share({ text: texto, url: location.origin });
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = arquivo.name;
+    a.rel = "noopener";
+    a.click();
+    // Só revoga depois: revogar no mesmo instante cancelava o download
+    // antes de ele começar em alguns navegadores.
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   } catch (erro) {
     // AbortError = a pessoa fechou a folha de compartilhamento. Não é
     // falha, não merece aviso.
-    if (erro?.name !== "AbortError") console.error("Falha ao compartilhar o brasão:", erro);
+    if (erro?.name === "AbortError") return;
+    console.error("Falha ao compartilhar o brasão:", erro);
+    // Falhar em SILÊNCIO era metade do problema: quem apertava não
+    // sabia se tinha travado, se ia abrir, ou se o botão estava morto.
+    botao.textContent = "Não consegui compartilhar";
+    setTimeout(() => (botao.textContent = rotuloOriginal), 2500);
+    return;
   } finally {
     botao.disabled = false;
+    if (botao.textContent === "Preparando...") botao.textContent = rotuloOriginal;
   }
 }
 
-/** Rasteriza um SVG em PNG, via <img> + <canvas>. */
-function svgParaPngBlob(svg, lado) {
+/**
+ * Rasteriza um SVG em PNG, via <img> + <canvas>.
+ *
+ * `largura` manda, e a altura sai da PROPORÇÃO do próprio SVG. O
+ * brasão deixou de ser quadrado quando ganhou asas (1170x560): forçar
+ * um quadrado, como era antes, espremia o desenho na imagem
+ * compartilhada.
+ */
+function svgParaPngBlob(svg, largura) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     // data: URL em vez de blob: -- o canvas não fica "sujo" (tainted)
     // assim, e o toBlob continua permitido.
     img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
     img.onload = () => {
+      const proporcao = img.naturalHeight / img.naturalWidth || 1;
+      const altura = Math.round(largura * proporcao);
       const canvas = document.createElement("canvas");
-      canvas.width = lado;
-      canvas.height = lado;
+      canvas.width = largura;
+      canvas.height = altura;
       const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, lado, lado);
+      ctx.drawImage(img, 0, 0, largura, altura);
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas vazio"))), "image/png");
     };
     img.onerror = () => reject(new Error("não consegui carregar o brasão"));
@@ -8636,6 +8757,8 @@ async function aoEntrarNoGrupo(municipioId) {
 
   try {
     await window.raspadinhaAuth.entrarNoGrupoMotoclube(municipioId);
+    // O número nasce na PRIMEIRA entrada em um grupo, e fica pra sempre.
+    await garantirNumeroDoMembro();
     renderizarMeuGrupo();
     mostrarToastLogin(`🏍️ Você entrou no grupo de ${nomeDoMunicipio(municipioId)}!`);
     atualizarToastLogin("sucesso", `🏍️ Você entrou no grupo de ${nomeDoMunicipio(municipioId)}!`);
@@ -8673,6 +8796,12 @@ async function aoSairDoGrupo() {
 async function abrirMotoclube() {
   popularFormulariosMotoclubeSeNecessario();
   renderizarMeuGrupo();
+  // Quem já estava num grupo antes de a numeração existir ganha o
+  // número aqui, na primeira vez que abre a aba. Sem await: o card do
+  // grupo se redesenha sozinho quando o número chega.
+  garantirNumeroDoMembro().then((novo) => {
+    if (novo) renderizarMeuGrupo();
+  });
   document.getElementById("modal-motoclube").classList.remove("oculto");
   const lista = document.getElementById("motoclube-lista");
   lista.innerHTML = '<div class="spinner spinner-grande"></div>';
@@ -10036,6 +10165,9 @@ function renderizarCardPost(post) {
   const marcados = post.pessoasMarcadas || [];
   const tempo = tempoRelativo(post.criadoEm);
   const nComentarios = post.numComentarios || 0;
+  // Sem foto, a moldura NÃO entra: senão o post de texto puro ficaria
+  // com um retângulo carregando pra sempre.
+  const temFoto = Boolean(post.fotoUrl || post.fotoStoragePath);
 
   card.innerHTML = `
     <div class="post-topo">
@@ -10054,7 +10186,7 @@ function renderizarCardPost(post) {
       ${tempo ? `<span class="post-tempo">${tempo}</span>` : ""}
       ${souAutor ? '<button type="button" class="post-card-excluir" aria-label="Opções">⋯</button>' : ""}
     </div>
-    <img class="post-card-foto" alt="Foto do post">
+    ${temFoto ? MOLDURA_FOTO_POST : ""}
     <div class="post-card-acoes">
       <button type="button" class="post-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span class="post-card-curtidas">${curtidoPor.length}</span></button>
       <button type="button" class="post-card-comentar">${ICONE_COMENTAR} <span class="post-card-num-comentarios">${nComentarios}</span></button>
@@ -10167,6 +10299,9 @@ function urlsAlternativasDaFoto(url) {
 function aplicarFotoComFallback(imgEl, url) {
   if (!imgEl || !url) return;
   const tentativas = urlsAlternativasDaFoto(url);
+  // A moldura de carregando é opcional: só o feed a usa hoje. Sem ela,
+  // tudo funciona como antes.
+  const moldura = imgEl.closest(".post-foto-wrap");
   let indice = 0;
 
   imgEl.addEventListener("error", () => {
@@ -10177,9 +10312,15 @@ function aplicarFotoComFallback(imgEl, url) {
     }
     console.warn("Foto indisponível em todos os formatos do Drive:", url);
     imgEl.classList.add("foto-indisponivel");
+    // Some com a moldura inteira: deixar o placeholder girando pra
+    // sempre seria pior que não mostrar foto nenhuma.
+    moldura?.classList.add("foto-indisponivel");
   });
 
-  imgEl.addEventListener("load", () => imgEl.classList.remove("foto-indisponivel"));
+  imgEl.addEventListener("load", () => {
+    imgEl.classList.remove("foto-indisponivel");
+    moldura?.classList.remove("carregando");
+  });
   imgEl.src = tentativas[0];
 }
 
