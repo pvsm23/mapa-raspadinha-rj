@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.40";
+const VERSAO_APP = "0.11.41";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -9211,6 +9211,20 @@ function construirContornosDeRegiao() {
   const grupo = document.createElementNS("http://www.w3.org/2000/svg", "g");
   grupo.id = "contornos-regioes";
 
+  /* Os segmentos externos viram UM <path> por região, e não um <line>
+     por segmento.
+
+     Antes era um elemento por aresta. Com a malha simplificada davam
+     ~4,5 mil <line>; com a malha detalhada do IBGE passariam de 17 mil,
+     e o custo não é só criá-los: `--zoom` é propriedade herdada e muda a
+     cada movimento do mapa, então o navegador recalculava estilo dos 18
+     mil nós a cada quadro do pinça-zoom (medido: 43ms por mudança num
+     desktop -- num celular isso engasga).
+
+     Um path por região desenha exatamente a mesma coisa: cada segmento
+     é um `M` seguido de `L`, sem ligar um no outro. */
+  const desenhoPorRegiao = new Map();
+
   municipios.forEach((municipio, indiceMunicipio) => {
     municipio.aneis.forEach((anel) => {
       for (let i = 0; i < anel.length; i++) {
@@ -9232,16 +9246,20 @@ function construirContornosDeRegiao() {
         }
         if (interna) continue;
 
-        const linha = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        linha.setAttribute("x1", p1[0]);
-        linha.setAttribute("y1", p1[1]);
-        linha.setAttribute("x2", p2[0]);
-        linha.setAttribute("y2", p2[1]);
-        linha.setAttribute("class", "contorno-regiao-segmento");
-        grupo.appendChild(linha);
+        const chave = municipio.regiao || "sem-regiao";
+        if (!desenhoPorRegiao.has(chave)) desenhoPorRegiao.set(chave, []);
+        desenhoPorRegiao.get(chave).push(`M${p1[0]} ${p1[1]}L${p2[0]} ${p2[1]}`);
       }
     });
   });
+
+  for (const [regiao, partes] of desenhoPorRegiao) {
+    const caminho = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    caminho.setAttribute("d", partes.join(""));
+    caminho.setAttribute("class", "contorno-regiao-segmento");
+    caminho.dataset.regiao = regiao;
+    grupo.appendChild(caminho);
+  }
 
   svg.appendChild(grupo);
   renderizarRotulosRegioes();

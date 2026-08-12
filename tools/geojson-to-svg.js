@@ -16,14 +16,73 @@
 const fs = require("fs");
 const path = require("path");
 
-const ENTRADA = path.join(__dirname, "..", "data", "rj-municipios.geojson");
+/* ---- De onde vem o desenho das divisas ----
+ *
+ * A malha do IBGE em QUALIDADE MÁXIMA, e não mais o
+ * data/rj-municipios.geojson.
+ *
+ * Aquele arquivo é uma versão simplificada: 9.416 pontos pros 92
+ * municípios, com Nilópolis inteiro virando um polígono de DOZE lados.
+ * Enquanto o zoom máximo era 10, ninguém via. Com 40 dá pra contar os
+ * vértices: o segmento reto mediano de uma divisa media 38px na tela,
+ * e 10% deles passavam de 94px. Aproximar só ampliava os mesmos pontos.
+ *
+ * Com a malha do IBGE são 36.982 pontos e o segmento mediano cai pra
+ * 10px -- e é divisa de verdade, com litoral e ilhas, não curva
+ * inventada por cima de um contorno grosseiro.
+ *
+ * O arquivo mora em tools/ de propósito: tools/ NÃO entra no www/ (ver
+ * a allowlist em tools/montar-www.js), então esses 800 KB não vão parar
+ * dentro do APK. O que o app carrega é só o SVG gerado daqui.
+ *
+ * Baixado de:
+ *   https://servicodados.ibge.gov.br/api/v3/malhas/estados/33
+ *     ?formato=application/vnd.geo+json&intrarregiao=municipio&qualidade=maxima
+ *
+ * data/rj-municipios.geojson continua existindo e NÃO foi trocado: o
+ * app o carrega em tempo de execução pra conferir por GPS se a pessoa
+ * está dentro do município (ver carregarGeoJsonMunicipios em
+ * js/script.js), e pra isso o simplificado basta e pesa 2,5x menos.
+ */
+const ENTRADA = path.join(__dirname, "dados-origem", "rj-municipios-ibge.geojson");
+const NOMES = path.join(__dirname, "..", "data", "destinos.json");
 const REGIOES = path.join(__dirname, "..", "data", "regioes.json");
 const SAIDA = path.join(__dirname, "..", "assets", "svg", "rj-municipios.svg");
 
 const LARGURA_SVG = 800;
+/* Duas casas: no viewBox de 800 de largura, 0,01 unidade vale 0,2px na
+ * tela no zoom máximo (40x) -- imperceptível. Com uma casa só, o passo
+ * viraria 2px e a divisa ganharia um serrilhado visível justamente de
+ * perto, que é onde essa mudança toda quer melhorar. */
 const CASAS_DECIMAIS = 2;
 
 const geojson = JSON.parse(fs.readFileSync(ENTRADA, "utf8"));
+const nomesPorCodigo = JSON.parse(fs.readFileSync(NOMES, "utf8"));
+
+/**
+ * Põe a malha do IBGE no formato que o resto deste arquivo espera:
+ * `properties.id` / `properties.name` e uma lista chapada de anéis.
+ *
+ * O IBGE entrega MultiPolygon (município com ilha vira vários
+ * polígonos) e só o campo `codarea`. Achatar tudo num Polygon de vários
+ * anéis é exatamente o que o formato antigo já fazia, e é o que o
+ * desenho quer: cada anel vira um subcaminho do <path>, ilha inclusive.
+ */
+function aneisDe(geometria) {
+  if (geometria.type === "Polygon") return geometria.coordinates;
+  if (geometria.type === "MultiPolygon") return geometria.coordinates.flat();
+  return [];
+}
+
+geojson.features = geojson.features.map((feature) => {
+  const codigoIbge = String(feature.properties.codarea);
+  const nome = nomesPorCodigo[codigoIbge]?.nome;
+  if (!nome) throw new Error(`Município ${codigoIbge} não está em data/destinos.json`);
+  return {
+    properties: { id: codigoIbge, name: nome },
+    geometry: { type: "Polygon", coordinates: aneisDe(feature.geometry) },
+  };
+});
 
 // Mapa codigo IBGE -> id da regiao (data/regioes.json), usado para
 // colorir por regiao quando o mapa esta com zoom bem afastado.
@@ -66,11 +125,14 @@ function projetar([lon, lat]) {
 function anelParaPathD(anel) {
   const pontos = anel.map(projetar);
   const [primeiroX, primeiroY] = pontos[0];
-  let d = `M ${primeiroX} ${primeiroY} `;
+  // Sem repetir o "L": depois de um `M`, todo par solto de números já é
+  // um lineto implícito no SVG. Com 37 mil pontos, os dois bytes de
+  // cada "L " somavam 74 KB de arquivo sem desenhar nada.
+  let d = `M ${primeiroX} ${primeiroY}`;
   for (let i = 1; i < pontos.length; i++) {
-    d += `L ${pontos[i][0]} ${pontos[i][1]} `;
+    d += ` ${pontos[i][0]} ${pontos[i][1]}`;
   }
-  return d + "Z";
+  return d + " Z";
 }
 
 function escaparAtributo(texto) {
