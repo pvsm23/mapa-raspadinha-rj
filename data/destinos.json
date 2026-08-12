@@ -54,7 +54,10 @@
     "destinos": [
       {
         "nome": "Lagoa de Araruama (Praia Seca)",
-        "descricao": "Uma das maiores lagoas hipersalinas do mundo, com ventos constantes que a tornam um paraíso para a prática de kitesurf."
+        "descricao": "Uma das maiores lagoas hipersalinas do mundo, com ventos constantes que a tornam um paraíso para a prática de kitesurf.",
+        "lat": -22.924132,
+        "lon": -42.308273,
+        "_geo": "Praia Seca, Araruama, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Praça Antônio Raposo",
@@ -62,11 +65,17 @@
       },
       {
         "nome": "Museu Arqueológico",
-        "descricao": "Um espaço dedicado à preservação da história da região, abrigando artefatos das antigas populações indígenas Tupinambás."
+        "descricao": "Um espaço dedicado à preservação da história da região, abrigando artefatos das antigas populações indígenas Tupinambás.",
+        "lat": -22.80231,
+        "lon": -42.416149,
+        "_geo": "Museu Arqueológico de Araruama, Rodovia Via Lagos, Morro Grande, Araruama, Rio d"
       },
       {
         "nome": "Parque Menino João Hélio",
-        "descricao": "Um amplo parque de lazer familiar com brinquedos infantis, ciclovia e extensa área verde no coração da cidade."
+        "descricao": "Um amplo parque de lazer familiar com brinquedos infantis, ciclovia e extensa área verde no coração da cidade.",
+        "lat": -22.870266,
+        "lon": -42.333019,
+        "_geo": "Praça Menino João Hélio, Parque Hotel, Araruama, Rio de Janeiro, Região Sudeste,"
       },
       {
         "nome": "Salina de Araruama",
@@ -704,15 +713,24 @@
       },
       {
         "nome": "Capela de Nossa Senhora da Conceição",
-        "descricao": "Uma pequena e charmosa capela do século XVIII que resiste como a construção histórico-religiosa mais antiga da cidade."
+        "descricao": "Uma pequena e charmosa capela do século XVIII que resiste como a construção histórico-religiosa mais antiga da cidade.",
+        "lat": -22.847862,
+        "lon": -42.229786,
+        "_geo": "Capela Nossa Senhora da Conceição, Rua Nossa Senhora da Conceição, Centro, Iguab"
       },
       {
         "nome": "Praça Edila Pinheiro",
-        "descricao": "O vibrante polo de convivência urbano de Iguaba, onde o calçadão, os quiosques e o comércio se encontram à beira da rodovia."
+        "descricao": "O vibrante polo de convivência urbano de Iguaba, onde o calçadão, os quiosques e o comércio se encontram à beira da rodovia.",
+        "lat": -22.838788,
+        "lon": -42.226472,
+        "_geo": "Praça Edila Pinheiro, Centro, Iguaba Grande, Rio de Janeiro, Região Sudeste, 289"
       },
       {
         "nome": "Mirante da Pedreira",
-        "descricao": "Um ponto de observação natural elevado que entrega uma vista panorâmica arrebatadora de toda a extensão da lagoa e da restinga."
+        "descricao": "Um ponto de observação natural elevado que entrega uma vista panorâmica arrebatadora de toda a extensão da lagoa e da restinga.",
+        "lat": -22.836332,
+        "lon": -42.234443,
+        "_geo": "Mirante Dona Célia, Pedreira, Iguaba Grande, Rio de Janeiro, Região Sudeste, 289"
       },
       {
         "nome": "Antiga Estação Ferroviária",

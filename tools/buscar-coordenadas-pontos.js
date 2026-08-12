@@ -114,6 +114,19 @@ function buscar(consulta, caixa) {
 function consultasPara(nomePonto, nomeMunicipio) {
   const limpo = nomePonto.replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
   const semParenteses = nomePonto.replace(/\s*\([^)]*\)/g, "").trim();
+  /* O que está ENTRE PARÊNTESES é o ponto de acesso, e é ele que
+   * costuma existir no mapa.
+   *
+   * "Lagoa de Araruama (Praia Seca)" é o caso típico: buscar o nome
+   * inteiro devolve o centro da lagoa, que fica em ARRAIAL DO CABO --
+   * a validação por polígono recusa, e o ponto fica sem coordenada.
+   * Buscar só "Praia Seca" acerta dentro de Araruama.
+   *
+   * Faz sentido além do truque: ninguém visita "a lagoa", visita uma
+   * praia dela. Por isso Araruama e Iguaba Grande citam praias
+   * diferentes da MESMA lagoa -- são dois lugares de verdade, não uma
+   * duplicata. */
+  const dentroDoParenteses = (nomePonto.match(/\(([^)]+)\)/) || [])[1]?.trim();
   /* Só variações do NOME COMPLETO, sempre com o município junto.
    *
    * Cheguei a tentar uma busca "solta" limitada à caixa do município
@@ -127,10 +140,22 @@ function consultasPara(nomePonto, nomeMunicipio) {
    * Ponto sem resultado fica SEM COORDENADA de propósito: no mapa ele
    * simplesmente não aparece, e isso é melhor que aparecer no lugar
    * errado. */
-  return [...new Set([`${nomePonto}, ${nomeMunicipio}, RJ`, `${limpo}, ${nomeMunicipio}, RJ`, `${semParenteses}, ${nomeMunicipio}, RJ`])].map((q) => ({
-    q,
-    limitar: false,
-  }));
+  const tentativas = [
+    `${nomePonto}, ${nomeMunicipio}, RJ`,
+    `${limpo}, ${nomeMunicipio}, RJ`,
+    // O ponto de acesso vem ANTES do nome sem parênteses: pra feição
+    // grande, ele é o que dá a coordenada certa, e o nome sozinho é
+    // justamente o que erra de município.
+    dentroDoParenteses && `${dentroDoParenteses}, ${nomeMunicipio}, RJ`,
+    `${semParenteses}, ${nomeMunicipio}, RJ`,
+    /* Sem vírgula e com "município-RJ" colado, como se escreve num
+     * endereço à mão. O Nominatim quebra a consulta em pedaços de forma
+     * diferente quando não há vírgula separando os campos, e nome
+     * genérico ("Praça da Matriz") às vezes só casa por esse caminho. */
+    `${limpo} ${nomeMunicipio}-RJ`,
+  ].filter(Boolean);
+
+  return [...new Set(tentativas)].map((q) => ({ q, limitar: false }));
 }
 
 async function coordenadaDe(nomePonto, nomeMunicipio, aneis, aoConsultar) {
