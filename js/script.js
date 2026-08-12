@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.41";
+const VERSAO_APP = "0.11.42";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -5776,9 +5776,9 @@ async function mostrarEstatisticaSeloRegiao(regiaoId) {
  * Renderiza a lista de pontos turísticos do município (se existir em
  * data/destinos.json) dentro do popup. Cada item é clicável: abre um
  * espaço reservado para um texto histórico/curiosidade (a preencher
- * depois) e um botão "Abrir no Maps" — desabilitado até existir um
- * link de verdade (campo `linkMaps`, reservado, ainda não existe em
- * nenhum destino).
+ * depois) e um botão "Abrir no Maps", que sempre funciona: o link sai
+ * de `linkMaps` quando ele existe no JSON, e senão é montado na hora
+ * pelo nome do lugar (ver linkDoMaps).
  */
 /* ============================================================
    Busca de município/ponto turístico (canto inferior direito): ao
@@ -5863,6 +5863,34 @@ function selecionarResultadoBusca(item) {
   });
 }
 
+/**
+ * Link do Google Maps pra um ponto turístico.
+ *
+ * É montado na hora, a partir do nome do lugar + o município + RJ, em
+ * vez de guardar 460 URLs em data/destinos.json. Motivos:
+ *
+ *  - o link é DERIVÁVEL: guardar seria repetir, em ~40 KB, o que já
+ *    está ali em cima na mesma linha;
+ *  - não custa chave de API nem consulta a serviço nenhum. A rota
+ *    /maps/search/?api=1 é o formato público e documentado do Google,
+ *    e no celular ela abre o APLICATIVO do Maps, não o navegador;
+ *  - lugar novo passa a ter link no mesmo instante em que é escrito no
+ *    JSON, sem ninguém lembrar de colar URL.
+ *
+ * O campo `linkMaps` continua valendo e TEM PRIORIDADE: busca por nome
+ * erra em lugar de nome genérico ("Igreja Matriz", "Cachoeira do
+ * Escorrega"), e nesses casos dá pra colar no JSON o link exato do
+ * lugar, que passa a mandar sobre o automático.
+ */
+function linkDoMaps(nomeDestino, nomeMunicipio) {
+  // Parêntese vira espaço: "Ilha Grande (Vila do Abraão)" busca melhor
+  // como "Ilha Grande Vila do Abraão" -- a pontuação atrapalha e o que
+  // está dentro dos parênteses costuma ser justamente o mais preciso.
+  const lugar = String(nomeDestino).replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+  const busca = `${lugar}, ${nomeMunicipio} - RJ`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(busca)}`;
+}
+
 function mostrarDestinos(id) {
   const container = document.getElementById("modal-destinos");
   const destino = destinosPorMunicipio[id];
@@ -5874,7 +5902,10 @@ function mostrarDestinos(id) {
 
   const itens = destino.destinos
     .map((d, indice) => {
-      const temLink = !!d.linkMaps;
+      // Sempre tem link: ou o exato colado no JSON, ou a busca montada
+      // na hora. O botão não fica mais desabilitado esperando alguém
+      // colar 460 URLs à mão.
+      const link = d.linkMaps || linkDoMaps(d.nome, destino.nome);
       return `
         <li>
           <button type="button" class="destino-item" data-indice="${indice}" aria-expanded="false">
@@ -5882,7 +5913,7 @@ function mostrarDestinos(id) {
           </button>
           <div class="destino-detalhe oculto" data-indice="${indice}">
             <p class="destino-texto-completo">${escaparHtml(d.textoCompleto || "Em breve: um pouco da história e curiosidades sobre este lugar.")}</p>
-            <button type="button" class="destino-btn-maps" data-link="${temLink ? escaparHtml(d.linkMaps) : ""}" ${temLink ? "" : "disabled"}>
+            <button type="button" class="destino-btn-maps" data-link="${escaparHtml(link)}">
               Abrir no Maps ↗
             </button>
           </div>
