@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.44";
+const VERSAO_APP = "0.11.45";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -822,7 +822,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-ponto-cidade").addEventListener("click", verCidadeDoPonto);
   document.getElementById("modal-ponto").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-ponto") return fecharPontoTuristico();
-    const botao = evento.target.closest(".destino-btn-maps");
+    const botao = evento.target.closest(".chip-acao");
     if (botao?.dataset.link) window.open(botao.dataset.link, "_blank");
   });
 
@@ -6069,9 +6069,16 @@ function abrirPontoTuristico(municipioId, indice) {
   document.getElementById("ponto-texto").textContent =
     ponto.textoCompleto || "Em breve: um pouco da história e curiosidades sobre este lugar.";
 
+  // Sem arte, a capa encolhe pra uma faixa fina em vez de deixar um
+  // degradê alto e vazio antes do título.
   const arte = document.getElementById("ponto-arte");
-  arte.classList.toggle("oculto", !ponto.icone);
-  if (ponto.icone) arte.src = `assets/img/pontos/${ponto.icone}`;
+  document.getElementById("ponto-capa").classList.toggle("sem-arte", !ponto.icone);
+  if (ponto.icone) {
+    arte.src = `assets/img/pontos/${ponto.icone}`;
+    arte.alt = ponto.nome;
+  } else {
+    arte.removeAttribute("src");
+  }
 
   document.getElementById("btn-ponto-maps").dataset.link =
     ponto.linkMaps || linkDoMaps(ponto.nome, municipio.nome);

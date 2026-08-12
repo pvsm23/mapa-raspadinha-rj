@@ -9614,87 +9614,186 @@ button:disabled:active {
   display: none !important;
 }
 
-/* ---- Painel do ponto turístico (abre pelo medalhão no mapa) ---- */
-#modal-ponto {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: var(--backdrop);
+/* ============================================================
+   PONTO TURÍSTICO -- folha que abre ao tocar num ponto do mapa.
+
+   Usa .sheet-overlay/.sheet do app, então herda de graça a subida, a
+   descida em .fechando e o teto de 88vh. O id NÃO termina em
+   "-conteudo" de propósito: aquele sufixo é capturado pela CAMADA UI
+   MODERNA, que força border-radius nos QUATRO cantos com !important --
+   e isso quebraria a capa sangrando no topo.
+   ============================================================ */
+
+/* ---- Capa ---- */
+#ponto-capa {
+  position: relative;
+  flex: none;
+  height: 168px;
+  /* 21px, e não 22: a capa fica DENTRO da borda de 1px da folha, então
+     o raio dela tem que ser o de fora menos a espessura da borda --
+     senão os dois arcos não encaixam e sobra uma casquinha na curva. */
+  border-radius: 21px 21px 0 0;
+  overflow: hidden;
+  /* A arte é PNG recortado (linha e cor sobre transparente), não uma
+     foto de banco de imagem. Esticar pra preencher deixaria borrada e
+     cortaria o desenho, então ela fica inteira e centrada sobre um
+     fundo próprio -- o degradê é que faz o papel de "foto de capa". */
+  background:
+    radial-gradient(120% 130% at 50% 115%, color-mix(in srgb, var(--verde) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, var(--surf2), var(--bg));
 }
 
-#ponto-conteudo {
-  position: relative;
+#ponto-arte {
   width: 100%;
-  max-width: 520px;
-  max-height: 86vh;
-  overflow-y: auto;
-  padding: 22px 20px 24px;
-  border-radius: 20px 20px 0 0;
-  background: var(--surf);
-  text-align: center;
+  height: 100%;
+  object-fit: contain;
+  /* Respiro pra alça e pro botão de fechar não encostarem no desenho. */
+  padding: 22px 20px 12px;
+  box-sizing: border-box;
+  display: block;
+}
+
+/* Sem arte, a faixa encolhe: um degradê alto e vazio seria só espaço
+   perdido antes do título. */
+#ponto-capa.sem-arte {
+  height: 62px;
+}
+
+#ponto-capa.sem-arte #ponto-arte {
+  display: none;
+}
+
+#ponto-capa .sheet-alca {
+  /* Por cima da capa, então precisa de contraste próprio. */
+  background: rgba(255, 255, 255, 0.55);
+  z-index: 2;
 }
 
 #btn-fechar-ponto {
   position: absolute;
   top: 12px;
   right: 12px;
-  padding: 4px 9px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
   border: none;
-  border-radius: 999px;
-  background: var(--surf2);
+  border-radius: 50%;
+  background: var(--backdrop);
+  backdrop-filter: blur(6px);
   color: var(--txt);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1;
   cursor: pointer;
 }
 
-#ponto-arte {
-  width: 132px;
-  height: 132px;
-  border-radius: 50%;
-  border: 2px solid var(--linha);
-  object-fit: cover;
-  margin-bottom: 12px;
+/* ---- Corpo ---- */
+#ponto-corpo {
+  padding: 18px 20px 8px;
 }
 
 #ponto-titulo {
-  margin: 0 0 2px;
+  margin: 0 0 10px;
   color: var(--txt);
-  font-size: 1.15rem;
+  font-size: 1.42rem;
   font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 
-#ponto-cidade {
-  margin: 0 0 14px;
+/* Cidade como chip, não como texto verde solto. */
+.ponto-chip-cidade {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--verde) 15%, transparent);
   color: var(--verde);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
+.ponto-chip-cidade::before {
+  content: "📍";
+  font-size: 0.8rem;
+}
+
 #ponto-descricao {
-  margin: 0 0 10px;
+  margin: 16px 0 0;
   color: var(--txt);
-  font-size: 0.92rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
 }
 
 #ponto-texto {
-  margin: 0 0 18px;
+  margin: 12px 0 0;
   color: var(--fraco);
-  font-size: 0.86rem;
-  line-height: 1.55;
-  text-align: left;
+  font-size: 0.9rem;
+  /* Texto longo: o respiro entre linhas é o que decide se a pessoa lê
+     até o fim ou desiste no terceiro parágrafo. */
+  line-height: 1.65;
 }
 
+/* ---- Chips de ação ---- */
 #ponto-acoes,
 .destino-acoes {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
-#ponto-acoes .destino-btn-maps,
+.chip-acao {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 12px;
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  background: var(--surf2);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.chip-acao svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--verde);
+}
+
+.chip-acao:active {
+  transform: scale(0.97);
+  background: color-mix(in srgb, var(--verde) 12%, var(--surf2));
+}
+
+/* ---- Rodapé grudado ---- */
+#ponto-rodape {
+  flex: none;
+  padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--linha);
+  /* Um véu do mesmo tom da folha: o texto some por baixo do rodapé em
+     vez de encostar nele de repente enquanto rola. */
+  background: var(--surf);
+}
+
+#ponto-rodape .sheet-btn-primario {
+  margin-top: 0;
+  padding: 15px;
+  border-radius: 14px;
+  font-size: 0.98rem;
+}
+
+/* Os dois botões da lista de destinos na aba da cidade dividem a linha.
+   O desenho deles continua sendo o antigo (.destino-btn-maps): quem
+   ganhou os chips foi o painel do ponto no mapa. */
 .destino-acoes .destino-btn-maps {
   flex: 1;
 }
