@@ -26,10 +26,16 @@ const STORAGE_KEY_CONQUISTAS = "scratchMapRJ_conquistas_v1";
 const STORAGE_KEY_STREAK = "scratchMapRJ_streak_v1";
 const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 
-// Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
-// a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
-// segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.12.08.26.76";
+/* Versão do app, mostrada em Configurações → "Sobre".
+ *
+ * Formato `0.ano.mês.dia.contagem` (ver CLAUDE.md). O `0` da frente
+ * marca que a versão oficial ainda não saiu; a contagem é o mesmo
+ * número do `versionCode` do Android e sobe de 1 por entrega.
+ *
+ * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
+ * android/app/build.gradle. É o versionName que vira a tag do release
+ * no CI (ver .github/workflows/build-apk.yml). */
+const VERSAO_APP = "0.26.08.12.77";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -37,6 +43,14 @@ const VERSAO_APP = "0.12.08.26.76";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.12.77", itens: ["Todos os pontos turísticos da Região Metropolitana ganharam marcador no mapa, no lugar exato onde ficam.", "A numeração das versões mudou de formato: agora ela mostra a data da entrega."] },
+  { versao: "0.12.08.26.76", itens: ["Os botões de rota e fotos subiram para antes do texto de história, e o painel do ponto volta sempre ao topo ao abrir."] },
+  { versao: "0.11.45", itens: ["O painel do ponto turístico foi redesenhado: imagem de capa ocupando a largura toda, cidade em destaque e botões de ação mais fáceis de achar."] },
+  { versao: "0.11.44", itens: ["Os marcadores dos pontos turísticos ficaram maiores e passaram a aparecer com menos zoom, surgindo aos poucos conforme você se aproxima."] },
+  { versao: "0.11.43", itens: ["Os pontos turísticos agora aparecem no mapa, cada um no lugar exato onde fica. Toque em um para ver a descrição, abrir a rota, procurar fotos ou ir para a cidade.", "Os pontos com arte própria aparecem desenhados; os demais usam um marcador comum."] },
+  { versao: "0.11.42", itens: ["O botão \"Abrir no Maps\" da lista de pontos turísticos passou a funcionar em todos os municípios, e ganhou companhia de um botão de imagens."] },
+  { versao: "0.11.41", itens: ["As divisas dos municípios ficaram muito mais detalhadas: litoral, baías e ilhas aparecem de verdade quando você aproxima.", "A verificação por GPS ficou mais precisa perto das divisas."] },
+  { versao: "0.11.40", itens: ["Quem entra num grupo do Motoclube agora recebe um número de membro, que é seu para sempre.", "Os brasões dos grupos ganharam asas, o ano de fundação e a bandeira do Brasil.", "Dá para dar bem mais zoom no mapa, e as divisas vão ficando mais finas conforme você se aproxima.", "As fotos da Comunidade agora mostram um aviso de carregamento em vez de aparecerem do nada."] },
   { versao: "0.11.39", itens: ["A aba do Motoclube e a Garagem agora abrem para todo mundo — a assinatura só é pedida na hora de entrar num grupo ou cadastrar uma moto.", "O card do grupo mostra quantos membros ele tem, e dá para abrir o brasão em tamanho grande e compartilhar."] },
   { versao: "0.11.38", itens: ["Nomes compridos no mapa agora quebram em duas linhas, em vez de atravessar os municípios vizinhos.", "Corrigida a liberação do Motoclube, que parecia desligar sozinha ao abrir o app."] },
   { versao: "0.11.37", itens: ["Os nomes no mapa ficaram bem maiores e mais fáceis de ler, sem se sobrepor."] },
@@ -381,7 +395,7 @@ function renderizarNovidades() {
 
 /** Compara "x.y.z": true se `a` for MAIOR que `b`. */
 /**
- * Contagem de versões embutida no formato novo (0.dia.mes.ano.N).
+ * Contagem de versões embutida no formato novo (0.ano.mes.dia.N).
  * Devolve null pro formato antigo (0.11.45), de três partes.
  */
 function contagemDaVersao(versao) {
@@ -394,19 +408,20 @@ function contagemDaVersao(versao) {
 /**
  * `a` é mais nova que `b`?
  *
- * No formato novo quem manda é a CONTAGEM, o último número -- e não a
- * data. Comparar os três primeiros campos, como era antes, quebraria em
- * toda virada de mês: 0.31.08.26.80 (31 de agosto) pareceria mais nova
- * que 0.01.09.26.81 (1º de setembro), porque 31 > 1. O aviso de
- * "atualizar app" passaria a apontar pra uma versão velha.
+ * No formato novo (0.ano.mes.dia.N) quem manda é a CONTAGEM, o último
+ * número -- e não a data.
  *
- * A contagem é estritamente crescente por construção (sobe de um a cada
- * entrega, junto com o versionCode do Android), então é o único campo
- * em que dá pra confiar pra ordenar.
+ * Comparar a data não resolveria: a varredura olha só os TRÊS primeiros
+ * campos (0, ano, mês), então o DIA fica de fora e duas entregas do
+ * mesmo mês empatariam -- e empate aqui significa "não tem versão
+ * nova", justamente no caso mais comum, que é entregar duas vezes na
+ * mesma semana. A contagem é estritamente crescente por construção
+ * (sobe de um a cada entrega, junto com o versionCode do Android),
+ * então é o único campo em que dá pra confiar.
  *
  * O caminho antigo continua aqui pela transição: quem tem 0.11.45
- * instalado precisa reconhecer 0.12.08.26.76 como mais nova, e aí a
- * comparação cai nos três primeiros campos (12 > 11) e acerta.
+ * instalado precisa reconhecer a versão nova como mais recente, e aí a
+ * comparação cai nos três primeiros campos (26 > 11) e acerta.
  */
 function ehVersaoMaior(a, b) {
   const ca = contagemDaVersao(a);
@@ -5076,14 +5091,14 @@ async function mostrarOndeEstou() {
     const id = encontrarMunicipioPorCoordenada(lon, lat);
 
     if (!id) {
-      colocarMarcadorLocalAtual(null);
+      colocarMarcadorLocalAtual(null, null);
       mostrarToastOndeEstou("Você parece estar fora do Rio de Janeiro.");
       return;
     }
 
     const path = document.querySelector(`#mapa-rj [data-municipio="${id}"]`);
     window.controleMapa?.focarEmMunicipio(id);
-    setTimeout(() => colocarMarcadorLocalAtual(path), 650);
+    setTimeout(() => colocarMarcadorLocalAtual(lon, lat), 650);
 
     // Além de mostrar onde está, CONFIRMA a presença aqui -- assim dá
     // pra raspar este município mesmo saindo do local depois (a bússola
@@ -5120,35 +5135,44 @@ async function mostrarOndeEstou() {
 }
 
 /**
- * Desenha (ou reposiciona) o marcador "você está aqui" em cima do
- * centro do município `path`, como um <g> dentro do próprio SVG do
- * mapa -- assim ele acompanha o pan/zoom automaticamente, sem precisar
- * converter coordenadas de tela. Remove qualquer marcador anterior.
+ * Desenha o marcador "você está aqui" na COORDENADA de verdade, como um
+ * <g> dentro do próprio SVG do mapa -- assim ele acompanha o pan/zoom
+ * sem precisar converter coordenada de tela. Remove o anterior.
+ *
+ * Antes ele era plantado no centro da caixa do município, com raio fixo
+ * em unidades do desenho. Dava certo de longe, quando o município
+ * inteiro cabia num ponto; de perto o marcador virava um disco enorme
+ * cobrindo meia cidade, e ainda por cima no lugar errado -- o centro da
+ * caixa não é onde a pessoa está, e em município comprido nem sequer
+ * fica dentro dele.
+ *
+ * Agora usa projetarCoordenada (a mesma dos pontos turísticos) e o
+ * tamanho é fixo NA TELA, dividido pelo zoom. Passe `null, null` pra
+ * só apagar o marcador.
  */
-function colocarMarcadorLocalAtual(path) {
+function colocarMarcadorLocalAtual(lon, lat) {
   document.getElementById("marcador-local-atual")?.remove();
-  if (!path) return;
+  if (typeof lon !== "number" || typeof lat !== "number") return;
+
+  const pos = projetarCoordenada(lon, lat);
+  if (!pos) return;
 
   const svg = document.getElementById("mapa-rj");
-  const caixa = path.getBBox();
-  const cx = caixa.x + caixa.width / 2;
-  const cy = caixa.y + caixa.height / 2;
   const ns = "http://www.w3.org/2000/svg";
 
   const grupo = document.createElementNS(ns, "g");
   grupo.id = "marcador-local-atual";
+  grupo.setAttribute("transform", `translate(${pos.x} ${pos.y})`);
 
+  // Raio 1: quem dá o tamanho final é a escala do CSS, que desfaz o
+  // zoom (ver #marcador-local-atual em css/styles.css).
   const anel = document.createElementNS(ns, "circle");
   anel.setAttribute("class", "marcador-anel");
-  anel.setAttribute("cx", cx);
-  anel.setAttribute("cy", cy);
-  anel.setAttribute("r", 6);
+  anel.setAttribute("r", 1);
 
   const ponto = document.createElementNS(ns, "circle");
   ponto.setAttribute("class", "marcador-ponto");
-  ponto.setAttribute("cx", cx);
-  ponto.setAttribute("cy", cy);
-  ponto.setAttribute("r", 5);
+  ponto.setAttribute("r", 1);
 
   grupo.append(anel, ponto);
   svg.appendChild(grupo);

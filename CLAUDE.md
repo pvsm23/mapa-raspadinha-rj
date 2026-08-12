@@ -17,19 +17,21 @@ SP em expansão (mapa navegável, sem conteúdo ainda).
 Regras fixas:
 - **Versão** (`VERSAO_APP` em `js/script.js` + `versionCode`/
   `versionName` em `android/app/build.gradle`, sempre os três juntos):
-  formato **`0.dia.mês.ano.contagem`** desde 12/08/2026 — ex.
-  `0.12.08.26.76`. Dia/mês/ano com dois dígitos; o `0` da frente marca
+  formato **`0.ano.mês.dia.contagem`** desde 12/08/2026 — ex.
+  `0.26.08.12.77`. Ano/mês/dia com dois dígitos; o `0` da frente marca
   que a versão oficial ainda não saiu. A **contagem é o `versionCode`**,
   que sobe de 1 por entrega — ele já era o número de versões do app
   desde antes de existir release, e reusá-lo evita um segundo contador
   pra desencontrar do primeiro.
   - Formato antigo (`0.11.45`, "sobe só o último dígito") valeu até a
-    v0.11.45 e ainda aparece nos releases publicados.
-  - `ehVersaoMaior` ordena pela **contagem**, não pela data: comparando
-    os três primeiros campos, `0.31.08.26.80` pareceria mais nova que
-    `0.01.09.26.81` e o aviso de "atualizar app" apontaria pra uma
-    versão velha a cada virada de mês. O caminho antigo (3 campos)
-    continua no arquivo só pra quem ainda tem `0.11.x` instalado.
+    v0.11.45 e ainda aparece nos releases publicados. A `0.12.08.26.76`
+    é a única com dia na frente, de uma ordem que durou uma entrega.
+  - `ehVersaoMaior` ordena pela **contagem**, não pela data. Ela é o
+    único campo que só cresce: comparar data não resolve porque a
+    comparação varre só os três primeiros campos (`0`, ano, mês) e o
+    DIA fica de fora — duas entregas do mesmo mês empatariam. O caminho
+    antigo (3 campos) continua no arquivo só pra quem ainda tem
+    `0.11.x` instalado.
 - Segredo do Plano PRO: nunca em arquivo do repo (só na regra do
   Firestore, à mão).
 - **Motoclube Desbrava**: PAGO desde a v0.11.24, **R$ 9,90/mês**. É o

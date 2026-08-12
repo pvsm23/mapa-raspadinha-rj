@@ -204,7 +204,10 @@
     "destinos": [
       {
         "nome": "Bica da Mulata",
-        "descricao": "Uma histórica nascente de água que abasteceu a região no passado e hoje representa um importante marco cultural e popular da cidade."
+        "descricao": "Uma histórica nascente de água que abasteceu a região no passado e hoje representa um importante marco cultural e popular da cidade.",
+        "lat": -22.76548,
+        "lon": -43.395554,
+        "_geo": "Bica da Mulata, Avenida Floripes da Rocha, Bom Pastor, Belford Roxo, Rio de Jane"
       },
       {
         "nome": "Igreja Nossa Senhora da Conceição",
@@ -212,7 +215,10 @@
       },
       {
         "nome": "Praça Eliaquim Batista",
-        "descricao": "Um dos principais espaços públicos do centro urbano, intensamente utilizado para caminhadas, feiras e eventos locais."
+        "descricao": "Um dos principais espaços públicos do centro urbano, intensamente utilizado para caminhadas, feiras e eventos locais.",
+        "lat": -22.763916,
+        "lon": -43.400609,
+        "_geo": "Praça Eliaquim Batista, Centro, Belford Roxo, Rio de Janeiro, Região Sudeste, Br"
       },
       {
         "nome": "Ruínas da Fazenda do Brejo",
@@ -604,7 +610,10 @@
     "destinos": [
       {
         "nome": "Museu Ciência e Vida",
-        "descricao": "Um espaço interativo e tecnológico dedicado à popularização da ciência e da astronomia no coração da Baixada Fluminense."
+        "descricao": "Um espaço interativo e tecnológico dedicado à popularização da ciência e da astronomia no coração da Baixada Fluminense.",
+        "lat": -22.789519,
+        "lon": -43.307242,
+        "_geo": "Museu Ciência e Vida, Rua Ailton da Costa, Vila Meriti, Centro, Duque de Caxias,"
       },
       {
         "nome": "Fazenda São Bento",
@@ -612,7 +621,10 @@
       },
       {
         "nome": "Teatro Raul Cortez",
-        "descricao": "Um moderno polo cultural projetado por Oscar Niemeyer, que oferece uma rica e acessível programação de artes cênicas à população."
+        "descricao": "Um moderno polo cultural projetado por Oscar Niemeyer, que oferece uma rica e acessível programação de artes cênicas à população.",
+        "lat": -22.788099,
+        "lon": -43.310364,
+        "_geo": "Teatro Municipal Raul Cortez, Avenida Doutor Plínio Casado, Vila Meriti, Centro,"
       },
       {
         "nome": "Parque Municipal do Taquara",
@@ -620,7 +632,10 @@
       },
       {
         "nome": "Igreja Nossa Senhora do Pilar",
-        "descricao": "Um templo barroco erguido no século XVIII que guarda a história do Caminho do Ouro Novo e do antigo porto da cidade."
+        "descricao": "Um templo barroco erguido no século XVIII que guarda a história do Caminho do Ouro Novo e do antigo porto da cidade.",
+        "lat": -22.705091,
+        "lon": -43.29533,
+        "_geo": "Igreja Católica Nossa Senhora do Pilar, Avenida Governador Leonel de Moura Brizo"
       }
     ]
   },
@@ -654,11 +669,17 @@
     "destinos": [
       {
         "nome": "Parque Nacional da Serra dos Órgãos (Sede Guapimirim)",
-        "descricao": "O acesso mais selvagem ao parque, famoso por suas trilhas imersivas e poços naturais de águas esverdeadas e cristalinas."
+        "descricao": "O acesso mais selvagem ao parque, famoso por suas trilhas imersivas e poços naturais de águas esverdeadas e cristalinas.",
+        "lat": -22.468785,
+        "lon": -43.030358,
+        "_geo": "Parque Nacional da Serra dos Órgãos, Guapimirim, Rio de Janeiro, Região Sudeste,"
       },
       {
         "nome": "Mirante do Soberbo",
-        "descricao": "Um mirante icônico na beira da estrada que oferece uma visão espetacular e inesquecível de toda a Baixada Fluminense e da baía de Guanabara."
+        "descricao": "Um mirante icônico na beira da estrada que oferece uma visão espetacular e inesquecível de toda a Baixada Fluminense e da baía de Guanabara.",
+        "lat": -22.462656,
+        "lon": -42.986996,
+        "_geo": "Mirante do Soberbo, Rodovia Santos Dumont, Guapimirim, Rio de Janeiro, Região Su"
       },
       {
         "nome": "Cachoeira do Poço do Padre",
@@ -708,11 +729,17 @@
       },
       {
         "nome": "Praça Marechal Floriano Peixoto",
-        "descricao": "O preservado coração do centro histórico, ladeado por imponentes palmeiras imperiais e casarios do período imperial."
+        "descricao": "O preservado coração do centro histórico, ladeado por imponentes palmeiras imperiais e casarios do período imperial.",
+        "lat": -22.74532,
+        "lon": -42.858963,
+        "_geo": "Praça Marechal Floriano Peixoto, Itaboraí, Rio de Janeiro, Região Sudeste, Brasi"
       },
       {
         "nome": "Igreja Matriz de São João Batista",
-        "descricao": "A grandiosa paróquia matriz que domina a paisagem central, abrigando quase três séculos da história da fundação da cidade."
+        "descricao": "A grandiosa paróquia matriz que domina a paisagem central, abrigando quase três séculos da história da fundação da cidade.",
+        "lat": -22.744717,
+        "lon": -42.858328,
+        "_geo": "Paróquia e Igreja Matriz de São João Batista, 15, Praça Marechal Floriano Peixot"
       },
       {
         "nome": "Parque Paleontológico de São José de Itaboraí",
@@ -854,7 +881,10 @@
     "destinos": [
       {
         "nome": "Pico da Coragem (Voo Livre)",
-        "descricao": "Uma imponente montanha que se consolidou como um dos melhores e mais desafiadores pontos da Baixada Fluminense para a prática de parapente e asa delta."
+        "descricao": "Uma imponente montanha que se consolidou como um dos melhores e mais desafiadores pontos da Baixada Fluminense para a prática de parapente e asa delta.",
+        "lat": -22.629427,
+        "lon": -43.648848,
+        "_geo": "Área de Proteção Ambiental do Pico da Coragem, Japeri, Rio de Janeiro, Região Su"
       },
       {
         "nome": "Estação Ferroviária de Japeri",
@@ -954,7 +984,10 @@
     "destinos": [
       {
         "nome": "Cachoeira Véu da Noiva",
-        "descricao": "Queda d'água de cerca de 110 metros, muito procurada para rapel."
+        "descricao": "Queda d'água de cerca de 110 metros, muito procurada para rapel.",
+        "lat": -22.572777,
+        "lon": -43.132449,
+        "_geo": "Cachoeira Veu da Noiva, Santo Aleixo, Magé, Rio de Janeiro, Região Sudeste, 2591"
       },
       {
         "nome": "Cachoeira do Monjolo",
@@ -1004,19 +1037,31 @@
     "destinos": [
       {
         "nome": "Praia de Itaipuaçu",
-        "descricao": "Praia de 15 km de extensão com areia branca e águas calmas."
+        "descricao": "Praia de 15 km de extensão com areia branca e águas calmas.",
+        "lat": -22.962355,
+        "lon": -42.994064,
+        "_geo": "Praia de Itaipuaçu, Itaipuaçú, Itaipuaçu, Maricá, Rio de Janeiro, Região Sudeste"
       },
       {
         "nome": "Praia de Ponta Negra",
-        "descricao": "Uma das praias mais visitadas, com ondas fortes e areia fina."
+        "descricao": "Uma das praias mais visitadas, com ondas fortes e areia fina.",
+        "lat": -22.939707,
+        "lon": -42.656121,
+        "_geo": "Praia de Jaconé, Jaconé, Ponta Negra, Maricá, Rio de Janeiro, Região Sudeste, Br"
       },
       {
         "nome": "Lagoa de Araçatiba",
-        "descricao": "Cartão-postal da cidade, com área de lazer e quiosques."
+        "descricao": "Cartão-postal da cidade, com área de lazer e quiosques.",
+        "lat": -22.938244,
+        "lon": -42.849672,
+        "_geo": "Lagoa de Maricá, Maricá, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Farol de Ponta Negra",
-        "descricao": "Farol histórico inaugurado em 1909, patrimônio turístico local."
+        "descricao": "Farol histórico inaugurado em 1909, patrimônio turístico local.",
+        "lat": -22.959389,
+        "lon": -42.693338,
+        "_geo": "Farol de Ponta Negra, Ponta Negra, Maricá, Rio de Janeiro, Região Sudeste, Brasi"
       },
       {
         "nome": "Igreja Matriz de Nossa Senhora do Amparo",
@@ -1058,11 +1103,17 @@
       },
       {
         "nome": "Praça Elizabeth Paixão",
-        "descricao": "Coração da cidade, palco de eventos culturais e shows ao ar livre."
+        "descricao": "Coração da cidade, palco de eventos culturais e shows ao ar livre.",
+        "lat": -22.782502,
+        "lon": -43.429739,
+        "_geo": "Praça Secretária Elizabeth Paixão, Centro, Mesquita, Rio de Janeiro, Região Sude"
       },
       {
         "nome": "Vila Olímpica de Mesquita",
-        "descricao": "Complexo esportivo público de entrada gratuita."
+        "descricao": "Complexo esportivo público de entrada gratuita.",
+        "lat": -22.794321,
+        "lon": -43.422301,
+        "_geo": "Vila Olímpica de Mesquita, Rua Taffarel, Conjunto Tetracampeão, Cosmorama, Vila "
       },
       {
         "nome": "Mural Revitalizart",
@@ -1070,7 +1121,10 @@
       },
       {
         "nome": "Cachoeira do Gericinó",
-        "descricao": "Queda d'água natural em meio a trilhas de Mata Atlântica."
+        "descricao": "Queda d'água natural em meio a trilhas de Mata Atlântica.",
+        "lat": -22.816969,
+        "lon": -43.463854,
+        "_geo": "Cachoeira do Gericinó, Mesquita, Rio de Janeiro, Região Sudeste, 26585-060, Bras"
       }
     ]
   },
@@ -1245,11 +1299,17 @@
     "destinos": [
       {
         "nome": "Parque Municipal de Nova Iguaçu",
-        "descricao": "Área verde com cachoeiras e trilhas na Serra do Tinguá."
+        "descricao": "Área verde com cachoeiras e trilhas na Serra do Tinguá.",
+        "lat": -22.67378,
+        "lon": -43.491287,
+        "_geo": "Parque Municipal das Paineiras, Adrianópolis, Nova Iguaçu, Rio de Janeiro, Regiã"
       },
       {
         "nome": "Reserva Biológica do Tinguá",
-        "descricao": "Unidade de conservação de Mata Atlântica preservada."
+        "descricao": "Unidade de conservação de Mata Atlântica preservada.",
+        "lat": -22.564382,
+        "lon": -43.44506,
+        "_geo": "Reserva Biológica do Tinguá, Petrópolis, Nova Iguaçu, Rio de Janeiro, Região Sud"
       },
       {
         "nome": "Catedral Diocesana de Nossa Senhora da Piedade",
@@ -1520,7 +1580,10 @@
     "destinos": [
       {
         "nome": "Horto Municipal de Queimados",
-        "descricao": "Uma importante e bem cuidada área verde da cidade voltada para a preservação ambiental, educação ecológica e o lazer ao ar livre das famílias."
+        "descricao": "Uma importante e bem cuidada área verde da cidade voltada para a preservação ambiental, educação ecológica e o lazer ao ar livre das famílias.",
+        "lat": -22.702058,
+        "lon": -43.572053,
+        "_geo": "Área de Proteção Ambiental Horto Municipal Luiz Gonzaga de Macedo, Jardim Scinti"
       },
       {
         "nome": "Estação de Queimados",
@@ -1532,11 +1595,17 @@
       },
       {
         "nome": "Praça dos Eucaliptos",
-        "descricao": "Um badalado espaço de convivência muito frequentado pelos moradores, palco constante de feiras, eventos culturais e encontros festivos."
+        "descricao": "Um badalado espaço de convivência muito frequentado pelos moradores, palco constante de feiras, eventos culturais e encontros festivos.",
+        "lat": -22.714556,
+        "lon": -43.558313,
+        "_geo": "Praça dos Eucaliptos, Serrinha, Centro, Queimados, Rio de Janeiro, Região Sudest"
       },
       {
         "nome": "Teatro Metodista",
-        "descricao": "Um notório e pulsante polo de cultura e artes no município, responsável por fomentar excelentes apresentações teatrais e musicais para a população."
+        "descricao": "Um notório e pulsante polo de cultura e artes no município, responsável por fomentar excelentes apresentações teatrais e musicais para a população.",
+        "lat": -22.725835,
+        "lon": -43.559689,
+        "_geo": "Teatro Metodista, Rua Nova, Serrinha, São Cristóvão, Queimados, Rio de Janeiro, "
       }
     ]
   },
@@ -1835,11 +1904,17 @@
       },
       {
         "nome": "Ilha de Itaoca",
-        "descricao": "Localizada nas águas calmas da Baía de Guanabara, atrai visitantes por sua rusticidade de vila de pescadores e vista privilegiada das cidades vizinhas."
+        "descricao": "Localizada nas águas calmas da Baía de Guanabara, atrai visitantes por sua rusticidade de vila de pescadores e vista privilegiada das cidades vizinhas.",
+        "lat": -22.777565,
+        "lon": -43.060046,
+        "_geo": "Rua Ilha das Gertrudes, Itaoca, São Gonçalo, Rio de Janeiro, Região Sudeste, 244"
       },
       {
         "nome": "Praia das Pedrinhas",
-        "descricao": "Um pitoresco reduto de pescadores à beira da baía que se transformou em um famoso point gastronômico boêmio para apreciar frutos do mar ao pôr do sol."
+        "descricao": "Um pitoresco reduto de pescadores à beira da baía que se transformou em um famoso point gastronômico boêmio para apreciar frutos do mar ao pôr do sol.",
+        "lat": -22.809857,
+        "lon": -43.071753,
+        "_geo": "Praia das Pedrinhas, Boa Vista, Neves, São Gonçalo, Rio de Janeiro, Região Sudes"
       },
       {
         "nome": "Relógio de Sol",
@@ -1881,11 +1956,17 @@
     "destinos": [
       {
         "nome": "Praça da Matriz",
-        "descricao": "O núcleo histórico, social e principal ponto de encontro ao ar livre da cidade, onde se concentram o comércio local pulsante e as tradicionais festas populares."
+        "descricao": "O núcleo histórico, social e principal ponto de encontro ao ar livre da cidade, onde se concentram o comércio local pulsante e as tradicionais festas populares.",
+        "lat": -22.802369,
+        "lon": -43.370735,
+        "_geo": "Praça da Matriz, Centro, São João de Meriti, Rio de Janeiro, Região Sudeste, Bra"
       },
       {
         "nome": "Igreja São João Batista",
-        "descricao": "Um templo católico centenário que testemunhou todo o crescimento urbano e permanece como o inabalável pilar da devoção no coração do município."
+        "descricao": "Um templo católico centenário que testemunhou todo o crescimento urbano e permanece como o inabalável pilar da devoção no coração do município.",
+        "lat": -22.799826,
+        "lon": -43.360677,
+        "_geo": "Segunda Igreja Batista em São João de Meriti, 8, Rua São Francisco de Assis, Jar"
       },
       {
         "nome": "Centro Cultural Meritiense",
@@ -1897,7 +1978,10 @@
       },
       {
         "nome": "Shopping Grande Rio",
-        "descricao": "O maior, mais completo e movimentado centro de compras e entretenimento da cidade, atraindo milhares de visitantes diariamente para suas lojas, praças de alimentação e cinemas."
+        "descricao": "O maior, mais completo e movimentado centro de compras e entretenimento da cidade, atraindo milhares de visitantes diariamente para suas lojas, praças de alimentação e cinemas.",
+        "lat": -22.797355,
+        "lon": -43.350778,
+        "_geo": "Shopping Grande Rio, 4200, Rodovia Presidente Dutra (Pista Lateral), Jardim José"
       }
     ]
   },
@@ -2056,7 +2140,10 @@
     "destinos": [
       {
         "nome": "Floresta Nacional Mário Xavier",
-        "descricao": "Uma importante unidade de conservação de Mata Atlântica de baixada que protege espécies ameaçadas, como a perereca-fluminense, e oferece trilhas sombreadas."
+        "descricao": "Uma importante unidade de conservação de Mata Atlântica de baixada que protege espécies ameaçadas, como a perereca-fluminense, e oferece trilhas sombreadas.",
+        "lat": -22.724299,
+        "lon": -43.706182,
+        "_geo": "Floresta Nacional Mário Xavier, Seropédica, Rio de Janeiro, Região Sudeste, Bras"
       },
       {
         "nome": "Prédio Histórico da UFRRJ",
@@ -2135,7 +2222,10 @@
       },
       {
         "nome": "Lagoa de Tanguá",
-        "descricao": "Um tranquilo, bonito e vital corpo d'água que serve como refúgio natural para aves locais e oferece um espaço relaxante para o descanso dos tanguaenses."
+        "descricao": "Um tranquilo, bonito e vital corpo d'água que serve como refúgio natural para aves locais e oferece um espaço relaxante para o descanso dos tanguaenses.",
+        "lat": -22.74798,
+        "lon": -42.697753,
+        "_geo": "Lagoa Verde (Tanguá), Tanguá, Rio de Janeiro, Região Sudeste, 24890-000, Brasil"
       },
       {
         "nome": "Cachoeira de Tanguá",

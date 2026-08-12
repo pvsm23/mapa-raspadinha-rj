@@ -3340,28 +3340,44 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   pointer-events: none;
 }
 
-#marcador-local-atual .marcador-anel {
-  fill: none;
-  stroke: #2BD576;
-  stroke-width: 2.5;
-  transform-origin: center;
+/* TAMANHO FIXO NA TELA, como os nomes e os pontos turísticos: os dois
+   círculos são desenhados com raio 1 e a escala desfaz o zoom. Antes o
+   raio era fixo em unidades do DESENHO, então de perto o marcador
+   virava um disco cobrindo meia cidade. O 3.5 é o zoom de referência,
+   o mesmo usado no resto do mapa. */
+#marcador-local-atual .marcador-anel,
+#marcador-local-atual .marcador-ponto {
   transform-box: fill-box;
-  animation: pulsar-marcador-local 1.8s ease-out infinite;
+  transform-origin: center;
 }
 
 #marcador-local-atual .marcador-ponto {
   fill: #1FA85C;
   stroke: #F2F5F7;
-  stroke-width: 1.5;
+  stroke-width: 0.34;
+  transform: scale(calc(4.4 * 3.5 / var(--zoom, 3.5)));
 }
 
+/* O anel pulsa, então a escala do zoom entra na própria animação --
+   duas regras de `transform` no mesmo elemento, uma sobrescreveria a
+   outra e o pulso venceria, devolvendo o disco gigante. */
+#marcador-local-atual .marcador-anel {
+  fill: none;
+  stroke: #2BD576;
+  stroke-width: 0.5;
+  animation: pulsar-marcador-local 1.8s ease-out infinite;
+}
+
+/* Os fatores multiplicam a MESMA base do ponto (4.4), pra o anel nascer
+   junto dele e terminar bem maior -- e a divisão pelo zoom vai junto,
+   senão o pulso ignoraria a aproximação. */
 @keyframes pulsar-marcador-local {
   0% {
-    transform: scale(0.6);
+    transform: scale(calc(3 * 3.5 / var(--zoom, 3.5)));
     opacity: 0.9;
   }
   100% {
-    transform: scale(2.6);
+    transform: scale(calc(13 * 3.5 / var(--zoom, 3.5)));
     opacity: 0;
   }
 }
