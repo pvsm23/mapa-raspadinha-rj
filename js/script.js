@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.12.79";
+const VERSAO_APP = "0.26.08.12.80";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.12.79";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.12.80", itens: ["Os pontos turísticos aparecem bem antes no mapa, a partir de um zoom bem menor.", "Quando vários pontos ficam colados no mesmo lugar, tocar neles abre uma lista para você escolher qual quer ver."] },
   { versao: "0.26.08.12.79", itens: ["Os pontos turísticos ganharam marcador no mapa em 75 dos 92 municípios — 173 lugares no total, cada um no ponto exato onde fica."] },
   { versao: "0.26.08.12.78", itens: ["Mais pontos turísticos ganharam marcador no mapa, incluindo os que ficam em lugares grandes como a Lagoa de Araruama."] },
   { versao: "0.26.08.12.77", itens: ["Todos os pontos turísticos da Região Metropolitana ganharam marcador no mapa, no lugar exato onde ficam.", "A numeração das versões mudou de formato: agora ela mostra a data da entrega."] },
@@ -868,6 +869,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // data/destinos.json chega.
   document.getElementById("mapa-rj")?.addEventListener("click", aoClicarPontoTuristico, true);
   document.getElementById("btn-fechar-ponto").addEventListener("click", fecharPontoTuristico);
+  document.getElementById("btn-fechar-escolha-ponto").addEventListener("click", fecharEscolhaDePonto);
+  document.getElementById("modal-escolha-ponto").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-escolha-ponto") fecharEscolhaDePonto();
+  });
   document.getElementById("btn-ponto-cidade").addEventListener("click", verCidadeDoPonto);
   document.getElementById("modal-ponto").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-ponto") return fecharPontoTuristico();
@@ -5976,8 +5981,8 @@ function selecionarResultadoBusca(item) {
  * ZOOM_DOS_PONTOS_CHEIO -- entram desbotando, em vez de piscar na tela
  * de uma vez. Entre os dois valores o CSS calcula a opacidade (ver
  * .ponto-turistico em css/styles.css). */
-const ZOOM_DOS_PONTOS = 17;
-const ZOOM_DOS_PONTOS_CHEIO = 20;
+const ZOOM_DOS_PONTOS = 7;
+const ZOOM_DOS_PONTOS_CHEIO = 13;
 
 /**
  * Converte latitude/longitude na posição dentro do desenho do mapa.
@@ -6106,12 +6111,110 @@ function renderizarPontosTuristicos() {
   return total;
 }
 
-/** Abre o painel de um ponto turístico a partir do medalhão no mapa. */
+/* Fator de escala dos marcadores, o MESMO do CSS (.ponto-turistico > *
+   em css/styles.css). Repetido aqui porque o JS precisa saber de quanto
+   é um marcador em unidades do desenho pra medir sobreposição -- mudar
+   um sem o outro faz o seletor abrir na hora errada. */
+const ESCALA_DOS_PONTOS = 7;
+// Raio do alvo de toque, igual ao usado ao desenhar.
+const RAIO_ALVO_PONTO = 1.6;
+
+/** Posição de um marcador, lida do transform. */
+function posicaoDoPonto(item) {
+  const m = item.getAttribute("transform").match(/translate\(([-\d.]+) ([-\d.]+)\)/);
+  return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
+}
+
+/**
+ * Todos os marcadores que, NO ZOOM ATUAL, estão colados no clicado --
+ * ele inclusive.
+ *
+ * A distância é medida em unidades do desenho, mas o limite acompanha o
+ * zoom: dois pontos a 200 metros um do outro se encavalam de longe e
+ * ficam bem separados de perto. Por isso o limite é o tamanho do
+ * marcador na tela convertido de volta pro desenho -- que é exatamente
+ * a conta que o CSS faz pra desenhá-lo.
+ */
+function pontosColadosEm(item) {
+  const svg = document.getElementById("mapa-rj");
+  const zoom = Number(svg.style.getPropertyValue("--zoom")) || 3.5;
+  const escala = (ESCALA_DOS_PONTOS * 3.5) / zoom;
+  // Dois alvos se tocam quando os centros estão a menos de 2 raios.
+  const limite = RAIO_ALVO_PONTO * escala * 2;
+
+  const base = posicaoDoPonto(item);
+  if (!base) return [item];
+
+  return [...svg.querySelectorAll(".ponto-turistico")].filter((outro) => {
+    const p = posicaoDoPonto(outro);
+    return p && Math.hypot(p.x - base.x, p.y - base.y) <= limite;
+  });
+}
+
+/**
+ * Clique num marcador. Se houver outros encavalados nele, abre a
+ * escolha em vez de adivinhar qual a pessoa quis.
+ *
+ * O dedo cobre bem mais que um marcador, e no zoom em que os pontos
+ * começam a aparecer vários caem quase no mesmo lugar. Abrir sempre o
+ * primeiro que o navegador entregasse deixaria pontos inalcançáveis --
+ * os que ficam por baixo nunca seriam abertos.
+ */
 function aoClicarPontoTuristico(evento) {
   const item = evento.target.closest(".ponto-turistico");
   if (!item) return;
   evento.stopPropagation();
+
+  const colados = pontosColadosEm(item);
+  if (colados.length > 1) {
+    abrirEscolhaDePonto(colados);
+    return;
+  }
   abrirPontoTuristico(item.dataset.municipio, Number(item.dataset.indice));
+}
+
+/** Lista os pontos encavalados pra pessoa escolher qual abrir. */
+function abrirEscolhaDePonto(itens) {
+  const lista = document.getElementById("escolha-ponto-lista");
+  lista.innerHTML = "";
+
+  document.getElementById("escolha-ponto-quantos").textContent =
+    `${itens.length} pontos turísticos aqui`;
+
+  for (const item of itens) {
+    const municipioId = item.dataset.municipio;
+    const indice = Number(item.dataset.indice);
+    const municipio = destinosPorMunicipio[municipioId];
+    const ponto = municipio?.destinos?.[indice];
+    if (!ponto) continue;
+
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "escolha-ponto-item";
+    // A mesma arte do mapa, ou o mesmo pino -- é assim que a pessoa
+    // liga o que está na lista com o que ela viu embaixo do dedo.
+    botao.innerHTML = `
+      <span class="escolha-ponto-arte">${
+        ponto.icone
+          ? `<img src="assets/img/pontos/${escaparHtml(ponto.icone)}" alt="">`
+          : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>`
+      }</span>
+      <span class="escolha-ponto-texto">
+        <strong>${escaparHtml(ponto.nome)}</strong>
+        <small>${escaparHtml(municipio.nome)}</small>
+      </span>`;
+    botao.addEventListener("click", () => {
+      fecharEscolhaDePonto();
+      abrirPontoTuristico(municipioId, indice);
+    });
+    lista.appendChild(botao);
+  }
+
+  document.getElementById("modal-escolha-ponto").classList.remove("oculto");
+}
+
+function fecharEscolhaDePonto() {
+  fecharComAnimacao(document.getElementById("modal-escolha-ponto"));
 }
 
 function abrirPontoTuristico(municipioId, indice) {

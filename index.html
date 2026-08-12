@@ -784,6 +784,21 @@
     </div>
   </div>
 
+  <!-- Escolha entre pontos encavalados: aparece quando o toque pega
+       mais de um marcador colado no mesmo lugar. -->
+  <div id="modal-escolha-ponto" class="sheet-overlay oculto">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="escolha-ponto-quantos">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="escolha-ponto-quantos"></h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-escolha-ponto" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <div id="escolha-ponto-lista"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Ponto turistico: abre ao tocar num medalhao do mapa (so aparecem
        bem de perto, ver ZOOM_DOS_PONTOS em js/script.js). Traz a mesma
        informacao que ja existe na aba da cidade, mais o atalho de volta

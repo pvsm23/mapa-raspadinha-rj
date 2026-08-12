@@ -9630,6 +9630,79 @@ button:disabled:active {
   display: none !important;
 }
 
+/* ---- Escolha entre pontos encavalados ---- */
+#escolha-ponto-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.escolha-ponto-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  background: var(--surf2);
+  color: var(--txt);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.escolha-ponto-item:active {
+  transform: scale(0.985);
+}
+
+/* Fundo próprio pra arte recortada não flutuar solta sobre o cartão --
+   mesmo papel que o degradê faz na capa do painel. */
+.escolha-ponto-arte {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
+  background: linear-gradient(160deg, var(--surf), var(--bg));
+  overflow: hidden;
+}
+
+.escolha-ponto-arte img {
+  width: 100%;
+  height: 100%;
+  padding: 3px;
+  box-sizing: border-box;
+  object-fit: contain;
+}
+
+.escolha-ponto-arte svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--verde);
+}
+
+.escolha-ponto-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.escolha-ponto-texto strong {
+  color: var(--txt);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.escolha-ponto-texto small {
+  color: var(--verde);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* ============================================================
    PONTO TURÍSTICO -- folha que abre ao tocar num ponto do mapa.
 
