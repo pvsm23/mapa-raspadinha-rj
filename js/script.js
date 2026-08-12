@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.45";
+const VERSAO_APP = "0.12.08.26.76";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -380,7 +380,39 @@ function renderizarNovidades() {
 }
 
 /** Compara "x.y.z": true se `a` for MAIOR que `b`. */
+/**
+ * Contagem de versões embutida no formato novo (0.dia.mes.ano.N).
+ * Devolve null pro formato antigo (0.11.45), de três partes.
+ */
+function contagemDaVersao(versao) {
+  const partes = String(versao).split(".");
+  if (partes.length < 5) return null;
+  const n = parseInt(partes[4], 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * `a` é mais nova que `b`?
+ *
+ * No formato novo quem manda é a CONTAGEM, o último número -- e não a
+ * data. Comparar os três primeiros campos, como era antes, quebraria em
+ * toda virada de mês: 0.31.08.26.80 (31 de agosto) pareceria mais nova
+ * que 0.01.09.26.81 (1º de setembro), porque 31 > 1. O aviso de
+ * "atualizar app" passaria a apontar pra uma versão velha.
+ *
+ * A contagem é estritamente crescente por construção (sobe de um a cada
+ * entrega, junto com o versionCode do Android), então é o único campo
+ * em que dá pra confiar pra ordenar.
+ *
+ * O caminho antigo continua aqui pela transição: quem tem 0.11.45
+ * instalado precisa reconhecer 0.12.08.26.76 como mais nova, e aí a
+ * comparação cai nos três primeiros campos (12 > 11) e acerta.
+ */
 function ehVersaoMaior(a, b) {
+  const ca = contagemDaVersao(a);
+  const cb = contagemDaVersao(b);
+  if (ca !== null && cb !== null) return ca > cb;
+
   const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
   const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
   for (let i = 0; i < 3; i++) {
@@ -6084,6 +6116,9 @@ function abrirPontoTuristico(municipioId, indice) {
     ponto.linkMaps || linkDoMaps(ponto.nome, municipio.nome);
   document.getElementById("btn-ponto-imagens").dataset.link = linkDeImagens(ponto.nome, municipio.nome);
 
+  // Volta pro topo: a folha é a MESMA a cada ponto, e sem isto o
+  // próximo abre na altura em que o anterior foi deixado.
+  document.getElementById("ponto-corpo").scrollTop = 0;
   document.getElementById("modal-ponto").classList.remove("oculto");
 }
 
