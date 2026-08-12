@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.42";
+const VERSAO_APP = "0.11.43";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -812,6 +812,18 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-compartilhar-brasao").addEventListener("click", compartilharBrasaoDoGrupo);
   document.getElementById("modal-brasao").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-brasao") fecharBrasaoDoGrupo();
+  });
+
+  // Pontos turísticos no mapa. O clique é ouvido no <svg> inteiro
+  // (delegação) porque os medalhões são criados depois, quando o
+  // data/destinos.json chega.
+  document.getElementById("mapa-rj")?.addEventListener("click", aoClicarPontoTuristico, true);
+  document.getElementById("btn-fechar-ponto").addEventListener("click", fecharPontoTuristico);
+  document.getElementById("btn-ponto-cidade").addEventListener("click", verCidadeDoPonto);
+  document.getElementById("modal-ponto").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-ponto") return fecharPontoTuristico();
+    const botao = evento.target.closest(".destino-btn-maps");
+    if (botao?.dataset.link) window.open(botao.dataset.link, "_blank");
   });
 
   // ---- Excluir conta ----
@@ -4266,6 +4278,9 @@ function carregarDestinos() {
     .then((resposta) => (resposta.ok ? resposta.json() : {}))
     .then((dados) => {
       destinosPorMunicipio = dados;
+      // Os medalhões só podem ser desenhados depois que os destinos
+      // chegam -- é daqui que saem as coordenadas.
+      renderizarPontosTuristicos();
     })
     .catch((erro) => {
       console.error("Não foi possível carregar data/destinos.json:", erro);
@@ -4691,6 +4706,8 @@ function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
   // Último degrau da espessura das divisas -- só CSS, não libera nome
   // nenhum.
   svg.classList.toggle("zoom-n4", escala >= ZOOM_TRACO_FINO);
+  // Pontos turísticos: só bem de perto (ver ZOOM_DOS_PONTOS).
+  svg.classList.toggle("mostrar-pontos", escala >= ZOOM_DOS_PONTOS);
 
   const novoModoRegioes = escala < limiarMunicipios;
   // Sempre sincroniza a classe (nao so quando muda) pra garantir que
@@ -5882,6 +5899,204 @@ function selecionarResultadoBusca(item) {
  * Escorrega"), e nesses casos dá pra colar no JSON o link exato do
  * lugar, que passa a mandar sobre o automático.
  */
+/* ============================================================
+   PONTOS TURÍSTICOS NO MAPA
+   ------------------------------------------------------------
+   Cada ponto com coordenada em data/destinos.json vira um medalhão
+   no mapa, no lugar exato onde ele fica. Só aparecem bem de perto
+   (ZOOM_DOS_PONTOS): de longe seriam 460 bolinhas em cima de um
+   estado inteiro, cobrindo o mapa que elas deveriam enfeitar.
+   ============================================================ */
+
+// A partir daqui os pontos turísticos aparecem. Alto de propósito: é
+// perto o bastante pra estar olhando UM município, não o estado.
+const ZOOM_DOS_PONTOS = 30;
+
+/**
+ * Converte latitude/longitude na posição dentro do desenho do mapa.
+ *
+ * Os números da projeção vêm nos atributos data-proj-* do próprio
+ * <svg>, escritos por tools/geojson-to-svg.js. Repetir as contas aqui
+ * com valores copiados à mão seria criar duas verdades: no dia em que
+ * a malha mudasse, o mapa iria pra um lado e os pontos pro outro.
+ *
+ * É a mesma projeção equiretangular do gerador, com a correção de
+ * cos(latitude média) -- sem ela o estado sai esticado na horizontal.
+ */
+function projetarCoordenada(lon, lat) {
+  const svg = document.getElementById("mapa-rj");
+  if (!svg) return null;
+  const minLon = parseFloat(svg.dataset.projLon);
+  const minLat = parseFloat(svg.dataset.projLat);
+  const cos = parseFloat(svg.dataset.projCos);
+  const escala = parseFloat(svg.dataset.projEscala);
+  const altura = parseFloat(svg.dataset.projAltura);
+  if ([minLon, minLat, cos, escala, altura].some(Number.isNaN)) return null;
+
+  return {
+    x: (lon - minLon) * cos * escala,
+    // Y invertido: latitude cresce pro norte, o SVG cresce pra baixo.
+    y: altura - (lat - minLat) * escala,
+  };
+}
+
+/**
+ * Desenha no mapa um medalhão por ponto turístico que tenha coordenada.
+ *
+ * A arte entra SOLTA, sem moldura: o fundo dela é transparente (ver
+ * tools/preparar-icones-pontos.js) e o desenho aparece recortado sobre
+ * o município, com o contorno preto que ele já tem fazendo a separação.
+ *
+ * Sem arte, o ponto vira um pino genérico. É de propósito: assim os 460
+ * pontos nascem no mapa de uma vez, e a arte própria entra aos poucos,
+ * como aconteceu com os selos -- em vez de a função ficar bonita em
+ * dois lugares e vazia em outros quatrocentos.
+ *
+ * Em cima de tudo vai um círculo transparente, que é o que o dedo
+ * acerta. Sem ele, a área clicável seria o desenho recortado: em arte
+ * fina (o Cristo tem braços de poucos pixels) acertar viraria loteria,
+ * e ainda mudaria de tamanho conforme o desenho.
+ */
+function renderizarPontosTuristicos() {
+  const svg = document.getElementById("mapa-rj");
+  if (!svg) return;
+  document.getElementById("pontos-turisticos")?.remove();
+
+  const ns = "http://www.w3.org/2000/svg";
+  const grupo = document.createElementNS(ns, "g");
+  grupo.id = "pontos-turisticos";
+
+  let total = 0;
+
+  for (const [municipioId, municipio] of Object.entries(destinosPorMunicipio)) {
+    (municipio.destinos || []).forEach((ponto, indice) => {
+      if (typeof ponto.lat !== "number" || typeof ponto.lon !== "number") return;
+      const pos = projetarCoordenada(ponto.lon, ponto.lat);
+      if (!pos) return;
+
+      const item = document.createElementNS(ns, "g");
+      item.setAttribute("class", "ponto-turistico");
+      item.setAttribute("transform", `translate(${pos.x} ${pos.y})`);
+      item.dataset.municipio = municipioId;
+      item.dataset.indice = String(indice);
+      // O <title> é o que aparece ao segurar o dedo/passar o mouse, e é
+      // o que um leitor de tela anuncia.
+      const titulo = document.createElementNS(ns, "title");
+      titulo.textContent = ponto.nome;
+      item.appendChild(titulo);
+
+      if (ponto.icone) {
+        // Quadrado de 2x2 centrado na coordenada. `preserveAspectRatio`
+        // no padrão (meet) faz a arte caber inteira dentro dele sem
+        // distorcer, seja ela mais alta ou mais larga.
+        const imagem = document.createElementNS(ns, "image");
+        imagem.setAttribute("class", "ponto-arte");
+        imagem.setAttribute("href", `assets/img/pontos/${ponto.icone}`);
+        imagem.setAttribute("x", "-1");
+        imagem.setAttribute("y", "-1");
+        imagem.setAttribute("width", "2");
+        imagem.setAttribute("height", "2");
+        item.appendChild(imagem);
+      } else {
+        const pino = document.createElementNS(ns, "path");
+        pino.setAttribute("class", "ponto-pino");
+        // Gota clássica de mapa, com a PONTA na origem: assim o que
+        // encosta na coordenada é a ponta do pino, não o meio dele.
+        pino.setAttribute(
+          "d",
+          "M0 0 C-0.62 -0.86 -1 -1.24 -1 -1.7 A1 1 0 0 1 1 -1.7 C1 -1.24 0.62 -0.86 0 0 Z"
+        );
+        item.appendChild(pino);
+        const miolo = document.createElementNS(ns, "circle");
+        miolo.setAttribute("class", "ponto-pino-miolo");
+        miolo.setAttribute("cy", "-1.7");
+        miolo.setAttribute("r", "0.36");
+        item.appendChild(miolo);
+      }
+
+      // Alvo do dedo: círculo invisível por cima, do mesmo tamanho pra
+      // todo ponto -- com ou sem arte, fina ou gorda.
+      const alvo = document.createElementNS(ns, "circle");
+      alvo.setAttribute("class", "ponto-alvo");
+      alvo.setAttribute("r", "1.15");
+      // No pino, o desenho sobe a partir da ponta: o alvo sobe junto,
+      // senão ficaria no chão embaixo dele.
+      if (!ponto.icone) alvo.setAttribute("cy", "-1.1");
+      item.appendChild(alvo);
+
+      grupo.appendChild(item);
+      total++;
+    });
+  }
+
+  if (total) svg.appendChild(grupo);
+  return total;
+}
+
+/** Abre o painel de um ponto turístico a partir do medalhão no mapa. */
+function aoClicarPontoTuristico(evento) {
+  const item = evento.target.closest(".ponto-turistico");
+  if (!item) return;
+  evento.stopPropagation();
+  abrirPontoTuristico(item.dataset.municipio, Number(item.dataset.indice));
+}
+
+function abrirPontoTuristico(municipioId, indice) {
+  const municipio = destinosPorMunicipio[municipioId];
+  const ponto = municipio?.destinos?.[indice];
+  if (!ponto) return;
+
+  pontoAbertoMunicipio = municipioId;
+
+  document.getElementById("ponto-titulo").textContent = ponto.nome;
+  document.getElementById("ponto-cidade").textContent = municipio.nome;
+  document.getElementById("ponto-descricao").textContent = ponto.descricao || "";
+  document.getElementById("ponto-texto").textContent =
+    ponto.textoCompleto || "Em breve: um pouco da história e curiosidades sobre este lugar.";
+
+  const arte = document.getElementById("ponto-arte");
+  arte.classList.toggle("oculto", !ponto.icone);
+  if (ponto.icone) arte.src = `assets/img/pontos/${ponto.icone}`;
+
+  document.getElementById("btn-ponto-maps").dataset.link =
+    ponto.linkMaps || linkDoMaps(ponto.nome, municipio.nome);
+  document.getElementById("btn-ponto-imagens").dataset.link = linkDeImagens(ponto.nome, municipio.nome);
+
+  document.getElementById("modal-ponto").classList.remove("oculto");
+}
+
+function fecharPontoTuristico() {
+  fecharComAnimacao(document.getElementById("modal-ponto"));
+}
+
+/* Município do ponto aberto -- o botão "Ver cidade" precisa saber pra
+   onde levar. */
+let pontoAbertoMunicipio = null;
+
+/** "Ver cidade": fecha o ponto e abre o selo do município dele. */
+function verCidadeDoPonto() {
+  const id = pontoAbertoMunicipio;
+  if (!id) return;
+  fecharPontoTuristico();
+  const nome = destinosPorMunicipio[id]?.nome;
+  exigirLogin(() => abrirSeloPorId(id, nome));
+}
+
+/**
+ * Busca de imagens do lugar no Google, pelo mesmo par nome + município.
+ *
+ * Existe porque foto EMBUTIDA não dá: a API de fotos do Google Places é
+ * cobrada e exigiria uma chave dentro de um app cliente de repositório
+ * público, e adivinhar a foto pela Wikipédia erra calado (uma "Igreja
+ * Matriz de São Sebastião" volta um quadro renascentista do santo).
+ * Abrir a busca troca "eu escolho uma foto e às vezes erro" por "a
+ * pessoa vê todas e escolhe com os olhos".
+ */
+function linkDeImagens(nomeDestino, nomeMunicipio) {
+  const busca = `${nomeDestino} ${nomeMunicipio} RJ`;
+  return `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(busca)}`;
+}
+
 function linkDoMaps(nomeDestino, nomeMunicipio) {
   // Parêntese vira espaço: "Ilha Grande (Vila do Abraão)" busca melhor
   // como "Ilha Grande Vila do Abraão" -- a pontuação atrapalha e o que
@@ -5913,9 +6128,14 @@ function mostrarDestinos(id) {
           </button>
           <div class="destino-detalhe oculto" data-indice="${indice}">
             <p class="destino-texto-completo">${escaparHtml(d.textoCompleto || "Em breve: um pouco da história e curiosidades sobre este lugar.")}</p>
-            <button type="button" class="destino-btn-maps" data-link="${escaparHtml(link)}">
-              Abrir no Maps ↗
-            </button>
+            <div class="destino-acoes">
+              <button type="button" class="destino-btn-maps" data-link="${escaparHtml(link)}">
+                Abrir no Maps ↗
+              </button>
+              <button type="button" class="destino-btn-maps destino-btn-imagens" data-link="${escaparHtml(linkDeImagens(d.nome, destino.nome))}">
+                Imagens ↗
+              </button>
+            </div>
           </div>
         </li>`;
     })

@@ -569,6 +569,21 @@ const rotulos = dadosRotulos
 
 const svg =
   `<svg id="mapa-rj" viewBox="0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}" ` +
+  // Os números da projeção viajam com o desenho.
+  //
+  // Eles são calculados aqui a partir da caixa que envolve os 92
+  // municípios, então SÓ existem aqui -- e sem eles o app não tem como
+  // transformar uma latitude/longitude em posição no mapa. É o que
+  // permite pôr um ponto turístico exatamente onde ele fica (ver
+  // projetarCoordenada em js/script.js).
+  //
+  // Vão como atributo, e não num JSON à parte, de propósito: se um dia
+  // a caixa mudar (município novo, malha nova), o desenho e os números
+  // são regerados no MESMO passo e não tem como um ficar velho em
+  // relação ao outro.
+  `data-proj-lon="${minLon}" data-proj-lat="${minLat}" ` +
+  `data-proj-cos="${correcaoLon}" data-proj-escala="${escala}" ` +
+  `data-proj-altura="${alturaSvg}" ` +
   `xmlns="http://www.w3.org/2000/svg">\n${paths}\n${rotulos}\n</svg>\n`;
 
 fs.mkdirSync(path.dirname(SAIDA), { recursive: true });

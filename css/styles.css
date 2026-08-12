@@ -202,6 +202,75 @@ svg#mapa-rj:not(.zoom-n3) .rotulo-municipio[data-nivel="3"] {
   display: none;
 }
 
+/* ---- Pontos turísticos no mapa ----
+
+   Escondidos por padrão: só aparecem a partir de ZOOM_DOS_PONTOS (30x,
+   ver js/script.js), que é quando se está olhando UM município. De
+   longe, 460 medalhões cobririam o mapa que deveriam enfeitar.
+
+   O tamanho é FIXO NA TELA, pelo mesmo truque dos nomes: o medalhão é
+   desenhado com raio 1 e a escala desfaz o zoom. Sem isso ele cresceria
+   junto com o mapa e viraria um disco gigante em cima da cidade. */
+.ponto-turistico {
+  display: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+svg#mapa-rj.mostrar-pontos .ponto-turistico {
+  display: block;
+}
+
+svg#mapa-rj .ponto-turistico > * {
+  /* O 5.7 é calibrado contra a ALTURA DOS NOMES, não contra pixels:
+     quantos pixels isso vira depende da tela, exatamente como acontece
+     com o texto do mapa. Assim o medalhão fica com pouco mais que o
+     dobro da altura de um nome de município em qualquer aparelho --
+     grande o bastante pro dedo, pequeno o bastante pra não tampar a
+     cidade. O 3.5 é o zoom de referência, o mesmo dos nomes. */
+  transform: scale(calc(5.7 * 3.5 / var(--zoom, 3.5)));
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* O pino tem a PONTA na coordenada, então ele não pode ser escalado a
+   partir do centro -- senão a ponta sai do lugar ao mudar o zoom. */
+svg#mapa-rj .ponto-turistico > .ponto-pino,
+svg#mapa-rj .ponto-turistico > .ponto-pino-miolo {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+/* A arte não recebe evento: quem responde ao toque é o .ponto-alvo,
+   por cima dela. Sem isto, acertar o Cristo exigiria mirar num braço
+   de poucos pixels. */
+.ponto-arte,
+.ponto-pino,
+.ponto-pino-miolo {
+  pointer-events: none;
+}
+
+.ponto-pino {
+  fill: var(--verde);
+  stroke: #FFFFFF;
+  stroke-width: 0.16;
+  stroke-linejoin: round;
+}
+
+.ponto-pino-miolo {
+  fill: #FFFFFF;
+}
+
+/* Invisível, mas clicável: `fill: transparent` continua recebendo
+   evento (`fill: none` NÃO receberia). */
+.ponto-alvo {
+  fill: transparent;
+}
+
+.ponto-turistico:active {
+  opacity: 0.65;
+}
+
 /* Modo regiões (mapa afastado): esconde as bordas de cada município
    (fica só o preenchimento contínuo por região) e mostra o contorno
    de cada região por cima (ver construirContornosDeRegiao em
@@ -9542,6 +9611,91 @@ button:disabled:active {
    quebrada com o texto alternativo ao lado. */
 .foto-indisponivel {
   display: none !important;
+}
+
+/* ---- Painel do ponto turístico (abre pelo medalhão no mapa) ---- */
+#modal-ponto {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--backdrop);
+}
+
+#ponto-conteudo {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 22px 20px 24px;
+  border-radius: 20px 20px 0 0;
+  background: var(--surf);
+  text-align: center;
+}
+
+#btn-fechar-ponto {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 9px;
+  border: none;
+  border-radius: 999px;
+  background: var(--surf2);
+  color: var(--txt);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+#ponto-arte {
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 2px solid var(--linha);
+  object-fit: cover;
+  margin-bottom: 12px;
+}
+
+#ponto-titulo {
+  margin: 0 0 2px;
+  color: var(--txt);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+#ponto-cidade {
+  margin: 0 0 14px;
+  color: var(--verde);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+#ponto-descricao {
+  margin: 0 0 10px;
+  color: var(--txt);
+  font-size: 0.92rem;
+}
+
+#ponto-texto {
+  margin: 0 0 18px;
+  color: var(--fraco);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  text-align: left;
+}
+
+#ponto-acoes,
+.destino-acoes {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+#ponto-acoes .destino-btn-maps,
+.destino-acoes .destino-btn-maps {
+  flex: 1;
 }
 
 /* ---- Grupos do Motoclube ---- */
