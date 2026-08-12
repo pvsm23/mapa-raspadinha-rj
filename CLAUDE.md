@@ -15,9 +15,21 @@ sem gateway de pagamento real) e verificação por GPS via Modo Viagem
 SP em expansão (mapa navegável, sem conteúdo ainda).
 
 Regras fixas:
-- Versão (`VERSAO_APP` em `js/script.js` + `versionCode`/`versionName`
-  em `android/app/build.gradle`): sobe só o último dígito por entrega;
-  1º/2º dígito só quando o Paulo pedir.
+- **Versão** (`VERSAO_APP` em `js/script.js` + `versionCode`/
+  `versionName` em `android/app/build.gradle`, sempre os três juntos):
+  formato **`0.dia.mês.ano.contagem`** desde 12/08/2026 — ex.
+  `0.12.08.26.76`. Dia/mês/ano com dois dígitos; o `0` da frente marca
+  que a versão oficial ainda não saiu. A **contagem é o `versionCode`**,
+  que sobe de 1 por entrega — ele já era o número de versões do app
+  desde antes de existir release, e reusá-lo evita um segundo contador
+  pra desencontrar do primeiro.
+  - Formato antigo (`0.11.45`, "sobe só o último dígito") valeu até a
+    v0.11.45 e ainda aparece nos releases publicados.
+  - `ehVersaoMaior` ordena pela **contagem**, não pela data: comparando
+    os três primeiros campos, `0.31.08.26.80` pareceria mais nova que
+    `0.01.09.26.81` e o aviso de "atualizar app" apontaria pra uma
+    versão velha a cada virada de mês. O caminho antigo (3 campos)
+    continua no arquivo só pra quem ainda tem `0.11.x` instalado.
 - Segredo do Plano PRO: nunca em arquivo do repo (só na regra do
   Firestore, à mão).
 - **Motoclube Desbrava**: PAGO desde a v0.11.24, **R$ 9,90/mês**. É o
