@@ -214,21 +214,22 @@ svg#mapa-rj:not(.zoom-n3) .rotulo-municipio[data-nivel="3"] {
 .ponto-turistico {
   display: none;
   cursor: pointer;
-  transition: opacity 0.2s ease;
 }
 
+/* Entram DESBOTANDO, em vez de piscar na tela de uma vez. Os dois
+   limites do desbote (ZOOM_DOS_PONTOS e ZOOM_DOS_PONTOS_CHEIO) vivem em
+   js/script.js, que escreve o resultado aqui já pronto. */
 svg#mapa-rj.mostrar-pontos .ponto-turistico {
   display: block;
+  opacity: var(--pontos-opacidade, 1);
 }
 
 svg#mapa-rj .ponto-turistico > * {
-  /* O 5.7 é calibrado contra a ALTURA DOS NOMES, não contra pixels:
+  /* O 7 é calibrado contra a ALTURA DOS NOMES, não contra pixels:
      quantos pixels isso vira depende da tela, exatamente como acontece
-     com o texto do mapa. Assim o medalhão fica com pouco mais que o
-     dobro da altura de um nome de município em qualquer aparelho --
-     grande o bastante pro dedo, pequeno o bastante pra não tampar a
-     cidade. O 3.5 é o zoom de referência, o mesmo dos nomes. */
-  transform: scale(calc(5.7 * 3.5 / var(--zoom, 3.5)));
+     com o texto do mapa. O 3.5 é o zoom de referência, o mesmo dos
+     nomes. */
+  transform: scale(calc(7 * 3.5 / var(--zoom, 3.5)));
   transform-box: fill-box;
   transform-origin: center;
 }

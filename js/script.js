@@ -29,7 +29,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
 // Versão do app, mostrada em Configurações → "Sobre". Regra combinada:
 // a cada atualização sobe só o ÚLTIMO número (0.9.0 → 0.9.1 → ...); o
 // segundo e o primeiro só mudam quando o Paulo pedir explicitamente.
-const VERSAO_APP = "0.11.43";
+const VERSAO_APP = "0.11.44";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -4706,8 +4706,14 @@ function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
   // Último degrau da espessura das divisas -- só CSS, não libera nome
   // nenhum.
   svg.classList.toggle("zoom-n4", escala >= ZOOM_TRACO_FINO);
-  // Pontos turísticos: só bem de perto (ver ZOOM_DOS_PONTOS).
+  /* Pontos turísticos: surgem desbotando entre ZOOM_DOS_PONTOS e
+     ZOOM_DOS_PONTOS_CHEIO. A conta fica AQUI, e não no CSS, pra os dois
+     limites existirem num lugar só -- escritos dos dois lados, bastava
+     mudar um pra a aparição descasar do que a classe libera. */
   svg.classList.toggle("mostrar-pontos", escala >= ZOOM_DOS_PONTOS);
+  const aparicao =
+    (escala - ZOOM_DOS_PONTOS) / (ZOOM_DOS_PONTOS_CHEIO - ZOOM_DOS_PONTOS);
+  svg.style.setProperty("--pontos-opacidade", Math.min(1, Math.max(0, aparicao)).toFixed(3));
 
   const novoModoRegioes = escala < limiarMunicipios;
   // Sempre sincroniza a classe (nao so quando muda) pra garantir que
@@ -5908,9 +5914,12 @@ function selecionarResultadoBusca(item) {
    estado inteiro, cobrindo o mapa que elas deveriam enfeitar.
    ============================================================ */
 
-// A partir daqui os pontos turísticos aparecem. Alto de propósito: é
-// perto o bastante pra estar olhando UM município, não o estado.
-const ZOOM_DOS_PONTOS = 30;
+/* Os pontos turísticos COMEÇAM a aparecer aqui e ficam inteiros em
+ * ZOOM_DOS_PONTOS_CHEIO -- entram desbotando, em vez de piscar na tela
+ * de uma vez. Entre os dois valores o CSS calcula a opacidade (ver
+ * .ponto-turistico em css/styles.css). */
+const ZOOM_DOS_PONTOS = 17;
+const ZOOM_DOS_PONTOS_CHEIO = 20;
 
 /**
  * Converte latitude/longitude na posição dentro do desenho do mapa.
@@ -5986,16 +5995,22 @@ function renderizarPontosTuristicos() {
       item.appendChild(titulo);
 
       if (ponto.icone) {
-        // Quadrado de 2x2 centrado na coordenada. `preserveAspectRatio`
-        // no padrão (meet) faz a arte caber inteira dentro dele sem
-        // distorcer, seja ela mais alta ou mais larga.
+        /* Quadrado centrado na coordenada. `preserveAspectRatio` no
+         * padrão (meet) faz a arte caber inteira dentro dele sem
+         * distorcer, seja ela mais alta ou mais larga.
+         *
+         * Maior que o pino de propósito. Com a mesma caixa, os dois
+         * MEDEM igual mas não PARECEM iguais: o pino é uma forma cheia
+         * e a arte é desenho de traço fino (o Cristo tem braços de
+         * poucos pixels), então some do lado dele. O 2.9 é o que faz os
+         * dois pesarem o mesmo na tela. */
         const imagem = document.createElementNS(ns, "image");
         imagem.setAttribute("class", "ponto-arte");
         imagem.setAttribute("href", `assets/img/pontos/${ponto.icone}`);
-        imagem.setAttribute("x", "-1");
-        imagem.setAttribute("y", "-1");
-        imagem.setAttribute("width", "2");
-        imagem.setAttribute("height", "2");
+        imagem.setAttribute("x", "-1.45");
+        imagem.setAttribute("y", "-1.45");
+        imagem.setAttribute("width", "2.9");
+        imagem.setAttribute("height", "2.9");
         item.appendChild(imagem);
       } else {
         const pino = document.createElementNS(ns, "path");
@@ -6018,7 +6033,7 @@ function renderizarPontosTuristicos() {
       // todo ponto -- com ou sem arte, fina ou gorda.
       const alvo = document.createElementNS(ns, "circle");
       alvo.setAttribute("class", "ponto-alvo");
-      alvo.setAttribute("r", "1.15");
+      alvo.setAttribute("r", "1.6");
       // No pino, o desenho sobe a partir da ponta: o alvo sobe junto,
       // senão ficaria no chão embaixo dele.
       if (!ponto.icone) alvo.setAttribute("cy", "-1.1");
