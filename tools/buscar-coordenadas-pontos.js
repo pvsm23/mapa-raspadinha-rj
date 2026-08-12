@@ -180,6 +180,68 @@ async function coordenadaDe(nomePonto, nomeMunicipio, aneis, aoConsultar) {
 (async () => {
   const destinos = JSON.parse(fs.readFileSync(DESTINOS, "utf8"));
   const regioes = JSON.parse(fs.readFileSync(REGIOES, "utf8"));
+
+  /* `--faltantes` não busca nada: só lista o que ficou sem coordenada,
+   * com um link de busca no Google Maps pronto pra abrir.
+   *
+   * Existe porque parte dos pontos NÃO tem como sair de busca
+   * automática -- nome genérico ("Praça da Matriz") ou lugar que
+   * simplesmente não está no OpenStreetMap. Esses precisam de olho
+   * humano, e o caminho é abrir no Maps, clicar com o botão direito e
+   * copiar a coordenada. A lista sai no formato que `--colar` lê de
+   * volta, pra não ter digitação no meio. */
+  if (process.argv.includes("--faltantes")) {
+    const linhas = [];
+    for (const [id, municipio] of Object.entries(destinos)) {
+      for (const ponto of municipio.destinos || []) {
+        if (typeof ponto.lat === "number") continue;
+        const busca = encodeURIComponent(`${ponto.nome}, ${municipio.nome} - RJ`);
+        linhas.push(
+          `${id} | ${municipio.nome} | ${ponto.nome}\n` +
+            `   https://www.google.com/maps/search/?api=1&query=${busca}\n` +
+            `   ${id} | ${ponto.nome} | LAT, LON`
+        );
+      }
+    }
+    console.log(`${linhas.length} pontos sem coordenada:\n`);
+    console.log(linhas.join("\n\n"));
+    return;
+  }
+
+  /* `--colar arquivo.txt` lê linhas "codigoIbge | nome do ponto | lat, lon"
+   * e grava no destinos.json. Confere o polígono do mesmo jeito que a
+   * busca automática -- coordenada copiada à mão também erra. */
+  const indiceColar = process.argv.indexOf("--colar");
+  if (indiceColar >= 0) {
+    const arquivo = process.argv[indiceColar + 1];
+    const limites = {};
+    for (const f of JSON.parse(fs.readFileSync(LIMITES, "utf8")).features) {
+      limites[f.properties.id] = f.geometry.coordinates;
+    }
+    let aplicados = 0;
+    for (const linha of fs.readFileSync(arquivo, "utf8").split(/\r?\n/)) {
+      const m = linha.match(/^\s*(\d{7})\s*\|\s*(.+?)\s*\|\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*$/);
+      if (!m) continue;
+      const [, id, nome, lat, lon] = m;
+      const ponto = (destinos[id]?.destinos || []).find((p) => p.nome === nome);
+      if (!ponto) {
+        console.error(`  ?    ${id} / ${nome}: não achei esse ponto`);
+        continue;
+      }
+      if (!dentroDoPoligono(Number(lon), Number(lat), limites[id] || [])) {
+        console.error(`  !!   ${destinos[id].nome} / ${nome}: a coordenada cai FORA do município -- não gravei`);
+        continue;
+      }
+      ponto.lat = Number(lat);
+      ponto.lon = Number(lon);
+      ponto._geo = "colado à mão";
+      aplicados++;
+      console.log(`  ok   ${destinos[id].nome} / ${nome}`);
+    }
+    fs.writeFileSync(DESTINOS, JSON.stringify(destinos, null, 2) + "\n");
+    console.log(`\n${aplicados} coordenadas gravadas.`);
+    return;
+  }
   const limites = {};
   for (const f of JSON.parse(fs.readFileSync(LIMITES, "utf8")).features) {
     limites[f.properties.id] = f.geometry.coordinates;

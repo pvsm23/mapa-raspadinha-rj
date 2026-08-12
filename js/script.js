@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.12.78";
+const VERSAO_APP = "0.26.08.12.79";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.12.78";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.12.79", itens: ["Os pontos turísticos ganharam marcador no mapa em 75 dos 92 municípios — 173 lugares no total, cada um no ponto exato onde fica."] },
   { versao: "0.26.08.12.78", itens: ["Mais pontos turísticos ganharam marcador no mapa, incluindo os que ficam em lugares grandes como a Lagoa de Araruama."] },
   { versao: "0.26.08.12.77", itens: ["Todos os pontos turísticos da Região Metropolitana ganharam marcador no mapa, no lugar exato onde ficam.", "A numeração das versões mudou de formato: agora ela mostra a data da entrega."] },
   { versao: "0.12.08.26.76", itens: ["Os botões de rota e fotos subiram para antes do texto de história, e o painel do ponto volta sempre ao topo ao abrir."] },

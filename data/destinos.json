@@ -4,7 +4,10 @@
     "destinos": [
       {
         "nome": "Ilha Grande (Vila do Abraão)",
-        "descricao": "Principal porta de entrada da ilha, esta vila charmosa concentra pousadas, restaurantes e o cais de onde partem os passeios de barco."
+        "descricao": "Principal porta de entrada da ilha, esta vila charmosa concentra pousadas, restaurantes e o cais de onde partem os passeios de barco.",
+        "lat": -23.108625,
+        "lon": -44.218412,
+        "_geo": "Saco do Céu, Abraão, Angra dos Reis, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Lagoa Azul",
@@ -20,7 +23,10 @@
       },
       {
         "nome": "Praia do Dentista",
-        "descricao": "Uma das praias mais badaladas da região, famosa por sua areia fina, mar calmo e pelos luxuosos iates ancorados em sua orla."
+        "descricao": "Uma das praias mais badaladas da região, famosa por sua areia fina, mar calmo e pelos luxuosos iates ancorados em sua orla.",
+        "lat": -23.063337,
+        "lon": -44.353554,
+        "_geo": "Praia do Dentista, Avenida Vereador Benedito Avelino, Condomínio Refúgio do Cors"
       }
     ]
   },
@@ -92,7 +98,10 @@
       },
       {
         "nome": "Estação Ferroviária de Areal",
-        "descricao": "Um prédio histórico restaurado que hoje serve como um centro cultural e relembra a passagem do trem pela região serrana."
+        "descricao": "Um prédio histórico restaurado que hoje serve como um centro cultural e relembra a passagem do trem pela região serrana.",
+        "lat": -22.232626,
+        "lon": -43.101043,
+        "_geo": "Cine+ Areal, 197, Rua Nicanor Garcia da Rosa, Areal, Rio de Janeiro, Região Sude"
       },
       {
         "nome": "Praça Duque de Caxias",
@@ -113,7 +122,10 @@
     "destinos": [
       {
         "nome": "Rua das Pedras",
-        "descricao": "Uma rua charmosa de paralelepípedos repleta de boutiques de grife, restaurantes sofisticados e agitada vida noturna."
+        "descricao": "Uma rua charmosa de paralelepípedos repleta de boutiques de grife, restaurantes sofisticados e agitada vida noturna.",
+        "lat": -22.755335,
+        "lon": -41.887442,
+        "_geo": "Rua das Pedras, Altos da Brava, Centro, Armação dos Búzios, Rio de Janeiro, Regi"
       },
       {
         "nome": "Orla Bardot",
@@ -121,15 +133,24 @@
       },
       {
         "nome": "Praia de Geribá",
-        "descricao": "Uma extensa praia de mar aberto e ondas fortes, sendo o principal ponto de encontro dos surfistas e do público jovem."
+        "descricao": "Uma extensa praia de mar aberto e ondas fortes, sendo o principal ponto de encontro dos surfistas e do público jovem.",
+        "lat": -22.780361,
+        "lon": -41.913629,
+        "_geo": "Praia de Geribá, Geribá, Armação dos Búzios, Rio de Janeiro, Região Sudeste, Bra"
       },
       {
         "nome": "Praia da Ferradura",
-        "descricao": "Uma baía em formato de ferradura que oferece águas calmas e rasas, ideal para famílias com crianças e passeios de caiaque."
+        "descricao": "Uma baía em formato de ferradura que oferece águas calmas e rasas, ideal para famílias com crianças e passeios de caiaque.",
+        "lat": -22.77165,
+        "lon": -41.889046,
+        "_geo": "Praia da Ferradura, Ferradura, Armação dos Búzios, Rio de Janeiro, Região Sudest"
       },
       {
         "nome": "Praia João Fernandes",
-        "descricao": "Uma praia de águas cristalinas com excelente infraestrutura de quiosques, muito procurada por turistas que desejam conforto à beira-mar."
+        "descricao": "Uma praia de águas cristalinas com excelente infraestrutura de quiosques, muito procurada por turistas que desejam conforto à beira-mar.",
+        "lat": -22.741763,
+        "lon": -41.874454,
+        "_geo": "Praia João Fernandes, João Fernandes, Brava, Armação dos Búzios, Rio de Janeiro,"
       }
     ]
   },
@@ -138,7 +159,10 @@
     "destinos": [
       {
         "nome": "Praia do Farol",
-        "descricao": "Considerada uma das praias mais perfeitas do Brasil, é acessível apenas por barco e possui areias branquíssimas sob proteção da Marinha."
+        "descricao": "Considerada uma das praias mais perfeitas do Brasil, é acessível apenas por barco e possui areias branquíssimas sob proteção da Marinha.",
+        "lat": -23.001453,
+        "lon": -42.003808,
+        "_geo": "Praia do Farol, Arraial do Cabo, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Prainhas do Pontal do Atalaia",
@@ -146,7 +170,10 @@
       },
       {
         "nome": "Praia do Forno",
-        "descricao": "Acessível por uma trilha ou barco, é uma enseada cercada por mata atlântica com águas mornas, sendo excelente para a prática de mergulho."
+        "descricao": "Acessível por uma trilha ou barco, é uma enseada cercada por mata atlântica com águas mornas, sendo excelente para a prática de mergulho.",
+        "lat": -22.966123,
+        "lon": -42.015394,
+        "_geo": "Praia do Forno, Arraial do Cabo, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Mirante do Pontal",
@@ -154,7 +181,10 @@
       },
       {
         "nome": "Gruta Azul",
-        "descricao": "Uma formação rochosa esculpida pelas ondas cujas paredes internas refletem tons deslumbrantes de azul sob a luz do sol."
+        "descricao": "Uma formação rochosa esculpida pelas ondas cujas paredes internas refletem tons deslumbrantes de azul sob a luz do sol.",
+        "lat": -23.002117,
+        "lon": -42.010869,
+        "_geo": "Gruta Azul, Rua das Prainhas, Arraial do Cabo, Rio de Janeiro, Região Sudeste, 2"
       }
     ]
   },
@@ -188,7 +218,10 @@
     "destinos": [
       {
         "nome": "Fazenda da Posse",
-        "descricao": "A primeira construção da cidade, uma antiga propriedade rural restaurada que hoje funciona como um vibrante centro cultural."
+        "descricao": "A primeira construção da cidade, uma antiga propriedade rural restaurada que hoje funciona como um vibrante centro cultural.",
+        "lat": -22.547466,
+        "lon": -44.157256,
+        "_geo": "Centro Cultural Fazenda da Posse, Rua Ver. Alan Carlos Rocha, Barbará, Barra Man"
       },
       {
         "nome": "Palácio Barão de Guapy",
@@ -196,11 +229,17 @@
       },
       {
         "nome": "Parque Centenário (Jardim das Preguiças)",
-        "descricao": "Uma área verde no centro da cidade, famosa por abrigar diversos bichos-preguiça soltos nas copas de suas grandes árvores."
+        "descricao": "Uma área verde no centro da cidade, famosa por abrigar diversos bichos-preguiça soltos nas copas de suas grandes árvores.",
+        "lat": -22.543419,
+        "lon": -44.172056,
+        "_geo": "Parque Centenário (Jardim da Preguiça), Centro, Barra Mansa, Rio de Janeiro, Reg"
       },
       {
         "nome": "Igreja Matriz de São Sebastião",
-        "descricao": "Um templo religioso imponente e de grande importância histórica e afetiva para a comunidade católica local."
+        "descricao": "Um templo religioso imponente e de grande importância histórica e afetiva para a comunidade católica local.",
+        "lat": -22.545995,
+        "lon": -44.171166,
+        "_geo": "Igreja Matriz, Rua São Sebastião, Centro, Barra Mansa, Rio de Janeiro, Região Su"
       },
       {
         "nome": "Ponte dos Arcos",
@@ -269,7 +308,10 @@
     "destinos": [
       {
         "nome": "Usina Hidrelétrica Rosal",
-        "descricao": "Uma represa no rio Itabapoana que, além de gerar energia, forma um belo lago cercado pela natureza da divisa entre Rio de Janeiro e Espírito Santo."
+        "descricao": "Uma represa no rio Itabapoana que, além de gerar energia, forma um belo lago cercado pela natureza da divisa entre Rio de Janeiro e Espírito Santo.",
+        "lat": -20.917187,
+        "lon": -41.722068,
+        "_geo": "Usina Hidrelétrica Rosal, Rosal, Bom Jesus do Itabapoana, Rio de Janeiro, Região"
       },
       {
         "nome": "Cachoeira da Fumaça",
@@ -277,7 +319,10 @@
       },
       {
         "nome": "Praça Governador Portela",
-        "descricao": "O principal ponto de encontro no centro da cidade, repleto de árvores e bancos onde a comunidade se reúne diariamente."
+        "descricao": "O principal ponto de encontro no centro da cidade, repleto de árvores e bancos onde a comunidade se reúne diariamente.",
+        "lat": -21.135217,
+        "lon": -41.679841,
+        "_geo": "Praça Governador Portela, Centro, Bom Jesus do Itabapoana, Rio de Janeiro, Regiã"
       },
       {
         "nome": "Igreja Matriz Senhor Bom Jesus",
@@ -294,11 +339,17 @@
     "destinos": [
       {
         "nome": "Praia do Forte",
-        "descricao": "A praia mais famosa da cidade, conhecida por suas areias extremamente brancas e finas, águas cristalinas e excelente infraestrutura turística."
+        "descricao": "A praia mais famosa da cidade, conhecida por suas areias extremamente brancas e finas, águas cristalinas e excelente infraestrutura turística.",
+        "lat": -22.886567,
+        "lon": -42.018183,
+        "_geo": "Praia do Forte, Passagem, Centro, Cabo Frio, Rio de Janeiro, Região Sudeste, Bra"
       },
       {
         "nome": "Ilha do Japonês",
-        "descricao": "Um pequeno paraíso ecológico de águas rasas e calmas, ideal para famílias com crianças e praticantes de stand-up paddle."
+        "descricao": "Um pequeno paraíso ecológico de águas rasas e calmas, ideal para famílias com crianças e praticantes de stand-up paddle.",
+        "lat": -22.881399,
+        "lon": -42.004919,
+        "_geo": "Ilha do Japonês, Passagem, Centro, Cabo Frio, Rio de Janeiro, Região Sudeste, Br"
       },
       {
         "nome": "Bairro da Passagem",
@@ -310,7 +361,10 @@
       },
       {
         "nome": "Praça das Águas",
-        "descricao": "Um espaço de lazer no calçadão da Praia do Forte com um grande chafariz iluminado e um espelho d'água que encanta moradores e turistas."
+        "descricao": "Um espaço de lazer no calçadão da Praia do Forte com um grande chafariz iluminado e um espelho d'água que encanta moradores e turistas.",
+        "lat": -22.885052,
+        "lon": -42.017501,
+        "_geo": "Praça das águas, Passagem, Centro, Cabo Frio, Rio de Janeiro, Região Sudeste, Br"
       }
     ]
   },
@@ -335,7 +389,10 @@
       },
       {
         "nome": "Cachoeira Sete Quedas",
-        "descricao": "Um belíssimo circuito contínuo de quedas d'água que formam diversos poços naturais perfeitos para quem busca ecoturismo e aventura."
+        "descricao": "Um belíssimo circuito contínuo de quedas d'água que formam diversos poços naturais perfeitos para quem busca ecoturismo e aventura.",
+        "lat": -22.406721,
+        "lon": -42.627914,
+        "_geo": "Cachoeira Sete Quedas, Cachoeiras de Macacu, Rio de Janeiro, Região Sudeste, 286"
       }
     ]
   },
@@ -360,7 +417,10 @@
       },
       {
         "nome": "Praça da Bandeira",
-        "descricao": "O coração urbano e comercial do município, um espaço arborizado onde a vida social da pacata cidade do interior fluminense acontece."
+        "descricao": "O coração urbano e comercial do município, um espaço arborizado onde a vida social da pacata cidade do interior fluminense acontece.",
+        "lat": -21.576348,
+        "lon": -41.914162,
+        "_geo": "Praça da Bandeira, Cambuci, Rio de Janeiro, Região Sudeste, 28430-000, Brasil"
       }
     ]
   },
@@ -369,15 +429,24 @@
     "destinos": [
       {
         "nome": "Parque Nacional da Restinga de Jurubatiba",
-        "descricao": "Uma vasta área preservada que abriga um dos mais importantes ecossistemas de restinga do país, rica em lagoas e biodiversidade endêmica."
+        "descricao": "Uma vasta área preservada que abriga um dos mais importantes ecossistemas de restinga do país, rica em lagoas e biodiversidade endêmica.",
+        "lat": -22.220029,
+        "lon": -41.552283,
+        "_geo": "Parque Nacional da Restinga de Jurubatiba, Carapebus, Macaé, Rio de Janeiro, Reg"
       },
       {
         "nome": "Praia de Carapebus",
-        "descricao": "Uma extensa faixa de areia rústica e deserta, muito procurada por quem deseja tranquilidade absoluta e contato com a natureza intocada."
+        "descricao": "Uma extensa faixa de areia rústica e deserta, muito procurada por quem deseja tranquilidade absoluta e contato com a natureza intocada.",
+        "lat": -22.25168,
+        "lon": -41.587626,
+        "_geo": "Praia de Carapebus, Carapebus, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Lagoa de Carapebus",
-        "descricao": "Uma lagoa costeira de águas escuras, tingida pela vegetação típica da restinga, excelente para banhos relaxantes e esportes náuticos sem motor."
+        "descricao": "Uma lagoa costeira de águas escuras, tingida pela vegetação típica da restinga, excelente para banhos relaxantes e esportes náuticos sem motor.",
+        "lat": -22.219903,
+        "lon": -41.622314,
+        "_geo": "Lagoa de Carapebus, Carapebus, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Antiga Estação Ferroviária",
@@ -398,7 +467,10 @@
       },
       {
         "nome": "Museu Rodoviário",
-        "descricao": "Único do gênero no Brasil, este museu preserva a história da evolução dos transportes, dos veículos pesados e da abertura das estradas no país."
+        "descricao": "Único do gênero no Brasil, este museu preserva a história da evolução dos transportes, dos veículos pesados e da abertura das estradas no país.",
+        "lat": -22.017322,
+        "lon": -43.310257,
+        "_geo": "Museu Rodoviário, 173, Praça João Werneck, Mont Serrat, Afonso Arinos, Comendado"
       },
       {
         "nome": "Encontro dos Rios Paraíba do Sul e Paraibuna",
@@ -419,19 +491,31 @@
     "destinos": [
       {
         "nome": "Museu Histórico de Campos",
-        "descricao": "Um acervo rico sediado no belo Solar do Visconde de Araruama que narra a importante história açucareira e coronelista da planície goytacá."
+        "descricao": "Um acervo rico sediado no belo Solar do Visconde de Araruama que narra a importante história açucareira e coronelista da planície goytacá.",
+        "lat": -21.755933,
+        "lon": -41.324024,
+        "_geo": "Museu Histórico de Campos, 40, Rua Barão de Amazonas, Centro Histórico, Centro, "
       },
       {
         "nome": "Farol de São Tomé",
-        "descricao": "Localizado na praia homônima, esta estrutura metálica projetada pelo engenheiro francês Gustave Eiffel no século XIX é um ícone da navegação local."
+        "descricao": "Localizado na praia homônima, esta estrutura metálica projetada pelo engenheiro francês Gustave Eiffel no século XIX é um ícone da navegação local.",
+        "lat": -22.042243,
+        "lon": -41.053063,
+        "_geo": "18340, Avenida Serafim Saldanha, Farol de São Tomé, Santo Amaro de Campos, Campo"
       },
       {
         "nome": "Catedral do Santíssimo Salvador",
-        "descricao": "Uma igreja imponente de arquitetura neoclássica que domina o centro da cidade e é o maior símbolo da tradição e fé campista."
+        "descricao": "Uma igreja imponente de arquitetura neoclássica que domina o centro da cidade e é o maior símbolo da tradição e fé campista.",
+        "lat": -21.756937,
+        "lon": -41.323803,
+        "_geo": "Catedral do Santíssimo Salvador (Basílica Menor), Praça São Salvador, Centro His"
       },
       {
         "nome": "Palácio Nilo Peçanha",
-        "descricao": "Antiga sede da prefeitura e da câmara municipal, este edifício histórico de bela arquitetura eclética fica bem no coração financeiro da cidade."
+        "descricao": "Antiga sede da prefeitura e da câmara municipal, este edifício histórico de bela arquitetura eclética fica bem no coração financeiro da cidade.",
+        "lat": -21.751793,
+        "lon": -41.332648,
+        "_geo": "Palácio Nilo Peçanha, 334, Avenida Alberto Torres, Centro, Campos dos Goytacazes"
       },
       {
         "nome": "Casa de Cultura Villa Maria",
@@ -448,7 +532,10 @@
       },
       {
         "nome": "Santuário do Santíssimo Sacramento",
-        "descricao": "Um templo imponente que guarda relíquias e belos altares esculpidos, sendo o majestoso epicentro da vida religiosa local."
+        "descricao": "Um templo imponente que guarda relíquias e belos altares esculpidos, sendo o majestoso epicentro da vida religiosa local.",
+        "lat": -21.982235,
+        "lon": -42.368099,
+        "_geo": "Santuário do Santíssimo Sacramento, Avenida Barão do Cantagalo, Cantagalo, Rio d"
       },
       {
         "nome": "Casa de Euclides da Cunha",
@@ -477,11 +564,17 @@
       },
       {
         "nome": "Igreja Matriz São José",
-        "descricao": "Um templo de arquitetura clássica e linhas simples que fica bem no centro da cidade, servindo como o grande pilar da fé católica local."
+        "descricao": "Um templo de arquitetura clássica e linhas simples que fica bem no centro da cidade, servindo como o grande pilar da fé católica local.",
+        "lat": -21.488466,
+        "lon": -41.616093,
+        "_geo": "Igreja Matriz de São José, Rua Coronel Salgueiro, Cardoso Moreira, Rio de Janeir"
       },
       {
         "nome": "Praça Ibrahim Assed",
-        "descricao": "O principal ponto de encontro urbano de Cardoso Moreira, rodeado pelo comércio local e essencial para o convívio e eventos da comunidade."
+        "descricao": "O principal ponto de encontro urbano de Cardoso Moreira, rodeado pelo comércio local e essencial para o convívio e eventos da comunidade.",
+        "lat": -21.488481,
+        "lon": -41.617705,
+        "_geo": "Praça Ibrahim Assed, Cardoso Moreira, Rio de Janeiro, Região Sudeste, 28180-000,"
       },
       {
         "nome": "Ponte de Ferro",
@@ -519,7 +612,10 @@
     "destinos": [
       {
         "nome": "Museu Casimiro de Abreu",
-        "descricao": "A casa original onde nasceu o ilustre poeta romântico, preservando móveis, documentos e objetos que mantêm viva a história de sua vida e obra."
+        "descricao": "A casa original onde nasceu o ilustre poeta romântico, preservando móveis, documentos e objetos que mantêm viva a história de sua vida e obra.",
+        "lat": -22.589745,
+        "lon": -41.993903,
+        "_geo": "Museu Casimiro de Abreu, Rua Bernardo Gomes, Recanto dos Meros, Barra de São Joã"
       },
       {
         "nome": "Distrito de Barra de São João",
@@ -531,11 +627,17 @@
       },
       {
         "nome": "Praça As Primaveras",
-        "descricao": "Uma praça aconchegante cujo nome faz alusão ao famoso livro do poeta local, sendo um ótimo espaço de lazer familiar no centro comercial."
+        "descricao": "Uma praça aconchegante cujo nome faz alusão ao famoso livro do poeta local, sendo um ótimo espaço de lazer familiar no centro comercial.",
+        "lat": -22.589925,
+        "lon": -41.993202,
+        "_geo": "Praça As Primaveras, Recanto dos Meros, Barra de São João, Casimiro de Abreu, Ri"
       },
       {
         "nome": "Morro São João",
-        "descricao": "Uma curiosa elevação isolada de origem vulcânica que se destaca na paisagem plana costeira, oferecendo trilhas e uma vista panorâmica incrível do litoral."
+        "descricao": "Uma curiosa elevação isolada de origem vulcânica que se destaca na paisagem plana costeira, oferecendo trilhas e uma vista panorâmica incrível do litoral.",
+        "lat": -22.536033,
+        "lon": -42.036036,
+        "_geo": "Morro São João, Casimiro de Abreu, Rio de Janeiro, Região Sudeste, 28891-100, Br"
       }
     ]
   },
@@ -569,7 +671,10 @@
     "destinos": [
       {
         "nome": "Parque de Exposições Raul Veiga",
-        "descricao": "Um dos mais tradicionais parques do estado, famoso nacionalmente por sediar a grandiosa Exposição Agropecuária de Cordeiro desde 1921."
+        "descricao": "Um dos mais tradicionais parques do estado, famoso nacionalmente por sediar a grandiosa Exposição Agropecuária de Cordeiro desde 1921.",
+        "lat": -22.023374,
+        "lon": -42.36224,
+        "_geo": "Parque de Exposições Raul Veiga, Rua Professor Otalo Milano Lopes, Cordeiro, Rio"
       },
       {
         "nome": "Igreja Matriz de Nossa Senhora da Piedade",
@@ -598,7 +703,10 @@
       },
       {
         "nome": "Praça Governador Portela",
-        "descricao": "O bucólico coração da cidade, um espaço perfeitamente ajardinado que reflete a tranquilidade típica de um destino serrano."
+        "descricao": "O bucólico coração da cidade, um espaço perfeitamente ajardinado que reflete a tranquilidade típica de um destino serrano.",
+        "lat": -22.051761,
+        "lon": -42.520733,
+        "_geo": "Praça Governador Portela, Duas Barras, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Igreja Matriz Nossa Senhora da Conceição",
@@ -657,7 +765,10 @@
       },
       {
         "nome": "Lago Azul",
-        "descricao": "Um sereno espelho d'água de grande beleza cênica, totalmente cercado pelo frescor e pela densa vegetação da Mata Atlântica."
+        "descricao": "Um sereno espelho d'água de grande beleza cênica, totalmente cercado pelo frescor e pela densa vegetação da Mata Atlântica.",
+        "lat": -22.543213,
+        "lon": -43.666612,
+        "_geo": "Estrada do Lago Azul, Engenheiro Paulo de Frontin, Rio de Janeiro, Região Sudest"
       },
       {
         "nome": "Represa do Sacra Família",
@@ -774,7 +885,10 @@
     "destinos": [
       {
         "nome": "Porto de Itaguaí",
-        "descricao": "Um colossal complexo portuário marítimo que movimenta a economia nacional e impressiona pela sua magnitude logística e de engenharia."
+        "descricao": "Um colossal complexo portuário marítimo que movimenta a economia nacional e impressiona pela sua magnitude logística e de engenharia.",
+        "lat": -22.837553,
+        "lon": -43.801591,
+        "_geo": "Rua Ailton Mateus Porto, Teixeira, Itaguaí, Rio de Janeiro, Região Sudeste, 2381"
       },
       {
         "nome": "Ilha de Itacuruçá",
@@ -849,7 +963,10 @@
     "destinos": [
       {
         "nome": "Cristo Redentor de Itaperuna",
-        "descricao": "Um grandioso monumento no alto do morro que abençoa a cidade e oferece uma das vistas panorâmicas mais espetaculares de todo o vale do rio Muriaé."
+        "descricao": "Um grandioso monumento no alto do morro que abençoa a cidade e oferece uma das vistas panorâmicas mais espetaculares de todo o vale do rio Muriaé.",
+        "lat": -21.201092,
+        "lon": -41.881901,
+        "_geo": "Monumento ao Cristo Redentor, Rua Orlando Raelli, Centro, Itaperuna, Rio de Jane"
       },
       {
         "nome": "Igreja Matriz São José do Avaí",
@@ -857,7 +974,10 @@
       },
       {
         "nome": "Praça Nilo Peçanha",
-        "descricao": "O vibrante, arborizado e movimentado centro nervoso do comércio itaperunense, ponto de encontro tradicional e diário de todas as gerações."
+        "descricao": "O vibrante, arborizado e movimentado centro nervoso do comércio itaperunense, ponto de encontro tradicional e diário de todas as gerações.",
+        "lat": -21.206954,
+        "lon": -41.8893,
+        "_geo": "Praça Nilo Peçanha, Centro, Itaperuna, Rio de Janeiro, Região Sudeste, 28300-000"
       },
       {
         "nome": "Feira Livre",
@@ -874,7 +994,10 @@
     "destinos": [
       {
         "nome": "Parque Nacional do Itatiaia",
-        "descricao": "O parque nacional mais antigo do Brasil, famoso por sua riquíssima biodiversidade, clima de montanha e trilhas que atraem ecoturistas do mundo todo."
+        "descricao": "O parque nacional mais antigo do Brasil, famoso por sua riquíssima biodiversidade, clima de montanha e trilhas que atraem ecoturistas do mundo todo.",
+        "lat": -22.33373,
+        "lon": -44.578441,
+        "_geo": "Parque Nacional do Itatiaia, Vale das Cruzes, Maromba, Itatiaia, Rio de Janeiro,"
       },
       {
         "nome": "Pico das Agulhas Negras",
@@ -882,11 +1005,17 @@
       },
       {
         "nome": "Penedo (Pequena Finlândia)",
-        "descricao": "A principal colônia finlandesa do Brasil, um charmoso polo turístico famoso por sua arquitetura europeia, fábricas de chocolate, trutas e a Casa do Papai Noel."
+        "descricao": "A principal colônia finlandesa do Brasil, um charmoso polo turístico famoso por sua arquitetura europeia, fábricas de chocolate, trutas e a Casa do Papai Noel.",
+        "lat": -22.438754,
+        "lon": -44.525986,
+        "_geo": "Pequena Finlândia, Nova Penedo, Penedo, Itatiaia, Rio de Janeiro, Região Sudeste"
       },
       {
         "nome": "Cachoeira Véu de Noiva",
-        "descricao": "Uma deslumbrante e altíssima queda d'água incrustada no parque nacional, cujas águas brancas escorrem pela rocha formando um delicado desenho de véu."
+        "descricao": "Uma deslumbrante e altíssima queda d'água incrustada no parque nacional, cujas águas brancas escorrem pela rocha formando um delicado desenho de véu.",
+        "lat": -22.426852,
+        "lon": -44.618018,
+        "_geo": "Cachoeira Véu de Noiva, BR-485, Itatiaia, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Museu Regional da Fauna e Flora",
@@ -927,7 +1056,10 @@
     "destinos": [
       {
         "nome": "Rio Muriaé",
-        "descricao": "O vigoroso curso d'água que batiza a cidade, define sua geografia urbana e atrai muitos praticantes de pesca esportiva para suas calmas margens."
+        "descricao": "O vigoroso curso d'água que batiza a cidade, define sua geografia urbana e atrai muitos praticantes de pesca esportiva para suas calmas margens.",
+        "lat": -21.178401,
+        "lon": -42.080373,
+        "_geo": "Rio Muriaé, Laje do Muriaé, Rio de Janeiro, Região Sudeste, 28350-000, Brasil"
       },
       {
         "nome": "Igreja Matriz de Nossa Senhora da Piedade",
@@ -935,7 +1067,10 @@
       },
       {
         "nome": "Praça Padre Martins",
-        "descricao": "O pacato, limpo e arborizado espaço central onde a comunidade lanjense se reúne para o tradicional convívio de fim de tarde típico do interior."
+        "descricao": "O pacato, limpo e arborizado espaço central onde a comunidade lanjense se reúne para o tradicional convívio de fim de tarde típico do interior.",
+        "lat": -21.206431,
+        "lon": -42.121374,
+        "_geo": "Praça Padre Martins, Centro, Laje do Muriaé, Rio de Janeiro, Região Sudeste, 283"
       },
       {
         "nome": "Mirante do Morro do Querosene",
@@ -960,7 +1095,10 @@
       },
       {
         "nome": "Pico do Frade",
-        "descricao": "O ponto mais alto da região serrana do município, oferecendo trilhas de alta dificuldade e uma vista espetacular de 360 graus que alcança o litoral."
+        "descricao": "O ponto mais alto da região serrana do município, oferecendo trilhas de alta dificuldade e uma vista espetacular de 360 graus que alcança o litoral.",
+        "lat": -22.210088,
+        "lon": -42.068831,
+        "_geo": "Pico do Frade, Macaé, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Parque Nacional da Restinga de Jurubatiba",
@@ -968,7 +1106,10 @@
       },
       {
         "nome": "Solar dos Mellos",
-        "descricao": "Um suntuoso casarão do século XIX perfeitamente restaurado que hoje abriga o museu e resgata as memórias da época de ouro da antiga \"Princesinha do Atlântico\"."
+        "descricao": "Um suntuoso casarão do século XIX perfeitamente restaurado que hoje abriga o museu e resgata as memórias da época de ouro da antiga \"Princesinha do Atlântico\".",
+        "lat": -22.372169,
+        "lon": -41.779922,
+        "_geo": "Solar dos Mellos, Rua Conde de Araruama, Centro, Macaé, Rio de Janeiro, Região S"
       }
     ]
   },
@@ -981,7 +1122,10 @@
       },
       {
         "nome": "Praça Professor João Brasil",
-        "descricao": "Uma praça muito bem cuidada e repleta de canteiros floridos que serve como o principal ponto de descanso, paquera e socialização das famílias macuquenses."
+        "descricao": "Uma praça muito bem cuidada e repleta de canteiros floridos que serve como o principal ponto de descanso, paquera e socialização das famílias macuquenses.",
+        "lat": -21.984721,
+        "lon": -42.253643,
+        "_geo": "Praça Professor João Brasil, Macuco, Rio de Janeiro, Região Sudeste, 28545-000, "
       },
       {
         "nome": "Igreja Matriz São João Batista",
@@ -1030,23 +1174,38 @@
     "destinos": [
       {
         "nome": "Praia de Itacuruçá",
-        "descricao": "Praia com vista para ilhas e ponto de partida para passeios de barco."
+        "descricao": "Praia com vista para ilhas e ponto de partida para passeios de barco.",
+        "lat": -23.08175,
+        "lon": -44.007818,
+        "_geo": "Praia do Sino, Itacurussá, Mangaratiba, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Praia do Saco",
-        "descricao": "Praia de águas claras e tranquilas na Costa Verde."
+        "descricao": "Praia de águas claras e tranquilas na Costa Verde.",
+        "lat": -22.946789,
+        "lon": -44.041405,
+        "_geo": "Praia do Saco, Mangaratiba, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Praia de Conceição de Jacareí",
-        "descricao": "Praia calma e popular entre famílias, quase sem ondas."
+        "descricao": "Praia calma e popular entre famílias, quase sem ondas.",
+        "lat": -23.032676,
+        "lon": -44.162898,
+        "_geo": "Praia de Conceição de Jacareí, Morro do Serafim - Boa Vista, Conceição de Jacare"
       },
       {
         "nome": "Praia Grande",
-        "descricao": "Uma das maiores praias do município, procurada por surfistas."
+        "descricao": "Uma das maiores praias do município, procurada por surfistas.",
+        "lat": -22.923208,
+        "lon": -43.978044,
+        "_geo": "Praia Grande, Muriqui, Mangaratiba, Rio de Janeiro, Região Sudeste, 23870-000, B"
       },
       {
         "nome": "Ilha de Itacuruçá",
-        "descricao": "Ilha paradisíaca com trilhas e praias acessível por barco."
+        "descricao": "Ilha paradisíaca com trilhas e praias acessível por barco.",
+        "lat": -22.941623,
+        "lon": -43.894473,
+        "_geo": "Ilha de Itacuruçá, Itacurussá, Mangaratiba, Rio de Janeiro, Região Sudeste, Bras"
       }
     ]
   },
@@ -1151,11 +1310,17 @@
     "destinos": [
       {
         "nome": "Cachoeira Sete Quedas",
-        "descricao": "Conjunto de quedas d'água muito procurado por visitantes."
+        "descricao": "Conjunto de quedas d'água muito procurado por visitantes.",
+        "lat": -22.492331,
+        "lon": -43.421737,
+        "_geo": "Cachoeira Sete Quedas, Miguel Pereira, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Lago de Javary",
-        "descricao": "Lago para caminhadas, pedalinho e lazer em família."
+        "descricao": "Lago para caminhadas, pedalinho e lazer em família.",
+        "lat": -22.471539,
+        "lon": -43.492866,
+        "_geo": "Lago de Javary, Governador Portela, Miguel Pereira, Rio de Janeiro, Região Sudes"
       },
       {
         "nome": "Viaduto Paulo de Frontin",
@@ -1163,7 +1328,10 @@
       },
       {
         "nome": "Rua Coberta",
-        "descricao": "Complexo turístico e gastronômico com lojas e restaurantes."
+        "descricao": "Complexo turístico e gastronômico com lojas e restaurantes.",
+        "lat": -22.454005,
+        "lon": -43.468423,
+        "_geo": "Rua Coberta, Rua General Ferreira do Amaral, Miguel Pereira, Rio de Janeiro, Reg"
       },
       {
         "nome": "Museu Ferroviário",
@@ -1184,11 +1352,17 @@
       },
       {
         "nome": "Serra de Santo Antônio",
-        "descricao": "Rampa de voo livre com vista para a região, na Ventania de Cima."
+        "descricao": "Rampa de voo livre com vista para a região, na Ventania de Cima.",
+        "lat": -21.426183,
+        "lon": -42.05374,
+        "_geo": "Serra da Prosperidade, São José de Ubá, Paraíso do Tobias, Miracema, Rio de Jane"
       },
       {
         "nome": "Igreja Matriz de Santo Antônio",
-        "descricao": "Igreja histórica inaugurada em 1900 no centro tombado."
+        "descricao": "Igreja histórica inaugurada em 1900 no centro tombado.",
+        "lat": -21.412743,
+        "lon": -42.196957,
+        "_geo": "Igreja Matriz de Miracema, Rua Elpidio Portes Mendes, Miracema, Rio de Janeiro, "
       },
       {
         "nome": "Lago de Miracema",
@@ -1205,11 +1379,17 @@
       },
       {
         "nome": "Santuário Diocesano Nossa Senhora da Natividade",
-        "descricao": "Santuário histórico datado de 1845."
+        "descricao": "Santuário histórico datado de 1845.",
+        "lat": -21.043852,
+        "lon": -41.973907,
+        "_geo": "Santuário Diocesano Nossa Senhora da Natividade, 10, Praça Ferreira Rabello, Nat"
       },
       {
         "nome": "Fazenda São José",
-        "descricao": "Uma das primeiras construções da região, erguida por volta de 1820."
+        "descricao": "Uma das primeiras construções da região, erguida por volta de 1820.",
+        "lat": -21.015046,
+        "lon": -42.011558,
+        "_geo": "Fazenda São José, Natividade, Rio de Janeiro, Região Sudeste, 20380-000, Brasil"
       },
       {
         "nome": "Fazenda Mutuca",
@@ -1217,7 +1397,10 @@
       },
       {
         "nome": "Fazenda Taboca",
-        "descricao": "Fazenda histórica que atrai visitantes para o turismo rural."
+        "descricao": "Fazenda histórica que atrai visitantes para o turismo rural.",
+        "lat": -21.018417,
+        "lon": -41.958753,
+        "_geo": "Fazenda da Taboca, Natividade, Rio de Janeiro, Região Sudeste, 20380-000, Brasil"
       }
     ]
   },
@@ -1292,7 +1475,10 @@
     "destinos": [
       {
         "nome": "Pico da Caledônia",
-        "descricao": "Montanha com trilhas e vista panorâmica da região serrana."
+        "descricao": "Montanha com trilhas e vista panorâmica da região serrana.",
+        "lat": -22.353533,
+        "lon": -42.58707,
+        "_geo": "Caledônia, Nova Friburgo, Rio de Janeiro, Região Sudeste, 28621-350, Brasil"
       },
       {
         "nome": "Pedra do Cão Sentado",
@@ -1300,7 +1486,10 @@
       },
       {
         "nome": "Praça Getúlio Vargas",
-        "descricao": "Praça histórica central com coreto e arquitetura eclética."
+        "descricao": "Praça histórica central com coreto e arquitetura eclética.",
+        "lat": -22.280345,
+        "lon": -42.532844,
+        "_geo": "Praça Presidente Getúlio Vargas, Bairro João VI, Nova Friburgo, Rio de Janeiro, "
       },
       {
         "nome": "Catedral de São Pedro de Alcântara",
@@ -1377,7 +1566,10 @@
       },
       {
         "nome": "Estação Ferroviária de Paraíba do Sul",
-        "descricao": "Antiga estação da Estrada de Ferro Central do Brasil."
+        "descricao": "Antiga estação da Estrada de Ferro Central do Brasil.",
+        "lat": -22.135898,
+        "lon": -43.249244,
+        "_geo": "Barão de Angra, Estrada Doutor Sylvio Guaraciaba de Almeida, Barão de Angra, Par"
       },
       {
         "nome": "Igreja Matriz de Nossa Senhora da Conceição",
@@ -1398,7 +1590,10 @@
     "destinos": [
       {
         "nome": "Centro Histórico de Paraty",
-        "descricao": "Conjunto colonial tombado, reconhecido como Patrimônio Mundial da UNESCO."
+        "descricao": "Conjunto colonial tombado, reconhecido como Patrimônio Mundial da UNESCO.",
+        "lat": -23.219069,
+        "lon": -44.713352,
+        "_geo": "Centro Histórico, Paraty, Rio de Janeiro, Região Sudeste, 23970-000, Brasil"
       },
       {
         "nome": "Igreja de Nossa Senhora do Rosário e São Benedito",
@@ -1406,11 +1601,17 @@
       },
       {
         "nome": "Praia do Sono",
-        "descricao": "Praia preservada cercada por Mata Atlântica."
+        "descricao": "Praia preservada cercada por Mata Atlântica.",
+        "lat": -23.334217,
+        "lon": -44.632609,
+        "_geo": "Praia do Sono, Sono, Paraty-Mirim, Paraty, Rio de Janeiro, Região Sudeste, Brasi"
       },
       {
         "nome": "Ilha do Araújo",
-        "descricao": "Destino de passeios de barco pela baía de Paraty."
+        "descricao": "Destino de passeios de barco pela baía de Paraty.",
+        "lat": -23.156224,
+        "lon": -44.686507,
+        "_geo": "Ilha do Araújo, Paraty, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Trilha do Ouro",
@@ -1448,23 +1649,38 @@
     "destinos": [
       {
         "nome": "Museu Imperial",
-        "descricao": "Antigo palácio de verão de Dom Pedro II, com joias e mobiliário imperial."
+        "descricao": "Antigo palácio de verão de Dom Pedro II, com joias e mobiliário imperial.",
+        "lat": -22.507715,
+        "lon": -43.175668,
+        "_geo": "Museu Imperial, 220, Rua da Imperatriz, Centro, Petrópolis, Rio de Janeiro, Regi"
       },
       {
         "nome": "Palácio de Cristal",
-        "descricao": "Estrutura de ferro e vidro do século XIX usada para eventos."
+        "descricao": "Estrutura de ferro e vidro do século XIX usada para eventos.",
+        "lat": -22.505435,
+        "lon": -43.183084,
+        "_geo": "Palácio de Cristal, Rua Alfredo Pachá, Centro, Petrópolis, Rio de Janeiro, Regiã"
       },
       {
         "nome": "Catedral São Pedro de Alcântara",
-        "descricao": "Catedral neogótica que abriga o mausoléu da família imperial."
+        "descricao": "Catedral neogótica que abriga o mausoléu da família imperial.",
+        "lat": -22.50563,
+        "lon": -43.179074,
+        "_geo": "Catedral de São Pedro de Alcântara, 60, Rua São Pedro de Alcântara, Centro, Petr"
       },
       {
         "nome": "Casa de Santos Dumont (A Encantada)",
-        "descricao": "Residência do inventor, com projeto arquitetônico peculiar."
+        "descricao": "Residência do inventor, com projeto arquitetônico peculiar.",
+        "lat": -22.510353,
+        "lon": -43.18425,
+        "_geo": "Casa de Santos Dumont, 22, Rua do Encanto, Centro, Petrópolis, Rio de Janeiro, R"
       },
       {
         "nome": "Rua Teresa",
-        "descricao": "Rua famosa pelo comércio de moda e semijoias no centro histórico."
+        "descricao": "Rua famosa pelo comércio de moda e semijoias no centro histórico.",
+        "lat": -22.517489,
+        "lon": -43.170135,
+        "_geo": "Rua Teresa, Alto da Serra, Petrópolis, Rio de Janeiro, Região Sudeste, 25625-220"
       }
     ]
   },
@@ -1473,7 +1689,10 @@
     "destinos": [
       {
         "nome": "Colégio Agrícola Nilo Peçanha",
-        "descricao": "Antigo casarão de fazenda de café que hoje sedia instituição de ensino."
+        "descricao": "Antigo casarão de fazenda de café que hoje sedia instituição de ensino.",
+        "lat": -22.519322,
+        "lon": -43.993701,
+        "_geo": "Colégio Agrícola Nilo Peçanha, Rua José Breves, Colina, Pinheiral, Rio de Janeir"
       },
       {
         "nome": "Orla do Rio Paraíba do Sul",
@@ -1485,7 +1704,10 @@
       },
       {
         "nome": "Igreja Matriz de Pinheiral",
-        "descricao": "Templo histórico no centro da cidade."
+        "descricao": "Templo histórico no centro da cidade.",
+        "lat": -22.516677,
+        "lon": -43.998401,
+        "_geo": "pracinha enfrente a igreja matriz, Pinheiral, Rio de Janeiro, Região Sudeste, Br"
       },
       {
         "nome": "Fazendas históricas do Vale do Café",
@@ -1498,7 +1720,10 @@
     "destinos": [
       {
         "nome": "Lago de Piraí (Represa de Ribeirão das Lajes)",
-        "descricao": "Grande reservatório usado para esportes aquáticos e lazer."
+        "descricao": "Grande reservatório usado para esportes aquáticos e lazer.",
+        "lat": -22.514828,
+        "lon": -43.811021,
+        "_geo": "Lago de Rejeitos da Fábrica, Santanesia, Santanésia, Piraí, Rio de Janeiro, Regi"
       },
       {
         "nome": "Estação Ferroviária de Piraí",
@@ -1535,7 +1760,10 @@
       },
       {
         "nome": "Igreja Matriz de Santo Antônio",
-        "descricao": "A formosa paróquia central de Porciúncula, amplamente reconhecida por sua beleza arquitetônica e pelas calorosas festividades dedicadas ao padroeiro no mês de junho."
+        "descricao": "A formosa paróquia central de Porciúncula, amplamente reconhecida por sua beleza arquitetônica e pelas calorosas festividades dedicadas ao padroeiro no mês de junho.",
+        "lat": -20.963105,
+        "lon": -42.040249,
+        "_geo": "Igreja Matriz de Santo Antônio, Praça Santo Antônio, Porciúncula, Rio de Janeiro"
       },
       {
         "nome": "Margens do Rio Carangola",
@@ -1548,7 +1776,10 @@
     "destinos": [
       {
         "nome": "Horto Municipal",
-        "descricao": "Um amplo e agradável pulmão verde no meio da cidade, dedicado ao lazer, aos esportes em família e ao contato constante com espécies botânicas variadas."
+        "descricao": "Um amplo e agradável pulmão verde no meio da cidade, dedicado ao lazer, aos esportes em família e ao contato constante com espécies botânicas variadas.",
+        "lat": -22.413238,
+        "lon": -44.298014,
+        "_geo": "Horto Municipal, Porto Real, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Casa do Imigrante",
@@ -1657,19 +1888,31 @@
     "destinos": [
       {
         "nome": "Serrinha do Alambari",
-        "descricao": "Um bucólico recanto ecológico aos pés da Serra da Mantiqueira, famoso nacionalmente por suas águas cristalinas, poços esmeraldas e ambiente de paz absoluta."
+        "descricao": "Um bucólico recanto ecológico aos pés da Serra da Mantiqueira, famoso nacionalmente por suas águas cristalinas, poços esmeraldas e ambiente de paz absoluta.",
+        "lat": -22.387498,
+        "lon": -44.558327,
+        "_geo": "Serrinha do Alambari, Visconde de Mauá, Resende, Rio de Janeiro, Região Sudeste,"
       },
       {
         "nome": "Visconde de Mauá",
-        "descricao": "Um badalado e charmoso polo turístico na alta serra, repleto de pousadas românticas, alta gastronomia e belíssimas cachoeiras de águas gélidas."
+        "descricao": "Um badalado e charmoso polo turístico na alta serra, repleto de pousadas românticas, alta gastronomia e belíssimas cachoeiras de águas gélidas.",
+        "lat": -22.331175,
+        "lon": -44.532635,
+        "_geo": "Visconde de Mauá, Resende, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Parque das Águas",
-        "descricao": "Uma imensa área verde de lazer urbano localizada às margens do rio Paraíba do Sul, muito utilizada pela população para práticas esportivas e piqueniques."
+        "descricao": "Uma imensa área verde de lazer urbano localizada às margens do rio Paraíba do Sul, muito utilizada pela população para práticas esportivas e piqueniques.",
+        "lat": -22.463223,
+        "lon": -44.458625,
+        "_geo": "Parque das Águas, Nova Liberdade, Resende, Rio de Janeiro, Região Sudeste, Brasi"
       },
       {
         "nome": "Academia Militar das Agulhas Negras (AMAN)",
-        "descricao": "A grandiosa, prestigiosa e histórica instituição de ensino superior do Exército Brasileiro, cuja arquitetura imponente é um marco de segurança nacional."
+        "descricao": "A grandiosa, prestigiosa e histórica instituição de ensino superior do Exército Brasileiro, cuja arquitetura imponente é um marco de segurança nacional.",
+        "lat": -22.453112,
+        "lon": -44.431247,
+        "_geo": "Rua da Aman, Paraíso, Agulhas Negras, Resende, Rio de Janeiro, Região Sudeste, 2"
       },
       {
         "nome": "Ponte Velha",
@@ -1682,23 +1925,38 @@
     "destinos": [
       {
         "nome": "Serra do Sambê",
-        "descricao": "Uma imponente cadeia montanhosa coberta por Mata Atlântica preservada, repleta de trilhas e nascentes que atraem fortemente os apaixonados pelo ecoturismo."
+        "descricao": "Uma imponente cadeia montanhosa coberta por Mata Atlântica preservada, repleta de trilhas e nascentes que atraem fortemente os apaixonados pelo ecoturismo.",
+        "lat": -22.704486,
+        "lon": -42.633253,
+        "_geo": "Serra do Sambê, Rio Bonito, Rio de Janeiro, Região Sudeste, 28800-000, Brasil"
       },
       {
         "nome": "Cachoeira dos Bagres",
-        "descricao": "Um belo e volumoso salto d'água no meio da natureza selvagem, ideal para banhos revigorantes em família durante os dias mais quentes do verão."
+        "descricao": "Um belo e volumoso salto d'água no meio da natureza selvagem, ideal para banhos revigorantes em família durante os dias mais quentes do verão.",
+        "lat": -22.692493,
+        "lon": -42.663121,
+        "_geo": "Cachoeira dos Bagres, Bazílio, Rio Bonito, Rio de Janeiro, Região Sudeste, 28800"
       },
       {
         "nome": "Igreja Matriz Nossa Senhora da Conceição",
-        "descricao": "Uma charmosa paróquia secular que domina a paisagem do centro da cidade e representa o imutável coração espiritual da comunidade riobonitense."
+        "descricao": "Uma charmosa paróquia secular que domina a paisagem do centro da cidade e representa o imutável coração espiritual da comunidade riobonitense.",
+        "lat": -22.712294,
+        "lon": -42.624556,
+        "_geo": "Igreja Matriz Auxiliar Nossa Senhora da Conceição, Avenida 7 de Maio, Subida do "
       },
       {
         "nome": "Praça Fonseca Portela",
-        "descricao": "O movimentado e bem arborizado centro de convivência do município, cercado de árvores frondosas, comércio pulsante e constante vida social."
+        "descricao": "O movimentado e bem arborizado centro de convivência do município, cercado de árvores frondosas, comércio pulsante e constante vida social.",
+        "lat": -22.71083,
+        "lon": -42.624095,
+        "_geo": "Praça Fonseca Portela, Centro, Rio Bonito, Rio de Janeiro, Região Sudeste, 28800"
       },
       {
         "nome": "Rampa de Voo Livre",
-        "descricao": "Um mirante excepcional no alto da serra que atrai pilotos de asa delta e parapente de todo o estado em busca das perfeitas correntes de ar e vistas espetaculares."
+        "descricao": "Um mirante excepcional no alto da serra que atrai pilotos de asa delta e parapente de todo o estado em busca das perfeitas correntes de ar e vistas espetaculares.",
+        "lat": -22.687288,
+        "lon": -42.636103,
+        "_geo": "Rampa de Voo Livre de Rio Bonito - Serra do Sambê, Estrada Serra do Sambê, Serra"
       }
     ]
   },
@@ -1719,11 +1977,17 @@
       },
       {
         "nome": "Fazenda da Grama",
-        "descricao": "Uma propriedade cafeeira centenária perfeitamente conservada que transporta os visitantes de volta à opulência e às intensas tradições do ciclo do café fluminense."
+        "descricao": "Uma propriedade cafeeira centenária perfeitamente conservada que transporta os visitantes de volta à opulência e às intensas tradições do ciclo do café fluminense.",
+        "lat": -22.6526,
+        "lon": -44.044452,
+        "_geo": "Fazenda da Grama, Passa Três, Rio Claro, Rio de Janeiro, Região Sudeste, 27470-0"
       },
       {
         "nome": "Igreja Matriz de Nossa Senhora da Piedade",
-        "descricao": "O rústico e acolhedor pilar religioso da comunidade local, abrigando histórias de fé inabalável em um prédio de arquitetura singela."
+        "descricao": "O rústico e acolhedor pilar religioso da comunidade local, abrigando histórias de fé inabalável em um prédio de arquitetura singela.",
+        "lat": -22.724055,
+        "lon": -44.137976,
+        "_geo": "Igreja Matriz de Nossa Senhora da Piedade, Praça Fagundes Varela, Rio Claro, Rio"
       }
     ]
   },
@@ -1736,7 +2000,10 @@
       },
       {
         "nome": "Igreja Matriz de Santa Teresa d'Ávila",
-        "descricao": "Um belíssimo templo construído no final do século XIX, que ostenta vitrais franceses impecáveis e encanta pela sua requintada arquitetura romântica."
+        "descricao": "Um belíssimo templo construído no final do século XIX, que ostenta vitrais franceses impecáveis e encanta pela sua requintada arquitetura romântica.",
+        "lat": -22.167813,
+        "lon": -43.585213,
+        "_geo": "Igreja Matriz de Santa Teresa D'Ávila, Praça M. Juarez, Centro, Rio das Flores, "
       },
       {
         "nome": "Mirante da Serra",
@@ -1748,7 +2015,10 @@
       },
       {
         "nome": "Fazenda União",
-        "descricao": "Uma majestosa joia do império cafeeiro, hoje transformada em luxuosa pousada de charme, que proporciona aos hóspedes uma incrível viagem no tempo colonial."
+        "descricao": "Uma majestosa joia do império cafeeiro, hoje transformada em luxuosa pousada de charme, que proporciona aos hóspedes uma incrível viagem no tempo colonial.",
+        "lat": -22.176159,
+        "lon": -43.561855,
+        "_geo": "Fazenda União, Abarracamento, Rio das Flores, Rio de Janeiro, Região Sudeste, 27"
       }
     ]
   },
@@ -1757,11 +2027,17 @@
     "destinos": [
       {
         "nome": "Praça da Baleia",
-        "descricao": "Muito popular por sua gigantesca escultura em bronze de uma baleia jubarte, tornou-se o local favorito para o registro de fotos no final da tarde à beira-mar."
+        "descricao": "Muito popular por sua gigantesca escultura em bronze de uma baleia jubarte, tornou-se o local favorito para o registro de fotos no final da tarde à beira-mar.",
+        "lat": -22.527267,
+        "lon": -41.923247,
+        "_geo": "Praça da Baleia, Bosque Beira Rio, Costazul, Rio das Ostras, Rio de Janeiro, Reg"
       },
       {
         "nome": "Praia Costa Azul",
-        "descricao": "A orla mais badalada e completa da cidade, oferecendo excelente infraestrutura de quiosques, calçadões generosos e um cênico píer de madeira."
+        "descricao": "A orla mais badalada e completa da cidade, oferecendo excelente infraestrutura de quiosques, calçadões generosos e um cênico píer de madeira.",
+        "lat": -22.516748,
+        "lon": -41.91674,
+        "_geo": "Praia Costa Azul, Ouro Verde, Rio das Ostras, Rio de Janeiro, Região Sudeste, 28"
       },
       {
         "nome": "Monumento Natural dos Costões Rochosos",
@@ -1769,11 +2045,17 @@
       },
       {
         "nome": "Lagoa da Coca-Cola",
-        "descricao": "Uma exótica lagoa de águas ricas em iodo que adquirem uma coloração escura fascinante, frequentemente procurada por banhistas por suas supostas propriedades medicinais."
+        "descricao": "Uma exótica lagoa de águas ricas em iodo que adquirem uma coloração escura fascinante, frequentemente procurada por banhistas por suas supostas propriedades medicinais.",
+        "lat": -22.507507,
+        "lon": -41.912214,
+        "_geo": "Lagoa de Iriry, Mar y Lago, Rio das Ostras, Rio de Janeiro, Região Sudeste, Bras"
       },
       {
         "nome": "Poço de Pedras",
-        "descricao": "Um valioso e antigo sítio histórico encravado nas pedras à beira-mar, que serviu como ponto de ancoragem seguro e de abastecimento de água nos séculos passados."
+        "descricao": "Um valioso e antigo sítio histórico encravado nas pedras à beira-mar, que serviu como ponto de ancoragem seguro e de abastecimento de água nos séculos passados.",
+        "lat": -22.52771,
+        "lon": -41.944455,
+        "_geo": "Poço de Pedras, Acesso à Praia, Bosque Beira Rio, Centro, Viverde I, Rio das Ost"
       }
     ]
   },
@@ -1826,15 +2108,24 @@
       },
       {
         "nome": "Horto Florestal",
-        "descricao": "Uma vasta reserva ambiental urbana imersa em verde, que oferece excelente infraestrutura para caminhadas tranquilas, piqueniques sob as árvores e contato com os pássaros."
+        "descricao": "Uma vasta reserva ambiental urbana imersa em verde, que oferece excelente infraestrutura para caminhadas tranquilas, piqueniques sob as árvores e contato com os pássaros.",
+        "lat": -21.951301,
+        "lon": -42.012274,
+        "_geo": "Estrada do Horto Central Florestal Santos Lima, Bairro Parque Itaporanga, Santa "
       },
       {
         "nome": "Igreja Matriz de Santa Maria Madalena",
-        "descricao": "A grandiosa e centenária paróquia de bela arquitetura que reina imponente no ponto alto da praça principal, guiando os olhos e a fé da população madalenense."
+        "descricao": "A grandiosa e centenária paróquia de bela arquitetura que reina imponente no ponto alto da praça principal, guiando os olhos e a fé da população madalenense.",
+        "lat": -21.955971,
+        "lon": -42.007612,
+        "_geo": "Igreja Matriz de Santa Maria Madalena, Via da Matriz, Bairro Centro, Santa Maria"
       },
       {
         "nome": "Morro da Torre",
-        "descricao": "Uma das elevações mais altas e acessíveis da região urbana do município, que proporciona aos visitantes uma visão em 360 graus absolutamente indescritível dos vales montanhosos."
+        "descricao": "Uma das elevações mais altas e acessíveis da região urbana do município, que proporciona aos visitantes uma visão em 360 graus absolutamente indescritível dos vales montanhosos.",
+        "lat": -21.967709,
+        "lon": -42.017895,
+        "_geo": "Morro da Torre, Santa Maria Madalena, Rio de Janeiro, Região Sudeste, 28770-000,"
       }
     ]
   },
@@ -1847,7 +2138,10 @@
       },
       {
         "nome": "Igreja Matriz de Santo Antônio",
-        "descricao": "Um templo imponente de arquitetura clássica que guarda a fé da população e sedia as grandes homenagens ao padroeiro da cidade."
+        "descricao": "Um templo imponente de arquitetura clássica que guarda a fé da população e sedia as grandes homenagens ao padroeiro da cidade.",
+        "lat": -21.540099,
+        "lon": -42.18045,
+        "_geo": "Igreja Matriz de Sto. A. de Pádua, Rua Nilo Peçanha, Pereira, Santo Antônio de P"
       },
       {
         "nome": "Praça Visconde de Figueira",
@@ -1868,11 +2162,17 @@
     "destinos": [
       {
         "nome": "Praia de Guaxindiba",
-        "descricao": "Uma das praias mais tradicionais e urbanizadas do município, conhecida por suas águas calmas e vasta extensão de areia perfeita para o lazer familiar."
+        "descricao": "Uma das praias mais tradicionais e urbanizadas do município, conhecida por suas águas calmas e vasta extensão de areia perfeita para o lazer familiar.",
+        "lat": -21.479252,
+        "lon": -41.057717,
+        "_geo": "Praia de Guaxindiba, Guaxindiba, Barra Seca, São Francisco de Itabapoana, Rio de"
       },
       {
         "nome": "Praia de Santa Clara",
-        "descricao": "Famosa por suas águas ricas em iodo e pelas imponentes falésias avermelhadas, é o destino de veraneio mais badalado do litoral norte fluminense."
+        "descricao": "Famosa por suas águas ricas em iodo e pelas imponentes falésias avermelhadas, é o destino de veraneio mais badalado do litoral norte fluminense.",
+        "lat": -21.519036,
+        "lon": -41.073401,
+        "_geo": "Praia de Santa Clara, Santa Clara, São Francisco de Itabapoana, Rio de Janeiro, "
       },
       {
         "nome": "Manguezal de Gargaú",
@@ -1893,7 +2193,10 @@
     "destinos": [
       {
         "nome": "Igreja Matriz de São Fidélis",
-        "descricao": "Conhecida como \"Cidade Poema\", a cidade abriga este majestoso templo bicentenário construído por monges capuchinhos com o raro formato de cruz latina."
+        "descricao": "Conhecida como \"Cidade Poema\", a cidade abriga este majestoso templo bicentenário construído por monges capuchinhos com o raro formato de cruz latina.",
+        "lat": -21.646797,
+        "lon": -41.747137,
+        "_geo": "Igreja Matriz, Praça São Fidélis, São Fidélis, Rio de Janeiro, Região Sudeste, 2"
       },
       {
         "nome": "Ponte Metálica Sobre o Rio Paraíba do Sul",
@@ -1953,7 +2256,10 @@
       },
       {
         "nome": "Praia de Grussaí",
-        "descricao": "O principal e mais estruturado balneário do município, com ampla faixa de areia e grande número de quiosques, sendo o disputado refúgio de verão da região norte."
+        "descricao": "O principal e mais estruturado balneário do município, com ampla faixa de areia e grande número de quiosques, sendo o disputado refúgio de verão da região norte.",
+        "lat": -21.688009,
+        "lon": -41.023155,
+        "_geo": "Praia de Grussaí, Lagoa, Grussaí, São João da Barra, Rio de Janeiro, Região Sude"
       },
       {
         "nome": "Antiga Casa da Câmara e Cadeia",
@@ -1961,7 +2267,10 @@
       },
       {
         "nome": "Igreja São João Batista",
-        "descricao": "Um majestoso templo de arquitetura clássica que guarda a fé da população e é o coração das tradicionais e animadíssimas festas juninas da cidade."
+        "descricao": "Um majestoso templo de arquitetura clássica que guarda a fé da população e é o coração das tradicionais e animadíssimas festas juninas da cidade.",
+        "lat": -21.634554,
+        "lon": -41.049666,
+        "_geo": "Igreja Matriz de São João Batista, Rua Senhor dos Passos, Centro, São João da Ba"
       },
       {
         "nome": "Palácio Cultural Carlos Martins",
@@ -2041,7 +2350,10 @@
       },
       {
         "nome": "Igreja Matriz de São José",
-        "descricao": "O principal e mais antigo centro religioso do município, uma igreja de arquitetura singela e muito bem cuidada, rodeada pela atmosfera friozinha da serra."
+        "descricao": "O principal e mais antigo centro religioso do município, uma igreja de arquitetura singela e muito bem cuidada, rodeada pela atmosfera friozinha da serra.",
+        "lat": -22.1514,
+        "lon": -42.924231,
+        "_geo": "Igreja Matriz de São José, Rua Manoel Damas, Centro, São José do Vale do Rio Pre"
       },
       {
         "nome": "Fazendas de Cultivo de Morango",
@@ -2049,7 +2361,10 @@
       },
       {
         "nome": "Rio Preto",
-        "descricao": "O belo e sinuoso curso d'água que dá nome à cidade, cortando vales intensamente verdes e oferecendo cenários poéticos excelentes para o descanso contemplativo."
+        "descricao": "O belo e sinuoso curso d'água que dá nome à cidade, cortando vales intensamente verdes e oferecendo cenários poéticos excelentes para o descanso contemplativo.",
+        "lat": -22.177509,
+        "lon": -42.979989,
+        "_geo": "Rio Preto, São José do Vale do Rio Preto, Petrópolis, Rio de Janeiro, Região Sud"
       }
     ]
   },
@@ -2062,7 +2377,10 @@
       },
       {
         "nome": "Museu da Aviação Naval (Base Aérea)",
-        "descricao": "O único museu deste tipo em todo o Brasil, que exibe um rico e impressionante acervo de aeronaves históricas contando a trajetória da aviação militar da Marinha."
+        "descricao": "O único museu deste tipo em todo o Brasil, que exibe um rico e impressionante acervo de aeronaves históricas contando a trajetória da aviação militar da Marinha.",
+        "lat": -22.82442,
+        "lon": -42.092232,
+        "_geo": "Museu da Aviação Naval, Rua Comandante Ituriel, Vila Militar, São Pedro da Aldei"
       },
       {
         "nome": "Praia do Centro",
@@ -2074,7 +2392,10 @@
       },
       {
         "nome": "Ilha do Boi",
-        "descricao": "Uma pequena e charmosa península arborizada na lagoa, perfeita para caminhadas matinais tranquilas, pesca artesanal e para a contemplação de um pôr do sol inesquecível."
+        "descricao": "Uma pequena e charmosa península arborizada na lagoa, perfeita para caminhadas matinais tranquilas, pesca artesanal e para a contemplação de um pôr do sol inesquecível.",
+        "lat": -22.856165,
+        "lon": -42.14935,
+        "_geo": "Ilha do Boi, São Pedro da Aldeia, Rio de Janeiro, Região Sudeste, Brasil"
       }
     ]
   },
@@ -2137,7 +2458,10 @@
       },
       {
         "nome": "Praia de Itaúna",
-        "descricao": "Conhecida mundialmente como a \"Capital Nacional do Surfe\", possui ondas potentes e perfeitas que atraem grandes campeonatos internacionais da modalidade."
+        "descricao": "Conhecida mundialmente como a \"Capital Nacional do Surfe\", possui ondas potentes e perfeitas que atraem grandes campeonatos internacionais da modalidade.",
+        "lat": -22.935982,
+        "lon": -42.482546,
+        "_geo": "Praia de Itaúna, Itaúna, Saquarema, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Templo do Rock (Casa do Serguei)",
@@ -2145,7 +2469,10 @@
       },
       {
         "nome": "Lagoa de Saquarema",
-        "descricao": "Um imenso espelho d'água salgada excelente para esportes náuticos, pesca artesanal e para a contemplação de um pôr do sol inesquecível."
+        "descricao": "Um imenso espelho d'água salgada excelente para esportes náuticos, pesca artesanal e para a contemplação de um pôr do sol inesquecível.",
+        "lat": -22.907207,
+        "lon": -42.570692,
+        "_geo": "Lagoa de Urussanga, Saquarema, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Mirante da Cruz",
@@ -2186,7 +2513,10 @@
     "destinos": [
       {
         "nome": "Reserva Biológica de Poço das Antas (Mico-leão-dourado)",
-        "descricao": "Um santuário ecológico de fama mundial dedicado a salvar o mico-leão-dourado da extinção, protegendo um importante remanescente de Mata Atlântica."
+        "descricao": "Um santuário ecológico de fama mundial dedicado a salvar o mico-leão-dourado da extinção, protegendo um importante remanescente de Mata Atlântica.",
+        "lat": -22.543989,
+        "lon": -42.280905,
+        "_geo": "Reserva Biológica de Poço das Antas, Silva Jardim, Rio de Janeiro, Região Sudest"
       },
       {
         "nome": "Lagoa de Juturnaíba",
@@ -2198,7 +2528,10 @@
       },
       {
         "nome": "Praça Amaral Peixoto",
-        "descricao": "O movimentado coração da cidade, um espaço muito arborizado e bem cuidado onde a comunidade se reúne diariamente para o lazer e eventos sociais."
+        "descricao": "O movimentado coração da cidade, um espaço muito arborizado e bem cuidado onde a comunidade se reúne diariamente para o lazer e eventos sociais.",
+        "lat": -22.650742,
+        "lon": -42.389826,
+        "_geo": "Praça Amaral Peixoto, Silva Jardim, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Estação Ferroviária",
@@ -2264,7 +2597,10 @@
     "destinos": [
       {
         "nome": "Parque Nacional da Serra dos Órgãos",
-        "descricao": "Um dos parques nacionais mais deslumbrantes do país, famoso por formações rochosas pontiagudas, trilhas espetaculares e nascentes de águas gélidas."
+        "descricao": "Um dos parques nacionais mais deslumbrantes do país, famoso por formações rochosas pontiagudas, trilhas espetaculares e nascentes de águas gélidas.",
+        "lat": -22.449061,
+        "lon": -42.984843,
+        "_geo": "Parque Nacional da Serra dos Orgaos Teresopolis, Comary, Teresópolis, Rio de Jan"
       },
       {
         "nome": "Mirante do Soberbo",
@@ -2272,11 +2608,17 @@
       },
       {
         "nome": "Feirinha do Alto",
-        "descricao": "Uma imensa, colorida e tradicional feira de artesanato, moda e gastronomia que movimenta fortemente o turismo da cidade em todos os finais de semana e feriados."
+        "descricao": "Uma imensa, colorida e tradicional feira de artesanato, moda e gastronomia que movimenta fortemente o turismo da cidade em todos os finais de semana e feriados.",
+        "lat": -22.442643,
+        "lon": -42.979899,
+        "_geo": "Feirinha do Alto, Rua Sloper, Alto, Teresópolis, Rio de Janeiro, Região Sudeste,"
       },
       {
         "nome": "Granja Comary",
-        "descricao": "A consagrada sede oficial de treinamentos da Seleção Brasileira de Futebol, encravada em um vale verdejante com um lindo lago e os majestosos picos da serra ao fundo."
+        "descricao": "A consagrada sede oficial de treinamentos da Seleção Brasileira de Futebol, encravada em um vale verdejante com um lindo lago e os majestosos picos da serra ao fundo.",
+        "lat": -22.450853,
+        "lon": -42.976056,
+        "_geo": "Confederação Brasileira de Futebol (CBF), 259, Rua do Carmo, Carlos Guinle/40 Ca"
       },
       {
         "nome": "Vila St. Gallen",
@@ -2289,7 +2631,10 @@
     "destinos": [
       {
         "nome": "Represa da Tapera",
-        "descricao": "Um sereno e belo lago artificial encravado na serra fluminense, ideal para pesca esportiva e para a prática de esportes náuticos não motorizados."
+        "descricao": "Um sereno e belo lago artificial encravado na serra fluminense, ideal para pesca esportiva e para a prática de esportes náuticos não motorizados.",
+        "lat": -22.159858,
+        "lon": -42.110468,
+        "_geo": "Represa do Macabu, Tapera, Vila da Grama, Trajano de Moraes, Rio de Janeiro, Reg"
       },
       {
         "nome": "Cachoeira Graça a Deus",
@@ -2297,11 +2642,17 @@
       },
       {
         "nome": "Praça Nilo Peçanha",
-        "descricao": "O arborizado e impecavelmente cuidado centro nervoso do município, cercado por casarões antigos e ladeado pela tranquilidade invejável do cotidiano trajanense."
+        "descricao": "O arborizado e impecavelmente cuidado centro nervoso do município, cercado por casarões antigos e ladeado pela tranquilidade invejável do cotidiano trajanense.",
+        "lat": -22.063773,
+        "lon": -42.064872,
+        "_geo": "Praça Nilo Peçanha, Trajano de Moraes, Rio de Janeiro, Região Sudeste, 28750-000"
       },
       {
         "nome": "Igreja Matriz Sagrado Coração de Jesus",
-        "descricao": "Um imponente templo católico no coração da cidade que se destaca por sua bela arquitetura e pelo forte sentimento de fé que inspira na comunidade."
+        "descricao": "Um imponente templo católico no coração da cidade que se destaca por sua bela arquitetura e pelo forte sentimento de fé que inspira na comunidade.",
+        "lat": -22.063616,
+        "lon": -42.065957,
+        "_geo": "Igreja Matriz da Paróquia Sagrado Coração de Jesus, Rua Coronel Alfredo, Trajano"
       },
       {
         "nome": "Rampa de Voo Livre",
@@ -2314,19 +2665,31 @@
     "destinos": [
       {
         "nome": "Encontro dos Três Rios (Paraíba do Sul, Piabanha e Paraibuna)",
-        "descricao": "O grandioso fenômeno natural que batiza e define a cidade, onde as águas desses grandes afluentes convergem formando o maior rio do estado."
+        "descricao": "O grandioso fenômeno natural que batiza e define a cidade, onde as águas desses grandes afluentes convergem formando o maior rio do estado.",
+        "lat": -22.118965,
+        "lon": -43.209679,
+        "_geo": "Praça o Encontro dos Três Rios, Três Rios, Rio de Janeiro, Região Sudeste, Brasi"
       },
       {
         "nome": "Praça São Sebastião",
-        "descricao": "O gigantesco e intensamente arborizado centro de convivência urbano, que concentra o comércio, os grandes eventos e a vida noturna do município."
+        "descricao": "O gigantesco e intensamente arborizado centro de convivência urbano, que concentra o comércio, os grandes eventos e a vida noturna do município.",
+        "lat": -22.116206,
+        "lon": -43.20954,
+        "_geo": "Praça São Sebastião, Três Rios, Rio de Janeiro, Região Sudeste, 25804-971, Brasi"
       },
       {
         "nome": "Ponte das Garças",
-        "descricao": "Uma belíssima e fotogênica estrutura histórica de ferro que atravessa as corredeiras do rio Paraíba do Sul e se consolidou como um dos principais símbolos trirrienses."
+        "descricao": "Uma belíssima e fotogênica estrutura histórica de ferro que atravessa as corredeiras do rio Paraíba do Sul e se consolidou como um dos principais símbolos trirrienses.",
+        "lat": -22.12291,
+        "lon": -43.177,
+        "_geo": "Ponte das Garças, Banguzinho, Três Rios, Rio de Janeiro, Região Sudeste, 25821-0"
       },
       {
         "nome": "Capela Nossa Senhora da Piedade",
-        "descricao": "A pequena e mais antiga capela da cidade, que resiste bravamente ao tempo e demarca o local histórico exato onde se iniciou o primeiro núcleo de povoamento."
+        "descricao": "A pequena e mais antiga capela da cidade, que resiste bravamente ao tempo e demarca o local histórico exato onde se iniciou o primeiro núcleo de povoamento.",
+        "lat": -22.125984,
+        "lon": -43.232141,
+        "_geo": "Capela Nossa Senhora da Piedade, Praça Nossa Senhora Piedade, Três Rios, Rio de "
       },
       {
         "nome": "Rafting no Rio Paraibuna",
@@ -2339,7 +2702,10 @@
     "destinos": [
       {
         "nome": "Conservatória (Capital da Seresta)",
-        "descricao": "Um charmoso e extremamente romântico distrito histórico, famoso nacionalmente por suas ruas coloniais e pelos músicos que realizam serenatas noturnas nas janelas."
+        "descricao": "Um charmoso e extremamente romântico distrito histórico, famoso nacionalmente por suas ruas coloniais e pelos músicos que realizam serenatas noturnas nas janelas.",
+        "lat": -22.289417,
+        "lon": -43.927657,
+        "_geo": "Conservatória, Valença, Rio de Janeiro, Região Sudeste, 27655-000, Brasil"
       },
       {
         "nome": "Fazendas do Ciclo do Café",
@@ -2347,7 +2713,10 @@
       },
       {
         "nome": "Catedral de Nossa Senhora da Glória",
-        "descricao": "A majestosa paróquia central da cidade, construída em imponente e altivo estilo neoclássico, que atrai a devoção e a admiração de todos por sua riqueza arquitetônica."
+        "descricao": "A majestosa paróquia central da cidade, construída em imponente e altivo estilo neoclássico, que atrai a devoção e a admiração de todos por sua riqueza arquitetônica.",
+        "lat": -22.246156,
+        "lon": -43.700849,
+        "_geo": "Catedral de Nossa Senhora da Glória, Praça Padre Gomes Leal, Valença, Rio de Jan"
       },
       {
         "nome": "Parque Estadual da Serra da Concórdia",
@@ -2376,7 +2745,10 @@
       },
       {
         "nome": "Igreja Matriz de São Sebastião",
-        "descricao": "O principal templo católico do município, que reúne a inabalável fé da comunidade local e se destaca pela arquitetura simples e acolhedora de seu interior."
+        "descricao": "O principal templo católico do município, que reúne a inabalável fé da comunidade local e se destaca pela arquitetura simples e acolhedora de seu interior.",
+        "lat": -20.931446,
+        "lon": -41.867967,
+        "_geo": "Igreja Matriz de São Sebastião, Rua da Matriz, Centro, Varre-Sai, Rio de Janeiro"
       },
       {
         "nome": "Fazendas de Café e Uva",
@@ -2389,7 +2761,10 @@
     "destinos": [
       {
         "nome": "Praça Barão de Campo Belo",
-        "descricao": "Um monumental e impecável conjunto paisagístico no coração da cidade, ladeado por palacetes luxuosos que remetem imediatamente ao apogeu da era dos Barões do Café."
+        "descricao": "Um monumental e impecável conjunto paisagístico no coração da cidade, ladeado por palacetes luxuosos que remetem imediatamente ao apogeu da era dos Barões do Café.",
+        "lat": -22.409566,
+        "lon": -43.661111,
+        "_geo": "Praça Barão de Campo Belo, Vassouras, Rio de Janeiro, Região Sudeste, Brasil"
       },
       {
         "nome": "Igreja Matriz de Nossa Senhora da Conceição",
@@ -2414,11 +2789,17 @@
     "destinos": [
       {
         "nome": "Zoológico Municipal",
-        "descricao": "O único zoológico público do interior do estado, um imenso e arborizado parque de lazer gratuito que é o destino favorito das famílias para caminhadas e piqueniques de fim de semana."
+        "descricao": "O único zoológico público do interior do estado, um imenso e arborizado parque de lazer gratuito que é o destino favorito das famílias para caminhadas e piqueniques de fim de semana.",
+        "lat": -22.529378,
+        "lon": -44.103676,
+        "_geo": "Zoológico Municipal de Volta Redonda, Vila Santa Cecília, Volta Redonda, Rio de "
       },
       {
         "nome": "Praça Brasil",
-        "descricao": "O grandioso e movimentado coração do centro cívico da \"Cidade do Aço\", abrigando monumentos e refletindo o planejamento urbano que acompanhou o desenvolvimento industrial."
+        "descricao": "O grandioso e movimentado coração do centro cívico da \"Cidade do Aço\", abrigando monumentos e refletindo o planejamento urbano que acompanhou o desenvolvimento industrial.",
+        "lat": -22.516649,
+        "lon": -44.104089,
+        "_geo": "Praça Brasil, Vila Santa Cecília, Volta Redonda, Rio de Janeiro, Região Sudeste,"
       },
       {
         "nome": "Memorial Getúlio Vargas",

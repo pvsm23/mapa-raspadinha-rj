@@ -30,3 +30,4 @@ android/keystore.properties
 # Build outputs do Android
 android/app/build/
 android/app/release/
+pontos-sem-coordenada.txt
