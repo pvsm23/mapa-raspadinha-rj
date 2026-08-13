@@ -1463,6 +1463,7 @@
       },
       {
         "nome": "Fortaleza de Santa Cruz da Barra",
+        "icone": "3303302-fortaleza-santa-cruz.png",
         "lat": -22.938016,
         "lon": -43.133822,
         "descricao": "Fortificação de 1555 na entrada da Baía de Guanabara.",
@@ -2071,6 +2072,7 @@
       },
       {
         "nome": "Pão de Açúcar",
+        "icone": "3304557-pao-de-acucar.png",
         "lat": -22.949489,
         "lon": -43.156157,
         "descricao": "Um complexo monumental e fascinante de montanhas de granito à beira-mar, acessado por um charmoso bondinho suspenso que revela a vista mais deslumbrante da cidade maravilhosa."

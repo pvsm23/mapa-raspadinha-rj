@@ -83,6 +83,27 @@ async function limpar(entrada, saida, lado = 320) {
     enfileirar(x, y - 1);
   }
 
+  /* Segunda passada: fundo ILHADO, que a inundação não alcança.
+   *
+   * No Pão de Açúcar, os cabos do bondinho cruzam o céu de ponta a
+   * ponta e fecham um pedaço de fundo entre os dois morros. A
+   * inundação para nos cabos e aquele naco ficava opaco -- um triângulo
+   * preto no meio da arte.
+   *
+   * Aqui a cor decide sozinha, sem depender de caminho até a borda. É
+   * seguro PORQUE o fundo é um tom bem específico (~#0A0D13) e o preto
+   * do desenho é 0,0,0, a uns 26 de distância: o dobro da tolerância.
+   * O contador abaixo existe pra conferir -- se um dia esse número
+   * disparar numa arte nova, é sinal de que ela usa o tom do fundo como
+   * cor de desenho, e aí esta passada tem que sair. */
+  let ilhados = 0;
+  for (let i = 0; i < data.length; i += C) {
+    if (data[i + 3] !== 0 && ehFundo(i)) {
+      data[i + 3] = 0;
+      ilhados++;
+    }
+  }
+
   const buffer = await sharp(data, { raw: { width: L, height: A, channels: C } })
     .png()
     .trim()
@@ -95,8 +116,11 @@ async function limpar(entrada, saida, lado = 320) {
 
   fs.writeFileSync(saida, buffer);
   const meta = await sharp(buffer).metadata();
-  const pct = ((removidos / (L * A)) * 100).toFixed(0);
-  console.log(`${path.basename(saida)}: ${meta.width}x${meta.height}, ${Math.round(buffer.length / 1024)} KB (${pct}% do quadro era fundo)`);
+  const pct = (((removidos + ilhados) / (L * A)) * 100).toFixed(0);
+  const nota = ilhados ? `, ${ilhados} px de fundo ilhado` : "";
+  console.log(
+    `${path.basename(saida)}: ${meta.width}x${meta.height}, ${Math.round(buffer.length / 1024)} KB (${pct}% do quadro era fundo${nota})`
+  );
 }
 
 const [entrada, saida] = process.argv.slice(2);
