@@ -479,9 +479,16 @@ const rotulos = featuresOrdenadas
     // não sumir de vez -- quem quiser ler dá mais zoom (a letra cresce
     // junto com o mapa). Antes o piso era 3.5, gigante pros pequenos.
     const fonte = Math.max(1.2, Math.min(4, largura / 11));
+    /* Vai em `--rotulo-base`, e NÃO em font-size, igual ao RJ: o CSS
+       divide essa base pelo `--zoom` pra a letra ficar do mesmo tamanho
+       NA TELA em qualquer aproximação. Como atributo font-size o nome
+       era ampliado junto com o mapa e, no zoom fundo, "Abaeté" ocupava
+       meia tela. O font-size continua escrito como reserva, pro caso do
+       SVG ser aberto fora do app (o CSS ganha dele por especificidade). */
     return (
       `  <text class="rotulo-municipio" x="${x}" y="${y}" ` +
-      `font-size="${fonte.toFixed(1)}" pointer-events="none">` +
+      `style="--rotulo-base:${fonte.toFixed(1)}" font-size="${fonte.toFixed(1)}" ` +
+      `pointer-events="none">` +
       `${escaparAtributo(nome)}</text>`
     );
   })

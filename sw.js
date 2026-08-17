@@ -10,7 +10,12 @@
  * atualizaria se o CACHE_NAME mudasse a cada vez, o que é fácil de
  * esquecer de fazer.
  */
-const CACHE_NAME = "mapa-raspadinha-v7";
+/* Subiu pra v8 na 0.26.08.17.90: o activate abaixo só apaga cache com
+   nome DIFERENTE deste, então deixar o número parado mantinha vivo o
+   br-estados.svg velho de quem já tinha o app. Trocar o número é o que
+   força a limpeza -- toda vez que um arquivo cacheado mudar de conteúdo
+   sem mudar de nome, este número precisa subir junto. */
+const CACHE_NAME = "mapa-raspadinha-v8";
 // Pacote offline do PRO: fica num cache SEPARADO de propósito, pra
 // sobreviver à troca de CACHE_NAME a cada deploy (ver o activate
 // abaixo, que só apaga caches "mapa-raspadinha-*"). Sem isso, o
@@ -89,7 +94,24 @@ self.addEventListener("fetch", (evento) => {
      ficaria presa numa versão antiga -- que é exatamente o problema
      que o comentário no topo deste arquivo diz que a gente evitou ao
      escolher network-first. Continuam network-first. */
-  if (evento.request.destination === "image" || /\.(webp|png|jpe?g|svg|ico)$/i.test(url.pathname)) {
+  /* ---- Exceção: o mapa do Brasil NÃO é arte, é ESTADO DO APP ----
+     O assets/svg/br-estados.svg carrega, em cada <path>, a classe que
+     diz se o estado está liberado, em desenvolvimento ou bloqueado. Ele
+     muda toda vez que um estado avança de fase -- ou seja, é conteúdo
+     que atualiza, não desenho fixo.
+
+     Cache-first o congelava: MG virou "em desenvolvimento" no site e o
+     app continuou mostrando "Minas Gerais chega em breve", porque servia
+     a cópia velha. Pior, ele está no pacote offline, e o CACHE_OFFLINE
+     nunca é limpo -- pra quem baixou o pacote, ficaria travado PRA
+     SEMPRE, mesmo trocando de APK. Mandando pro ramo network-first lá
+     embaixo, ele atualiza quando há rede e continua abrindo sem ela. */
+  const ehMapaDoBrasil = /assets\/svg\/br-estados\.svg$/i.test(url.pathname);
+
+  if (
+    !ehMapaDoBrasil &&
+    (evento.request.destination === "image" || /\.(webp|png|jpe?g|svg|ico)$/i.test(url.pathname))
+  ) {
     /* Os mapas de estado (SP, MG: assets/svg/<uf>-municipios.svg) têm
        ciclo PRÓPRIO -- quem os guarda é baixarMapaDoEstado, no
        CACHE_OFFLINE, quando a pessoa pede. Aqui o SW só NÃO pode

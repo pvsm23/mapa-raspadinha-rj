@@ -766,9 +766,54 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
    ao dar zoom (fica sempre ~0.5px na tela), então as divisas ficam
    precisas em qualquer aproximação -- diferente do RJ, onde a borda
    engrossa junto com o mapa. */
+/* ---- Divisas que AFINAM ao aproximar (igual ao RJ) ----
+
+   Tinha `vector-effect: non-scaling-stroke` aqui, e era CÓDIGO MORTO:
+   o non-scaling-stroke só compensa transform de DENTRO do sistema de
+   coordenadas do SVG, e o zoom daqui é um `transform: scale()` do CSS
+   aplicado no <svg> por fora -- ele amplia o desenho já rasterizado,
+   traço junto. Resultado: no zoom fundo a divisa virava uma tarja
+   grossa que engolia os municípios pequenos.
+
+   A solução é a mesma que o RJ já usa: dividir pelo `--zoom`, que o
+   aplicarTransform escreve a cada movimento. Como a espessura está em
+   unidades do desenho, dividir pelo zoom faz o produto final ficar
+   CONSTANTE na tela. E o `--traco-base`, que desce a cada faixa de
+   aproximação, deixa a linha de fato mais FINA de perto -- abrindo
+   espaço pro detalhe da divisa, que agora existe (qualidade máxima). */
 #estado-viewport svg .municipio {
-  stroke-width: 0.35;
-  vector-effect: non-scaling-stroke;
+  stroke-width: calc(var(--traco-base, 3.2) * 1px / var(--zoom, 1));
+}
+
+#estado-viewport svg.zoom-n1 .municipio {
+  --traco-base: 2.4;
+}
+#estado-viewport svg.zoom-n2 .municipio {
+  --traco-base: 1.7;
+}
+#estado-viewport svg.zoom-n3 .municipio {
+  --traco-base: 1.2;
+}
+#estado-viewport svg.zoom-n4 .municipio {
+  --traco-base: 0.85;
+}
+
+/* Nome do município com tamanho FIXO NA TELA -- mesma conta do RJ. A
+   base por município vem do gerador em `--rotulo-base` (proporcional ao
+   tamanho dele); o zoom vem do JS. Sem isso a letra era ampliada junto
+   com o mapa e um nome só tomava a tela inteira no zoom fundo.
+
+   O `clamp` existe porque a base é proporcional ao TAMANHO do município
+   (1.2 a 4): com a letra fixa na tela, os pequenos ficavam em 1,2 px,
+   ilegíveis pra sempre. O clamp mantém a diferença entre grande e
+   pequeno, mas dentro de uma faixa que dá pra ler (~8 a 13 px).
+
+   Rótulo de região e contorno de região NÃO entram aqui de propósito:
+   os dois só existem no modo afastado (zoom < 2.4), onde crescer com o
+   mapa não incomoda -- e é assim que já estavam bons. */
+#estado-viewport svg .rotulo-municipio {
+  font-size: calc(clamp(2.4, var(--rotulo-base, 2.5), 4) * 7px / var(--zoom, 1));
+  stroke-width: calc(0.6px * 7 / var(--zoom, 1));
 }
 
 /* Os nomes dos municípios (.rotulo-municipio) já vêm com display:none e

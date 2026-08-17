@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.89";
+const VERSAO_APP = "0.26.08.17.90";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.89";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.90", itens: ["Correção: Minas Gerais aparecia como \"chega em breve\" e não abria, mesmo já estando pronto — o app estava usando uma cópia antiga do mapa do Brasil guardada no aparelho.", "No mapa dos estados, as divisas agora afinam conforme você aproxima, em vez de virarem tarjas grossas, e os nomes das cidades ficam do mesmo tamanho na tela em qualquer zoom."] },
   { versao: "0.26.08.17.89", itens: ["Minas Gerais entrou no app: dá pra explorar o mapa município por município, com o mesmo nível de detalhe do Rio.", "São Paulo ganhou esse mesmo detalhe — as divisas ficavam grosseiras ao aproximar e agora não ficam mais.", "Os mapas de MG e SP não vêm dentro do app: você baixa o que quiser em Configurações → Mapas dos estados, e depois eles abrem sem internet.", "Se você estiver em Minas ou em São Paulo, o mapa do seu estado vem sozinho — só em Wi-Fi, pra não gastar seu plano de dados."] },
   { versao: "0.26.08.17.88", itens: ["Os selos desenhados na hora agora também são raspáveis: a capa vem em preto e branco e ganha cor conforme você raspa.", "A previsão do tempo passou a mostrar a data de cada dia, não só o dia da semana.", "Correção: os dias da previsão apareciam sem nome desde a última atualização."] },
   { versao: "0.26.08.17.87", itens: ["O mapa ficou mais limpo: o Modo Viagem virou um botão verde grande no centro, e os modos do mapa (como o Clima) moram agora num menu próprio.", "Municípios, rotas e conquistas sem arte pronta ganharam um selo desenhado na hora, com borda dourada e a cor sempre igual para o mesmo lugar.", "Ficou óbvio o que ainda está bloqueado: cadeado discreto e card apagado; o que você já conquistou ganha brilho dourado."] },
@@ -12154,6 +12155,10 @@ function inicializarPanZoomEstadual() {
   // na tela por vez (menos poluição e mais leve). São 645 em SP e 853 em
   // MG, então esse limiar é bem mais alto que o do RJ (92).
   const LIMIAR_ROTULOS = 7;
+  /* Zoom em que cada degrau de afinamento da divisa entra (classes
+     .zoom-n1 a .zoom-n4). Vai até bem mais fundo que o do RJ porque
+     aqui o mapa vai até 80x, contra 40x lá. */
+  const ZOOM_TRACO_ESTADUAL = [3, 8, 18, 35];
 
   let escala = 1;
   let deslocX = 0;
@@ -12185,6 +12190,14 @@ function inicializarPanZoomEstadual() {
     svg.classList.toggle("modo-regioes", escala < LIMIAR_REGIOES);
     // Nomes dos municípios só bem no zoom.
     svg.classList.toggle("mostrar-rotulos", escala >= LIMIAR_ROTULOS);
+
+    /* O CSS divide a espessura das divisas e o tamanho das letras por
+       isto, deixando os dois constantes NA TELA em qualquer zoom -- é o
+       mesmo mecanismo do mapa do RJ (ver atualizarModoDeVisualizacao). */
+    svg.style.setProperty("--zoom", escala.toFixed(2));
+    for (let n = 0; n < ZOOM_TRACO_ESTADUAL.length; n++) {
+      svg.classList.toggle(`zoom-n${n + 1}`, escala >= ZOOM_TRACO_ESTADUAL[n]);
+    }
   }
 
   function aplicarZoomAncorado(novaEscala, ancoraX, ancoraY) {

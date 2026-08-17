@@ -1,5 +1,12 @@
 [
   {
+    "versao": "0.26.08.17.90",
+    "itens": [
+      "Correção: Minas Gerais aparecia como \"chega em breve\" e não abria, mesmo já estando pronto — o app estava usando uma cópia antiga do mapa do Brasil guardada no aparelho.",
+      "No mapa dos estados, as divisas agora afinam conforme você aproxima, em vez de virarem tarjas grossas, e os nomes das cidades ficam do mesmo tamanho na tela em qualquer zoom."
+    ]
+  },
+  {
     "versao": "0.26.08.17.89",
     "itens": [
       "Minas Gerais entrou no app: dá pra explorar o mapa município por município, com o mesmo nível de detalhe do Rio.",
