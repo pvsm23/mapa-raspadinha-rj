@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.87";
+const VERSAO_APP = "0.26.08.17.88";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.87";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.88", itens: ["Os selos desenhados na hora agora também são raspáveis: a capa vem em preto e branco e ganha cor conforme você raspa.", "A previsão do tempo passou a mostrar a data de cada dia, não só o dia da semana.", "Correção: os dias da previsão apareciam sem nome desde a última atualização."] },
   { versao: "0.26.08.17.87", itens: ["O mapa ficou mais limpo: o Modo Viagem virou um botão verde grande no centro, e os modos do mapa (como o Clima) moram agora num menu próprio.", "Municípios, rotas e conquistas sem arte pronta ganharam um selo desenhado na hora, com borda dourada e a cor sempre igual para o mesmo lugar.", "Ficou óbvio o que ainda está bloqueado: cadeado discreto e card apagado; o que você já conquistou ganha brilho dourado."] },
   { versao: "0.26.08.17.86", itens: ["O clima agora vem pronto de um servidor nosso, atualizado de meia em meia hora — abre mais rápido e gasta menos internet do seu aparelho."] },
   { versao: "0.26.08.17.85", itens: ["O botão do Modo Viagem saiu do canto direito e virou um botão em destaque no meio da barra de baixo — sobrou espaço e ficou mais fácil de alcançar com o polegar.", "No Modo Clima, as temperaturas agora acompanham o mapa enquanto você arrasta, em vez de só pularem para o lugar quando você solta.", "E os marcadores de pontos turísticos somem enquanto o Modo Clima está ligado, pra não embolar com as temperaturas."] },
@@ -5955,12 +5956,13 @@ function desenharPilulaDeClima(dados) {
   interna.className = "clima-previsao-interna";
   previsao.appendChild(interna);
 
-  dados.dias.slice(1, 4).forEach((dia) => {
+  dados.dias.slice(1, 4).forEach((dia, indice) => {
     const item = document.createElement("span");
     item.className = "clima-dia";
     const nome = document.createElement("span");
     nome.className = "clima-dia-nome";
-    nome.textContent = dia.rotulo;
+    // Rotulo derivado da data aqui, nao guardado no dado (ver clima.js).
+    nome.textContent = window.desbravaClima.rotuloDoDia(dia.data, indice + 1);
     const desenho = document.createElement("span");
     desenho.className = "clima-dia-icone";
     desenho.innerHTML = window.desbravaClima.iconeDoTempo(dia.codigo, false).svg;
@@ -6401,7 +6403,8 @@ function abrirModalRaspadinha(id, nome) {
 
   resolverImagemColorida(`assets/img/selos/${id}`, brilhante, id, nome).then((caminhoColorido) => {
     if (!caminhoColorido.arteReal) {
-      iniciar(caminhoColorido.url, null);
+      // Sem arte real, a capa tambem e gerada -- mesma funcao, paleta P&B.
+      iniciar(caminhoColorido.url, gerarCapaPlaceholder(id, nome));
       return;
     }
     carregarImagem(caminhoCapa).then((existeCapa) => {
@@ -8240,7 +8243,7 @@ function renderizarSeloConquista(chave, titulo, desbloqueada) {
     const imageUrl = existeColorido ? caminhoColorido : gerarSeloPlaceholder(chave, titulo, 76);
     const usarCapa = existeColorido
       ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
-      : Promise.resolve(null);
+      : Promise.resolve(gerarCapaPlaceholder(chave, titulo, 76));
     usarCapa.then((imageUrlCapa) => {
       corpo.innerHTML = "";
       initScratchCard({
@@ -9409,7 +9412,7 @@ function abrirPopupRegiao(regiaoId) {
       (resultado) => {
         const usarCapa = resultado.arteReal
           ? carregarImagem(caminhoCapa).then((existeCapa) => (existeCapa ? caminhoCapa : null))
-          : Promise.resolve(null);
+          : Promise.resolve(gerarCapaPlaceholder(regiaoId, nomeRegiaoSelo, 400));
         usarCapa.then((imageUrlCapa) => {
           corpo.innerHTML = "";
           initScratchCard({
@@ -10787,7 +10790,26 @@ const OURO_ESCURO = "#8A6B15";
  * `brilhante` troca o fundo pelo degradê dourado: é o selo raspado com
  * sorte, e ele precisa se parecer com o dourado real dos ilustrados.
  */
-function gerarSeloPlaceholder(id, nome, tamanho = 260, brilhante = false) {
+/**
+ * CAPA raspável do selo dinâmico -- o equivalente ao `{id}fundo.webp`
+ * da arte real.
+ *
+ * Sem isto, município sem arte caía na capa cinza genérica da
+ * raspadinha: raspar não revelava nada reconhecível, só um cinza
+ * virando cor. Agora a capa é o MESMO selo em preto e branco, então o
+ * desenho aparece "ganhando cor" conforme o dedo passa.
+ *
+ * É desenhada pela mesma função do colorido, só trocando a paleta --
+ * e é isso que garante alinhamento pixel a pixel. Redesenhar por outro
+ * caminho traria o mesmo risco que o comentário do
+ * tools/gerar-fundo-selos.js descreve: capa e selo revelado não
+ * baterem.
+ */
+function gerarCapaPlaceholder(id, nome, tamanho = 260) {
+  return gerarSeloPlaceholder(id, nome, tamanho, false, true);
+}
+
+function gerarSeloPlaceholder(id, nome, tamanho = 260, brilhante = false, capa = false) {
   /* Renderiza em resolução de DISPOSITIVO e reduz por CSS. Sem isso o
      selo sai borrado em tela retina -- foi a mesma lição da raspadinha
      (ver js/scratch-card.js). Teto de 3 pra não gerar canvas gigante
@@ -10804,7 +10826,17 @@ function gerarSeloPlaceholder(id, nome, tamanho = 260, brilhante = false) {
   const { fundo, texto } = corDoSelo(nome);
 
   // ---- Miolo ----
-  if (brilhante) {
+  if (capa) {
+    /* Preto e branco com a MESMA estrutura de luz do colorido: o cinza
+       sai da luminancia da cor real, entao selo escuro tem capa escura
+       e selo claro tem capa clara. Escala fixa deixaria todos iguais e
+       a raspagem perderia a graca. */
+    const cinza = cinzaDaCor(fundo);
+    const g2 = ctx.createLinearGradient(0, 0, 0, tamanho);
+    g2.addColorStop(0, clarear(cinza, 10));
+    g2.addColorStop(1, clarear(cinza, -12));
+    ctx.fillStyle = g2;
+  } else if (brilhante) {
     const brilho = ctx.createLinearGradient(0, 0, tamanho, tamanho);
     brilho.addColorStop(0, "#F9EFC0");
     brilho.addColorStop(0.45, OURO);
@@ -10830,14 +10862,17 @@ function gerarSeloPlaceholder(id, nome, tamanho = 260, brilhante = false) {
     ctx.lineWidth = espessura;
     ctx.stroke();
   };
-  anel(raio, OURO_ESCURO, tamanho * 0.035);
-  anel(raio - tamanho * 0.012, OURO, tamanho * 0.022);
-  anel(raio - tamanho * 0.026, OURO_CLARO, tamanho * 0.008);
+  /* Moldura em PRATA na capa: o ouro so aparece quando a pessoa raspa.
+     E a recompensa visual da raspagem -- se a capa ja fosse dourada,
+     revelar nao mudaria a moldura. */
+  anel(raio, capa ? "#3E444C" : OURO_ESCURO, tamanho * 0.035);
+  anel(raio - tamanho * 0.012, capa ? "#8C949E" : OURO, tamanho * 0.022);
+  anel(raio - tamanho * 0.026, capa ? "#C9CFD6" : OURO_CLARO, tamanho * 0.008);
   // Fio fino por dentro, separando a moldura do miolo.
   anel(raio - tamanho * 0.052, "rgba(255,255,255,0.22)", tamanho * 0.004);
 
   // ---- Nome ----
-  const corTexto = brilhante ? "#3A2C05" : texto;
+  const corTexto = capa ? textoSobreCinza(fundo) : brilhante ? "#3A2C05" : texto;
   ctx.fillStyle = corTexto;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -10870,6 +10905,36 @@ function gerarSeloPlaceholder(id, nome, tamanho = 260, brilhante = false) {
   ctx.shadowBlur = 0;
 
   return canvas.toDataURL();
+}
+
+/**
+ * Cinza equivalente a uma cor, pela luminância percebida.
+ *
+ * Não é a média dos canais: o olho enxerga verde muito mais que azul,
+ * então `(r+g+b)/3` deixaria um azul-marinho e um verde-oliva com o
+ * mesmo cinza, apesar de um parecer bem mais escuro que o outro. Os
+ * pesos são os mesmos do cálculo de contraste.
+ *
+ * A capa fica um pouco mais ESCURA que o equivalente exato (fator
+ * 0.82): capa clara demais faz a raspagem parecer que já está pronta
+ * antes de começar.
+ */
+function cinzaDaCor(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  const nivel = Math.round((0.2126 * r + 0.7152 * g + 0.0722 * b) * 0.82);
+  const v = Math.max(0, Math.min(255, nivel)).toString(16).padStart(2, "0");
+  return `#${v}${v}${v}`;
+}
+
+/** Branco ou preto sobre o cinza da capa, pelo mesmo critério da cor. */
+function textoSobreCinza(hex) {
+  const cinza = cinzaDaCor(hex);
+  const v = parseInt(cinza.slice(1, 3), 16) / 255;
+  const linear = v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  return 1.05 / (linear + 0.05) >= (linear + 0.05) / 0.05 ? "#FFFFFF" : "#101418";
 }
 
 /** Clareia (positivo) ou escurece (negativo) um hex, em pontos de L. */

@@ -121,14 +121,22 @@
     return encontrado ? encontrado[1] : "";
   }
 
-  /** Nome curto do dia ("hoje", "qua", "qui") a partir do AAAA-MM-DD. */
+  /**
+   * Rótulo do dia: "hoje", ou "qua 19" a partir do AAAA-MM-DD.
+   *
+   * O DIA DO MÊS entra junto porque só o nome da semana é ambíguo: numa
+   * previsão de 4 dias, "qua" pode ser daqui a um dia ou daqui a seis,
+   * e quem está planejando uma viagem precisa saber a data. Custa dois
+   * caracteres.
+   */
   function diaCurto(iso, indice) {
     if (indice === 0) return "hoje";
     const partes = String(iso || "").split("-").map(Number);
     if (partes.length !== 3) return "";
     // Meio-dia evita o dia "voltar" por fuso na conversão.
     const data = new Date(partes[0], partes[1] - 1, partes[2], 12);
-    return data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+    const semana = data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+    return `${semana} ${data.getDate()}`;
   }
 
   // ---------------- Cache ----------------
@@ -191,9 +199,18 @@
   function arrumar(cru) {
     if (!cru || !cru.current_weather) return null;
     const diario = cru.daily || {};
+    /* Guarda só a DATA, não o rótulo.
+     *
+     * O rótulo ("qua 19") é apresentação e é derivado na hora de
+     * desenhar, por rotuloDoDia(). Guardá-lo aqui criava um bug real:
+     * o clima publicado pelo servidor (tools/apps-script-clima.gs)
+     * traz `data` mas não `rotulo`, então todo dia aparecia como
+     * "undefined" desde que o servidor entrou no ar. Derivar no
+     * cliente faz os dois caminhos -- API direta e documento
+     * publicado -- renderizarem igual, e ainda conserta os documentos
+     * que já estão gravados sem precisar republicar. */
     const dias = (diario.time || []).map((data, i) => ({
       data,
-      rotulo: diaCurto(data, i),
       codigo: diario.weathercode?.[i],
       max: Math.round(diario.temperature_2m_max?.[i]),
       min: Math.round(diario.temperature_2m_min?.[i]),
@@ -400,6 +417,8 @@
   lerDoDisco();
 
   window.desbravaClima = {
+    // Apresentacao derivada da data (ver a nota em arrumar()).
+    rotuloDoDia: diaCurto,
     // Preferidos: passam pelo clima publicado antes de ir na API.
     doMunicipio,
     deVariosMunicipios,

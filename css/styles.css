@@ -10815,11 +10815,13 @@ button:disabled:active {
               width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
               margin-top 0.34s ease;
 }
-#clima-pilula.expandida #clima-pilula-previsao { width: 148px; }
+#clima-pilula.expandida #clima-pilula-previsao { width: 168px; }
 
 .clima-dia {
   display: grid;
-  grid-template-columns: 2.2rem 1.1rem 1fr;
+  /* Coluna do dia mais larga: agora leva a data junto ("qua 19"),
+     nao so o nome da semana. */
+  grid-template-columns: 3.4rem 1.1rem 1fr;
   align-items: center;
   gap: 8px;
   padding: 3px 0;

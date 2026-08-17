@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.17.88",
+    "itens": [
+      "Os selos desenhados na hora agora também são raspáveis: a capa vem em preto e branco e ganha cor conforme você raspa.",
+      "A previsão do tempo passou a mostrar a data de cada dia, não só o dia da semana.",
+      "Correção: os dias da previsão apareciam sem nome desde a última atualização."
+    ]
+  },
+  {
     "versao": "0.26.08.17.87",
     "itens": [
       "O mapa ficou mais limpo: o Modo Viagem virou um botão verde grande no centro, e os modos do mapa (como o Clima) moram agora num menu próprio.",
