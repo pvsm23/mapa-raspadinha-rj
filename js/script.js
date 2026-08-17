@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.85";
+const VERSAO_APP = "0.26.08.17.86";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.85";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.86", itens: ["O clima agora vem pronto de um servidor nosso, atualizado de meia em meia hora — abre mais rápido e gasta menos internet do seu aparelho."] },
   { versao: "0.26.08.17.85", itens: ["O botão do Modo Viagem saiu do canto direito e virou um botão em destaque no meio da barra de baixo — sobrou espaço e ficou mais fácil de alcançar com o polegar.", "No Modo Clima, as temperaturas agora acompanham o mapa enquanto você arrasta, em vez de só pularem para o lugar quando você solta.", "E os marcadores de pontos turísticos somem enquanto o Modo Clima está ligado, pra não embolar com as temperaturas."] },
   { versao: "0.26.08.17.84", itens: ["O município agora mostra o clima: temperatura de agora no canto do selo e, tocando nela, a previsão dos próximos 3 dias.", "Junto vêm a altitude da cidade e o horário do pôr do sol — útil pra planejar a hora de pegar a estrada.", "Novo botão Modo Clima no mapa: liga e mostra a temperatura das cidades direto sobre elas."] },
   { versao: "0.26.08.17.83", itens: ["Os pontos turísticos agora têm comentários: quem confirmou a presença por GPS no município conta como foi, e qualquer pessoa pode responder para tirar dúvidas.", "Os comentários mais curtidos aparecem primeiro.", "Chegaram as notificações: você é avisado quando alguém curte ou comenta nas suas coisas, ou responde seu comentário.", "Ao postar na Comunidade dá para marcar o ponto turístico além da cidade — e o painel do ponto tem um botão que mostra só os posts dele.", "O app avisa quando sai uma versão nova, com a lista do que mudou.", "Correção: o app podia guardar uma página de erro no lugar da versão boa e abrir quebrado sem internet."] },
@@ -5920,7 +5921,9 @@ async function montarClimaDoMunicipio(id) {
   if (!onde) return;
 
   const meuToken = ++climaDoModalToken;
-  const dados = await window.desbravaClima.doLugar(onde.lat, onde.lon);
+  /* doMunicipio, e nao doLugar: passa antes pelo clima que o servidor
+     publica, e so vai na API se ele nao tiver este municipio. */
+  const dados = await window.desbravaClima.doMunicipio(id, onde.lat, onde.lon);
   if (meuToken !== climaDoModalToken || !dados) return;
 
   desenharPilulaDeClima(dados);
@@ -6163,7 +6166,9 @@ async function redesenharChipsDeClima() {
     if (colocados.length >= 28) break;
   }
 
-  const clima = await window.desbravaClima.deVarios(colocados);
+  /* deVariosMunicipios: o que o servidor ja publicou sai de graca; so
+     o que faltar vira chamada agrupada a API. */
+  const clima = await window.desbravaClima.deVariosMunicipios(colocados);
   if (!modoClimaLigado) return; // desligou enquanto buscava
 
   camada.innerHTML = "";

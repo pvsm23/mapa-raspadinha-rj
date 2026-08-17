@@ -273,6 +273,7 @@ window.raspadinhaAuth = {
   listarRespostasPonto: async () => [],
   excluirRespostaPonto: async () => {},
   // ---- Notificações ----
+  lerClimaPublicado: async () => null,
   listarNotificacoes: async () => [],
   contarNotificacoesNaoLidas: async () => 0,
   marcarNotificacoesLidas: async () => {},
@@ -2106,6 +2107,39 @@ if (CONFIGURADO) {
       ...dados,
     }).catch((erro) => console.warn("Não deu pra notificar:", erro));
   }
+
+  /**
+   * Lê o clima que o servidor publicou (tools/apps-script-clima.gs).
+   *
+   * UM documento pra todo mundo, atualizado a cada 30 min por um
+   * gatilho de tempo. É o que impede o consumo do Open-Meteo de
+   * crescer junto com o número de usuários: sem isso, cada aparelho
+   * falava direto com a API e o limite diário viraria teto de
+   * crescimento (ver o cabeçalho do .gs pra conta completa).
+   *
+   * Leitura PÚBLICA de propósito: o clima aparece no mapa antes de
+   * qualquer login, e não é dado de ninguém. A regra do Firestore
+   * libera só o read desta coleção.
+   *
+   * Devolve `{ atualizadoEm: Date, dados: {municipioId: clima} }` ou
+   * null. Nunca lança: sem isso o app cai no Open-Meteo direto, que é
+   * o caminho antigo e continua funcionando.
+   */
+  window.raspadinhaAuth.lerClimaPublicado = async () => {
+    try {
+      const snap = await getDoc(doc(db, "clima", "atual"));
+      if (!snap.exists()) return null;
+      const bruto = snap.data();
+      if (!bruto?.dados) return null;
+      return {
+        atualizadoEm: bruto.atualizadoEm?.toDate?.() || null,
+        dados: JSON.parse(bruto.dados),
+      };
+    } catch (erro) {
+      console.warn("Não deu pra ler o clima publicado:", erro);
+      return null;
+    }
+  };
 
   window.raspadinhaAuth.listarNotificacoes = async (limiteN = 40) => {
     const usuario = auth.currentUser;

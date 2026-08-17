@@ -404,6 +404,28 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
           }
         }
 
+        // CLIMA compartilhado (clima/atual), escrito a cada 30 min por
+        // tools/apps-script-clima.gs.
+        //
+        // Existe pra o consumo do Open-Meteo NÃO crescer junto com o
+        // número de usuários: sem ele, cada aparelho falava direto com
+        // a API (~5 chamadas por sessão) e o limite gratuito -- 10.000
+        // por dia, 600 por MINUTO -- viraria teto de crescimento. Com
+        // um documento só, a API recebe 144 chamadas por dia tenha o
+        // app 10 ou 10.000 usuários.
+        //
+        // read PÚBLICO (nem `request.auth != null`): o clima aparece no
+        // mapa antes de qualquer login, e não é dado de ninguém.
+        //
+        // write PROIBIDO PRA TODO MUNDO, e mesmo assim o Apps Script
+        // grava: ele usa ScriptApp.getOAuthToken(), token
+        // ADMINISTRATIVO da conta dona do projeto, que ignora estas
+        // regras (mesmo mecanismo do webhook de pagamento).
+        match /clima/{docId} {
+          allow read: if true;
+          allow write: if false;
+        }
+
         // Configuração global do app (hoje só o toggle de anúncios,
         // ver painel de Admin em Configurações e
         // atualizarVisibilidadeAnuncio em js/script.js) -- read

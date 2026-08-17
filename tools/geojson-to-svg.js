@@ -591,6 +591,36 @@ const svg =
   `xmlns="http://www.w3.org/2000/svg">\n${paths}\n${rotulos}\n</svg>\n`;
 
 fs.mkdirSync(path.dirname(SAIDA), { recursive: true });
+/* ---- Coordenadas por município (data/municipios-coordenadas.json) ----
+ *
+ * Uma lat/lon por município, para quem precisa saber "onde fica" sem
+ * carregar o mapa. Hoje quem usa é o tools/apps-script-clima.gs, que
+ * roda no servidor do Google e busca o clima dos 92 de uma vez.
+ *
+ * A coordenada é a MESMA que o rótulo usa (centro da caixa do
+ * município), desprojetada de volta pra lat/lon. Tem que ser a mesma
+ * pra o clima que o servidor publica bater com o que o cliente pediria
+ * sozinho -- duas referências diferentes dariam temperaturas
+ * ligeiramente diferentes pro mesmo lugar, dependendo do caminho.
+ *
+ * Precisão: ~6,6 km de erro mediano em relação ao centro real do
+ * município. Serve pra clima, não serve pra posição exata (ver
+ * coordenadaDoMunicipio em js/script.js). */
+const coordenadasPorMunicipio = {};
+for (const r of dadosRotulos) {
+  coordenadasPorMunicipio[r.id] = {
+    nome: r.nome,
+    lat: Number((minLat + (alturaSvg - r.y) / escala).toFixed(5)),
+    lon: Number((minLon + r.x / (correcaoLon * escala)).toFixed(5)),
+  };
+}
+fs.writeFileSync(
+  path.join(__dirname, "..", "data", "municipios-coordenadas.json"),
+  JSON.stringify(coordenadasPorMunicipio, null, 2) + "\n",
+  "utf8"
+);
+console.log(`coordenadas: ${Object.keys(coordenadasPorMunicipio).length} municípios`);
+
 fs.writeFileSync(SAIDA, svg, "utf8");
 
 /* ---- E o index.html, que é quem o app realmente usa ----

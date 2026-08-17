@@ -3,6 +3,38 @@
 Temperatura, previsão de 3 dias, altitude e pôr do sol — no modal do
 município e em chips flutuantes no mapa.
 
+## Consumo da API: por que existe um servidor no meio
+
+Medido no navegador, uma sessão ativa (ligar o Modo Clima, arrastar 4
+vezes, abrir 3 municípios) gasta **5 requisições para 32 cidades** — o
+agrupamento de até 40 por chamada já funciona. O problema não era esse.
+
+O problema é que o consumo crescia **linearmente com o número de
+usuários**: cada aparelho falava direto com o Open-Meteo. Os limites do
+plano gratuito são 10.000/dia, 5.000/hora e **600/minuto** — dá ~1.000
+a 2.000 sessões diárias, e o de minuto cai antes se muita gente abrir
+junto.
+
+**Solução:** `tools/apps-script-clima.gs` roda a cada 30 min, busca os
+92 municípios em 3 chamadas agrupadas e escreve UM documento no
+Firestore (`clima/atual`). Todos os clientes leem esse documento.
+
+| | antes | depois |
+|---|---|---|
+| chamadas ao Open-Meteo | ~5 por sessão, × usuários | **144/dia, fixo** |
+| custo por cliente | 5 chamadas externas | 1 leitura do Firestore |
+| teto de crescimento | ~1.000 sessões/dia | nenhum na prática |
+
+A busca direta **continua no código** e continua valendo: responde
+quando o documento não existe, está velho (>90 min) ou não tem aquele
+município. Nunca depender de uma coisa só.
+
+### O "não achei" também é guardado
+
+Enquanto o documento não existe, cada redesenho de chip disparava uma
+leitura nova do Firestore — medi **4 numa sessão curta**, e o mapa
+redesenha a cada arrasto. Guardando a falha por 5 min, virou **1**.
+
 ## Por que Open-Meteo
 
 Gratuito, **sem chave de API** e sem cadastro. Isso importa aqui por um
@@ -35,9 +67,19 @@ modal. Verificado simulando `fetch` que rejeita.
 
 ## Coordenada do município
 
-Não existe tabela de lat/lon por município no projeto. A coordenada sai
-da **posição do rótulo** no mapa, invertendo a projeção de
-`projetarCoordenada()`.
+Duas fontes, e elas **precisam concordar**:
+
+- **No cliente**, a coordenada sai da posição do rótulo no mapa,
+  invertendo a projeção de `projetarCoordenada()`.
+- **No servidor**, o Apps Script lê `data/municipios-coordenadas.json`,
+  gerado por `tools/geojson-to-svg.js` desprojetando **a mesma** posição
+  de rótulo.
+
+Ter a mesma origem não é detalhe: com duas referências diferentes, o
+clima publicado e o que o cliente buscaria sozinho seriam de pontos
+distintos, e a temperatura mudaria conforme o caminho que a resposta
+tomou. A lista também **não** é copiada para dentro do `.gs` — duas
+listas desencontrariam na primeira vez que o mapa mudasse.
 
 **Precisão medida** contra a média dos pontos turísticos verificados:
 erro mediano **~6,6 km**, pior caso **~30 km** (Angra dos Reis, cujo

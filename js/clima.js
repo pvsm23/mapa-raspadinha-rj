@@ -289,9 +289,121 @@
     return saida;
   }
 
+  /* ============================================================
+     CLIMA PUBLICADO PELO SERVIDOR
+
+     Um documento do Firestore com os 92 municípios, atualizado a cada
+     30 min por tools/apps-script-clima.gs. É a fonte PREFERIDA.
+
+     Por quê: buscando direto da API, o consumo cresce junto com o
+     número de usuários -- cada aparelho gasta ~5 requisições por
+     sessão, e o plano gratuito do Open-Meteo dá 10.000/dia e
+     600/minuto. Lendo do servidor, o consumo da API vira fixo (144 por
+     dia, independente de quantos usuários) e o cliente gasta UMA
+     leitura do Firestore.
+
+     A busca direta continua no arquivo e continua valendo: é o que
+     responde quando o documento ainda não existe, está velho demais ou
+     não tem aquele município. Nunca depender de uma coisa só.
+     ============================================================ */
+
+  const VALIDADE_PUBLICADO_MS = 90 * 60 * 1000; // 3 ciclos do gatilho
+  /* Quanto tempo confiar num "não tem" antes de perguntar de novo.
+     Curto o bastante pra o app perceber a publicação sem recarregar,
+     longo o bastante pra não pesar. */
+  const ESPERA_APOS_FALHA_MS = 5 * 60 * 1000;
+  let publicado = null; // { quando, dados }
+  let falhouEm = 0; // quando a última tentativa não trouxe nada
+  let buscaPublicadoEmVoo = null;
+
+  /**
+   * Garante o lote publicado em memória, buscando no máximo uma vez.
+   *
+   * A validade é FOLGADA (90 min pra um gatilho de 30) de propósito: se
+   * o Apps Script falhar uma ou duas vezes, é melhor mostrar clima de
+   * uma hora atrás do que disparar 92 buscas diretas de cada aparelho
+   * -- justamente o que este mecanismo existe pra evitar.
+   */
+  async function garantirPublicado() {
+    if (publicado && Date.now() - publicado.quando < VALIDADE_PUBLICADO_MS) {
+      return publicado.dados;
+    }
+    /* GUARDA O "NÃO ACHEI" TAMBÉM. Sem isto, enquanto o documento não
+       existe (antes do Apps Script ser publicado, ou se o gatilho
+       quebrar), CADA redesenho de chip disparava uma leitura nova do
+       Firestore -- medi 4 numa sessão curta. Como o mapa redesenha a
+       cada arrasto, isso viraria centenas de leituras à toa, justamente
+       na situação em que o servidor não tem nada a oferecer. */
+    if (!publicado && Date.now() - falhouEm < ESPERA_APOS_FALHA_MS) return null;
+    if (buscaPublicadoEmVoo) return buscaPublicadoEmVoo;
+
+    buscaPublicadoEmVoo = (async () => {
+      let resultado = null;
+      try {
+        const lido = await window.raspadinhaAuth?.lerClimaPublicado?.();
+        // `atualizadoEm` é do SERVIDOR: um documento que parou de ser
+        // atualizado (gatilho quebrado) é descartado aqui, e o app
+        // volta sozinho pra API direta.
+        const idade = lido?.atualizadoEm ? Date.now() - lido.atualizadoEm.getTime() : Infinity;
+        if (lido?.dados && idade < VALIDADE_PUBLICADO_MS) {
+          publicado = { quando: Date.now(), dados: lido.dados };
+          resultado = lido.dados;
+        }
+      } catch {
+        /* sem Firebase, sem rede: cai na busca direta */
+      }
+      if (!resultado) falhouEm = Date.now();
+      buscaPublicadoEmVoo = null;
+      return resultado;
+    })();
+
+    return buscaPublicadoEmVoo;
+  }
+
+  /**
+   * Clima de um município pelo ID (ex. "3304557").
+   *
+   * Servidor primeiro; a coordenada só é usada se ele não tiver a
+   * resposta. É por aqui que a interface deve pedir -- `doLugar` fica
+   * pro que não é município.
+   */
+  async function doMunicipio(id, lat, lon) {
+    const lote = await garantirPublicado();
+    if (lote && lote[String(id)]) return lote[String(id)];
+    if (typeof lat !== "number" || typeof lon !== "number") return null;
+    return doLugar(lat, lon);
+  }
+
+  /**
+   * Vários municípios de uma vez, pelo ID.
+   *
+   * Recebe [{ id, lat, lon }]. O que o servidor já publicou sai de
+   * graça; só o que faltar vai pra API, agrupado como antes.
+   */
+  async function deVariosMunicipios(lugares) {
+    const saida = new Map();
+    const lote = await garantirPublicado();
+    const faltando = [];
+
+    for (const lugar of lugares) {
+      const doServidor = lote && lote[String(lugar.id)];
+      if (doServidor) saida.set(lugar.id, doServidor);
+      else faltando.push(lugar);
+    }
+    if (!faltando.length) return saida;
+
+    const diretos = await deVarios(faltando);
+    for (const [id, dados] of diretos) saida.set(id, dados);
+    return saida;
+  }
+
   lerDoDisco();
 
   window.desbravaClima = {
+    // Preferidos: passam pelo clima publicado antes de ir na API.
+    doMunicipio,
+    deVariosMunicipios,
+    // Busca direta -- usada como reserva e por quem não é município.
     doLugar,
     deVarios,
     iconeDoTempo,
