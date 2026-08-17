@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.90";
+const VERSAO_APP = "0.26.08.17.91";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.90";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.91", itens: ["Correção: no aplicativo Android, baixar o mapa de Minas Gerais ou de São Paulo falhava dizendo que era a conexão — o app procurava o arquivo dentro dele mesmo, e não no site.", "Quando um download falha, o app passa a dizer o motivo de verdade em vez de culpar a internet."] },
   { versao: "0.26.08.17.90", itens: ["Correção: Minas Gerais aparecia como \"chega em breve\" e não abria, mesmo já estando pronto — o app estava usando uma cópia antiga do mapa do Brasil guardada no aparelho.", "No mapa dos estados, as divisas agora afinam conforme você aproxima, em vez de virarem tarjas grossas, e os nomes das cidades ficam do mesmo tamanho na tela em qualquer zoom."] },
   { versao: "0.26.08.17.89", itens: ["Minas Gerais entrou no app: dá pra explorar o mapa município por município, com o mesmo nível de detalhe do Rio.", "São Paulo ganhou esse mesmo detalhe — as divisas ficavam grosseiras ao aproximar e agora não ficam mais.", "Os mapas de MG e SP não vêm dentro do app: você baixa o que quiser em Configurações → Mapas dos estados, e depois eles abrem sem internet.", "Se você estiver em Minas ou em São Paulo, o mapa do seu estado vem sozinho — só em Wi-Fi, pra não gastar seu plano de dados."] },
   { versao: "0.26.08.17.88", itens: ["Os selos desenhados na hora agora também são raspáveis: a capa vem em preto e branco e ganha cor conforme você raspa.", "A previsão do tempo passou a mostrar a data de cada dia, não só o dia da semana.", "Correção: os dias da previsão apareciam sem nome desde a última atualização."] },
@@ -473,8 +474,8 @@ const CHAVE_VERSAO_VISTA = "desbrava_versao_vista";
  * app velho não tem como conhecer as novidades das versões novas. Este
  * arquivo é a cópia publicada na web, gerada por
  * tools/gerar-versoes-json.js. Só o caso B precisa dele. */
-const URL_VERSOES_PUBLICADAS =
-  "https://pvsm23.github.io/mapa-raspadinha-rj/data/versoes.json";
+const SITE_PUBLICADO = "https://pvsm23.github.io/mapa-raspadinha-rj";
+const URL_VERSOES_PUBLICADAS = `${SITE_PUBLICADO}/data/versoes.json`;
 
 /** Entradas do histórico mais novas que `versao`, da mais recente pra trás. */
 function novidadesDesde(historico, versao) {
@@ -11669,9 +11670,33 @@ let nomeDoEstadoAberto = "";
 // inicializarPanZoomEstadual(), chamado uma vez na inicialização.
 let resetarZoomEstadual = () => {};
 
-/** Caminho do mapa de um estado. Fica no SITE, não no APK. */
+/**
+ * Caminho do mapa de um estado, usado como CHAVE no CacheStorage.
+ *
+ * Sempre RELATIVO, mesmo no APK: o CacheStorage resolve contra a origem
+ * atual, então a chave fica dentro da própria origem do app. Guardar sob
+ * a URL do site daria um cache cross-origin, que o navegador trata como
+ * resposta opaca -- o mesmo tipo de armadilha que já quebrou as fotos da
+ * Comunidade uma vez (ver o histórico da v0.11.22).
+ */
 function urlDoMapaEstadual(sigla) {
   return `assets/svg/${sigla}-municipios.svg`;
+}
+
+/**
+ * De onde BUSCAR o arquivo, que não é o mesmo lugar da chave.
+ *
+ * Dentro do APK, caminho relativo resolve pro localhost interno do
+ * Capacitor -- e esses SVGs foram tirados do APK de propósito (~11 MB).
+ * Resultado: 404 local, e o download "falhava por conexão" mesmo com
+ * internet perfeita. Era este o motivo de MG não baixar no celular.
+ *
+ * É a mesma armadilha do changelog, que o URL_VERSOES_PUBLICADAS já
+ * resolvia: conteúdo que mora no site precisa ser pedido AO SITE.
+ */
+function origemDoMapaEstadual(sigla) {
+  const relativo = urlDoMapaEstadual(sigla);
+  return ehAppNativo() ? `${SITE_PUBLICADO}/${relativo}` : relativo;
 }
 
 /** Já está guardado no aparelho? (CacheStorage do pacote offline) */
@@ -11712,8 +11737,8 @@ function baixarMapaDoEstado(sigla, aoProgredir) {
   if (mapasBaixando[sigla]) return mapasBaixando[sigla];
 
   const tarefa = (async () => {
-    const resposta = await fetch(urlDoMapaEstadual(sigla));
-    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+    const resposta = await fetch(origemDoMapaEstadual(sigla));
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status} em ${origemDoMapaEstadual(sigla)}`);
 
     const total = Number(resposta.headers.get("Content-Length")) || 0;
     const leitor = resposta.body && resposta.body.getReader ? resposta.body.getReader() : null;
@@ -11728,13 +11753,13 @@ function baixarMapaDoEstado(sigla, aoProgredir) {
         lidos += value.length;
         if (aoProgredir) aoProgredir(total ? lidos / total : null);
       }
-      const junto = new Uint8Array(lidos);
-      let posicao = 0;
-      for (const p of pedacos) {
-        junto.set(p, posicao);
-        posicao += p.length;
-      }
-      svg = new TextDecoder().decode(junto);
+      /* Blob, e não um Uint8Array montado à mão: o Blob pode ficar em
+         disco em vez de tudo na RAM. Com os 6,9 MB de MG, a versão
+         anterior segurava os pedaços, mais a cópia junta, mais a string
+         decodificada -- três vezes o arquivo, ao mesmo tempo, numa
+         WebView de celular. É o candidato mais forte pro download de MG
+         falhar onde o de SP (4,2 MB) passava. */
+      svg = await new Blob(pedacos, { type: "image/svg+xml" }).text();
     } else {
       svg = await resposta.text();
     }
@@ -11794,7 +11819,11 @@ async function baixarMapaPeloPainel(sigla, nome) {
     await desenharMapaEstadual(sigla);
   } catch (erro) {
     console.error(`Falha ao baixar o mapa de ${sigla}:`, erro);
-    texto.textContent = "Não deu para baixar agora. Confira sua conexão e tente de novo.";
+    /* Mostra o motivo REAL. Antes dizia sempre "confira sua conexão", o
+       que mandou o Paulo procurar problema no wi-fi enquanto a causa era
+       um 404 -- o arquivo não existe dentro do APK, de propósito. Erro
+       que mente sobre a causa custa mais caro que erro feio. */
+    texto.textContent = `Não deu para baixar agora (${erro.message}). Tente de novo.`;
     botao.disabled = false;
     barra.classList.add("oculto");
   }
@@ -11815,7 +11844,7 @@ async function desenharMapaEstadual(sigla) {
       const guardado = await cache.match(urlDoMapaEstadual(sigla));
       svgMapaEstadoCache[sigla] = guardado
         ? await guardado.text()
-        : await (await fetch(urlDoMapaEstadual(sigla))).text();
+        : await (await fetch(origemDoMapaEstadual(sigla))).text();
     } catch (erro) {
       console.error(`Falha ao carregar o mapa de ${sigla}:`, erro);
       viewport.innerHTML =

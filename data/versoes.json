@@ -1,5 +1,12 @@
 [
   {
+    "versao": "0.26.08.17.91",
+    "itens": [
+      "Correção: no aplicativo Android, baixar o mapa de Minas Gerais ou de São Paulo falhava dizendo que era a conexão — o app procurava o arquivo dentro dele mesmo, e não no site.",
+      "Quando um download falha, o app passa a dizer o motivo de verdade em vez de culpar a internet."
+    ]
+  },
+  {
     "versao": "0.26.08.17.90",
     "itens": [
       "Correção: Minas Gerais aparecia como \"chega em breve\" e não abria, mesmo já estando pronto — o app estava usando uma cópia antiga do mapa do Brasil guardada no aparelho.",
