@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.17.84",
+    "itens": [
+      "O município agora mostra o clima: temperatura de agora no canto do selo e, tocando nela, a previsão dos próximos 3 dias.",
+      "Junto vêm a altitude da cidade e o horário do pôr do sol — útil pra planejar a hora de pegar a estrada.",
+      "Novo botão Modo Clima no mapa: liga e mostra a temperatura das cidades direto sobre elas."
+    ]
+  },
+  {
     "versao": "0.26.08.17.83",
     "itens": [
       "Os pontos turísticos agora têm comentários: quem confirmou a presença por GPS no município conta como foi, e qualquer pessoa pode responder para tirar dúvidas.",

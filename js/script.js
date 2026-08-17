@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.83";
+const VERSAO_APP = "0.26.08.17.84";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.83";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.84", itens: ["O município agora mostra o clima: temperatura de agora no canto do selo e, tocando nela, a previsão dos próximos 3 dias.", "Junto vêm a altitude da cidade e o horário do pôr do sol — útil pra planejar a hora de pegar a estrada.", "Novo botão Modo Clima no mapa: liga e mostra a temperatura das cidades direto sobre elas."] },
   { versao: "0.26.08.17.83", itens: ["Os pontos turísticos agora têm comentários: quem confirmou a presença por GPS no município conta como foi, e qualquer pessoa pode responder para tirar dúvidas.", "Os comentários mais curtidos aparecem primeiro.", "Chegaram as notificações: você é avisado quando alguém curte ou comenta nas suas coisas, ou responde seu comentário.", "Ao postar na Comunidade dá para marcar o ponto turístico além da cidade — e o painel do ponto tem um botão que mostra só os posts dele.", "O app avisa quando sai uma versão nova, com a lista do que mudou.", "Correção: o app podia guardar uma página de erro no lugar da versão boa e abrir quebrado sem internet."] },
   { versao: "0.26.08.17.82", itens: ["Todos os 456 pontos turísticos agora têm a história completa — os 92 municípios do estado, um por um.", "Cada ponto foi conferido na internet: nomes errados foram corrigidos, lugares que não existiam saíram da lista e alguns estavam até na cidade errada.", "Vários marcadores estavam no lugar errado dentro da cidade certa e foram para o ponto exato, e mais 39 pontos ganharam marcador no mapa."] },
   { versao: "0.26.08.12.81", itens: ["Pão de Açúcar e Fortaleza de Santa Cruz da Barra ganharam desenho próprio no mapa."] },
@@ -805,6 +806,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (versaoEl) versaoEl.textContent = `versão ${VERSAO_APP}`;
   document.getElementById("btn-ver-novidades")?.addEventListener("click", abrirNovidades);
   document.getElementById("btn-fechar-novidades")?.addEventListener("click", fecharNovidades);
+
+  // ---- Clima ----
+  document.getElementById("btn-modo-clima")?.addEventListener("click", alternarModoClima);
+  document.getElementById("clima-pilula")?.addEventListener("click", (evento) => {
+    // A pílula fica POR CIMA da raspadinha: sem isto, tocar nela
+    // contaria como raspar o selo.
+    evento.stopPropagation();
+    const pilula = evento.currentTarget;
+    const abrindo = !pilula.classList.contains("expandida");
+    pilula.classList.toggle("expandida", abrindo);
+    pilula.setAttribute("aria-expanded", abrindo ? "true" : "false");
+  });
 
   document.getElementById("btn-topo-notificacoes")?.addEventListener("click", abrirNotificacoes);
   document.getElementById("btn-fechar-notificacoes")?.addEventListener("click", fecharNotificacoes);
@@ -4734,6 +4747,12 @@ function inicializarPanZoomDoMapa() {
     limitarDesloc();
     svg.style.transform = `translate(${deslocX}px, ${deslocY}px) scale(${escala})`;
     atualizarModoDeVisualizacao(escala, LIMIAR_MUNICIPIOS, LIMIAR_ROTULOS);
+    /* Os chips de clima são HTML em pixels de tela, fora do <svg> --
+       não acompanham o transform sozinhos. Reposicionar a cada quadro
+       do arrasto travaria, então o redesenho é agrupado (ver
+       agendarRedesenhoDeClima). Sai barato quando o Modo Clima está
+       desligado: a função retorna na primeira linha. */
+    agendarRedesenhoDeClima();
   }
 
   /**
@@ -5766,15 +5785,360 @@ async function tentarVerificarLocalAgora() {
   if (municipioSelecionadoId === id) visualizarSeloRevelado(id, nome);
 }
 
+/* ==================== CLIMA ====================
+ * Dados do Open-Meteo (ver js/clima.js, que não toca no DOM). Aqui
+ * mora só o desenho: a pílula no modal do município e os chips do
+ * Modo Clima no mapa.
+ *
+ * Clima é ENFEITE: qualquer falha some com o widget e o app segue
+ * igual. Nada aqui pode derrubar o modal nem o mapa.
+ */
+
+/**
+ * Lat/lon aproximada de um município, tirada da posição do RÓTULO dele.
+ *
+ * Não existe tabela de coordenada por município no projeto, e o rótulo
+ * é a referência que já está pronta: `tools/geojson-to-svg.js` planta
+ * cada nome no CENTRO DA CAIXA do município (com um desvio em 10 deles
+ * pra não colidir). Aqui a projeção de projetarCoordenada() é
+ * invertida pra voltar de x/y do SVG para lat/lon.
+ *
+ * PRECISÃO: comparado com a média dos pontos turísticos verificados de
+ * cada município, o erro mediano é ~6,6 km, e o pior caso ~30 km (Angra
+ * dos Reis, cujo território se espalha por muitas ilhas -- o centro da
+ * caixa cai no meio do mar). Para CLIMA isso não muda nada: temperatura
+ * e condição do tempo não variam nessa escala.
+ *
+ * Não serve, porém, pra nada que precise de posição exata -- é por isso
+ * que os pontos turísticos têm coordenada própria em data/destinos.json
+ * em vez de derivarem daqui.
+ */
+function coordenadaDoMunicipio(id) {
+  const svg = document.getElementById("mapa-rj");
+  const rotulo = svg?.querySelector(`.rotulo-municipio[data-municipio="${id}"]`);
+  const alvo = rotulo || svg?.querySelector(`.municipio[data-municipio="${id}"]`);
+  if (!svg || !alvo) return null;
+
+  const minLon = parseFloat(svg.dataset.projLon);
+  const minLat = parseFloat(svg.dataset.projLat);
+  const cos = parseFloat(svg.dataset.projCos);
+  const escala = parseFloat(svg.dataset.projEscala);
+  const altura = parseFloat(svg.dataset.projAltura);
+  if ([minLon, minLat, cos, escala, altura].some(Number.isNaN)) return null;
+
+  let x;
+  let y;
+  if (rotulo) {
+    x = parseFloat(rotulo.getAttribute("x"));
+    y = parseFloat(rotulo.getAttribute("y"));
+  } else {
+    // Sem rótulo (município cujo nome não coube): centro da caixa.
+    const caixa = alvo.getBBox();
+    x = caixa.x + caixa.width / 2;
+    y = caixa.y + caixa.height / 2;
+  }
+  if (Number.isNaN(x) || Number.isNaN(y)) return null;
+
+  return { lat: (altura - y) / escala + minLat, lon: x / (cos * escala) + minLon };
+}
+
+/* Área da caixa de cada município no SVG, em cache.
+ *
+ * É o desempate de quem fica quando dois chips disputam o mesmo espaço.
+ * A primeira ideia foi usar o `--rotulo-base` (tamanho da fonte que o
+ * gerador derivou da largura), mas ele é LIMITADO entre 4.0 e 5.5 --
+ * dezenas de municípios empatam no teto e a ordem volta a ser a do
+ * DOM, que é alfabética. A área da caixa não satura.
+ *
+ * getBBox() força cálculo de layout, então o resultado é guardado: a
+ * geometria do mapa não muda depois de carregada. */
+const areaPorMunicipio = new Map();
+function areaDoMunicipioNoMapa(id) {
+  if (areaPorMunicipio.has(id)) return areaPorMunicipio.get(id);
+  const path = document.querySelector(`#mapa-rj .municipio[data-municipio="${id}"]`);
+  let area = 0;
+  try {
+    const caixa = path?.getBBox();
+    if (caixa) area = caixa.width * caixa.height;
+  } catch {
+    /* elemento ainda não renderizado: fica 0 e cede na disputa */
+  }
+  areaPorMunicipio.set(id, area);
+  return area;
+}
+
+/** Municípios que TÊM rótulo, com coordenada e nível de importância. */
+function municipiosComRotulo() {
+  const svg = document.getElementById("mapa-rj");
+  if (!svg) return [];
+  return [...svg.querySelectorAll(".rotulo-municipio[data-municipio]")]
+    .map((rotulo) => {
+      const id = rotulo.dataset.municipio;
+      const coordenada = coordenadaDoMunicipio(id);
+      if (!coordenada) return null;
+      return {
+        id,
+        nivel: Number(rotulo.dataset.nivel || 0),
+        peso: areaDoMunicipioNoMapa(id),
+        x: parseFloat(rotulo.getAttribute("x")),
+        y: parseFloat(rotulo.getAttribute("y")),
+        ...coordenada,
+      };
+    })
+    .filter(Boolean);
+}
+
+// ---------------- Pílula do modal do município ----------------
+
+let climaDoModalToken = 0;
+
+/**
+ * Busca e desenha o clima do município que acabou de abrir.
+ *
+ * O `token` resolve a corrida de abrir um município e trocar pra outro
+ * antes da resposta chegar: o modal é o MESMO elemento reaproveitado,
+ * então sem isso o clima do primeiro apareceria dentro do segundo.
+ */
+async function montarClimaDoMunicipio(id) {
+  const pilula = document.getElementById("clima-pilula");
+  const instrumentos = document.getElementById("clima-instrumentos");
+  if (!pilula || !instrumentos) return;
+
+  // Estado limpo: some tudo e volta a pílula pro tamanho fechado.
+  pilula.classList.add("oculto");
+  pilula.classList.remove("expandida");
+  pilula.setAttribute("aria-expanded", "false");
+  instrumentos.classList.add("oculto");
+
+  if (!id || !window.desbravaClima) return;
+  const onde = coordenadaDoMunicipio(id);
+  if (!onde) return;
+
+  const meuToken = ++climaDoModalToken;
+  const dados = await window.desbravaClima.doLugar(onde.lat, onde.lon);
+  if (meuToken !== climaDoModalToken || !dados) return;
+
+  desenharPilulaDeClima(dados);
+}
+
+function desenharPilulaDeClima(dados) {
+  const pilula = document.getElementById("clima-pilula");
+  const icone = window.desbravaClima.iconeDoTempo(dados.codigo, dados.ehNoite);
+
+  document.getElementById("clima-pilula-icone").innerHTML = icone.svg;
+  document.getElementById("clima-pilula-temp").textContent = `${dados.temperatura}°`;
+  pilula.setAttribute(
+    "aria-label",
+    `${icone.rotulo}, ${dados.temperatura} graus. Toque para ver a previsão.`
+  );
+  pilula.title = icone.rotulo;
+
+  // Previsão dos PRÓXIMOS 3 dias: o índice 0 é hoje, que já está na
+  // temperatura atual ao lado.
+  const previsao = document.getElementById("clima-pilula-previsao");
+  previsao.innerHTML = "";
+  /* Um ÚNICO filho dentro do grid que colapsa (ver o CSS). Com os três
+     dias soltos como filhos diretos, `grid-template-rows: 0fr` zerava
+     só a PRIMEIRA linha -- os outros dois caíam em linhas implícitas de
+     altura automática, e a pílula "fechada" nascia com 84px em vez de
+     32px, mostrando a previsão que devia estar escondida. */
+  const interna = document.createElement("span");
+  interna.className = "clima-previsao-interna";
+  previsao.appendChild(interna);
+
+  dados.dias.slice(1, 4).forEach((dia) => {
+    const item = document.createElement("span");
+    item.className = "clima-dia";
+    const nome = document.createElement("span");
+    nome.className = "clima-dia-nome";
+    nome.textContent = dia.rotulo;
+    const desenho = document.createElement("span");
+    desenho.className = "clima-dia-icone";
+    desenho.innerHTML = window.desbravaClima.iconeDoTempo(dia.codigo, false).svg;
+    const graus = document.createElement("span");
+    graus.className = "clima-dia-temp";
+    graus.innerHTML = `${dia.max}°<i>${dia.min}°</i>`;
+    item.append(nome, desenho, graus);
+    interna.appendChild(item);
+  });
+
+  pilula.classList.remove("oculto");
+
+  // ---- Painel de instrumentos ----
+  const instrumentos = document.getElementById("clima-instrumentos");
+  const altitude = document.getElementById("instrumento-altitude");
+  const porSol = document.getElementById("instrumento-porsol");
+  altitude.textContent = dados.altitude === null ? "—" : `${dados.altitude} m alt.`;
+  porSol.textContent = dados.porDoSol ? `Pôr do sol: ${dados.porDoSol}` : "—";
+  instrumentos.classList.toggle("oculto", dados.altitude === null && !dados.porDoSol);
+}
+
+// ---------------- Modo Clima no mapa ----------------
+
+let modoClimaLigado = false;
+let redesenhoClimaAgendado = null;
+
+/* Só municípios cujo rótulo já apareceria neste zoom entram como chip.
+   Reaproveita ZOOM_DOS_NIVEIS_ROTULO em vez de inventar outra régua:
+   se o nome não cabe na tela, o chip também não cabe -- e assim as
+   duas coisas aparecem/somem juntas em vez de brigarem. */
+function nivelVisivelDeClima(escala) {
+  let maior = -1;
+  ZOOM_DOS_NIVEIS_ROTULO.forEach((limite, indice) => {
+    if (escala >= limite) maior = indice;
+  });
+  return maior;
+}
+
+function alternarModoClima() {
+  modoClimaLigado = !modoClimaLigado;
+  const botao = document.getElementById("btn-modo-clima");
+  botao.classList.toggle("ativo", modoClimaLigado);
+  botao.setAttribute("aria-pressed", modoClimaLigado ? "true" : "false");
+  const camada = document.getElementById("camada-clima");
+  camada.classList.toggle("oculto", !modoClimaLigado);
+  if (modoClimaLigado) redesenharChipsDeClima();
+  else camada.innerHTML = "";
+}
+
+/** Chamado pelo zoom/arrasto -- agrupado pra não redesenhar por quadro. */
+function agendarRedesenhoDeClima() {
+  if (!modoClimaLigado) return;
+  clearTimeout(redesenhoClimaAgendado);
+  redesenhoClimaAgendado = setTimeout(redesenharChipsDeClima, 160);
+}
+
+/**
+ * Desenha os chips: escolhe quem cabe, busca o clima de todos numa
+ * chamada só e posiciona.
+ *
+ * ANTI-POLUIÇÃO, em três filtros que se somam:
+ *  1. nível do rótulo x zoom (cidade pequena só aparece de perto);
+ *  2. está dentro da tela? (não gasta requisição com quem está fora);
+ *  3. a caixa do chip encosta em outro já colocado? Então não entra.
+ * O 3 percorre em ordem de importância, então quem fica é sempre a
+ * cidade mais relevante do aglomerado -- e não a primeira do alfabeto.
+ */
+async function redesenharChipsDeClima() {
+  const camada = document.getElementById("camada-clima");
+  const svg = document.getElementById("mapa-rj");
+  if (!camada || !svg || !modoClimaLigado || !window.desbravaClima) return;
+
+  const escala = parseFloat(svg.style.getPropertyValue("--zoom")) || 1;
+  const nivelMaximo = nivelVisivelDeClima(escala);
+  if (nivelMaximo < 0) {
+    /* Afastado demais: nem o maior município mostra nome, então chip
+       nenhum caberia. Em vez de deixar a tela igual -- com o botão
+       aceso e nada acontecendo, que parece defeito -- explica o que
+       fazer. Este é o único texto da camada; some no primeiro zoom. */
+    camada.innerHTML =
+      '<p class="clima-aviso-zoom">Aproxime o mapa para ver o clima das cidades</p>';
+    return;
+  }
+
+  /* A área visível é a da CAMADA, não a do <svg>.
+     Com zoom 6 o retângulo do SVG fica 6x maior que a tela, então
+     medir contra ele deixava passar chip que estava fora do campo de
+     visão -- posicionado, buscado na API e invisível. A camada tem o
+     tamanho da viewport do mapa, que é o que a pessoa enxerga. */
+  const area = camada.getBoundingClientRect();
+  const matriz = svg.getScreenCTM();
+  if (!matriz) return;
+
+  const LARGURA_CHIP = 74;
+  const ALTURA_CHIP = 30;
+  const FOLGA = 8;
+
+  const candidatos = municipiosComRotulo()
+    .filter((m) => m.nivel <= nivelMaximo)
+    /* Ordem de prioridade na disputa por espaço: primeiro o nível do
+       rótulo, depois o TAMANHO do município (peso). Sem o segundo
+       critério a ordem seria a do DOM -- alfabética -- e num
+       aglomerado sobreviveria quem tem o nome mais próximo do "A". */
+    .sort((a, b) => a.nivel - b.nivel || b.peso - a.peso);
+
+  const colocados = [];
+  for (const m of candidatos) {
+    // Converte a coordenada do SVG pra pixel de tela levando em conta
+    // zoom e deslocamento atuais (a matriz já carrega os dois).
+    const ponto = new DOMPoint(m.x, m.y).matrixTransform(matriz);
+    const px = ponto.x - area.left;
+    const py = ponto.y - area.top;
+
+    /* Fora do campo de visão: nem busca o clima.
+       A margem é METADE do chip, não o chip inteiro: com a margem
+       cheia, um chip centrado logo antes da borda passava no teste e
+       ainda assim ficava totalmente fora da tela -- posicionado e
+       buscado na API à toa. Com a metade, só entra quem tem pelo menos
+       um pedaço visível. */
+    if (px < -LARGURA_CHIP / 2 || px > area.width + LARGURA_CHIP / 2) continue;
+    if (py < -ALTURA_CHIP / 2 || py > area.height + ALTURA_CHIP / 2) continue;
+
+    const caixa = {
+      esq: px - LARGURA_CHIP / 2 - FOLGA,
+      dir: px + LARGURA_CHIP / 2 + FOLGA,
+      topo: py - ALTURA_CHIP / 2 - FOLGA,
+      base: py + ALTURA_CHIP / 2 + FOLGA,
+    };
+    const bate = colocados.some(
+      (c) =>
+        caixa.esq < c.caixa.dir &&
+        caixa.dir > c.caixa.esq &&
+        caixa.topo < c.caixa.base &&
+        caixa.base > c.caixa.topo
+    );
+    if (bate) continue;
+
+    colocados.push({ ...m, px, py, caixa });
+    // Teto de segurança: mais que isso vira poluição por definição, e
+    // ainda por cima custa requisição.
+    if (colocados.length >= 28) break;
+  }
+
+  const clima = await window.desbravaClima.deVarios(colocados);
+  if (!modoClimaLigado) return; // desligou enquanto buscava
+
+  camada.innerHTML = "";
+  for (const m of colocados) {
+    const dados = clima.get(m.id);
+    if (!dados) continue; // sem clima, sem chip (melhor que chip vazio)
+
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "clima-chip";
+    chip.style.left = `${m.px}px`;
+    chip.style.top = `${m.py}px`;
+    const icone = window.desbravaClima.iconeDoTempo(dados.codigo, dados.ehNoite);
+    chip.innerHTML = `<span class="clima-chip-icone">${icone.svg}</span><span>${dados.temperatura}°</span>`;
+    chip.setAttribute(
+      "aria-label",
+      `${idParaNomeMunicipio[m.id] || ""}: ${dados.temperatura} graus, ${icone.rotulo}`
+    );
+    chip.title = `${idParaNomeMunicipio[m.id] || ""} · ${icone.rotulo}`;
+    /* Vai direto no abrirSeloPorId, e não no aoClicarMunicipio: aquele
+       recebe o <path> do mapa (usa dataset e efeito de clique nele), e
+       aqui a origem do toque é o chip. O modal já abre com o clima
+       montado, porque montarClimaDoMunicipio acha tudo em cache. */
+    chip.addEventListener("click", (evento) => {
+      evento.stopPropagation();
+      exigirLogin(() => abrirSeloPorId(m.id, idParaNomeMunicipio[m.id]));
+    });
+    camada.appendChild(chip);
+  }
+}
+
 /**
  * Prepara o popup do zero: esconde o menu "⋮", limpa status/destinos
  * e mostra o nome do município. Chamado antes de abrir tanto a
  * raspadinha quanto a visualização de um selo já revelado.
  */
-function prepararModal(nome) {
+function prepararModal(nome, id) {
   document.getElementById("modal-municipio-nome").textContent = nome;
   document.getElementById("modal-menu").classList.add("oculto");
   document.getElementById("modal-raspadinha").classList.remove("oculto");
+  // Ponto único de entrada dos dois caminhos (raspar e ver selo
+  // revelado), então o clima é montado aqui uma vez só.
+  montarClimaDoMunicipio(id);
 }
 
 /**
@@ -5801,7 +6165,7 @@ function definirStatusMunicipio(texto, estado = "neutro") {
  * em código) para os selos reais passarem a valer.
  */
 function abrirModalRaspadinha(id, nome) {
-  prepararModal(nome);
+  prepararModal(nome, id);
   definirStatusMunicipio("");
   document.getElementById("modal-instrucao").textContent = estadoMapa[id]?.presencaConfirmadaEm
     ? "Raspe com o dedo ou o mouse para revelar! (sua presença aqui já foi confirmada antes por GPS -- não precisa estar no local agora)"
@@ -5953,7 +6317,7 @@ async function resolverImagemColorida(
  * junto com status/data e a opção de desmarcar (atrás do menu "⋮").
  */
 function visualizarSeloRevelado(id, nome) {
-  prepararModal(nome);
+  prepararModal(nome, id);
 
   const dados = estadoMapa[id];
   const verificado = estaVerificado(id);

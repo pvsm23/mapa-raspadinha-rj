@@ -10738,3 +10738,258 @@ button:disabled:active {
   color: var(--fraco);
 }
 #notificacoes-vazio.oculto { display: none; }
+
+/* ==================== CLIMA ====================
+   Pílula no modal do município, painel de instrumentos e chips do
+   Modo Clima. Dados em js/clima.js; desenho em js/script.js.
+
+   Estas regras ficam DEPOIS da CAMADA UI MODERNA de propósito: ela
+   força `background: var(--surf2) !important` em todo `button`, e
+   tanto a pílula quanto os chips SÃO <button>. Sem vir por último, o
+   vidro viraria um retângulo cinza.
+
+   O glassmorphism usa uma cor ESCURA fixa nos dois temas, não var(--surf):
+   a pílula flutua sobre a arte do selo (imagem colorida e imprevisível),
+   e vidro claro sobre arte clara some. Contraste do texto é garantido
+   pelo próprio fundo escuro + a sombra abaixo. */
+
+#scratch-hero {
+  position: relative;
+}
+
+#clima-pilula {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  max-width: 46%;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(16, 20, 26, 0.55) !important;
+  color: #fff !important;
+  cursor: pointer;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  /* border-radius junto na transição: a pílula vira cartão ao expandir,
+     e sem isso o canto "salta" de 999px pra 18px de uma vez. */
+  transition: border-radius 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              max-width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              padding 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.2s ease;
+}
+#clima-pilula.oculto { display: none; }
+#clima-pilula:active { background: rgba(16, 20, 26, 0.72) !important; }
+
+#clima-pilula-resumo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+#clima-pilula-icone svg { width: 18px; height: 18px; display: block; }
+
+/* Fechada: altura 0 e sem opacidade. Animar grid-template-rows de 0fr
+   pra 1fr é o truque que permite transição suave até uma altura que a
+   gente não sabe de antemão -- `height: auto` não anima. */
+#clima-pilula-previsao {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.2s ease,
+              margin-top 0.34s ease;
+  margin-top: 0;
+}
+#clima-pilula.expandida {
+  max-width: 78%;
+  border-radius: 18px;
+  padding: 10px 12px 11px;
+}
+#clima-pilula.expandida #clima-pilula-previsao {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 9px;
+}
+/* O ÚNICO filho do grid precisa de min-height:0 e o pai de
+   overflow:hidden pro colapso de 0fr realmente cortar o conteúdo.
+   O wrapper .clima-previsao-interna existe exatamente por isso: com os
+   dias soltos como filhos diretos, o 0fr zerava só a primeira linha e
+   os demais caíam em linhas implícitas de altura automática. */
+#clima-pilula-previsao { overflow: hidden; }
+/* Largura fixa e conhecida, pra ela poder ir a ZERO quando fechada.
+   Sem isso a previsão escondida continuava DITANDO a largura do pai
+   (flex column mede pelo filho mais largo), e a pílula "fechada"
+   nascia com 131px -- larga como se estivesse aberta, só que vazia. */
+.clima-previsao-interna {
+  min-height: 0;
+  display: block;
+  width: 148px;
+}
+#clima-pilula-previsao {
+  width: 0;
+  transition: grid-template-rows 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.2s ease,
+              width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+              margin-top 0.34s ease;
+}
+#clima-pilula.expandida #clima-pilula-previsao { width: 148px; }
+
+.clima-dia {
+  display: grid;
+  grid-template-columns: 2.2rem 1.1rem 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 0.76rem;
+  line-height: 1;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.clima-dia:first-child { border-top: none; }
+.clima-dia-nome { text-transform: capitalize; opacity: 0.8; }
+.clima-dia-icone svg { width: 15px; height: 15px; display: block; opacity: 0.9; }
+.clima-dia-temp { text-align: right; font-weight: 600; white-space: nowrap; }
+.clima-dia-temp i { font-style: normal; opacity: 0.55; margin-left: 4px; }
+
+/* ---- Painel de instrumentos (altitude + pôr do sol) ---- */
+#clima-instrumentos {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 10px 0 2px;
+}
+#clima-instrumentos.oculto { display: none; }
+.instrumento {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--fraco);
+  white-space: nowrap;
+}
+.instrumento svg { width: 14px; height: 14px; flex: 0 0 14px; }
+
+/* ---- Chips do Modo Clima no mapa ---- */
+#camada-clima {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  /* A camada não intercepta toque: quem recebe é cada chip. Assim
+     arrastar o mapa continua funcionando por cima dela. */
+  pointer-events: none;
+  overflow: hidden;
+}
+#camada-clima.oculto { display: none; }
+
+.clima-chip {
+  position: absolute;
+  /* left/top são o CENTRO do rótulo; o translate recentra o chip. */
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(16, 20, 26, 0.58) !important;
+  color: #fff !important;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  animation: clima-chip-entra 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.clima-chip-icone svg { width: 14px; height: 14px; display: block; }
+.clima-chip:active { transform: translate(-50%, -50%) scale(0.94); }
+
+@keyframes clima-chip-entra {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Botão do Modo Clima: mesma família visual da bússola/Modo Viagem. */
+#btn-modo-clima.ativo {
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+}
+
+/* Quem pediu menos movimento não recebe nem a expansão nem a entrada
+   dos chips -- o conteúdo continua aparecendo, só que de uma vez. */
+@media (prefers-reduced-motion: reduce) {
+  #clima-pilula,
+  #clima-pilula-previsao { transition: none; }
+  .clima-chip { animation: none; }
+}
+
+/* Posição do botão Modo Clima: abaixo da bússola ("Onde estou"), que
+   fica em bottom:138px na camada final. Mesma família visual dela --
+   48px, vidro escuro -- porque é ação secundária, não primária como o
+   Modo Viagem (58px, verde sólido). */
+#btn-modo-clima {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 16px);
+  bottom: 78px;
+  z-index: 50;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(23, 27, 33, 0.9) !important;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff !important;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+#btn-modo-clima .ico-svg { width: 22px; height: 22px; }
+#btn-modo-clima.ativo {
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+}
+
+/* A dica do mapa dividia esse mesmo canto: sobe pra não ficar
+   embaixo do botão novo. */
+#dica-mapa { bottom: 134px !important; }
+
+/* Aviso de "aproxime o mapa": aparece quando o Modo Clima é ligado com
+   o mapa afastado demais pra caber qualquer chip. Sem ele o botão
+   acendia e a tela não mudava -- parecia defeito. */
+.clima-aviso-zoom {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 9px 16px;
+  max-width: 78%;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(16, 20, 26, 0.62);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  text-align: center;
+  pointer-events: none;
+  animation: clima-chip-entra 0.26s ease;
+}

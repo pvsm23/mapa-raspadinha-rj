@@ -521,6 +521,10 @@ const dadosRotulos = featuresOrdenadas.map((feature) => {
   const aneis = feature.geometry.coordinates.map((anel) => anel.map(projetar));
   return {
     nome: feature.properties.name,
+    // Vai pro atributo data-municipio do <text>. O Modo Clima acha a
+    // coordenada de cada municipio invertendo a projecao a partir da
+    // posicao do rotulo -- entao o rotulo precisa dizer de quem ele e.
+    id: feature.properties.id,
     x,
     y,
     // Faixa estreita (4.0 a 5.5) de proposito: com o texto de tamanho
@@ -547,7 +551,7 @@ const rotulos = dadosRotulos
   .map((r) => {
     const linhas = linhasDoNome(r.nome);
     const abre =
-      `  <text class="rotulo-municipio" data-nivel="${r.nivel}" ` +
+      `  <text class="rotulo-municipio" data-municipio="${r.id}" data-nivel="${r.nivel}" ` +
       `x="${r.x}" y="${r.y}" style="--rotulo-base:${r.fonte.toFixed(1)}" ` +
       `pointer-events="none">`;
 
