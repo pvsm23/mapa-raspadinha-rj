@@ -73,7 +73,13 @@ const arquivosOffline = [
   ...listarArquivos(path.join(RAIZ, "assets/img/selos"), "assets/img/selos"),
   ...listarArquivos(path.join(RAIZ, "assets/svg"), "assets/svg"),
   ...listarArquivos(path.join(RAIZ, "data"), "data").filter((u) => u.endsWith(".json")),
-];
+]
+  /* Os mapas dos estados em desenvolvimento (SP, MG) NÃO entram no
+     pacote offline: são ~10 MB somados, e têm download próprio, por
+     estado, na tela de Mapas. Sem esta linha, "Baixar dados offline"
+     puxaria os dois mapas de todo jeito -- inclusive pra quem nunca vai
+     abrir nenhum dos dois. */
+  .filter((u) => !/^assets\/svg\/(?!rj-|br-)[a-z]{2}-municipios\.svg$/i.test(u));
 
 // Sem timestamp de propósito: com ele, o arquivo apareceria como
 // modificado no git a cada build, mesmo sem arte nova nenhuma.
@@ -83,18 +89,56 @@ fs.writeFileSync(
 );
 console.log(`manifesto offline: ${arquivosOffline.length} arquivos`);
 
+/* ---- O que NÃO vai pro APK ----
+ *
+ * Os mapas dos estados "em desenvolvimento" (SP, MG) são grandes: em
+ * qualidade máxima dão 4,2 MB e 5,6 MB. Embutir os dois engordaria o
+ * APK em ~10 MB, e a maioria dos usuários nunca abre esses estados.
+ *
+ * Eles continuam no SITE e são baixados sob demanda, pro CacheStorage
+ * (ver baixarMapaDoEstado em js/script.js). O RJ NÃO entra nesta lista:
+ * é o app principal e precisa abrir sem rede.
+ *
+ * Também ficam de fora os geojson desses estados: eles são insumo de
+ * geração (tools/), o app nunca os lê -- o RJ é a exceção, porque o
+ * rj-municipios.geojson é usado em runtime pra verificação por GPS. */
+const FORA_DO_APK = [
+  /^assets[\\/]svg[\\/](?!rj-|br-)[a-z]{2}-municipios\.svg$/i,
+  /^data[\\/](?!rj-)[a-z]{2}-municipios\.geojson$/i,
+];
+
+const forcaDeFora = (relativo) => FORA_DO_APK.some((re) => re.test(relativo));
+
 fs.rmSync(DESTINO, { recursive: true, force: true });
 fs.mkdirSync(DESTINO, { recursive: true });
 
 let copiados = 0;
+const deixadosDeFora = [];
 for (const item of INCLUIR) {
   const origem = path.join(RAIZ, item);
   if (!fs.existsSync(origem)) {
     console.warn(`aviso: "${item}" não existe, pulando`);
     continue;
   }
-  fs.cpSync(origem, path.join(DESTINO, item), { recursive: true });
+  fs.cpSync(origem, path.join(DESTINO, item), {
+    recursive: true,
+    filter: (de) => {
+      const relativo = path.relative(RAIZ, de);
+      if (forcaDeFora(relativo)) {
+        deixadosDeFora.push(relativo);
+        return false;
+      }
+      return true;
+    },
+  });
   copiados++;
+}
+
+if (deixadosDeFora.length) {
+  console.log(
+    `fora do APK (baixados sob demanda): ${deixadosDeFora.length} arquivo(s) -- ` +
+      deixadosDeFora.map((f) => path.basename(f)).join(", ")
+  );
 }
 
 // Tamanho total, só pra acompanhar o peso do APK.

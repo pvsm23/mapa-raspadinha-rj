@@ -1,5 +1,14 @@
 [
   {
+    "versao": "0.26.08.17.89",
+    "itens": [
+      "Minas Gerais entrou no app: dá pra explorar o mapa município por município, com o mesmo nível de detalhe do Rio.",
+      "São Paulo ganhou esse mesmo detalhe — as divisas ficavam grosseiras ao aproximar e agora não ficam mais.",
+      "Os mapas de MG e SP não vêm dentro do app: você baixa o que quiser em Configurações → Mapas dos estados, e depois eles abrem sem internet.",
+      "Se você estiver em Minas ou em São Paulo, o mapa do seu estado vem sozinho — só em Wi-Fi, pra não gastar seu plano de dados."
+    ]
+  },
+  {
     "versao": "0.26.08.17.88",
     "itens": [
       "Os selos desenhados na hora agora também são raspáveis: a capa vem em preto e branco e ganha cor conforme você raspa.",

@@ -56,12 +56,32 @@ if (fs.existsSync(REGIOES)) {
 }
 const temRegioes = Object.keys(regioesInfo).length > 0;
 
-// Tolerância (em px do viewBox de 800 de largura) do Douglas-Peucker.
-// 0 desliga a simplificação. Ajustado pra tirar ~40% dos pontos da
-// malha de SP sem estragar as bordas no zoom normal (ver contagem no
-// fim). Passe SIMPLIFICAR=0 no ambiente pra gerar sem simplificar.
+/* Tolerância (em unidades do viewBox de 800 de largura) do
+ * Douglas-Peucker. 0 desliga. Passe SIMPLIFICAR no ambiente pra mudar.
+ *
+ * ERA 0.35, E ERA O QUE DEIXAVA SP GROSSEIRO. O Paulo notou que SP não
+ * tinha a mesma qualidade do RJ ao aproximar, e a causa não era o
+ * download da malha -- era esta linha: 0.35 jogava fora 89% dos pontos.
+ *
+ * A conta que define o valor certo: o mapa vai até zoom 40x, e o
+ * viewBox tem 800 de largura. Nesse zoom, 1 pixel de tela equivale a
+ * 800/(800*40) = 0,025 unidades. Ou seja, `eps` É a tolerância em
+ * pixels dividida por 0,025:
+ *
+ *     eps 0.35  ->  14 px de erro no zoom máximo (dava pra ver)
+ *     eps 0.10  ->   4 px
+ *     eps 0.05  ->   2 px
+ *     eps 0.02  ->   0,8 px  <- abaixo de um pixel: invisível
+ *
+ * Com 0.02 o SVG de MG vai de 849 KB pra 5,6 MB. Isso passou a caber
+ * porque os estados grandes DEIXARAM de ir no APK: são baixados sob
+ * demanda e guardados no CacheStorage (ver baixarMapaDoEstado em
+ * js/script.js). Trocar 5 MB de download único por divisas de verdade
+ * no zoom é o negócio certo aqui.
+ *
+ * O RJ não passa por aqui (tem gerador próprio) e não simplifica nada. */
 const EPS_SIMPLIFICACAO =
-  process.env.SIMPLIFICAR !== undefined ? Number(process.env.SIMPLIFICAR) : 0.35;
+  process.env.SIMPLIFICAR !== undefined ? Number(process.env.SIMPLIFICAR) : 0.02;
 
 // Contadores globais de pontos, só pra reportar o quanto simplificou.
 let pontosAntes = 0;

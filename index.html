@@ -365,27 +365,42 @@
        não dá pra raspar (falta conteúdo — história, pontos turísticos,
        selos); clicar em qualquer município só exibe o aviso "em
        desenvolvimento". Ver abrirMapaSP em js/script.js. -->
-  <div id="modal-sp" class="oculto">
+  <div id="modal-estado" class="oculto">
     <!-- Área de pan/zoom, espelha o #mapa-viewport do RJ. O SVG do SP
          (#mapa-sp, 645 municípios) é injetado aqui em runtime. Ver
          abrirMapaEstadoEmDesenvolvimento/inicializarPanZoomSP em
          js/script.js. É um mapa navegável (arrastar + zoom), não uma
          raspadinha -- tocar num município só mostra um aviso. -->
-    <div id="sp-viewport"></div>
+    <div id="estado-viewport"></div>
 
-    <!-- Aviso pequeno de "em desenvolvimento", aparece ao abrir SP e
-         some sozinho (ou no ✕). -->
-    <div id="sp-popup-dev" class="oculto">
-      <span>🚧 São Paulo está <strong>em desenvolvimento</strong>. Dá pra explorar o mapa, mas ainda não dá pra raspar.</span>
-      <button id="btn-sp-popup-fechar" aria-label="Fechar aviso">✕</button>
+    <!-- Aviso pequeno de "em desenvolvimento", aparece ao abrir o mapa
+         estadual e some sozinho (ou no ✕). O nome do estado é escrito
+         por mostrarPopupDevEstadual -- era "São Paulo" fixo aqui, e com
+         MG passou a mentir. -->
+    <div id="estado-popup-dev" class="oculto">
+      <span>🚧 <b id="estado-popup-nome"></b> está <strong>em desenvolvimento</strong>. Dá pra explorar o mapa, mas ainda não dá pra raspar.</span>
+      <button id="btn-estado-popup-fechar" aria-label="Fechar aviso">✕</button>
     </div>
 
     <!-- Abre o mapa do Brasil por cima, pra trocar de estado / voltar
          pro Rio (selecionar RJ lá fecha esta tela). -->
-    <button id="btn-sp-brasil" aria-label="Trocar de estado (mapa do Brasil)">🇧🇷</button>
+    <button id="btn-estado-brasil" aria-label="Trocar de estado (mapa do Brasil)">🇧🇷</button>
 
     <!-- Aviso flutuante ao tocar num município (nome + "em desenvolvimento"). -->
-    <div id="sp-toast" class="oculto"></div>
+    <div id="estado-toast" class="oculto"></div>
+
+    <!-- Convite de download: aparece quando o mapa do estado ainda não
+         está guardado. Ele NÃO vem no APK (são ~5 MB por estado), então
+         a primeira abertura pede pra baixar. Ver baixarMapaDoEstado. -->
+    <div id="estado-baixar" class="oculto">
+      <div id="estado-baixar-caixa">
+        <span id="estado-baixar-icone" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+        <h3 id="estado-baixar-titulo"></h3>
+        <p id="estado-baixar-texto"></p>
+        <div id="estado-baixar-barra" class="oculto"><i id="estado-baixar-preench"></i></div>
+        <button type="button" id="btn-estado-baixar">Baixar mapa</button>
+      </div>
+    </div>
   </div>
 
   <!-- Comunidade Desbrava: painel lateral direito com posts (foto +
@@ -1377,7 +1392,26 @@
         <p id="notificacoes-status" class="oculto"></p>
       </div>
 
-      <!-- Card 3: Recursos -- o que depende de plano PRO ou de ser a
+      <!-- Card 3: Mapas dos estados -- GRATUITO, não confundir com o
+           "Baixar dados offline" do card abaixo (esse é do Motoclube).
+           Os mapas de SP e MG não vêm dentro do app: somam ~9 MB em
+           qualidade máxima e a maioria nunca abre nenhum dos dois. Aqui
+           dá pra baixar um por um, todos de uma vez, ou apagar. A lista
+           é montada por renderizarMapasDeEstado em js/script.js a
+           partir de data/estados.json -- estado novo aparece sozinho. -->
+      <div class="settings-card">
+        <h3 class="settings-card-titulo">🗺️ Mapas dos estados</h3>
+        <p class="settings-card-nota">
+          Baixe pra explorar o mapa mesmo sem internet. Fica guardado no
+          aparelho até você apagar.
+        </p>
+        <div id="mapas-estado-lista"></div>
+        <button type="button" id="btn-baixar-todos-mapas" class="settings-btn-secundario">
+          ⬇️ Baixar todos
+        </button>
+      </div>
+
+      <!-- Card 4: Recursos -- o que depende de plano PRO ou de ser a
            conta admin (UID_DONO em js/auth.js). Modo Viagem saiu
            daqui: a explicação agora mora no próprio modal do mapa,
            não precisa duplicar em Configurações. -->
@@ -1406,7 +1440,7 @@
         </div>
       </div>
 
-      <!-- Card 4: Conta e Perigo -- sair é reversível (só desloga),
+      <!-- Card 5: Conta e Perigo -- sair é reversível (só desloga),
            por isso fica no topo do card; resetar/excluir são
            destrutivas e ficam destacadas em vermelho por baixo.
            Excluir conta tem 3 confirmações crescentes (2 confirm() +

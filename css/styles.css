@@ -285,12 +285,12 @@ svg#mapa-rj.modo-regioes .municipio {
    é .contornos-regioes (embutido no SVG pelo tool). Escondido por padrão,
    aparece só no modo regiões de cada mapa. */
 #contornos-regioes,
-svg#mapa-sp .contornos-regioes {
+#estado-viewport svg .contornos-regioes {
   display: none;
 }
 
 svg#mapa-rj.modo-regioes #contornos-regioes,
-svg#mapa-sp.modo-regioes .contornos-regioes {
+#estado-viewport svg.modo-regioes .contornos-regioes {
   display: block;
 }
 
@@ -732,14 +732,14 @@ svg#mapa-sp.modo-regioes .contornos-regioes {
 
 /* Não é mais uma janela centralizada (foi tirado do grupo do
    #modal-brasil): agora é o próprio mapa ocupando a tela toda. */
-#modal-sp {
+#modal-estado {
   position: fixed;
   inset: 0;
   z-index: 100;
   background: #191c22;
 }
 
-#sp-viewport {
+#estado-viewport {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -748,11 +748,11 @@ svg#mapa-sp.modo-regioes .contornos-regioes {
   cursor: grab;
 }
 
-#sp-viewport.arrastando {
+#estado-viewport.arrastando {
   cursor: grabbing;
 }
 
-svg#mapa-sp {
+#estado-viewport svg {
   position: absolute;
   top: 0;
   left: 0;
@@ -766,7 +766,7 @@ svg#mapa-sp {
    ao dar zoom (fica sempre ~0.5px na tela), então as divisas ficam
    precisas em qualquer aproximação -- diferente do RJ, onde a borda
    engrossa junto com o mapa. */
-svg#mapa-sp .municipio {
+#estado-viewport svg .municipio {
   stroke-width: 0.35;
   vector-effect: non-scaling-stroke;
 }
@@ -775,7 +775,7 @@ svg#mapa-sp .municipio {
    só aparecem quando o SVG ganha .mostrar-rotulos -- e no SP isso só
    acontece bem no zoom (ver LIMIAR_ROTULOS em js/script.js), pra ter
    poucos nomes na tela por vez. */
-svg#mapa-sp.mostrar-rotulos .rotulo-municipio {
+#estado-viewport svg.mostrar-rotulos .rotulo-municipio {
   display: block;
 }
 
@@ -787,7 +787,7 @@ svg#mapa-sp.mostrar-rotulos .rotulo-municipio {
 /* No modo regiões do SP, esconde as bordas dos municípios (fica o
    preenchimento cinza contínuo) e deixa só os contornos de região por
    cima -- igual ao RJ. */
-svg#mapa-sp.modo-regioes .municipio {
+#estado-viewport svg.modo-regioes .municipio {
   stroke: none;
 }
 
@@ -797,7 +797,7 @@ svg#mapa-sp.modo-regioes .municipio {
    são injetados por JS (ver renderizarRotulosRegioes), no SP vêm do SVG.
    Os municípios ficam CINZA (herdam ".municipio"); a cor no mapa é
    reservada pro progresso, então aqui não se pinta por região. */
-svg#mapa-sp .rotulo-regiao,
+#estado-viewport svg .rotulo-regiao,
 svg#mapa-rj .rotulo-regiao {
   display: none;
   fill: #F2F5F7;
@@ -812,13 +812,13 @@ svg#mapa-rj .rotulo-regiao {
   pointer-events: none;
 }
 
-svg#mapa-sp.modo-regioes .rotulo-regiao,
+#estado-viewport svg.modo-regioes .rotulo-regiao,
 svg#mapa-rj.modo-regioes .rotulo-regiao {
   display: block;
 }
 
-/* Aviso pequeno de "em desenvolvimento" no topo da tela de SP. */
-#sp-popup-dev {
+/* Aviso pequeno de "em desenvolvimento" no topo do mapa estadual. */
+#estado-popup-dev {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 12px);
   left: 50%;
@@ -838,11 +838,11 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
-#sp-popup-dev strong {
+#estado-popup-dev strong {
   color: #F2C94C;
 }
 
-#btn-sp-popup-fechar {
+#btn-estado-popup-fechar {
   flex-shrink: 0;
   background: transparent;
   border: none;
@@ -853,13 +853,13 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   padding: 2px 4px;
 }
 
-#btn-sp-popup-fechar:hover {
+#btn-estado-popup-fechar:hover {
   color: var(--txt);
 }
 
 /* Botão flutuante pra abrir o mapa do Brasil (trocar de estado / voltar
    pro RJ). Fica no canto, como um controle de mapa. */
-#btn-sp-brasil {
+#btn-estado-brasil {
   position: absolute;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   right: calc(env(safe-area-inset-right, 0px) + 20px);
@@ -878,12 +878,108 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   justify-content: center;
 }
 
-#btn-sp-brasil:hover {
+#btn-estado-brasil:hover {
   background: #22272F;
 }
 
 /* Aviso flutuante ao tocar num município do SP. */
-#sp-toast {
+/* ---- Convite pra baixar o mapa do estado ----
+   Aparece POR CIMA do viewport vazio quando o mapa ainda não está no
+   aparelho. Cobre a tela toda de propósito: sem o mapa não há mais
+   nada pra fazer aqui, e o 🇧🇷 continua acessível por cima (z-index
+   maior). Ver abrirMapaEstadoEmDesenvolvimento em js/script.js. */
+#estado-baixar {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+#estado-baixar.oculto {
+  display: none;
+}
+
+#estado-baixar-caixa {
+  max-width: 340px;
+  text-align: center;
+}
+
+#estado-baixar-icone svg {
+  width: 40px;
+  height: 40px;
+  color: var(--verde);
+  margin-bottom: 14px;
+}
+
+#estado-baixar-titulo {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  color: var(--txt);
+}
+
+#estado-baixar-texto {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--fraco);
+}
+
+#estado-baixar-barra {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--linha);
+  overflow: hidden;
+  margin: 16px 0 0;
+}
+
+#estado-baixar-barra.oculto {
+  display: none;
+}
+
+#estado-baixar-preench {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--verde);
+  transition: width 0.2s ease;
+}
+
+/* Sem Content-Length não dá pra saber a fração -- a barra vira uma
+   faixa que corre, em vez de uma porcentagem inventada. */
+#estado-baixar-barra.indeterminada #estado-baixar-preench {
+  width: 35%;
+  transition: none;
+  animation: correr-barra 1.1s ease-in-out infinite;
+}
+
+@keyframes correr-barra {
+  0% { margin-left: -35%; }
+  100% { margin-left: 100%; }
+}
+
+#btn-estado-baixar {
+  margin-top: 18px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 999px;
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#btn-estado-baixar[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#estado-toast {
   position: absolute;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
   left: 50%;
@@ -3975,6 +4071,99 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   font-size: 0.8rem;
   color: var(--fraco);
   margin: 4px 0 6px;
+}
+
+/* Texto explicativo curto no topo de um card, antes do conteúdo. */
+.settings-card-nota {
+  margin: -6px 0 12px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+/* ---- Card 3: mapas dos estados ----
+   Uma linha por estado: sigla+nome à esquerda, peso e situação embaixo,
+   e a ação à direita. Grid (e não flex) pra a barra de progresso poder
+   ocupar a largura toda numa terceira linha sem empurrar a ação. */
+.mapa-estado-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.mapa-estado-linha:last-of-type {
+  border-bottom: none;
+}
+
+.mapa-estado-nome {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.mapa-estado-sub {
+  grid-column: 1;
+  font-size: 0.76rem;
+  color: var(--fraco);
+}
+
+/* Verde quando já está no aparelho -- é a única informação da linha que
+   a pessoa procura de relance. */
+.mapa-estado-sub.baixado {
+  color: var(--verde);
+}
+
+/* Botão pequeno da linha. Precisa de #configuracoes-conteudo +
+   !important pelo mesmo motivo dos outros componentes deste painel: a
+   "CAMADA UI MODERNA" no fim deste arquivo força
+   background: var(--surf2) em TODO button daqui. */
+#configuracoes-conteudo .mapa-estado-acao {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  padding: 7px 14px !important;
+  font-size: 0.8rem !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--verde) !important;
+  border: 1px solid var(--verde) !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+#configuracoes-conteudo .mapa-estado-acao[disabled] {
+  opacity: 0.55;
+  color: var(--fraco) !important;
+  border-color: var(--linha) !important;
+}
+
+/* Apagar é destrutivo, mas de baixo risco (dá pra baixar de novo): fica
+   discreto, sem contorno, pra não competir com "Baixar". */
+#configuracoes-conteudo .mapa-estado-acao.remover {
+  color: var(--fraco) !important;
+  border-color: transparent !important;
+}
+
+.mapa-estado-barra {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--linha);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.mapa-estado-barra > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--verde);
+  transition: width 0.2s ease;
 }
 
 /* Card 4 (Conta): "Sair" fica neutro no topo, a Zona de Risco de
@@ -7751,7 +7940,7 @@ select:focus {
   z-index: 100;
 }
 
-/* O mapa do Brasil precisa ficar ACIMA do mapa de SP (#modal-sp, z-index
+/* O mapa do Brasil precisa ficar ACIMA do mapa de SP (#modal-estado, z-index
    100) porque é aberto POR CIMA dele pra trocar de estado / voltar pro
    Rio. Regra dedicada e DEPOIS da de cima (que o punha em 100 junto com
    os outros) -- senão o SP, mais abaixo no HTML, cobria o Brasil e o

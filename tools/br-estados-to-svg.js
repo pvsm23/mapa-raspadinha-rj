@@ -118,7 +118,12 @@ const paths = featuresOrdenadas
     if (!info) throw new Error(`UF sem cadastro em estados.json: ${codigoUf}`);
     const d = poligonosDaFeature(feature).flat().map(anelParaPathD).join(" ");
     let classes = "estado";
-    if (info.liberado && info.emDesenvolvimento) classes += " estado-em-desenvolvimento";
+    /* `emDesenvolvimento` sozinho já basta -- antes exigia `liberado`
+       junto, e MG entrou marcado só como emDesenvolvimento e saiu daqui
+       como "estado-bloqueado", clicável pra nada. Como o SP tinha as
+       duas marcas, ninguém tinha esbarrado nisso. As três classes viram
+       um estado só: em desenvolvimento > liberado > bloqueado. */
+    if (info.emDesenvolvimento) classes += " estado-em-desenvolvimento";
     else if (info.liberado) classes += " estado-liberado";
     else classes += " estado-bloqueado";
     return (

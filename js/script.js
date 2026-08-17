@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.88";
+const VERSAO_APP = "0.26.08.17.89";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.88";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.89", itens: ["Minas Gerais entrou no app: dá pra explorar o mapa município por município, com o mesmo nível de detalhe do Rio.", "São Paulo ganhou esse mesmo detalhe — as divisas ficavam grosseiras ao aproximar e agora não ficam mais.", "Os mapas de MG e SP não vêm dentro do app: você baixa o que quiser em Configurações → Mapas dos estados, e depois eles abrem sem internet.", "Se você estiver em Minas ou em São Paulo, o mapa do seu estado vem sozinho — só em Wi-Fi, pra não gastar seu plano de dados."] },
   { versao: "0.26.08.17.88", itens: ["Os selos desenhados na hora agora também são raspáveis: a capa vem em preto e branco e ganha cor conforme você raspa.", "A previsão do tempo passou a mostrar a data de cada dia, não só o dia da semana.", "Correção: os dias da previsão apareciam sem nome desde a última atualização."] },
   { versao: "0.26.08.17.87", itens: ["O mapa ficou mais limpo: o Modo Viagem virou um botão verde grande no centro, e os modos do mapa (como o Clima) moram agora num menu próprio.", "Municípios, rotas e conquistas sem arte pronta ganharam um selo desenhado na hora, com borda dourada e a cor sempre igual para o mesmo lugar.", "Ficou óbvio o que ainda está bloqueado: cadeado discreto e card apagado; o que você já conquistou ganha brilho dourado."] },
   { versao: "0.26.08.17.86", itens: ["O clima agora vem pronto de um servidor nosso, atualizado de meia em meia hora — abre mais rápido e gasta menos internet do seu aparelho."] },
@@ -1340,14 +1341,14 @@ document.addEventListener("DOMContentLoaded", () => {
     abrirColaborar();
   });
 
-  // ---- Mapa de SP em tela cheia (em desenvolvimento) ----
-  // Abre o mapa do Brasil por cima do SP pra trocar de estado / voltar
-  // pro RJ (selecionar RJ lá fecha o SP, ver confirmarEstadoNoMapaBrasil).
-  document.getElementById("btn-sp-brasil").addEventListener("click", abrirMapaBrasil);
-  document.getElementById("btn-sp-popup-fechar").addEventListener("click", esconderPopupDevSP);
-  // Pan/zoom próprio do SP: anexa os listeners ao #sp-viewport uma vez
+  // ---- Mapa estadual em tela cheia (SP, MG: em desenvolvimento) ----
+  // Abre o mapa do Brasil por cima dele pra trocar de estado / voltar
+  // pro RJ (selecionar RJ lá o fecha, ver confirmarEstadoNoMapaBrasil).
+  document.getElementById("btn-estado-brasil").addEventListener("click", abrirMapaBrasil);
+  document.getElementById("btn-estado-popup-fechar").addEventListener("click", esconderPopupDevEstadual);
+  // Pan/zoom próprio do mapa estadual: anexa ao #estado-viewport uma vez
   // só (o SVG lá dentro é trocado a cada abertura, mas o viewport é fixo).
-  inicializarPanZoomSP();
+  inicializarPanZoomEstadual();
 
   // ---- Comunidade Desbrava (rede social) ----
   document.getElementById("btn-social").addEventListener("click", () => exigirLogin(() => abrirPainelSocial()));
@@ -5166,7 +5167,15 @@ function obterLocalizacaoAtual() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (posicao) => resolve({ lat: posicao.coords.latitude, lon: posicao.coords.longitude }),
+      (posicao) => {
+        const lat = posicao.coords.latitude;
+        const lon = posicao.coords.longitude;
+        // De carona: se a pessoa está num estado cujo mapa não veio no
+        // app, baixa em segundo plano. Não dá await -- quem chamou
+        // queria a coordenada, não esperar 2 MB.
+        talvezBaixarMapaDoMeuEstado(lat, lon);
+        resolve({ lat, lon });
+      },
       (erro) => {
         const mensagens = {
           1: "Permissão de localização negada.",
@@ -7981,6 +7990,9 @@ function fecharBibliotecaSelos() {
 function abrirConfiguracoes() {
   sincronizarCheckboxNotificacoes();
   document.getElementById("modal-configuracoes").classList.remove("oculto");
+  // Assíncrono (consulta o CacheStorage): monta depois de abrir, pra
+  // não segurar o painel. A lista aparece em um quadro.
+  renderizarMapasDeEstado();
 }
 
 function fecharConfiguracoes() {
@@ -11219,7 +11231,7 @@ let centroidesRegioesRJ = {};
 /**
  * Injeta no #mapa-rj um rótulo com o NOME de cada região, no centro
  * dela -- aparece só quando o mapa está afastado (modo-regioes, ver
- * CSS), igual aos nomes de mesorregião do SP. É reconstruído quando os
+ * CSS), igual aos nomes de mesorregião dos mapas estaduais. É reconstruído quando os
  * nomes chegam (data/regioes.json é assíncrono, ver carregarRegioesInfo);
  * até lá cai no slug. Tira o prefixo "Região ..." pra encurtar.
  */
@@ -11617,18 +11629,18 @@ function confirmarEstadoNoMapaBrasil() {
   const nome = path.dataset.nome;
   const sigla = path.dataset.sigla;
   if (path.classList.contains("estado-liberado")) {
-    // Estado já pronto (RJ) -- fecha o mapa do Brasil E o mapa de SP (se
-    // estava aberto por cima), revelando o mapa detalhado do RJ, que É o
-    // app principal.
+    // Estado já pronto (RJ) -- fecha o mapa do Brasil E o mapa estadual
+    // (se estava aberto por cima), revelando o mapa detalhado do RJ, que
+    // É o app principal.
     fecharMapaBrasil();
-    fecharMapaSP();
+    fecharMapaEstadual();
     return;
   }
   if (path.classList.contains("estado-em-desenvolvimento")) {
     // Estado com a malha pronta mas ainda sem conteúdo pra raspar
-    // (SP, no momento) -- abre o mapa dele em tela cheia.
+    // (SP e MG) -- abre o mapa dele em tela cheia.
     fecharMapaBrasil();
-    abrirMapaEstadoEmDesenvolvimento(sigla);
+    abrirMapaEstadoEmDesenvolvimento(sigla, nome);
     return;
   }
   document.getElementById("brasil-status").textContent = `${nome} chega em breve!`;
@@ -11640,41 +11652,169 @@ function fecharMapaBrasil() {
 
 /* ============================================================
    Visualizador de estado "em desenvolvimento": mostra a malha dos
-   municípios só como prévia (não dá pra raspar ainda). Hoje só o SP
-   usa isso. Se no futuro entrar outro estado nesse estágio, é só
-   marcar emDesenvolvimento: true em data/estados.json e criar o par
+   municípios só como prévia (não dá pra raspar ainda). Hoje SP e MG
+   usam isso. Pra entrar outro estado nesse estágio basta marcar
+   emDesenvolvimento: true em data/estados.json e criar o par
    assets/svg/<sigla>-municipios.svg + os arquivos data/<sigla>-*.json
-   vazios (ver tools/geojson-municipios-to-svg.js).
+   vazios (ver tools/geojson-municipios-to-svg.js) -- nada de código.
    ============================================================ */
 
 const svgMapaEstadoCache = {};
-// Reseta o zoom/posição do mapa de SP na próxima abertura -- definido
-// por inicializarPanZoomSP(), chamado por abrirMapaEstadoEmDesenvolvimento.
-let resetarZoomSP = () => {};
+// Nome por extenso do estado aberto agora, pros avisos ("Minas Gerais
+// está em desenvolvimento"). O <svg> não precisa de variável: o pan/zoom
+// pega o primeiro do #estado-viewport, seja #mapa-sp ou #mapa-mg.
+let nomeDoEstadoAberto = "";
+// Reseta o zoom/posição na próxima abertura -- definido por
+// inicializarPanZoomEstadual(), chamado uma vez na inicialização.
+let resetarZoomEstadual = () => {};
 
-async function abrirMapaEstadoEmDesenvolvimento(sigla) {
-  const siglaLower = String(sigla || "").toLowerCase();
-  // Por enquanto o único mapa em desenvolvimento é o de SP. Se outro
-  // estado entrar nesse estágio depois, dá pra generalizar isto (o
-  // #sp-viewport/#mapa-sp viraria genérico por sigla). Manter simples
-  // até virar um problema real.
-  if (siglaLower !== "sp") {
-    alert(`Mapa de ${sigla} ainda não implementado.`);
-    return;
+/** Caminho do mapa de um estado. Fica no SITE, não no APK. */
+function urlDoMapaEstadual(sigla) {
+  return `assets/svg/${sigla}-municipios.svg`;
+}
+
+/** Já está guardado no aparelho? (CacheStorage do pacote offline) */
+async function mapaEstadualJaBaixado(sigla) {
+  if (svgMapaEstadoCache[sigla]) return true;
+  try {
+    const cache = await caches.open(CACHE_OFFLINE);
+    return !!(await cache.match(urlDoMapaEstadual(sigla)));
+  } catch {
+    return false; // sem CacheStorage: tenta a rede na hora
   }
-  const viewport = document.getElementById("sp-viewport");
-  document.getElementById("modal-sp").classList.remove("oculto");
+}
 
-  if (!svgMapaEstadoCache[siglaLower]) {
+/* Peso aproximado de cada mapa, pra avisar ANTES de baixar -- ninguém
+   deve descobrir que gastou 5 MB depois do fato, ainda mais um público
+   que usa o app na estrada. São os números do arquivo comprimido, que
+   é o que realmente trafega. */
+const PESO_DO_MAPA = { sp: "1,2 MB", mg: "2,0 MB" };
+
+/* Um download por estado de cada vez. Sem isso, tocar em "Baixar" no
+   mapa e depois em "Baixar todos" em Configurações puxaria os mesmos
+   megabytes duas vezes -- e as duas barras brigariam pela mesma linha.
+   Guarda a Promise: quem chegar depois espera a mesma. */
+const mapasBaixando = {};
+
+/**
+ * Baixa o mapa do estado e guarda no aparelho.
+ *
+ * Guarda no CACHE_OFFLINE, e não no cache do app: aquele é limpo a cada
+ * deploy (o sw.js apaga tudo que começa com "mapa-raspadinha-"), e a
+ * pessoa perderia o download a cada atualização.
+ *
+ * `aoProgredir(fracao)` recebe 0..1, ou `null` quando o servidor não
+ * manda Content-Length (o gzip costuma omitir) -- aí quem chama mostra
+ * uma barra indeterminada em vez de inventar uma porcentagem.
+ */
+function baixarMapaDoEstado(sigla, aoProgredir) {
+  if (mapasBaixando[sigla]) return mapasBaixando[sigla];
+
+  const tarefa = (async () => {
+    const resposta = await fetch(urlDoMapaEstadual(sigla));
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+
+    const total = Number(resposta.headers.get("Content-Length")) || 0;
+    const leitor = resposta.body && resposta.body.getReader ? resposta.body.getReader() : null;
+    let svg;
+    if (leitor) {
+      const pedacos = [];
+      let lidos = 0;
+      for (;;) {
+        const { done, value } = await leitor.read();
+        if (done) break;
+        pedacos.push(value);
+        lidos += value.length;
+        if (aoProgredir) aoProgredir(total ? lidos / total : null);
+      }
+      const junto = new Uint8Array(lidos);
+      let posicao = 0;
+      for (const p of pedacos) {
+        junto.set(p, posicao);
+        posicao += p.length;
+      }
+      svg = new TextDecoder().decode(junto);
+    } else {
+      svg = await resposta.text();
+    }
+
+    svgMapaEstadoCache[sigla] = svg;
+    try {
+      const cache = await caches.open(CACHE_OFFLINE);
+      await cache.put(
+        urlDoMapaEstadual(sigla),
+        new Response(svg, { headers: { "Content-Type": "image/svg+xml" } })
+      );
+    } catch (erro) {
+      /* Sem espaço ou sem CacheStorage: o mapa vale só por esta sessão.
+         Não é motivo pra falhar -- a pessoa pediu pra VER o mapa. */
+      console.warn(`Mapa de ${sigla} não pôde ser guardado no aparelho:`, erro);
+    }
+    if (aoProgredir) aoProgredir(1);
+    return svg;
+  })();
+
+  mapasBaixando[sigla] = tarefa;
+  tarefa.finally(() => delete mapasBaixando[sigla]);
+  return tarefa;
+}
+
+/** Apaga o mapa guardado (Configurações → Mapas dos estados). */
+async function apagarMapaDoEstado(sigla) {
+  delete svgMapaEstadoCache[sigla];
+  try {
+    const cache = await caches.open(CACHE_OFFLINE);
+    await cache.delete(urlDoMapaEstadual(sigla));
+  } catch (erro) {
+    console.error(`Falha ao apagar o mapa de ${sigla}:`, erro);
+  }
+}
+
+/** Baixa a partir do painel que aparece dentro do mapa em tela cheia. */
+async function baixarMapaPeloPainel(sigla, nome) {
+  const painel = document.getElementById("estado-baixar");
+  const botao = document.getElementById("btn-estado-baixar");
+  const barra = document.getElementById("estado-baixar-barra");
+  const preench = document.getElementById("estado-baixar-preench");
+  const texto = document.getElementById("estado-baixar-texto");
+
+  botao.disabled = true;
+  barra.classList.remove("oculto");
+  preench.style.width = "0%";
+  texto.textContent = `Baixando o mapa de ${nome}...`;
+
+  try {
+    await baixarMapaDoEstado(sigla, (fracao) => {
+      if (fracao === null) barra.classList.add("indeterminada");
+      else preench.style.width = `${Math.round(fracao * 100)}%`;
+    });
+    barra.classList.remove("indeterminada");
+    painel.classList.add("oculto");
+    await desenharMapaEstadual(sigla);
+  } catch (erro) {
+    console.error(`Falha ao baixar o mapa de ${sigla}:`, erro);
+    texto.textContent = "Não deu para baixar agora. Confira sua conexão e tente de novo.";
+    botao.disabled = false;
+    barra.classList.add("oculto");
+  }
+}
+
+/** Injeta o SVG já em mãos (memória ou CacheStorage). */
+async function desenharMapaEstadual(sigla) {
+  const viewport = document.getElementById("estado-viewport");
+
+  if (!svgMapaEstadoCache[sigla]) {
     viewport.innerHTML = '<div class="spinner spinner-grande"></div>';
-    // "Respiro" pro spinner PINTAR antes da injeção pesada do SVG (645
-    // municípios ~800 KB). setTimeout puro (não requestAnimationFrame,
-    // que não dispara com a página em segundo plano e penduraria tudo).
+    /* "Respiro" pro spinner PINTAR antes da injeção pesada. setTimeout
+       puro (não requestAnimationFrame, que não dispara com a página em
+       segundo plano e penduraria tudo). */
     await new Promise((r) => setTimeout(r, 30));
     try {
-      const resposta = await fetch(`assets/svg/${siglaLower}-municipios.svg`);
-      if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
-      svgMapaEstadoCache[siglaLower] = await resposta.text();
+      const cache = await caches.open(CACHE_OFFLINE);
+      const guardado = await cache.match(urlDoMapaEstadual(sigla));
+      svgMapaEstadoCache[sigla] = guardado
+        ? await guardado.text()
+        : await (await fetch(urlDoMapaEstadual(sigla))).text();
     } catch (erro) {
       console.error(`Falha ao carregar o mapa de ${sigla}:`, erro);
       viewport.innerHTML =
@@ -11685,52 +11825,323 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla) {
     await new Promise((r) => setTimeout(r, 30));
   }
 
-  viewport.innerHTML = svgMapaEstadoCache[siglaLower];
-  resetarZoomSP();
-  mostrarPopupDevSP();
-}
+  viewport.innerHTML = svgMapaEstadoCache[sigla];
+  /* optimizeSpeed: com os 356 mil pontos de MG, resolver a geometria
+     caiu de 67 ms pra 45 ms na medição. Troca precisão sub-pixel do
+     antialiasing por fluidez -- num mapa de divisas ninguém vê a
+     diferença, e o arrasto agradece. */
+  const svg = viewport.querySelector("svg");
+  if (svg) svg.style.shapeRendering = "optimizeSpeed";
 
-function fecharMapaSP() {
-  document.getElementById("modal-sp").classList.add("oculto");
-}
-
-/* Aviso pequeno de "em desenvolvimento": aparece ao abrir o mapa de SP
-   e some sozinho depois de alguns segundos (ou no ✕). */
-let timerPopupDevSP = null;
-function mostrarPopupDevSP() {
-  const popup = document.getElementById("sp-popup-dev");
-  popup.classList.remove("oculto");
-  clearTimeout(timerPopupDevSP);
-  timerPopupDevSP = setTimeout(esconderPopupDevSP, 6000);
-}
-function esconderPopupDevSP() {
-  clearTimeout(timerPopupDevSP);
-  document.getElementById("sp-popup-dev").classList.add("oculto");
-}
-
-/* Aviso flutuante ao tocar num município do SP (some sozinho). */
-let timerToastSP = null;
-function mostrarToastSP(nome) {
-  const toast = document.getElementById("sp-toast");
-  toast.textContent = `${nome} — em desenvolvimento. Em breve dá pra raspar!`;
-  toast.classList.remove("oculto");
-  clearTimeout(timerToastSP);
-  timerToastSP = setTimeout(() => toast.classList.add("oculto"), 2600);
+  resetarZoomEstadual();
+  mostrarPopupDevEstadual();
 }
 
 /**
- * Pan/zoom PRÓPRIO do mapa de SP -- independente do motor do RJ
+ * Abre o mapa de um estado "em desenvolvimento" (malha pronta, sem
+ * conteúdo pra raspar).
+ *
+ * Era fixo em SP, com um `if (sigla !== "sp") alert(...)` e o
+ * comentário "manter simples até virar um problema real". MG tornou
+ * real. Agora qualquer estado com `emDesenvolvimento: true` em
+ * data/estados.json mais o par assets/svg/<sigla>-municipios.svg
+ * funciona sem tocar em código.
+ */
+async function abrirMapaEstadoEmDesenvolvimento(sigla, nomeDoEstado) {
+  const s = String(sigla || "").toLowerCase();
+  if (!/^[a-z]{2}$/.test(s)) return;
+
+  const nome = nomeDoEstado || s.toUpperCase();
+  nomeDoEstadoAberto = nome;
+  document.getElementById("modal-estado").classList.remove("oculto");
+  const painel = document.getElementById("estado-baixar");
+
+  if (await mapaEstadualJaBaixado(s)) {
+    painel.classList.add("oculto");
+    await desenharMapaEstadual(s);
+    return;
+  }
+
+  /* Ainda não baixado: pergunta antes, com o tamanho à vista. */
+  document.getElementById("estado-viewport").innerHTML = "";
+  document.getElementById("estado-baixar-titulo").textContent = `Mapa de ${nome}`;
+  document.getElementById("estado-baixar-texto").textContent =
+    `São ${PESO_DO_MAPA[s] || "alguns MB"} de download, uma vez só. ` +
+    "Depois ele fica guardado no aparelho e abre sem internet.";
+  document.getElementById("estado-baixar-barra").classList.add("oculto");
+  const botao = document.getElementById("btn-estado-baixar");
+  botao.disabled = false;
+  botao.onclick = () => baixarMapaPeloPainel(s, nome);
+  painel.classList.remove("oculto");
+}
+
+function fecharMapaEstadual() {
+  document.getElementById("modal-estado").classList.add("oculto");
+}
+
+/* ============================================================
+   Configurações → "Mapas dos estados"
+   Baixar / apagar cada mapa, ou todos de uma vez. GRATUITO -- não
+   confundir com "Baixar dados offline", que é do Motoclube.
+   ============================================================ */
+
+// data/estados.json não era lido em runtime (o mapa do Brasil traz tudo
+// embutido no SVG); aqui precisa da lista, então carrega uma vez só.
+let estadosJsonCache = null;
+async function carregarEstadosJson() {
+  if (!estadosJsonCache) {
+    const resposta = await fetch("data/estados.json");
+    estadosJsonCache = await resposta.json();
+  }
+  return estadosJsonCache;
+}
+
+/** Só os estados que TÊM mapa pra baixar (fora do APK): SP, MG... */
+async function estadosComMapaBaixavel() {
+  const estados = await carregarEstadosJson();
+  return Object.entries(estados)
+    .filter(([, dados]) => dados.emDesenvolvimento)
+    .map(([codigo, dados]) => ({ codigo, sigla: String(dados.sigla).toLowerCase(), nome: dados.nome }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+async function renderizarMapasDeEstado() {
+  const lista = document.getElementById("mapas-estado-lista");
+  if (!lista) return;
+
+  const estados = await estadosComMapaBaixavel();
+  lista.innerHTML = "";
+
+  for (const estado of estados) {
+    const baixado = await mapaEstadualJaBaixado(estado.sigla);
+    const linha = document.createElement("div");
+    linha.className = "mapa-estado-linha";
+    linha.dataset.sigla = estado.sigla;
+    linha.innerHTML = `
+      <span class="mapa-estado-nome"></span>
+      <span class="mapa-estado-sub"></span>
+      <button type="button" class="mapa-estado-acao"></button>
+      <div class="mapa-estado-barra oculto"><i></i></div>`;
+    // textContent (não interpolação): nome vem de JSON, mas é o mesmo
+    // cuidado do resto do app com conteúdo montado em innerHTML.
+    linha.querySelector(".mapa-estado-nome").textContent = estado.nome;
+    lista.appendChild(linha);
+    pintarLinhaDeMapa(linha, estado, baixado);
+  }
+
+  await atualizarBotaoBaixarTodosMapas();
+}
+
+/** Estado visual de UMA linha (sem refazer a lista inteira). */
+function pintarLinhaDeMapa(linha, estado, baixado) {
+  const sub = linha.querySelector(".mapa-estado-sub");
+  const botao = linha.querySelector(".mapa-estado-acao");
+  const barra = linha.querySelector(".mapa-estado-barra");
+
+  barra.classList.add("oculto");
+  botao.disabled = false;
+  sub.classList.toggle("baixado", baixado);
+  sub.textContent = baixado
+    ? "Baixado — abre sem internet"
+    : `${PESO_DO_MAPA[estado.sigla] || "alguns MB"} de download`;
+  botao.textContent = baixado ? "Apagar" : "Baixar";
+  botao.classList.toggle("remover", baixado);
+
+  botao.onclick = async () => {
+    if (baixado) {
+      await apagarMapaDoEstado(estado.sigla);
+      pintarLinhaDeMapa(linha, estado, false);
+      await atualizarBotaoBaixarTodosMapas();
+      return;
+    }
+    await baixarUmMapaNaLinha(linha, estado);
+  };
+}
+
+async function baixarUmMapaNaLinha(linha, estado) {
+  const sub = linha.querySelector(".mapa-estado-sub");
+  const botao = linha.querySelector(".mapa-estado-acao");
+  const barra = linha.querySelector(".mapa-estado-barra");
+  const preench = barra.querySelector("i");
+
+  botao.disabled = true;
+  botao.textContent = "Baixando";
+  barra.classList.remove("oculto");
+  preench.style.width = "0%";
+
+  try {
+    await baixarMapaDoEstado(estado.sigla, (fracao) => {
+      // Sem Content-Length não dá pra saber a fração: deixa a barra
+      // parada em 40% em vez de fingir progresso que não existe.
+      preench.style.width = fracao === null ? "40%" : `${Math.round(fracao * 100)}%`;
+    });
+    pintarLinhaDeMapa(linha, estado, true);
+  } catch (erro) {
+    console.error(`Falha ao baixar o mapa de ${estado.sigla}:`, erro);
+    pintarLinhaDeMapa(linha, estado, false);
+    sub.textContent = "Não deu para baixar. Confira sua conexão.";
+  }
+  await atualizarBotaoBaixarTodosMapas();
+}
+
+async function atualizarBotaoBaixarTodosMapas() {
+  const botao = document.getElementById("btn-baixar-todos-mapas");
+  if (!botao) return;
+  const estados = await estadosComMapaBaixavel();
+  const faltando = [];
+  for (const estado of estados) {
+    if (!(await mapaEstadualJaBaixado(estado.sigla))) faltando.push(estado);
+  }
+  // Com tudo baixado o botão não teria o que fazer -- some em vez de
+  // ficar lá desabilitado sem explicação.
+  botao.classList.toggle("oculto", faltando.length === 0);
+  botao.textContent = `⬇️ Baixar todos (${faltando.length})`;
+  botao.onclick = async () => {
+    botao.disabled = true;
+    const lista = document.getElementById("mapas-estado-lista");
+    // Em série, não em paralelo: dois downloads grandes ao mesmo tempo
+    // numa conexão de estrada só fazem os dois demorarem mais.
+    for (const estado of faltando) {
+      const linha = lista.querySelector(`.mapa-estado-linha[data-sigla="${estado.sigla}"]`);
+      if (linha) await baixarUmMapaNaLinha(linha, estado);
+    }
+    botao.disabled = false;
+  };
+}
+
+/* ---- Mapa do estado onde a pessoa está ----
+   A ideia do Paulo: o estado em que você ESTÁ vem sozinho; os outros
+   você escolhe. Fica pendurado no obterLocalizacaoAtual (única porta de
+   GPS do app) pra não pedir permissão de localização por conta própria
+   -- aproveita a que a pessoa já concedeu por outro motivo. */
+let jaTenteiBaixarMapaLocal = false;
+let geoEstadosCache = null;
+
+/* Quão longe da borda de um estado o ponto ainda conta como "dentro".
+   Ver o porquê em siglaDoEstadoNoPonto. Em graus (~0,25° ≈ 28 km): o
+   erro do contorno simplificado é de poucos quilômetros, e 28 km não
+   alcança o estado vizinho a partir de uma cidade litorânea. */
+const TOLERANCIA_BORDA_ESTADO = 0.25;
+
+/**
+ * Sigla do estado que contém o ponto, ou "" se não achar.
+ *
+ * ATENÇÃO ao contorno: o data/br-estados.geojson é a malha SIMPLIFICADA
+ * (serve pro mapa do Brasil, que é uma miniatura). O anel do RJ tem 272
+ * pontos pro estado inteiro -- a costa vira quase uma reta, e o Rio
+ * capital, que fica numa reentrância, CAI FORA do polígono. Testado
+ * aqui: Vassouras (interior) acerta, Rio de Janeiro não.
+ *
+ * Por isso, quando nenhum estado contém o ponto, aceita o estado cuja
+ * borda estiver a menos de TOLERANCIA_BORDA_ESTADO -- resolve as
+ * cidades litorâneas (Rio, Santos, Vitória...) sem deixar um ponto em
+ * alto-mar virar palpite.
+ */
+async function siglaDoEstadoNoPonto(lat, lon) {
+  if (!geoEstadosCache) {
+    const resposta = await fetch("data/br-estados.geojson");
+    geoEstadosCache = await resposta.json();
+  }
+  const estados = await carregarEstadosJson();
+  const sigla = (feature) =>
+    String(estados[feature.properties.codarea]?.sigla || "").toLowerCase();
+
+  let maisPerto = "";
+  let menorDistancia = Infinity;
+
+  for (const feature of geoEstadosCache.features) {
+    const geo = feature.geometry;
+    // Um Polygon aqui é [anel externo, buracos...]; um MultiPolygon é
+    // uma lista desses. Só o anel externo interessa: nenhum estado tem
+    // buraco de verdade, e ilhas vêm como polígonos separados.
+    const partes = geo.type === "MultiPolygon" ? geo.coordinates : [geo.coordinates];
+    if (partes.some((p) => pontoDentroDoAnel(lon, lat, p[0]))) return sigla(feature);
+
+    for (const parte of partes) {
+      for (const [x, y] of parte[0]) {
+        const d = Math.hypot(x - lon, y - lat);
+        if (d < menorDistancia) {
+          menorDistancia = d;
+          maisPerto = sigla(feature);
+        }
+      }
+    }
+  }
+
+  return menorDistancia <= TOLERANCIA_BORDA_ESTADO ? maisPerto : "";
+}
+
+/**
+ * Se a pessoa está num estado cujo mapa não veio no app, baixa em
+ * silêncio -- uma vez por sessão.
+ *
+ * Só em conexão que não seja tarifada: `saveData` (Economia de dados
+ * ligada) e 2g/3g barram. São ~2 MB, e o público do app usa isso na
+ * estrada -- gastar o plano de dados de alguém sem pedir seria abuso.
+ * Quem quiser assim mesmo tem o botão em Configurações.
+ */
+async function talvezBaixarMapaDoMeuEstado(lat, lon) {
+  if (jaTenteiBaixarMapaLocal) return;
+  jaTenteiBaixarMapaLocal = true;
+  try {
+    const rede = navigator.connection;
+    if (rede?.saveData) return;
+    if (rede?.effectiveType && /^(slow-)?2g$|^3g$/.test(rede.effectiveType)) return;
+
+    const sigla = await siglaDoEstadoNoPonto(lat, lon);
+    if (!sigla) return;
+    const temMapa = (await estadosComMapaBaixavel()).some((e) => e.sigla === sigla);
+    if (!temMapa || (await mapaEstadualJaBaixado(sigla))) return;
+
+    await baixarMapaDoEstado(sigla);
+    console.log(`Mapa de ${sigla.toUpperCase()} baixado (estado atual).`);
+    await renderizarMapasDeEstado();
+  } catch (erro) {
+    // Falhou? Sem barulho: ninguém pediu esse download. O botão em
+    // Configurações continua lá.
+    console.warn("Não deu para baixar o mapa do estado atual:", erro);
+  }
+}
+
+/* Aviso pequeno de "em desenvolvimento": aparece ao abrir um mapa estadual
+   e some sozinho depois de alguns segundos (ou no ✕). */
+let timerPopupDevEstadual = null;
+function mostrarPopupDevEstadual() {
+  const popup = document.getElementById("estado-popup-dev");
+  document.getElementById("estado-popup-nome").textContent = nomeDoEstadoAberto || "Este estado";
+  popup.classList.remove("oculto");
+  clearTimeout(timerPopupDevEstadual);
+  timerPopupDevEstadual = setTimeout(esconderPopupDevEstadual, 6000);
+}
+function esconderPopupDevEstadual() {
+  clearTimeout(timerPopupDevEstadual);
+  document.getElementById("estado-popup-dev").classList.add("oculto");
+}
+
+/* Aviso flutuante ao tocar num município do mapa estadual (some sozinho). */
+let timerToastEstadual = null;
+function mostrarToastEstadual(nome) {
+  const toast = document.getElementById("estado-toast");
+  toast.textContent = `${nome} — em desenvolvimento. Em breve dá pra raspar!`;
+  toast.classList.remove("oculto");
+  clearTimeout(timerToastEstadual);
+  timerToastEstadual = setTimeout(() => toast.classList.add("oculto"), 2600);
+}
+
+/**
+ * Pan/zoom PRÓPRIO do mapa estadual -- independente do motor do RJ
  * (inicializarPanZoomDoMapa), que é acoplado ao #mapa-rj e a toda a
  * lógica de raspar/colorir/regiões. Aqui é só um mapa navegável de
  * visualização: arrastar move, roda/pinça dá zoom, os nomes aparecem
  * ao aproximar (classe .mostrar-rotulos, igual ao RJ) e tocar num
  * município mostra um aviso -- nunca abre raspadinha.
  *
- * Os listeners são anexados ao #sp-viewport UMA vez (o SVG lá dentro é
- * trocado a cada abertura; a gente sempre consulta o #mapa-sp vivo).
+ * Os listeners são anexados ao #estado-viewport UMA vez (o SVG lá dentro
+ * é trocado a cada abertura, e a sigla junto, então a gente consulta o
+ * <svg> vivo em vez de guardar referência).
  */
-function inicializarPanZoomSP() {
-  const viewport = document.getElementById("sp-viewport");
+function inicializarPanZoomEstadual() {
+  const viewport = document.getElementById("estado-viewport");
   const ESCALA_MAXIMA = 80;
   const LIMIAR_ARRASTO = 5;
   // Fração mínima da TELA coberta por mapa -- mesma regra do RJ, e pelo
@@ -11740,16 +12151,18 @@ function inicializarPanZoomSP() {
   // com o nome; acima, os municípios cinza individualmente.
   const LIMIAR_REGIOES = 2.4;
   // Só bem no zoom os nomes dos municípios aparecem -- assim tem poucos
-  // na tela por vez (menos poluição e mais leve). São 645, então esse
-  // limiar é bem mais alto que o do RJ.
+  // na tela por vez (menos poluição e mais leve). São 645 em SP e 853 em
+  // MG, então esse limiar é bem mais alto que o do RJ (92).
   const LIMIAR_ROTULOS = 7;
 
   let escala = 1;
   let deslocX = 0;
   let deslocY = 0;
-  let arrastouSP = false;
+  let arrastouEstadual = false;
 
-  const svgAtual = () => viewport.querySelector("svg#mapa-sp");
+  // Sem id fixo: o SVG injetado é #mapa-sp, #mapa-mg... conforme o
+  // estado aberto. Pegar o primeiro <svg> do viewport serve pra todos.
+  const svgAtual = () => viewport.querySelector("svg");
 
   function limitarDesloc() {
     const rect = viewport.getBoundingClientRect();
@@ -11794,7 +12207,7 @@ function inicializarPanZoomSP() {
   }
 
   // Chamado a cada abertura pra começar sempre "de longe", centralizado.
-  resetarZoomSP = () => {
+  resetarZoomEstadual = () => {
     escala = 1;
     deslocX = 0;
     deslocY = 0;
@@ -11807,7 +12220,7 @@ function inicializarPanZoomSP() {
 
   viewport.addEventListener("mousedown", (evento) => {
     arrastando = true;
-    arrastouSP = false;
+    arrastouEstadual = false;
     inicioX = evento.clientX;
     inicioY = evento.clientY;
     deslocXIni = deslocX;
@@ -11818,7 +12231,7 @@ function inicializarPanZoomSP() {
     if (!arrastando) return;
     const dx = evento.clientX - inicioX;
     const dy = evento.clientY - inicioY;
-    if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) arrastouSP = true;
+    if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) arrastouEstadual = true;
     deslocX = deslocXIni + dx;
     deslocY = deslocYIni + dy;
     aplicarTransform();
@@ -11846,7 +12259,7 @@ function inicializarPanZoomSP() {
   viewport.addEventListener("touchstart", (evento) => {
     if (evento.touches.length === 1) {
       arrastando = true;
-      arrastouSP = false;
+      arrastouEstadual = false;
       inicioX = evento.touches[0].clientX;
       inicioY = evento.touches[0].clientY;
       deslocXIni = deslocX;
@@ -11861,7 +12274,7 @@ function inicializarPanZoomSP() {
     if (evento.touches.length === 1 && arrastando) {
       const dx = evento.touches[0].clientX - inicioX;
       const dy = evento.touches[0].clientY - inicioY;
-      if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) arrastouSP = true;
+      if (Math.abs(dx) > LIMIAR_ARRASTO || Math.abs(dy) > LIMIAR_ARRASTO) arrastouEstadual = true;
       deslocX = deslocXIni + dx;
       deslocY = deslocYIni + dy;
       aplicarTransform();
@@ -11875,7 +12288,7 @@ function inicializarPanZoomSP() {
         aplicarTransform();
       }
       toqueDist = distancia;
-      arrastouSP = true;
+      arrastouEstadual = true;
     }
   }, { passive: false });
 
@@ -11885,15 +12298,15 @@ function inicializarPanZoomSP() {
   });
 
   // Duplo clique/toque reseta o zoom.
-  viewport.addEventListener("dblclick", () => resetarZoomSP());
+  viewport.addEventListener("dblclick", () => resetarZoomEstadual());
 
   // Clique num município (delegação): mostra o aviso, nunca raspa. Se o
   // gesto foi um arrasto, ignora (não é um toque de seleção).
   viewport.addEventListener("click", (evento) => {
-    if (arrastouSP) return;
+    if (arrastouEstadual) return;
     const alvo = evento.target.closest(".municipio");
     if (!alvo) return;
-    mostrarToastSP(alvo.dataset.nome);
+    mostrarToastEstadual(alvo.dataset.nome);
   });
 }
 

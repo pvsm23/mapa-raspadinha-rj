@@ -32,3 +32,13 @@ android/app/build/
 android/app/release/
 pontos-sem-coordenada.txt
 pontos-auditoria.txt
+
+# Malha bruta do IBGE de MG (7,7 MB). É INSUMO de geração: o app nunca
+# lê esse arquivo -- quem vai pro site é o assets/svg/mg-municipios.svg,
+# esse sim versionado. Refazer é um comando:
+#   node tools/baixar-malha-estado.js mg
+# O data/rj-municipios.geojson continua versionado de propósito (é lido
+# em runtime, na verificação por GPS). O data/sp-municipios.geojson já
+# está no histórico desde antes desta regra -- deixei como está, tirar
+# agora não apagaria os 4,3 MB que o Git já guarda.
+data/mg-municipios.geojson

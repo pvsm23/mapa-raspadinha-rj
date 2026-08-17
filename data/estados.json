@@ -15,7 +15,7 @@
   "27": { "sigla": "AL", "nome": "Alagoas" },
   "28": { "sigla": "SE", "nome": "Sergipe" },
   "29": { "sigla": "BA", "nome": "Bahia" },
-  "31": { "sigla": "MG", "nome": "Minas Gerais" },
+  "31": { "sigla": "MG", "nome": "Minas Gerais", "emDesenvolvimento": true },
   "32": { "sigla": "ES", "nome": "Espírito Santo" },
   "33": { "sigla": "RJ", "nome": "Rio de Janeiro", "liberado": true },
   "35": { "sigla": "SP", "nome": "São Paulo", "liberado": true, "emDesenvolvimento": true },

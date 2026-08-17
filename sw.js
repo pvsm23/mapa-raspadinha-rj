@@ -90,13 +90,25 @@ self.addEventListener("fetch", (evento) => {
      que o comentário no topo deste arquivo diz que a gente evitou ao
      escolher network-first. Continuam network-first. */
   if (evento.request.destination === "image" || /\.(webp|png|jpe?g|svg|ico)$/i.test(url.pathname)) {
+    /* Os mapas de estado (SP, MG: assets/svg/<uf>-municipios.svg) têm
+       ciclo PRÓPRIO -- quem os guarda é baixarMapaDoEstado, no
+       CACHE_OFFLINE, quando a pessoa pede. Aqui o SW só NÃO pode
+       guardá-los no cache do app: senão uma passagem qualquer deixaria
+       uma cópia velha no CACHE_NAME, e o download seguinte copiaria
+       essa cópia pro CACHE_OFFLINE, que sobrevive a deploy -- mapa
+       desatualizado pra sempre. Aconteceu aqui em teste.
+       O `caches.match` abaixo varre TODOS os caches, então o mapa já
+       baixado continua vindo do CACHE_OFFLINE, instantâneo. */
+    const mapaDeEstado = /^\/?(www\/)?assets\/svg\/(?!rj-|br-)[a-z]{2}-municipios\.svg$/i.test(
+      url.pathname.replace(/^.*?(?=assets\/)/, "")
+    );
     evento.respondWith(
       caches.match(evento.request).then((cacheada) => {
         if (cacheada) return cacheada;
         return fetch(evento.request).then((resposta) => {
           // Só guarda resposta boa: cachear um 404 deixaria o selo
           // quebrado pra sempre, mesmo depois da arte existir.
-          if (resposta.ok) {
+          if (resposta.ok && !mapaDeEstado) {
             const copia = resposta.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(evento.request, copia));
           }
