@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.91";
+const VERSAO_APP = "0.26.08.17.92";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.91";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.92", itens: ["O mapa de Minas Gerais e de São Paulo ficou bem mais leve de mexer com o mapa afastado: antes o app desenhava todo o detalhe das divisas mesmo quando ele nem dava pra ver."] },
   { versao: "0.26.08.17.91", itens: ["Correção: no aplicativo Android, baixar o mapa de Minas Gerais ou de São Paulo falhava dizendo que era a conexão — o app procurava o arquivo dentro dele mesmo, e não no site.", "Quando um download falha, o app passa a dizer o motivo de verdade em vez de culpar a internet."] },
   { versao: "0.26.08.17.90", itens: ["Correção: Minas Gerais aparecia como \"chega em breve\" e não abria, mesmo já estando pronto — o app estava usando uma cópia antiga do mapa do Brasil guardada no aparelho.", "No mapa dos estados, as divisas agora afinam conforme você aproxima, em vez de virarem tarjas grossas, e os nomes das cidades ficam do mesmo tamanho na tela em qualquer zoom."] },
   { versao: "0.26.08.17.89", itens: ["Minas Gerais entrou no app: dá pra explorar o mapa município por município, com o mesmo nível de detalhe do Rio.", "São Paulo ganhou esse mesmo detalhe — as divisas ficavam grosseiras ao aproximar e agora não ficam mais.", "Os mapas de MG e SP não vêm dentro do app: você baixa o que quiser em Configurações → Mapas dos estados, e depois eles abrem sem internet.", "Se você estiver em Minas ou em São Paulo, o mapa do seu estado vem sozinho — só em Wi-Fi, pra não gastar seu plano de dados."] },
@@ -12188,6 +12189,12 @@ function inicializarPanZoomEstadual() {
      .zoom-n1 a .zoom-n4). Vai até bem mais fundo que o do RJ porque
      aqui o mapa vai até 80x, contra 40x lá. */
   const ZOOM_TRACO_ESTADUAL = [3, 8, 18, 35];
+  /* Zoom em que vale a pena trocar a malha simplificada pela cheia.
+     A conta: o viewBox tem 800 de largura numa tela de ~375, então uma
+     unidade do desenho vale 0,47 x zoom pixels. A simplificação de
+     longe é de 0.3 unidade, ou seja 0,14 x zoom pixels -- ela só começa
+     a aparecer a partir do zoom ~7. Troco em 6, um pouco antes. */
+  const ZOOM_DETALHE_ESTADUAL = 6;
 
   let escala = 1;
   let deslocX = 0;
@@ -12227,6 +12234,9 @@ function inicializarPanZoomEstadual() {
     for (let n = 0; n < ZOOM_TRACO_ESTADUAL.length; n++) {
       svg.classList.toggle(`zoom-n${n + 1}`, escala >= ZOOM_TRACO_ESTADUAL[n]);
     }
+    // Malha cheia só de perto; de longe fica a simplificada, 7x mais
+    // leve e visualmente idêntica (ver #mun-simples em css/styles.css).
+    svg.classList.toggle("detalhe-perto", escala >= ZOOM_DETALHE_ESTADUAL);
   }
 
   function aplicarZoomAncorado(novaEscala, ancoraX, ancoraY) {

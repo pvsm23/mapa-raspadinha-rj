@@ -1,5 +1,11 @@
 [
   {
+    "versao": "0.26.08.17.92",
+    "itens": [
+      "O mapa de Minas Gerais e de São Paulo ficou bem mais leve de mexer com o mapa afastado: antes o app desenhava todo o detalhe das divisas mesmo quando ele nem dava pra ver."
+    ]
+  },
+  {
     "versao": "0.26.08.17.91",
     "itens": [
       "Correção: no aplicativo Android, baixar o mapa de Minas Gerais ou de São Paulo falhava dizendo que era a conexão — o app procurava o arquivo dentro dele mesmo, e não no site.",

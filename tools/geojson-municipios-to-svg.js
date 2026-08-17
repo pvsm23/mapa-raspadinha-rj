@@ -86,6 +86,26 @@ const EPS_SIMPLIFICACAO =
 // Contadores globais de pontos, só pra reportar o quanto simplificou.
 let pontosAntes = 0;
 let pontosDepois = 0;
+let pontosLonge = 0;
+
+/* ---- Nível de detalhe: a mesma malha, duas vezes ----
+ *
+ * O Paulo relatou que o mapa "trava todo" com POUCO zoom -- e é onde
+ * dói mais: com o estado inteiro na tela, o navegador rasteriza os 356
+ * mil pontos de MG de uma vez, e nenhum deles é visível. A conta é a
+ * mesma que definiu o EPS_SIMPLIFICACAO, ao contrário: no zoom 1, um
+ * pixel de tela vale ~1 unidade do desenho, então simplificar a 0.3 é
+ * literalmente invisível ali.
+ *
+ * Então o SVG leva DUAS camadas de preenchimento: <g id="mun-simples">
+ * pra longe e <g id="mun-detalhe">, o de sempre, pra perto. O CSS mostra
+ * uma ou outra conforme o zoom -- ver ZOOM_DETALHE_ESTADUAL em
+ * js/script.js. Custa ~11% de arquivo e tira 7 de cada 8 pontos da tela
+ * na visão geral.
+ *
+ * Rótulos e contornos de região NÃO são duplicados: ficam fora das duas
+ * camadas e valem pros dois níveis. */
+const EPS_LONGE = 0.3;
 
 /**
  * Distância perpendicular do ponto p ao segmento a-b (px projetados).
@@ -164,10 +184,14 @@ function projetar([lon, lat]) {
 }
 
 // Constrói o `d` de um anel JÁ projetado, simplificando com Douglas-Peucker.
-function anelParaPathDeProjetado(projetados) {
-  pontosAntes += projetados.length;
-  const pontos = douglasPeucker(projetados, EPS_SIMPLIFICACAO);
-  pontosDepois += pontos.length;
+function anelParaPathDeProjetado(projetados, eps = EPS_SIMPLIFICACAO) {
+  const pontos = douglasPeucker(projetados, eps);
+  if (eps === EPS_SIMPLIFICACAO) {
+    pontosAntes += projetados.length;
+    pontosDepois += pontos.length;
+  } else {
+    pontosLonge += pontos.length;
+  }
   const [primeiroX, primeiroY] = pontos[0];
   let d = `M ${primeiroX} ${primeiroY} `;
   for (let i = 1; i < pontos.length; i++) {
@@ -415,22 +439,28 @@ const paths = featuresOrdenadas
     const cor = idParaCor[codigoIbge];
     const dRegiao = regiaoId ? ` data-regiao="${regiaoId}"` : "";
     const dCor = cor !== undefined ? ` data-cor="${cor}"` : "";
-    const d = poligonosDaFeature(feature)
+    const aneis = poligonosDaFeature(feature)
       .flat()
-      .map((anel) => {
-        const projetados = anel.map(projetar);
-        // Coleta arestas da geometria COMPLETA (pros contornos de região),
-        // antes de simplificar o preenchimento.
-        if (regiaoId) coletarArestasDeAnel(projetados, regiaoId);
-        return anelParaPathDeProjetado(projetados);
-      })
-      .join(" ");
-    return (
-      `  <path id="mun-${codigoIbge}" data-municipio="${codigoIbge}" ` +
-      `data-nome="${escaparAtributo(nome)}"${dRegiao}${dCor} class="municipio" d="${d}" />`
-    );
-  })
-  .join("\n");
+      .map((anel) => anel.map(projetar));
+    // Coleta arestas da geometria COMPLETA (pros contornos de região),
+    // antes de simplificar qualquer preenchimento.
+    if (regiaoId) for (const projetados of aneis) coletarArestasDeAnel(projetados, regiaoId);
+
+    const comum =
+      `data-municipio="${codigoIbge}" data-nome="${escaparAtributo(nome)}"${dRegiao}${dCor} ` +
+      `class="municipio"`;
+    const dDetalhe = aneis.map((a) => anelParaPathDeProjetado(a)).join(" ");
+    const dLonge = aneis.map((a) => anelParaPathDeProjetado(a, EPS_LONGE)).join(" ");
+    return {
+      // Só a camada de DETALHE leva o id="mun-<codigo>": id repetido é
+      // HTML inválido, e é por ele que o app acha o município.
+      detalhe: `  <path id="mun-${codigoIbge}" ${comum} d="${dDetalhe}" />`,
+      longe: `  <path ${comum} d="${dLonge}" />`,
+    };
+  });
+
+const pathsDetalhe = paths.map((p) => p.detalhe).join("\n");
+const pathsLonge = paths.map((p) => p.longe).join("\n");
 
 // Rótulos das regiões (mesorregiões), mostrados só no "modo regiões"
 // (mapa afastado, ver CSS). Posição = centro do bounding box de TODOS
@@ -507,7 +537,10 @@ const grupoContornos = segmentosContorno.length
 
 const svg =
   `<svg id="mapa-${sigla}" viewBox="0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}" ` +
-  `xmlns="http://www.w3.org/2000/svg">\n${paths}${grupoContornos}\n${rotulos}${grupoRegioes}\n</svg>\n`;
+  `xmlns="http://www.w3.org/2000/svg">\n` +
+  `  <g id="mun-simples">\n${pathsLonge}\n  </g>\n` +
+  `  <g id="mun-detalhe">\n${pathsDetalhe}\n  </g>` +
+  `${grupoContornos}\n${rotulos}${grupoRegioes}\n</svg>\n`;
 
 fs.mkdirSync(path.dirname(SAIDA), { recursive: true });
 fs.writeFileSync(SAIDA, svg, "utf8");
@@ -517,4 +550,8 @@ console.log(`OK: ${geojson.features.length} municípios -> ${SAIDA}`);
 console.log(`viewBox: 0 0 ${LARGURA_SVG} ${alturaSvg.toFixed(CASAS_DECIMAIS)}`);
 console.log(`regiões: ${Object.keys(regioesInfo).length} (rótulos: ${rotulosRegioes ? "sim" : "não"}, contornos: ${segmentosContorno.length} segmentos)`);
 console.log(`simplificação (eps=${EPS_SIMPLIFICACAO}): ${pontosAntes} -> ${pontosDepois} pontos (-${reducao}%)`);
+console.log(
+  `camada de longe (eps=${EPS_LONGE}): ${pontosLonge} pontos ` +
+    `(${(pontosDepois / pontosLonge).toFixed(1)}x mais leve que a de detalhe)`
+);
 console.log(`tamanho do arquivo: ${(svg.length / 1024).toFixed(1)} KB`);

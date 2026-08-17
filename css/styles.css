@@ -766,6 +766,28 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
    ao dar zoom (fica sempre ~0.5px na tela), então as divisas ficam
    precisas em qualquer aproximação -- diferente do RJ, onde a borda
    engrossa junto com o mapa. */
+/* ---- Nível de detalhe: só uma das duas camadas por vez ----
+   O SVG traz o mesmo estado duas vezes (ver EPS_LONGE em
+   tools/geojson-municipios-to-svg.js): #mun-simples, com 1/7 dos pontos,
+   e #mun-detalhe, a malha cheia. De longe o detalhe não é visível --
+   no zoom 1 um pixel vale ~1 unidade do desenho -- mas o navegador
+   rasterizava os 356 mil pontos assim mesmo, e era o que travava a
+   visão geral.
+
+   `display: none` (e não opacity/visibility) de propósito: só ele faz o
+   navegador PULAR a subárvore inteira. É o ponto do exercício. */
+#estado-viewport svg #mun-detalhe {
+  display: none;
+}
+
+#estado-viewport svg.detalhe-perto #mun-detalhe {
+  display: block;
+}
+
+#estado-viewport svg.detalhe-perto #mun-simples {
+  display: none;
+}
+
 /* ---- Divisas que AFINAM ao aproximar (igual ao RJ) ----
 
    Tinha `vector-effect: non-scaling-stroke` aqui, e era CÓDIGO MORTO:
