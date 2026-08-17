@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.17.85",
+    "itens": [
+      "O botão do Modo Viagem saiu do canto direito e virou um botão em destaque no meio da barra de baixo — sobrou espaço e ficou mais fácil de alcançar com o polegar.",
+      "No Modo Clima, as temperaturas agora acompanham o mapa enquanto você arrasta, em vez de só pularem para o lugar quando você solta.",
+      "E os marcadores de pontos turísticos somem enquanto o Modo Clima está ligado, pra não embolar com as temperaturas."
+    ]
+  },
+  {
     "versao": "0.26.08.17.84",
     "itens": [
       "O município agora mostra o clima: temperatura de agora no canto do selo e, tocando nela, a previsão dos próximos 3 dias.",

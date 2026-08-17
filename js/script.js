@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.84";
+const VERSAO_APP = "0.26.08.17.85";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.84";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.85", itens: ["O botão do Modo Viagem saiu do canto direito e virou um botão em destaque no meio da barra de baixo — sobrou espaço e ficou mais fácil de alcançar com o polegar.", "No Modo Clima, as temperaturas agora acompanham o mapa enquanto você arrasta, em vez de só pularem para o lugar quando você solta.", "E os marcadores de pontos turísticos somem enquanto o Modo Clima está ligado, pra não embolar com as temperaturas."] },
   { versao: "0.26.08.17.84", itens: ["O município agora mostra o clima: temperatura de agora no canto do selo e, tocando nela, a previsão dos próximos 3 dias.", "Junto vêm a altitude da cidade e o horário do pôr do sol — útil pra planejar a hora de pegar a estrada.", "Novo botão Modo Clima no mapa: liga e mostra a temperatura das cidades direto sobre elas."] },
   { versao: "0.26.08.17.83", itens: ["Os pontos turísticos agora têm comentários: quem confirmou a presença por GPS no município conta como foi, e qualquer pessoa pode responder para tirar dúvidas.", "Os comentários mais curtidos aparecem primeiro.", "Chegaram as notificações: você é avisado quando alguém curte ou comenta nas suas coisas, ou responde seu comentário.", "Ao postar na Comunidade dá para marcar o ponto turístico além da cidade — e o painel do ponto tem um botão que mostra só os posts dele.", "O app avisa quando sai uma versão nova, com a lista do que mudou.", "Correção: o app podia guardar uma página de erro no lugar da versão boa e abrir quebrado sem internet."] },
   { versao: "0.26.08.17.82", itens: ["Todos os 456 pontos turísticos agora têm a história completa — os 92 municípios do estado, um por um.", "Cada ponto foi conferido na internet: nomes errados foram corrigidos, lugares que não existiam saíram da lista e alguns estavam até na cidade errada.", "Vários marcadores estavam no lugar errado dentro da cidade certa e foram para o ponto exato, e mais 39 pontos ganharam marcador no mapa."] },
@@ -1612,6 +1613,10 @@ function configurarModoViagem() {
   if (!botao || !ehAppNativo() || !pluginBackgroundGeolocation()) return;
 
   botao.classList.remove("oculto");
+  /* A gota é o RESSALTO da barra inferior onde o botão mora. Ela só
+     aparece junto com ele: sem o Modo Viagem (web, ou app sem o
+     plugin), a barra fica reta, sem um bico vazio no meio. */
+  document.getElementById("viagem-gota")?.classList.remove("oculto");
 
   botao.addEventListener("click", () => {
     // Parar uma viagem em andamento NUNCA é barrado: se a assinatura
@@ -5997,15 +6002,78 @@ function alternarModoClima() {
   botao.setAttribute("aria-pressed", modoClimaLigado ? "true" : "false");
   const camada = document.getElementById("camada-clima");
   camada.classList.toggle("oculto", !modoClimaLigado);
+
+  /* Some com os pontos turísticos enquanto o clima está no ar: nos
+     mesmos zooms em que os chips aparecem, os pinos de PT também estão
+     na tela, e as duas camadas de marcador brigam pelo mesmo espaço --
+     vira sopa de ícone.
+     `display` direto, e não uma regra de opacidade no CSS: a opacidade
+     dos pinos vem de `--pontos-opacidade`, que esta mesma função de
+     zoom reescreve o tempo todo, e uma regra concorrendo com isso é
+     frágil. Aqui o efeito é absoluto e não depende de cascata. */
+  const svgMapa = document.getElementById("mapa-rj");
+  svgMapa?.classList.toggle("modo-clima", modoClimaLigado);
+  esconderPontosNoModoClima(modoClimaLigado);
+
   if (modoClimaLigado) redesenharChipsDeClima();
   else camada.innerHTML = "";
 }
 
-/** Chamado pelo zoom/arrasto -- agrupado pra não redesenhar por quadro. */
+/**
+ * Esconde/mostra a camada de pontos turísticos no Modo Clima.
+ *
+ * Precisa ser REAPLICADO depois de renderizarPontosTuristicos(), que
+ * destrói e recria o grupo a cada redesenho -- o estilo inline morre
+ * junto, e sem isso os pinos voltariam no primeiro zoom com o Modo
+ * Clima ainda ligado.
+ */
+function esconderPontosNoModoClima(esconder) {
+  const grupo = document.getElementById("pontos-turisticos");
+  if (grupo) grupo.style.display = esconder ? "none" : "";
+}
+
+/**
+ * Chamado a cada transform do mapa (zoom e arrasto).
+ *
+ * DUAS VELOCIDADES, e essa separação é o ponto:
+ *
+ *  - REPOSICIONAR os chips que já existem é barato (uma multiplicação
+ *    de matriz por chip) e roda AGORA, em todo quadro. Sem isso o chip
+ *    ficava parado enquanto o mapa andava embaixo dele, e só pulava pro
+ *    lugar quando o dedo saía da tela.
+ *  - RECALCULAR quais chips cabem envolve colisão e possivelmente ir na
+ *    API; isso continua agrupado (debounce), senão travaria o arrasto.
+ */
 function agendarRedesenhoDeClima() {
   if (!modoClimaLigado) return;
+  reposicionarChipsDeClima();
   clearTimeout(redesenhoClimaAgendado);
   redesenhoClimaAgendado = setTimeout(redesenharChipsDeClima, 160);
+}
+
+/**
+ * Move os chips existentes pra acompanhar o mapa, sem recalcular nada.
+ *
+ * Cada chip guarda a coordenada dele em unidades do SVG (data-sx/data-sy);
+ * aqui ela só é convertida pra pixel de tela com a matriz do momento.
+ * É o que faz o chip parecer PREGADO no município durante o arrasto.
+ */
+function reposicionarChipsDeClima() {
+  const svg = document.getElementById("mapa-rj");
+  const camada = document.getElementById("camada-clima");
+  if (!svg || !camada) return;
+  const matriz = svg.getScreenCTM();
+  if (!matriz) return;
+
+  const area = camada.getBoundingClientRect();
+  for (const chip of camada.querySelectorAll(".clima-chip")) {
+    const sx = parseFloat(chip.dataset.sx);
+    const sy = parseFloat(chip.dataset.sy);
+    if (Number.isNaN(sx) || Number.isNaN(sy)) continue;
+    const ponto = new DOMPoint(sx, sy).matrixTransform(matriz);
+    chip.style.left = `${ponto.x - area.left}px`;
+    chip.style.top = `${ponto.y - area.top}px`;
+  }
 }
 
 /**
@@ -6108,6 +6176,11 @@ async function redesenharChipsDeClima() {
     chip.className = "clima-chip";
     chip.style.left = `${m.px}px`;
     chip.style.top = `${m.py}px`;
+    /* Coordenada em unidades do SVG: é o que reposicionarChipsDeClima
+       usa pra reconverter em pixel a cada quadro do arrasto, sem
+       precisar refazer a seleção. */
+    chip.dataset.sx = m.x;
+    chip.dataset.sy = m.y;
     const icone = window.desbravaClima.iconeDoTempo(dados.codigo, dados.ehNoite);
     chip.innerHTML = `<span class="clima-chip-icone">${icone.svg}</span><span>${dados.temperatura}°</span>`;
     chip.setAttribute(
@@ -6722,6 +6795,10 @@ function renderizarPontosTuristicos() {
   }
 
   if (total) svg.appendChild(grupo);
+  /* O grupo acabou de ser recriado: o `display: none` do Modo Clima
+     morreu com o anterior. Reaplica, senão os pinos reaparecem no
+     primeiro zoom com o Modo Clima ainda ligado. */
+  if (modoClimaLigado) esconderPontosNoModoClima(true);
   return total;
 }
 

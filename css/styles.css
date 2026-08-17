@@ -1945,49 +1945,19 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
    com mais respiro entre os dois pra não parecerem um botão só
    dividido ao meio. ---- */
 
-#btn-modo-viagem {
-  position: fixed;
-  right: calc(env(safe-area-inset-right, 0px) + 14px);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 136px);
-  z-index: 50;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  border: none;
-  background: var(--verde, #2BD576);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(43, 213, 118, 0.45), 0 2px 8px rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
+/* O Modo Viagem DEIXOU de ser botão flutuante no canto direito: virou
+   a "gota" no meio da barra inferior (ver #viagem-gota no fim deste
+   arquivo). Aquele canto já tinha a bússola, o Modo Clima e a coluna
+   lateral -- botão demais no mesmo lugar.
 
-#btn-modo-viagem .ico-svg {
-  width: 26px;
-  height: 26px;
-  stroke-width: 2.4;
-}
+   Tudo que posicionava/desenhava o botão saiu daqui. O que ficou é só
+   o estado escondido, que continua valendo em qualquer lugar.
 
+   O :hover antigo aplicava `transform: scale(1.05)` puro; dentro da
+   gota o botão usa translateX(-50%) pra centralizar, e um transform
+   sem ele jogava o botão pra direita ao passar o mouse. */
 #btn-modo-viagem.oculto {
   display: none;
-}
-
-#btn-modo-viagem:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8px 22px rgba(43, 213, 118, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
-}
-
-#btn-modo-viagem.viagem-ativa {
-  background: var(--verde, #2BD576);
-  color: #fff;
-  animation: pulsar-viagem 1.6s ease-in-out infinite;
-}
-
-@keyframes pulsar-viagem {
-  0%, 100% { box-shadow: 0 6px 18px rgba(43, 213, 118, 0.45), 0 0 0 0 rgba(43, 213, 118, 0.55); }
-  50% { box-shadow: 0 6px 18px rgba(43, 213, 118, 0.45), 0 0 0 10px rgba(43, 213, 118, 0); }
 }
 
 /* ---- Confirmar Modo Viagem ---- */
@@ -7655,10 +7625,10 @@ select:focus {
    não ficarem atrás da barra nova. */
 #btn-buscar-local { bottom: 82px !important; }
 #btn-onde-estou { bottom: 138px !important; }
-/* Mais respiro que os 8px padrão entre botões flutuantes -- o Modo
-   Viagem é maior (58px) e é a ação primária, não pode parecer
-   grudado na bússola. */
-#btn-modo-viagem { bottom: 208px !important; }
+/* O #btn-modo-viagem saiu desta coluna -- virou a gota da barra
+   inferior. A regra antiga tinha `bottom: 208px !important` e era ela
+   que vencia o novo posicionamento, deixando o botão 198px acima da
+   gota. */
 #dica-mapa { bottom: 78px !important; }
 
 /* Folha do Menu */
@@ -10993,3 +10963,117 @@ button:disabled:active {
   pointer-events: none;
   animation: clima-chip-entra 0.26s ease;
 }
+
+/* ============ GOTA DO MODO VIAGEM ============
+   O botão saiu da pilha da direita (que já tinha bússola, Modo Clima e
+   os laterais) e virou um ressalto no meio da barra inferior, no
+   formato dos módulos de câmera "gota d'água", de cabeça pra baixo.
+
+   Por que um <svg> e não border-radius: os OMBROS precisam ser
+   CÔNCAVOS pra emendar com a linha reta da barra. border-radius só faz
+   canto convexo -- sairia um círculo colado na barra, com dois
+   entalhes nas laterais. O path desenha a emenda contínua. */
+#nav-inferior { overflow: visible; }
+
+#viagem-gota {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Sobe 32px acima da borda da barra: é a altura do bico. */
+  bottom: 100%;
+  margin-bottom: -1px; /* cobre a borda de 1px da nav, sem costura */
+  width: 104px;
+  /* Alta o bastante pra o botão ANINHAR dentro do bico, como a lente
+     dentro do módulo de câmera. Com 34px o botão de 46 transbordava e
+     virava um círculo colado na barra, não uma gota. */
+  height: 50px;
+  pointer-events: none; /* só o botão dentro recebe toque */
+  z-index: 1;
+}
+#viagem-gota.oculto { display: none; }
+
+#viagem-gota > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+#viagem-gota > svg path {
+  /* Mesmo fundo e mesma borda da barra: a gota tem que parecer parte
+     dela, não um adesivo colado por cima. */
+  fill: var(--vidro, rgba(15, 18, 22, 0.96));
+  stroke: var(--linha);
+  stroke-width: 1;
+  /* O traço some na base (onde emenda com a barra) porque o path fecha
+     em Z ali; o -1px de margin cobre o resto. */
+}
+
+/* O botão flutua dentro do bico. `position:absolute` sobrescreve o
+   `fixed` da regra antiga, que o prendia no canto direito. */
+#nav-inferior #btn-modo-viagem {
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto; /* a nav é flex e esticaria o botão */
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--verde, #2BD576) !important;
+  color: var(--verde-tinta, #06210F) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.18s ease, background-color 0.2s ease;
+}
+#nav-inferior #btn-modo-viagem.oculto { display: none; }
+#nav-inferior #btn-modo-viagem .ico-svg { width: 21px; height: 21px; }
+#nav-inferior #btn-modo-viagem:active { transform: translateX(-50%) scale(0.92); }
+
+/* Viagem em andamento: pulsa devagar, pra se notar de relance que o
+   rastreio está ligado. */
+#nav-inferior #btn-modo-viagem.viagem-ativa {
+  animation: gota-pulsa 2.2s ease-in-out infinite;
+}
+@keyframes gota-pulsa {
+  0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 0 rgba(43,213,118,0.5); }
+  50%      { box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 9px rgba(43,213,118,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #nav-inferior #btn-modo-viagem.viagem-ativa { animation: none; }
+}
+
+/* Com o Modo Viagem fora da coluna da direita, a bússola e o Modo
+   Clima sobem: sobrou o espaço que ele ocupava. */
+#btn-onde-estou { bottom: 138px !important; }
+#btn-modo-clima { bottom: 78px !important; }
+#dica-mapa { bottom: 200px !important; }
+
+/* No Modo Clima os pontos turísticos somem.
+   Nos mesmos zooms em que os chips de temperatura aparecem, os pinos de
+   PT também estão na tela -- duas camadas de marcador disputando o
+   mesmo espaço vira sopa de ícone. A transição de opacidade evita o
+   corte seco ao ligar/desligar.
+   `pointer-events: none` junto: sem isso o pino invisível continuaria
+   roubando o toque destinado ao chip por cima dele. */
+/* Some com os pontos turísticos enquanto o Modo Clima está ligado.
+
+   QUEM ESCONDE É O JS (alternarModoClima, em js/script.js), com
+   `display` direto no grupo. Aqui fica só o `pointer-events`, que é
+   barato e ajuda caso o display volte por outro caminho.
+
+   Por que não resolver tudo no CSS: o `opacity` dos itens vem da
+   variável `--pontos-opacidade`, que o JS reescreve a CADA zoom. Uma
+   regra de opacidade concorrendo com uma variável reescrita o tempo
+   todo é frágil -- e, pior, não consegui verificar o efeito neste
+   ambiente (opacity e visibility em <g> de SVG não são refletidos por
+   getComputedStyle aqui, mesmo com a regra comprovadamente aplicada).
+   `display` no elemento é observável e não disputa com nada. */
+#mapa-rj.modo-clima #pontos-turisticos { pointer-events: none; }

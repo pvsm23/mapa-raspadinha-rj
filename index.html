@@ -472,6 +472,23 @@
        fica escondido), pra reaproveitar os handlers já existentes sem
        reescrever nada. Ver configurarNavInferior em js/script.js. -->
   <nav id="nav-inferior">
+    <!-- Gota do Modo Viagem: um ressalto que sobe do meio da barra,
+         no formato dos módulos de câmera "gota d'água" de celular, só
+         que de cabeça pra baixo. Fica exatamente sobre "Conquistas"
+         (3º de 5 itens = o centro).
+         O <svg> desenha SÓ o fundo: os ombros côncavos emendam com a
+         barra, coisa que border-radius não faz. O botão vai por cima.
+         Ver #viagem-gota em css/styles.css. -->
+    <div id="viagem-gota" class="oculto">
+      <svg viewBox="0 0 96 34" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 34 C 20 34, 19 2, 48 2 C 77 2, 76 34, 96 34 Z"/>
+      </svg>
+      <!-- Modo Viagem: só aparece no app instalado (Android/Capacitor),
+           ver configurarModoViagem em js/script.js. Mora DENTRO da gota,
+           no meio da barra inferior. -->
+      <button id="btn-modo-viagem" class="oculto" aria-label="Ativar Modo Viagem" title="Modo Viagem"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 17.5H9l1.5-5H14l3 5"/><path d="M10.5 12.5 12 8h3l1.5 3"/><path d="M6.5 12.5h3"/></svg></button>
+    </div>
+
     <button type="button" data-nav="mapa" class="nav-item nav-ativa">
       <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span><span class="nav-txt">Mapa</span>
     </button>
@@ -541,9 +558,6 @@
        pulsante em cima do municipio -->
   <button id="btn-onde-estou" aria-label="Mostrar onde estou no mapa" title="Onde estou?"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></button>
 
-  <!-- Modo Viagem: só aparece no app instalado (Android/Capacitor), ver
-       configurarModoViagem em js/script.js. Fica acima da bússola. -->
-  <button id="btn-modo-viagem" class="oculto" aria-label="Ativar Modo Viagem" title="Modo Viagem"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 17.5H9l1.5-5H14l3 5"/><path d="M10.5 12.5 12 8h3l1.5 3"/><path d="M6.5 12.5h3"/></svg></button>
 
   <!-- Modo Clima: liga/desliga os chips de temperatura no mapa.
        Ver alternarModoClima em js/script.js. -->
