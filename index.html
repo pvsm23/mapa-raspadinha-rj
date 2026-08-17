@@ -308,6 +308,11 @@
       <button id="btn-topo-perfil" class="topo-avatar" aria-label="Meu perfil">PV</button>
       <span id="topo-titulo" class="logo-desbrava">DESBRAVA</span>
       <button id="btn-topo-busca" class="topo-icone" aria-label="Buscar"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+      <!-- Sino: só aparece logado (ver atualizarBadgeNotificacoes). -->
+      <button id="btn-topo-notificacoes" class="topo-icone oculto" aria-label="Notificações">
+        <svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="badge-notificacoes" class="oculto"></span>
+      </button>
       <button id="btn-configuracoes" class="topo-icone" aria-label="Configurações"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div>
     <div id="topo-progresso">
@@ -829,9 +834,36 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
             Fotos
           </button>
+          <!-- Leva ao feed da Comunidade filtrado por este ponto.
+               Escondido em ponto sem id (dado de antes do id estável). -->
+          <button type="button" id="btn-ponto-posts" class="chip-acao">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Posts
+          </button>
         </div>
 
         <p id="ponto-texto"></p>
+
+        <!-- Comentários do ponto. Todo mundo LÊ; só comenta quem teve a
+             presença confirmada por GPS naquele município (a trava de
+             verdade é a Regra do Firestore, não esta tela).
+             Ver montarComentariosDoPonto em js/script.js. -->
+        <section id="ponto-comentarios">
+          <h4 id="ponto-comentarios-titulo">Comentários</h4>
+          <div id="ponto-comentarios-lista"></div>
+          <p id="ponto-comentarios-vazio" class="oculto">
+            Ninguém comentou aqui ainda.
+          </p>
+          <div id="ponto-comentar-area" class="oculto">
+            <textarea id="input-comentario-ponto" rows="2" maxlength="500"
+                      placeholder="Conte como foi a sua visita…"></textarea>
+            <button type="button" id="btn-comentar-ponto">Comentar</button>
+          </div>
+          <p id="ponto-comentar-bloqueado" class="oculto"></p>
+          <!-- Erro inline, no padrão do resto do app (não há toast
+               genérico aqui; os fluxos usam um <p> de erro por perto). -->
+          <p id="ponto-comentario-erro" class="oculto"></p>
+        </section>
       </div>
 
       <!-- Fica colado no rodape da folha: o corpo rola por baixo dele. -->
@@ -1716,6 +1748,29 @@
     </div>
   </div>
 
+  <!-- Aviso de versão. Serve a dois momentos, com o mesmo desenho:
+       1) o app está DESATUALIZADO (só no APK) -- lista o que vem de
+          novo e oferece o botão de atualizar;
+       2) o app ACABOU DE ATUALIZAR (APK e web) -- lista o que mudou,
+          sem botão, porque já está em dia.
+       Ver avisarSobreVersao em js/script.js. O id do miolo NÃO termina
+       em "-conteudo" de propósito: a CAMADA UI MODERNA no fim do
+       styles.css casa [id$="-conteudo"] com !important e sequestraria
+       o arredondamento. -->
+  <div id="modal-versao" class="oculto" role="dialog" aria-modal="true" aria-labelledby="versao-titulo">
+    <div id="versao-caixa">
+      <button id="btn-fechar-versao" aria-label="Fechar">✕</button>
+      <span id="versao-emblema" aria-hidden="true"></span>
+      <h2 id="versao-titulo">Novidades</h2>
+      <p id="versao-subtitulo"></p>
+      <div id="versao-lista"></div>
+      <div id="versao-acoes">
+        <button type="button" id="btn-versao-atualizar" class="oculto">Atualizar agora</button>
+        <button type="button" id="btn-versao-depois">Agora não</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= BOTTOM SHEETS ==================
        Três folhas deslizantes que substituíram formulários inline.
        Todas seguem a mesma casca (.sheet-overlay > .sheet), com
@@ -1750,6 +1805,14 @@
         <button type="button" id="btn-municipio-post" class="campo-seletor">
           <span class="campo-seletor-rotulo">Marcar município</span>
           <span class="campo-seletor-valor" id="btn-municipio-post-valor">Nenhum</span>
+          <svg class="campo-seletor-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <!-- Só aparece depois de escolher o município: sem ele não há
+             lista de pontos pra mostrar. Marcar o ponto é OPCIONAL. -->
+        <button type="button" id="btn-ponto-post" class="campo-seletor oculto">
+          <span class="campo-seletor-rotulo">Marcar ponto turístico</span>
+          <span class="campo-seletor-valor" id="btn-ponto-post-valor">Nenhum</span>
           <svg class="campo-seletor-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
 
@@ -1955,6 +2018,24 @@
   <!-- Seletor de município com busca, compartilhado pelas Sugestões e
        pelo Novo Post (ver abrirEscolherMunicipio, que recebe um
        callback com o id escolhido). -->
+  <!-- Notificações: comentário e curtida nas suas coisas da Comunidade,
+       e resposta no seu comentário de ponto turístico. Escritas pelo
+       cliente de QUEM AGE (o projeto está no Spark, sem Cloud
+       Functions) -- ver o bloco de notificações em js/auth.js. -->
+  <div id="modal-notificacoes" class="sheet-overlay oculto">
+    <div id="notificacoes-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="notificacoes-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="notificacoes-titulo">Notificações</h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-notificacoes" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <div id="lista-notificacoes"></div>
+        <p id="notificacoes-vazio" class="oculto">Nada por aqui ainda. Quando alguém curtir ou comentar nas suas coisas, aparece nesta tela.</p>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-escolher-municipio" class="sheet-overlay oculto">
     <div id="escolher-municipio-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="escolher-municipio-titulo">
       <div class="sheet-cabecalho">

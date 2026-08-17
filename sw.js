@@ -113,8 +113,20 @@ self.addEventListener("fetch", (evento) => {
     // deveria confiar no CACHE DELE, nao no cache HTTP do browser).
     fetch(evento.request, { cache: "no-store" })
       .then((resposta) => {
-        const copia = resposta.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(evento.request, copia));
+        /* So guarda resposta BOA -- a mesma regra do ramo de imagem
+           acima, que faltava aqui.
+           Sem esta guarda, um tropeco do servidor enquanto a pessoa
+           esta ONLINE (um 502 do GitHub Pages, um 404 durante um
+           deploy) era gravado no cache por cima da versao boa. Depois,
+           OFFLINE, o fallback la embaixo servia esse erro como se
+           fosse o app: a pessoa abria o Desbrava e via a pagina de
+           erro, sem jeito de voltar atras a nao ser reinstalando.
+           Resposta ruim agora passa direto: o cache guarda a ultima
+           versao que funcionou. */
+        if (resposta.ok) {
+          const copia = resposta.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(evento.request, copia));
+        }
         return resposta;
       })
       .catch(() =>

@@ -1,0 +1,525 @@
+[
+  {
+    "versao": "0.26.08.17.83",
+    "itens": [
+      "Os pontos turísticos agora têm comentários: quem confirmou a presença por GPS no município conta como foi, e qualquer pessoa pode responder para tirar dúvidas.",
+      "Os comentários mais curtidos aparecem primeiro.",
+      "Chegaram as notificações: você é avisado quando alguém curte ou comenta nas suas coisas, ou responde seu comentário.",
+      "Ao postar na Comunidade dá para marcar o ponto turístico além da cidade — e o painel do ponto tem um botão que mostra só os posts dele.",
+      "O app avisa quando sai uma versão nova, com a lista do que mudou.",
+      "Correção: o app podia guardar uma página de erro no lugar da versão boa e abrir quebrado sem internet."
+    ]
+  },
+  {
+    "versao": "0.26.08.17.82",
+    "itens": [
+      "Todos os 456 pontos turísticos agora têm a história completa — os 92 municípios do estado, um por um.",
+      "Cada ponto foi conferido na internet: nomes errados foram corrigidos, lugares que não existiam saíram da lista e alguns estavam até na cidade errada.",
+      "Vários marcadores estavam no lugar errado dentro da cidade certa e foram para o ponto exato, e mais 39 pontos ganharam marcador no mapa."
+    ]
+  },
+  {
+    "versao": "0.26.08.12.81",
+    "itens": [
+      "Pão de Açúcar e Fortaleza de Santa Cruz da Barra ganharam desenho próprio no mapa."
+    ]
+  },
+  {
+    "versao": "0.26.08.12.80",
+    "itens": [
+      "Os pontos turísticos aparecem bem antes no mapa, a partir de um zoom bem menor.",
+      "Quando vários pontos ficam colados no mesmo lugar, tocar neles abre uma lista para você escolher qual quer ver."
+    ]
+  },
+  {
+    "versao": "0.26.08.12.79",
+    "itens": [
+      "Os pontos turísticos ganharam marcador no mapa em 75 dos 92 municípios — 173 lugares no total, cada um no ponto exato onde fica."
+    ]
+  },
+  {
+    "versao": "0.26.08.12.78",
+    "itens": [
+      "Mais pontos turísticos ganharam marcador no mapa, incluindo os que ficam em lugares grandes como a Lagoa de Araruama."
+    ]
+  },
+  {
+    "versao": "0.26.08.12.77",
+    "itens": [
+      "Todos os pontos turísticos da Região Metropolitana ganharam marcador no mapa, no lugar exato onde ficam.",
+      "A numeração das versões mudou de formato: agora ela mostra a data da entrega."
+    ]
+  },
+  {
+    "versao": "0.12.08.26.76",
+    "itens": [
+      "Os botões de rota e fotos subiram para antes do texto de história, e o painel do ponto volta sempre ao topo ao abrir."
+    ]
+  },
+  {
+    "versao": "0.11.45",
+    "itens": [
+      "O painel do ponto turístico foi redesenhado: imagem de capa ocupando a largura toda, cidade em destaque e botões de ação mais fáceis de achar."
+    ]
+  },
+  {
+    "versao": "0.11.44",
+    "itens": [
+      "Os marcadores dos pontos turísticos ficaram maiores e passaram a aparecer com menos zoom, surgindo aos poucos conforme você se aproxima."
+    ]
+  },
+  {
+    "versao": "0.11.43",
+    "itens": [
+      "Os pontos turísticos agora aparecem no mapa, cada um no lugar exato onde fica. Toque em um para ver a descrição, abrir a rota, procurar fotos ou ir para a cidade.",
+      "Os pontos com arte própria aparecem desenhados; os demais usam um marcador comum."
+    ]
+  },
+  {
+    "versao": "0.11.42",
+    "itens": [
+      "O botão \"Abrir no Maps\" da lista de pontos turísticos passou a funcionar em todos os municípios, e ganhou companhia de um botão de imagens."
+    ]
+  },
+  {
+    "versao": "0.11.41",
+    "itens": [
+      "As divisas dos municípios ficaram muito mais detalhadas: litoral, baías e ilhas aparecem de verdade quando você aproxima.",
+      "A verificação por GPS ficou mais precisa perto das divisas."
+    ]
+  },
+  {
+    "versao": "0.11.40",
+    "itens": [
+      "Quem entra num grupo do Motoclube agora recebe um número de membro, que é seu para sempre.",
+      "Os brasões dos grupos ganharam asas, o ano de fundação e a bandeira do Brasil.",
+      "Dá para dar bem mais zoom no mapa, e as divisas vão ficando mais finas conforme você se aproxima.",
+      "As fotos da Comunidade agora mostram um aviso de carregamento em vez de aparecerem do nada."
+    ]
+  },
+  {
+    "versao": "0.11.39",
+    "itens": [
+      "A aba do Motoclube e a Garagem agora abrem para todo mundo — a assinatura só é pedida na hora de entrar num grupo ou cadastrar uma moto.",
+      "O card do grupo mostra quantos membros ele tem, e dá para abrir o brasão em tamanho grande e compartilhar."
+    ]
+  },
+  {
+    "versao": "0.11.38",
+    "itens": [
+      "Nomes compridos no mapa agora quebram em duas linhas, em vez de atravessar os municípios vizinhos.",
+      "Corrigida a liberação do Motoclube, que parecia desligar sozinha ao abrir o app."
+    ]
+  },
+  {
+    "versao": "0.11.37",
+    "itens": [
+      "Os nomes no mapa ficaram bem maiores e mais fáceis de ler, sem se sobrepor."
+    ]
+  },
+  {
+    "versao": "0.11.36",
+    "itens": [
+      "Os nomes no mapa ficaram menores e agora mantêm o mesmo tamanho na tela conforme você aproxima."
+    ]
+  },
+  {
+    "versao": "0.11.35",
+    "itens": [
+      "Chegaram os grupos do Motoclube: um para cada município, com brasão próprio. Você entra em um, e o brasão passa a aparecer no seu perfil e ao lado do seu nome na Comunidade.",
+      "Para trocar de grupo é preciso esperar 30 dias desde a entrada no anterior."
+    ]
+  },
+  {
+    "versao": "0.11.34",
+    "itens": [
+      "Os nomes no mapa pararam de se sobrepor: agora o texto mantém o tamanho na tela ao aproximar, e os municípios menores aparecem conforme sobra espaço.",
+      "Dá pra dar bem mais zoom no mapa.",
+      "O app ganhou ícone próprio na barra de notificações."
+    ]
+  },
+  {
+    "versao": "0.11.33",
+    "itens": [
+      "As fotos da comunidade que não abriam voltaram a aparecer, inclusive as de posts antigos.",
+      "O nome de cada município agora fica dentro dos próprios limites no mapa.",
+      "Cada município ganhou o brasão do seu grupo do Motoclube."
+    ]
+  },
+  {
+    "versao": "0.11.32",
+    "itens": [
+      "Selos novos de Paraty e Itatiaia, e mais 10 municípios ganharam a arte da raspadinha.",
+      "Enquanto o pagamento por Pix não estiver no ar, o Motoclube pode ser liberado de graça para todo mundo."
+    ]
+  },
+  {
+    "versao": "0.11.31",
+    "itens": [
+      "Quem já pagou pode recuperar o acesso pelo botão \"Já sou membro\" no paywall, mesmo tendo trocado de aparelho ou reinstalado o app."
+    ]
+  },
+  {
+    "versao": "0.11.30",
+    "itens": [
+      "O app agora confere sozinho se o Pix caiu, sem depender de aviso externo, e tem um botão \"Já paguei\" pra checar na hora. Ninguém mais paga e fica esperando."
+    ]
+  },
+  {
+    "versao": "0.11.29",
+    "itens": [
+      "Assim que o Pix é confirmado, o app avisa na hora com uma tela de boas-vindas e libera os recursos do Motoclube — não precisa mais fechar e abrir."
+    ]
+  },
+  {
+    "versao": "0.11.28",
+    "itens": [
+      "O botão de copiar o código Pix voltou a funcionar, e agora o código também aparece por extenso na tela — dá pra selecionar à mão se a cópia falhar."
+    ]
+  },
+  {
+    "versao": "0.11.27",
+    "itens": [
+      "O checkout do Motoclube passou a gerar Pix de verdade: QR Code e copia e cola na hora, direto na tela de assinatura."
+    ]
+  },
+  {
+    "versao": "0.11.26",
+    "itens": [
+      "Correção importante: município que já teve a presença confirmada por GPS fica verificado pra sempre. Antes, desmarcar e raspar de novo longe do lugar apagava a confirmação, e era preciso voltar lá fisicamente."
+    ]
+  },
+  {
+    "versao": "0.11.25",
+    "itens": [
+      "O voucher mensal da Loja subiu para R$ 9,90 — o mesmo valor da assinatura do Motoclube. Ou seja: todo mês você recebe de volta, em desconto na Loja, o que pagou pela assinatura."
+    ]
+  },
+  {
+    "versao": "0.11.24",
+    "itens": [
+      "O Motoclube Desbrava virou assinatura: R$ 9,90 por mês, com pagamento por Pix dentro do próprio app (QR Code e código pra copiar). Assinando, você libera o Modo Viagem, o mapa offline, as dicas e lojas do Motoclube, a Garagem Virtual e o voucher mensal da Loja."
+    ]
+  },
+  {
+    "versao": "0.11.23",
+    "itens": [
+      "\"Baixar dados offline\" saiu do \"em breve\" e funciona: assinantes PRO guardam mapa, selos e dados no aparelho, com barra de progresso, e o app abre sem internet. As imagens também passaram a carregar do aparelho antes de ir na rede, deixando a abertura mais rápida. Mais um punhado de acabamentos: botões respondem ao toque, e janelas e gavetas agora fecham com animação em vez de sumir de uma vez."
+    ]
+  },
+  {
+    "versao": "0.11.22",
+    "itens": [
+      "Correção: as fotos dos posts não apareciam no feed. O app estava interceptando o carregamento das imagens por engano — agora elas carregam normalmente."
+    ]
+  },
+  {
+    "versao": "0.11.21",
+    "itens": [
+      "Sugestões da Comunidade repaginadas: as categorias viraram uma faixa de pílulas deslizantes, o município agora se escolhe numa lista com busca (some a listinha do celular com 92 opções), e os lugares aparecem num mosaico de cartões com a foto de fundo. Publicar uma foto ou sugerir um lugar abre uma janelinha que sobe de baixo, em vez de esticar a tela, e escolher a foto virou um quadro que já mostra a prévia."
+    ]
+  },
+  {
+    "versao": "0.11.20",
+    "itens": [
+      "A opção de tema \"Automático\" (que tentava clarear a tela no sol) foi removida: o Android bloqueia o sensor de luz dentro do app, então ela não funcionava em aparelho nenhum. Ficaram Sistema, Claro e Escuro. De quebra, a barra de status do celular agora acompanha o tema, em vez de ficar sempre preta."
+    ]
+  },
+  {
+    "versao": "0.11.19",
+    "itens": [
+      "Selos muito mais nítidos na hora de raspar (antes ficavam borrados nas telas de celular), a área de raspagem agora bate exatamente com o selo — sem precisar raspar o vazio em volta — e o brilho dos selos dourados parou de vazar pelos cantos. Raspadinhas de capa cinza, como as das Conquistas, que não davam pra concluir, agora completam normalmente."
+    ]
+  },
+  {
+    "versao": "0.11.18",
+    "itens": [
+      "Correção na atualização do app: o arquivo baixado agora tem o número da versão no nome. Antes todo download salvava por cima do mesmo Desbrava.apk, e o celular acabava oferecendo o arquivo antigo pra instalar, dizendo que já era a mesma versão."
+    ]
+  },
+  {
+    "versao": "0.11.17",
+    "itens": [
+      "A escolha de tema virou quatro botõezinhos lado a lado (Sistema/Claro/Escuro/Auto), no lugar da listinha cinza do celular que destoava do app. Na primeira vez que você abre o Desbrava, ele pergunta se pode usar o sensor de luz pra clarear o mapa no sol — e agora os avisos aparecem como mensagem flutuante, sem caixa do sistema travando a tela."
+    ]
+  },
+  {
+    "versao": "0.11.16",
+    "itens": [
+      "Tema Claro (e Automático, via sensor de luz do aparelho quando suportado) nas Configurações, ícone de configurações trocado de sol pra engrenagem, Modo Viagem virou um botão flutuante verde de destaque, e a dica de arrastar/zoom some sozinha depois de alguns segundos."
+    ]
+  },
+  {
+    "versao": "0.11.15",
+    "itens": [
+      "Garagem Virtual com cara de painel automotivo: abas viraram um segmented control contínuo, a lista de motos duplicada deu lugar a um card seletor (moto atual + setas pra trocar), e a aba Estatísticas ganhou um dashboard de verdade com o odômetro em destaque."
+    ]
+  },
+  {
+    "versao": "0.11.14",
+    "itens": [
+      "Conquistas em lista horizontal (medalha + descrição lado a lado) em vez dos cards gigantes de antes — cabe muito mais na tela, sem cadeado amarelo enorme, com selo de raridade colorido por nível e barra de progresso mais fina."
+    ]
+  },
+  {
+    "versao": "0.11.13",
+    "itens": [
+      "Popup do município reequilibrado: selo menor e status virou um selinho verde, 3 botões de ação num grid discreto (Compartilhar / Fotos daqui / Sugestões, sem remover nenhuma função), e \"Abrir no Maps\" virou um link pequeno em vez de bloco verde gigante."
+    ]
+  },
+  {
+    "versao": "0.11.12",
+    "itens": [
+      "Rotas Temáticas com visual novo: lista vertical de cards (em vez do grid circular apertado), com miniatura, barra de progresso fina e sem mais cadeado amarelo — rota não iniciada fica em tons de cinza, o resto aparece colorido."
+    ]
+  },
+  {
+    "versao": "0.11.11",
+    "itens": [
+      "Perfil redesenhado: crachá de Membro Desbrava/Desbravador embaixo do apelido, dashboard 2x2 (municípios, selos dourados, rotas concluídas, regiões), minimapa com cantos arredondados, e só os 4 selos mais recentes no lugar da lista inteira repetida — com botão pra ver a Biblioteca completa."
+    ]
+  },
+  {
+    "versao": "0.11.10",
+    "itens": [
+      "Biblioteca de selos virou um álbum de colecionador: abas (Municípios/Regiões/Rotas) e filtro (Todos/Conquistados/Faltam). Selos bloqueados agora têm o mesmo visual em todo lugar, sem cadeado amarelo espalhado pelo texto."
+    ]
+  },
+  {
+    "versao": "0.11.9",
+    "itens": [
+      "Amigos e Ranking com visual novo: avatares, busca contínua (sem botão), menu '⋮' no lugar do botão vermelho de remover amigo, pódio com medalhas no Ranking, e sua linha sempre visível mesmo fora do topo 50."
+    ]
+  },
+  {
+    "versao": "0.11.8",
+    "itens": [
+      "Comunidade com visual novo, estilo Instagram/Threads: tabs minimalistas, feed sem cartões pesados (só uma linha fina separando os posts), foto ocupando a largura toda, e um botão redondo (FAB) pra postar no canto da tela. Menções @assim agora aparecem destacadas em verde."
+    ]
+  },
+  {
+    "versao": "0.11.7",
+    "itens": [
+      "Configurações com visual novo: cartões organizados (Perfil, Preferências, Recursos, Conta), toggles no lugar das caixinhas de marcar, e só o botão 'Salvar apelido' fica verde vibrante agora."
+    ]
+  },
+  {
+    "versao": "0.11.6",
+    "itens": [
+      "Menu reorganizado: 'Minha Jornada', 'Explorar' e 'Sistema', mais fácil de achar as coisas. Perfil saiu do Menu (já abre pelo avatar no topo) e o Check-in semanal saiu de circulação."
+    ]
+  },
+  {
+    "versao": "0.11.5",
+    "itens": [
+      "Chegou a Loja Desbrava! 🛍️ Produtos físicos e digitais, alguns liberados só depois de desbravar certos municípios. Membro do Motoclube ganha um voucher mensal de R$ 4,90 pra usar nas compras."
+    ]
+  },
+  {
+    "versao": "0.11.4",
+    "itens": [
+      "Garagem Virtual agora aceita até 3 motos, com abas pra Criar nova, Editar (e definir qual é a ativa) e ver Estatísticas (odômetro e viagens registradas) de cada uma."
+    ]
+  },
+  {
+    "versao": "0.11.3",
+    "itens": [
+      "Novidades PRO do Motoclube Desbrava: Garagem Virtual (marca/modelo/apelido da sua moto, 100% privado, com odômetro somado sozinho pelo Modo Viagem), opção de salvar o trajeto de um rolê como rota personalizada, e resumo do rolê (km, tempo, municípios) com imagem pra compartilhar na Comunidade ou fora do app.",
+      "Gratuito por enquanto, junto com o resto do Motoclube."
+    ]
+  },
+  {
+    "versao": "0.11.2",
+    "itens": [
+      "Chegou o Modo Viagem! 🏍️ Botão novo acima da bússola: liga o rastreio só enquanto você estiver rodando (com notificação fixa), registra a quilometragem e deixa os municípios por onde você passar prontos pra raspar depois.",
+      "Rastreio em segundo plano antigo (de hora em hora) saiu de circulação — o app não pede mais localização em segundo plano."
+    ]
+  },
+  {
+    "versao": "0.11.1",
+    "itens": [
+      "Ícones de buscar, configurações, bússola e todo o Menu ficaram no mesmo estilo da barra de baixo."
+    ]
+  },
+  {
+    "versao": "0.11.0",
+    "itens": [
+      "Chegou o Motoclube Desbrava! 🏍️ Dicas e lojas de peças/oficinas com filtro de marca e modelo — gratuito por enquanto.",
+      "O botão de Perfil foi pro Menu; no lugar dele na barra de baixo agora fica o Motoclube."
+    ]
+  },
+  {
+    "versao": "0.10.19",
+    "itens": [
+      "Novo menu ao compartilhar uma rota (link ou Comunidade).",
+      "Rastreio em segundo plano agora confere sua localização de hora em hora, em vez de ficar o tempo todo ligado — usa bem menos bateria."
+    ]
+  },
+  {
+    "versao": "0.10.18",
+    "itens": [
+      "Corrigido: 'Minhas rotas' agora carrega certinho."
+    ]
+  },
+  {
+    "versao": "0.10.17",
+    "itens": [
+      "Rotas personalizadas: monte sua própria rota com os municípios que quiser, com nome e descrição, e compartilhe por link ou na Comunidade.",
+      "Novo link \"Bora buscar esse selo?\" no popup de cada município, pra convidar alguém a raspar junto."
+    ]
+  },
+  {
+    "versao": "0.10.16",
+    "itens": [
+      "Novos efeitos sonoros: raspar, revelar selo, selo dourado, curtir e conquista (pode desligar em Configurações).",
+      "Brilho do selo dourado mais suave e contido na imagem."
+    ]
+  },
+  {
+    "versao": "0.10.15",
+    "itens": [
+      "Corrigido: agora dá pra ativar as notificações no aplicativo instalado."
+    ]
+  },
+  {
+    "versao": "0.10.14",
+    "itens": [
+      "Novo visual dos botões da comunidade (coração que enche ao curtir).",
+      "Selos dourados ganharam um brilho que passa.",
+      "Link 'me adicione como amigo(a)' na tela de Amigos."
+    ]
+  },
+  {
+    "versao": "0.10.13",
+    "itens": [
+      "17 municípios ganharam selo ilustrado próprio! Angra dos Reis, Campos, Barra Mansa, Cantagalo e mais."
+    ]
+  },
+  {
+    "versao": "0.10.12",
+    "itens": [
+      "Duas rotas novas com selo próprio: Povos Goytacazes e Povos Tupinambás — a história dos povos indígenas que dominavam o Rio antes da colonização."
+    ]
+  },
+  {
+    "versao": "0.10.11",
+    "itens": [
+      "Todos os 92 municípios do Rio agora têm curiosidade e história! E agora dá pra ler mesmo sem raspar — é só tocar no município."
+    ]
+  },
+  {
+    "versao": "0.10.10",
+    "itens": [
+      "Em São Paulo: as regiões agora aparecem com as divisas desenhadas (afastado), o zoom vai bem mais longe (dá pra achar os municípios minúsculos) e as linhas ficaram mais finas."
+    ]
+  },
+  {
+    "versao": "0.10.9",
+    "itens": [
+      "Dá pra dar mais zoom no mapa de São Paulo."
+    ]
+  },
+  {
+    "versao": "0.10.8",
+    "itens": [
+      "Nomes das regiões agora aparecem no mapa do Rio (afastado). Em São Paulo, os nomes dos municípios ficaram menores pra não embolar nas áreas concentradas."
+    ]
+  },
+  {
+    "versao": "0.10.7",
+    "itens": [
+      "Mapa de São Paulo mais leve e organizado: afastado mostra as 15 regiões; aproximando, os municípios com bordas mais nítidas e nomes só bem no zoom. Corrigido o botão 🇧🇷 de troca de estado."
+    ]
+  },
+  {
+    "versao": "0.10.6",
+    "itens": [
+      "São Paulo agora abre em tela cheia, com zoom e nomes dos municípios — igual ao mapa do Rio! Pra voltar pro Rio, toque no 🇧🇷 e escolha o RJ."
+    ]
+  },
+  {
+    "versao": "0.10.5",
+    "itens": [
+      "Corrigido: o mapa de São Paulo agora abre de verdade. 🗺️"
+    ]
+  },
+  {
+    "versao": "0.10.4",
+    "itens": [
+      "Login com o Google no aplicativo agora funciona de verdade. 🎉"
+    ]
+  },
+  {
+    "versao": "0.10.3",
+    "itens": [
+      "Agora tem 'Esqueci minha senha' na tela de login."
+    ]
+  },
+  {
+    "versao": "0.10.2",
+    "itens": [
+      "O mapa de São Paulo agora abre mais rápido e sem travar.",
+      "Melhorias no login com o Google."
+    ]
+  },
+  {
+    "versao": "0.10.1",
+    "itens": [
+      "Mapa do Brasil maior e mais fácil de usar: toque num estado pra selecionar e confirme no botão."
+    ]
+  },
+  {
+    "versao": "0.10.0",
+    "itens": [
+      "São Paulo já apareceu no mapa do Brasil! 🟡 Ainda em desenvolvimento, mas dá pra ver os 645 municípios."
+    ]
+  },
+  {
+    "versao": "0.9.6",
+    "itens": [
+      "Agora dá pra entrar com a conta do Google no aplicativo.",
+      "Correções e melhorias."
+    ]
+  },
+  {
+    "versao": "0.9.5",
+    "itens": [
+      "Download do app mais confiável.",
+      "Correções e melhorias."
+    ]
+  },
+  {
+    "versao": "0.9.4",
+    "itens": [
+      "Quem já tem o app instalado agora tem o botão 'Atualizar app' no menu, com aviso quando sai versão nova.",
+      "Correções e melhorias."
+    ]
+  },
+  {
+    "versao": "0.9.3",
+    "itens": [
+      "Agora dá pra ver o que mudou tocando na versão.",
+      "Correções e melhorias de estabilidade."
+    ]
+  },
+  {
+    "versao": "0.9.2",
+    "itens": [
+      "Você pode usar uma foto ou um selo dourado como foto de perfil.",
+      "Ajustes visuais e correções."
+    ]
+  },
+  {
+    "versao": "0.9.1",
+    "itens": [
+      "As janelas do app agora abrem com animação.",
+      "Pequenas melhorias."
+    ]
+  },
+  {
+    "versao": "0.9.0",
+    "itens": [
+      "Novo visual do perfil, ícone novo e vários ajustes."
+    ]
+  }
+]

@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.82";
+const VERSAO_APP = "0.26.08.17.83";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.82";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.83", itens: ["Os pontos turísticos agora têm comentários: quem confirmou a presença por GPS no município conta como foi, e qualquer pessoa pode responder para tirar dúvidas.", "Os comentários mais curtidos aparecem primeiro.", "Chegaram as notificações: você é avisado quando alguém curte ou comenta nas suas coisas, ou responde seu comentário.", "Ao postar na Comunidade dá para marcar o ponto turístico além da cidade — e o painel do ponto tem um botão que mostra só os posts dele.", "O app avisa quando sai uma versão nova, com a lista do que mudou.", "Correção: o app podia guardar uma página de erro no lugar da versão boa e abrir quebrado sem internet."] },
   { versao: "0.26.08.17.82", itens: ["Todos os 456 pontos turísticos agora têm a história completa — os 92 municípios do estado, um por um.", "Cada ponto foi conferido na internet: nomes errados foram corrigidos, lugares que não existiam saíram da lista e alguns estavam até na cidade errada.", "Vários marcadores estavam no lugar errado dentro da cidade certa e foram para o ponto exato, e mais 39 pontos ganharam marcador no mapa."] },
   { versao: "0.26.08.12.81", itens: ["Pão de Açúcar e Fortaleza de Santa Cruz da Barra ganharam desenho próprio no mapa."] },
   { versao: "0.26.08.12.80", itens: ["Os pontos turísticos aparecem bem antes no mapa, a partir de um zoom bem menor.", "Quando vários pontos ficam colados no mesmo lugar, tocar neles abre uma lista para você escolher qual quer ver."] },
@@ -244,6 +245,10 @@ let slugParaMunicipioId = {};
 let idParaNomeMunicipio = {};
 let abaSocialAtual = "global"; // "global" | "amigos"
 let filtroMunicipioSocialId = null; // preenchido pelo botao @ no popup do municipio
+/* Filtro por PONTO turistico, do botao "Posts" no painel do ponto.
+   Quando esta preenchido, ele MANDA sobre o de municipio -- o id do
+   ponto ja carrega o municipio no prefixo. */
+let filtroPontoSocialId = null;
 let cursorFeedSocial = null; // ultimo doc da pagina atual, pra "carregar mais"
 let feedSocialAcabou = false;
 let blobUrlsFotosPosts = []; // URL.createObjectURL ativos, revogados ao fechar o painel
@@ -442,13 +447,180 @@ function ehVersaoMaior(a, b) {
   return false;
 }
 
+/* ===================== AVISO DE VERSÃO =====================
+ * Dois momentos diferentes, mesma janela:
+ *
+ *  A) ACABOU DE ATUALIZAR -- a VERSAO_APP rodando é diferente da que
+ *     ficou guardada da última abertura. Vale pro APK e pra WEB (que
+ *     se atualiza sozinha, e por isso nunca cai no caso B).
+ *  B) ESTÁ DESATUALIZADO -- só no APK: existe release mais novo no
+ *     GitHub. Aí a janela ganha o botão de atualizar.
+ *
+ * Se os dois valessem na mesma abertura (atualizou pra 82, mas já saiu
+ * a 83), o A vence: comemorar o que a pessoa acabou de receber é mais
+ * honesto do que cobrar de novo na mesma hora. O B aparece na próxima.
+ */
+const CHAVE_VERSAO_VISTA = "desbrava_versao_vista";
+
+/* O changelog mora no script.js, que vai EMPACOTADO no APK -- então um
+ * app velho não tem como conhecer as novidades das versões novas. Este
+ * arquivo é a cópia publicada na web, gerada por
+ * tools/gerar-versoes-json.js. Só o caso B precisa dele. */
+const URL_VERSOES_PUBLICADAS =
+  "https://pvsm23.github.io/mapa-raspadinha-rj/data/versoes.json";
+
+/** Entradas do histórico mais novas que `versao`, da mais recente pra trás. */
+function novidadesDesde(historico, versao) {
+  return (historico || []).filter((v) => v?.versao && ehVersaoMaior(v.versao, versao));
+}
+
+/**
+ * Monta e abre a janela de versão.
+ *
+ * `aoAtualizar` só é passado no caso B; sem ele o botão de atualizar
+ * nem aparece, que é o comportamento na web -- lá não há o que baixar.
+ */
+function abrirAvisoDeVersao({ titulo, subtitulo, emblema, blocos, aoAtualizar }) {
+  const modal = document.getElementById("modal-versao");
+  if (!modal || !blocos.length) return false;
+
+  document.getElementById("versao-emblema").textContent = emblema;
+  document.getElementById("versao-titulo").textContent = titulo;
+  document.getElementById("versao-subtitulo").textContent = subtitulo;
+
+  const lista = document.getElementById("versao-lista");
+  lista.innerHTML = "";
+  // textContent em vez de innerHTML: o changelog é nosso, mas é texto
+  // livre e um dia pode vir de arquivo publicado (caso B).
+  blocos.forEach((bloco) => {
+    const div = document.createElement("div");
+    div.className = "versao-bloco";
+    if (blocos.length > 1) {
+      const cab = document.createElement("div");
+      cab.className = "versao-bloco-titulo";
+      cab.textContent = `Versão ${bloco.versao}`;
+      div.appendChild(cab);
+    }
+    const ul = document.createElement("ul");
+    (bloco.itens || []).forEach((texto) => {
+      const li = document.createElement("li");
+      li.textContent = texto;
+      ul.appendChild(li);
+    });
+    div.appendChild(ul);
+    lista.appendChild(div);
+  });
+
+  const botao = document.getElementById("btn-versao-atualizar");
+  botao.classList.toggle("oculto", !aoAtualizar);
+  botao.onclick = aoAtualizar || null;
+  document.getElementById("btn-versao-depois").textContent = aoAtualizar
+    ? "Agora não"
+    : "Entendi";
+
+  lista.scrollTop = 0;
+  modal.classList.remove("oculto");
+  return true;
+}
+
+function fecharAvisoDeVersao() {
+  fecharComAnimacao(document.getElementById("modal-versao"));
+}
+
+/**
+ * Caso A: a versão que está rodando mudou desde a última abertura.
+ *
+ * Devolve true se mostrou algo -- quem chama usa isso pra não empilhar
+ * o aviso de "tem versão nova" por cima.
+ *
+ * Quem instala o app AGORA não vê nada: sem valor guardado, só
+ * registramos a versão atual em silêncio. Receber um changelog de
+ * coisas que você nunca usou é ruído, não novidade.
+ */
+function avisarQueAtualizou() {
+  let vista = null;
+  try {
+    vista = localStorage.getItem(CHAVE_VERSAO_VISTA);
+  } catch {
+    return false; // localStorage bloqueado: não insiste
+  }
+
+  const gravar = () => {
+    try {
+      localStorage.setItem(CHAVE_VERSAO_VISTA, VERSAO_APP);
+    } catch {
+      /* cota cheia / modo privado: o aviso reaparece, e tudo bem */
+    }
+  };
+
+  if (!vista) {
+    gravar();
+    return false;
+  }
+  if (vista === VERSAO_APP) return false;
+
+  /* Downgrade (reinstalou um APK antigo) cai aqui com lista vazia.
+   * Só regrava e sai calado -- anunciar "novidades" de uma versão
+   * ANTERIOR seria mentira. */
+  const blocos = novidadesDesde(HISTORICO_VERSOES, vista);
+  gravar();
+  if (!blocos.length) return false;
+
+  const varias = blocos.length > 1;
+  return abrirAvisoDeVersao({
+    emblema: "✨",
+    titulo: varias ? "O app foi atualizado" : "Novidades desta versão",
+    subtitulo: varias
+      ? `Você pulou ${blocos.length} versões desde a ${vista}. Veja o que mudou:`
+      : `Agora você está na versão ${VERSAO_APP}.`,
+    blocos,
+  });
+}
+
+/**
+ * Caso B: existe release mais novo que o APK instalado.
+ *
+ * Busca o changelog PUBLICADO (o de dentro do APK não conhece as
+ * versões novas). Se a busca falhar, o aviso ainda abre com um texto
+ * genérico -- o que importa é a pessoa saber que tem versão nova e ter
+ * o botão à mão.
+ */
+async function avisarAtualizacaoDisponivel(versaoNova) {
+  let blocos = [];
+  try {
+    const resposta = await fetch(URL_VERSOES_PUBLICADAS, { cache: "no-store" });
+    if (resposta.ok) blocos = novidadesDesde(await resposta.json(), VERSAO_APP);
+  } catch {
+    /* offline ou site fora: segue com a lista vazia */
+  }
+
+  if (!blocos.length) {
+    blocos = [{ versao: versaoNova, itens: ["Melhorias e correções no app."] }];
+  }
+
+  abrirAvisoDeVersao({
+    emblema: "⬇️",
+    titulo: "Tem versão nova",
+    subtitulo: `Você está na ${VERSAO_APP} e a ${versaoNova} já saiu. Veja o que muda:`,
+    blocos,
+    aoAtualizar: () => {
+      fecharAvisoDeVersao();
+      baixarApk();
+    },
+  });
+}
+
 /**
  * Só no app instalado: consulta o último release no GitHub e, se a
  * versão publicada for maior que a instalada (VERSAO_APP), destaca o
  * item de menu "Atualizar app" com o aviso da nova versão. Falha
  * silenciosa (offline / GitHub fora do ar) -- nunca trava nada.
+ *
+ * `jaAvisou` vem true quando a janela de "acabou de atualizar" já
+ * apareceu nesta abertura: aí o destaque no menu continua, mas a
+ * janela de cobrança não sobe por cima.
  */
-async function verificarAtualizacaoApp(item) {
+async function verificarAtualizacaoApp(item, jaAvisou) {
   try {
     const resposta = await fetch(
       "https://api.github.com/repos/pvsm23/mapa-raspadinha-rj/releases/latest",
@@ -460,6 +632,7 @@ async function verificarAtualizacaoApp(item) {
     if (versaoNova && ehVersaoMaior(versaoNova, VERSAO_APP)) {
       item.innerHTML = `<span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>Atualizar app · ${versaoNova} nova!`;
       item.classList.add("menu-op-destaque");
+      if (!jaAvisou) avisarAtualizacaoDisponivel(versaoNova);
     }
   } catch {
     /* sem internet ou GitHub indisponível: mantém "Atualizar app" normal */
@@ -632,6 +805,38 @@ document.addEventListener("DOMContentLoaded", () => {
   if (versaoEl) versaoEl.textContent = `versão ${VERSAO_APP}`;
   document.getElementById("btn-ver-novidades")?.addEventListener("click", abrirNovidades);
   document.getElementById("btn-fechar-novidades")?.addEventListener("click", fecharNovidades);
+
+  document.getElementById("btn-topo-notificacoes")?.addEventListener("click", abrirNotificacoes);
+  document.getElementById("btn-fechar-notificacoes")?.addEventListener("click", fecharNotificacoes);
+  document.getElementById("modal-notificacoes")?.addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-notificacoes") fecharNotificacoes();
+  });
+
+  // Leva à Comunidade filtrada por este ponto. O rótulo do filtro leva
+  // o NOME do ponto: o id (3302106-praca-da-matematica) não diz nada.
+  document.getElementById("btn-ponto-posts")?.addEventListener("click", () => {
+    if (!pontoAbertoId) return;
+    const nome = document.getElementById("ponto-titulo").textContent;
+    fecharPontoTuristico();
+    abrirPainelSocial(pontoAbertoMunicipio, { pontoId: pontoAbertoId, rotuloPonto: nome });
+  });
+
+  document.getElementById("btn-comentar-ponto")?.addEventListener("click", enviarComentarioDoPonto);
+  // Enter envia, Shift+Enter quebra linha -- o mesmo do resto do app.
+  document.getElementById("input-comentario-ponto")?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter" && !evento.shiftKey) {
+      evento.preventDefault();
+      enviarComentarioDoPonto();
+    }
+  });
+
+  document.getElementById("btn-fechar-versao")?.addEventListener("click", fecharAvisoDeVersao);
+  document.getElementById("btn-versao-depois")?.addEventListener("click", fecharAvisoDeVersao);
+  // Tocar no fundo fecha, como nas outras janelas. Só no fundo: um
+  // clique dentro da caixa não pode fechar por acidente.
+  document.getElementById("modal-versao")?.addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-versao") fecharAvisoDeVersao();
+  });
   document.getElementById("modal-novidades")?.addEventListener("click", (evento) => {
     if (evento.target.id === "modal-novidades") fecharNovidades();
   });
@@ -900,6 +1105,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.addEventListener("auth-mudou", (evento) => atualizarUiDeConta(evento.detail));
+  // O sino some no logout e reconta a cada login.
+  document.addEventListener("auth-mudou", atualizarBadgeNotificacoes);
   document.addEventListener("auth-mudou", (evento) => abrirPostDoLinkSeExistir(evento.detail?.usuario));
   document.addEventListener("auth-mudou", (evento) => abrirMunicipioDoLinkSeExistir(evento.detail?.usuario));
   document.addEventListener("auth-mudou", (evento) => abrirRotaPersonalizadaDoLinkSeExistir(evento.detail?.usuario));
@@ -1148,9 +1355,24 @@ document.addEventListener("DOMContentLoaded", () => {
         municipioNovoPost = id;
         document.getElementById("btn-municipio-post-valor").textContent =
           id ? idParaNomeMunicipio[id] : "Nenhum";
+        /* Trocar de município invalida o ponto: um ponto de Paraty não
+           pode ficar pendurado num post marcado como Niterói. */
+        pontoNovoPost = null;
+        atualizarSeletorDePontoDoPost();
       },
     })
   );
+  document.getElementById("btn-ponto-post").addEventListener("click", () => {
+    if (!municipioNovoPost) return;
+    abrirEscolherPonto({
+      municipioId: municipioNovoPost,
+      selecionado: pontoNovoPost,
+      aoEscolher: (id) => {
+        pontoNovoPost = id;
+        atualizarSeletorDePontoDoPost();
+      },
+    });
+  });
   document.getElementById("input-foto-post").addEventListener("change", aoEscolherFotoPost);
   document.getElementById("btn-marcar-pessoa").addEventListener("click", aoMarcarPessoaPost);
   document.getElementById("input-marcar-pessoa").addEventListener("keydown", (evento) => {
@@ -1187,9 +1409,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-escolher-municipio").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-escolher-municipio") fecharEscolherMunicipio();
   });
-  document
-    .getElementById("input-busca-municipio")
-    .addEventListener("input", (evento) => renderizarListaEscolherMunicipio(evento.target.value));
+  // A folha é a mesma pros dois seletores: quem estiver aberto responde.
+  document.getElementById("input-busca-municipio").addEventListener("input", (evento) => {
+    if (escolherPontoContexto) renderizarListaEscolherPonto(evento.target.value);
+    else renderizarListaEscolherMunicipio(evento.target.value);
+  });
 
   // ---- Detalhe de uma sugestão ----
   document.getElementById("btn-fechar-sugestao-detalhe").addEventListener("click", fecharDetalheSugestao);
@@ -1240,7 +1464,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("menu-sheet").classList.add("oculto");
     baixarApk();
   });
-  if (ehAppNativo()) verificarAtualizacaoApp(itemBaixarApk);
+  /* Caso A vale pros dois (a web se atualiza sozinha e cai só aqui).
+   * Roda ANTES do caso B pra decidir quem fica com a tela. */
+  const jaAvisou = avisarQueAtualizou();
+  if (ehAppNativo()) verificarAtualizacaoApp(itemBaixarApk, jaAvisou);
 
   // Pequeno atraso pra não competir com o resto da tela carregando.
   setTimeout(mostrarAvisoInstalarPwa, 1200);
@@ -6272,6 +6499,452 @@ function abrirPontoTuristico(municipioId, indice) {
   // próximo abre na altura em que o anterior foi deixado.
   document.getElementById("ponto-corpo").scrollTop = 0;
   document.getElementById("modal-ponto").classList.remove("oculto");
+
+  montarComentariosDoPonto(ponto, municipioId);
+}
+
+/* Ponto aberto agora -- o formulário de comentário precisa saber em
+   qual ponto está escrevendo. O município já vive em
+   pontoAbertoMunicipio, usado pelo botão "Ver cidade". */
+let pontoAbertoId = null;
+
+/* ===================== NOTIFICAÇÕES =====================
+ * Avisam quando alguém curte ou comenta nas suas coisas da Comunidade,
+ * ou responde ao seu comentário num ponto turístico.
+ *
+ * Quem grava é o cliente de QUEM AGE (o projeto está no Spark, e Cloud
+ * Functions exigem Blaze) -- ver o bloco de notificações em js/auth.js.
+ * Por isso o aviso é sempre "melhor esforço": se o app de quem agiu
+ * cair no meio, ele se perde, mas a curtida/comentário já aconteceu.
+ */
+const TEXTO_NOTIFICACAO = {
+  "curtida-post": (n) => `${n.deApelido} curtiu seu post`,
+  "comentario-post": (n) => `${n.deApelido} comentou no seu post`,
+  "resposta-comentario": (n) => `${n.deApelido} respondeu seu comentário`,
+};
+
+/** Só aparece logado; esconde o sino e zera o badge quando deslogado. */
+async function atualizarBadgeNotificacoes() {
+  const botao = document.getElementById("btn-topo-notificacoes");
+  const badge = document.getElementById("badge-notificacoes");
+  if (!botao) return;
+
+  if (!window.raspadinhaAuth?.usuarioAtual?.uid) {
+    botao.classList.add("oculto");
+    badge.classList.add("oculto");
+    return;
+  }
+  botao.classList.remove("oculto");
+
+  try {
+    const quantas = await window.raspadinhaAuth.contarNotificacoesNaoLidas();
+    // 9+ em vez do número exato: o badge é pequeno e "37" não cabe nem
+    // muda o que a pessoa vai fazer (abrir e ver).
+    badge.textContent = quantas > 9 ? "9+" : String(quantas);
+    badge.classList.toggle("oculto", quantas === 0);
+  } catch (erro) {
+    badge.classList.add("oculto");
+    console.warn("Não deu pra contar notificações:", erro);
+  }
+}
+
+async function abrirNotificacoes() {
+  const modal = document.getElementById("modal-notificacoes");
+  const lista = document.getElementById("lista-notificacoes");
+  const vazio = document.getElementById("notificacoes-vazio");
+  lista.innerHTML = '<div class="spinner spinner-grande"></div>';
+  vazio.classList.add("oculto");
+  modal.classList.remove("oculto");
+
+  let avisos = [];
+  try {
+    avisos = await window.raspadinhaAuth.listarNotificacoes();
+  } catch (erro) {
+    console.error("Falha ao listar notificações:", erro);
+  }
+
+  lista.innerHTML = "";
+  vazio.classList.toggle("oculto", avisos.length > 0);
+
+  avisos.forEach((n) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "notificacao-item" + (n.lida ? "" : " notificacao-nova");
+
+    const avatar = document.createElement("span");
+    avatar.className = "notificacao-avatar";
+    avatar.textContent = iniciaisApelido(n.deApelido);
+    avatar.style.background = corAvatar(n.deApelido);
+
+    const corpo = document.createElement("span");
+    corpo.className = "notificacao-corpo";
+    const titulo = document.createElement("strong");
+    titulo.textContent = (TEXTO_NOTIFICACAO[n.tipo] || (() => "Nova atividade"))(n);
+    corpo.appendChild(titulo);
+    if (n.texto) {
+      const trecho = document.createElement("span");
+      trecho.textContent = n.texto;
+      corpo.appendChild(trecho);
+    }
+
+    item.append(avatar, corpo);
+
+    // Leva ao lugar do assunto: post abre a Comunidade nele; resposta
+    // de comentário abre o painel daquele ponto turístico.
+    item.addEventListener("click", () => {
+      fecharNotificacoes();
+      if (n.postId) abrirPainelSocialComPost(n.postId);
+      else if (n.pontoId) abrirPontoTuristicoPorId(n.pontoId);
+    });
+
+    lista.appendChild(item);
+  });
+
+  // Marca como lidas as que estavam novas -- depois de desenhar, pra
+  // pessoa ainda ver o destaque desta vez.
+  const novas = avisos.filter((n) => !n.lida).map((n) => n.id);
+  if (novas.length) {
+    await window.raspadinhaAuth.marcarNotificacoesLidas(novas);
+    atualizarBadgeNotificacoes();
+  }
+}
+
+function fecharNotificacoes() {
+  fecharComAnimacao(document.getElementById("modal-notificacoes"));
+}
+
+/**
+ * Abre o painel de um ponto a partir do id estável.
+ *
+ * O runtime abre ponto por ÍNDICE (é o que o marcador do mapa carrega),
+ * mas a notificação só guarda o id -- índice mudaria se um ponto fosse
+ * excluído. Aqui a gente converte um no outro.
+ */
+function abrirPontoTuristicoPorId(pontoId) {
+  const municipioId = String(pontoId).split("-")[0];
+  const indice = (destinosPorMunicipio[municipioId]?.destinos || []).findIndex(
+    (p) => p.id === pontoId
+  );
+  if (indice >= 0) abrirPontoTuristico(municipioId, indice);
+}
+
+/** Erro inline da área de comentários (o app não tem toast genérico). */
+function mostrarErroComentarioPonto(mensagem) {
+  const alvo = document.getElementById("ponto-comentario-erro");
+  if (!alvo) return;
+  alvo.textContent = mensagem || "";
+  alvo.classList.toggle("oculto", !mensagem);
+}
+
+/**
+ * Monta a seção de comentários do ponto que acabou de abrir.
+ *
+ * Ler é de todo mundo; escrever é só de quem teve a presença
+ * CONFIRMADA POR GPS no município (estaVerificado). Raspar o selo não
+ * basta de propósito: raspar dá pra fazer do sofá, e aí o comentário
+ * deixaria de valer como relato de quem esteve lá.
+ *
+ * A trava séria é a Regra do Firestore; o que está aqui é só pra
+ * ninguém digitar um texto que o servidor vai recusar.
+ */
+async function montarComentariosDoPonto(ponto, municipioId) {
+  pontoAbertoId = ponto.id || null;
+
+  const secao = document.getElementById("ponto-comentarios");
+  if (!secao) return;
+
+  /* Ponto sem id é ponto de uma versão anterior ao id estável. Some
+     com a seção inteira (e com o botão "Posts", que filtra por id) em
+     vez de mostrar uma caixa que não salva. */
+  secao.classList.toggle("oculto", !pontoAbertoId);
+  document.getElementById("btn-ponto-posts")?.classList.toggle("oculto", !pontoAbertoId);
+  if (!pontoAbertoId) return;
+
+  const lista = document.getElementById("ponto-comentarios-lista");
+  const vazio = document.getElementById("ponto-comentarios-vazio");
+  const area = document.getElementById("ponto-comentar-area");
+  const bloqueado = document.getElementById("ponto-comentar-bloqueado");
+
+  lista.innerHTML = "";
+  vazio.classList.add("oculto");
+  document.getElementById("input-comentario-ponto").value = "";
+  mostrarErroComentarioPonto("");
+
+  // ---- Quem pode escrever ----
+  const logado = !!window.raspadinhaAuth?.usuarioAtual?.uid;
+  const verificado = estaVerificado(municipioId);
+  const podeComentar = logado && verificado;
+
+  area.classList.toggle("oculto", !podeComentar);
+  bloqueado.classList.toggle("oculto", podeComentar);
+  if (!podeComentar) {
+    bloqueado.textContent = !logado
+      ? "Entre na sua conta para comentar."
+      : `Só quem teve a presença confirmada por GPS em ${
+          destinosPorMunicipio[municipioId]?.nome || "este município"
+        } pode comentar aqui. Use o Modo Viagem quando estiver lá.`;
+  }
+
+  // ---- Lista ----
+  let comentarios = [];
+  try {
+    comentarios = await window.raspadinhaAuth.listarComentariosPonto(pontoAbertoId);
+  } catch (erro) {
+    console.error("Falha ao carregar comentários do ponto:", erro);
+  }
+
+  /* A pessoa pode ter fechado a folha ou aberto OUTRO ponto enquanto a
+     busca corria. Sem esta guarda os comentários de um ponto apareciam
+     dentro de outro -- a folha é reaproveitada, não recriada. */
+  if (pontoAbertoId !== (ponto.id || null)) return;
+
+  renderizarComentariosDoPonto(comentarios);
+}
+
+function renderizarComentariosDoPonto(comentarios) {
+  const lista = document.getElementById("ponto-comentarios-lista");
+  const vazio = document.getElementById("ponto-comentarios-vazio");
+  lista.innerHTML = "";
+  vazio.classList.toggle("oculto", comentarios.length > 0);
+
+  /* MAIS CURTIDO PRIMEIRO. Ordenar aqui, e não no Firestore, porque a
+     consulta com orderBy em numCurtidas exigiria índice e pagina errado
+     se alguém curtir no meio da rolagem. Empate desempata pelo mais
+     antigo: quem comentou primeiro fica na frente. */
+  const ordenados = [...comentarios].sort((a, b) => {
+    const diferenca = (b.numCurtidas || 0) - (a.numCurtidas || 0);
+    if (diferenca !== 0) return diferenca;
+    return (a.criadoEm?.seconds || 0) - (b.criadoEm?.seconds || 0);
+  });
+
+  ordenados.forEach((c) => lista.appendChild(criarLinhaComentarioPonto(c, lista, vazio)));
+}
+
+/** Uma linha de comentário: autor, texto, curtir, responder e respostas. */
+function criarLinhaComentarioPonto(c, lista, vazio) {
+  const meuUid = window.raspadinhaAuth?.usuarioAtual?.uid;
+
+  const bloco = document.createElement("div");
+  bloco.className = "ponto-comentario-bloco";
+
+  const linha = document.createElement("div");
+  linha.className = "ponto-comentario";
+
+  const avatar = document.createElement("span");
+  avatar.className = "ponto-comentario-avatar";
+  avatar.textContent = iniciaisApelido(c.autorApelido);
+  avatar.style.background = corAvatar(c.autorApelido);
+
+  const corpo = document.createElement("div");
+  corpo.className = "ponto-comentario-corpo";
+  const autor = document.createElement("strong");
+  autor.textContent = c.autorApelido || "?";
+  const texto = document.createElement("span");
+  texto.textContent = c.texto || "";
+  corpo.append(autor, texto);
+
+  // ---- Ações: curtir e responder ----
+  const acoes = document.createElement("div");
+  acoes.className = "ponto-comentario-acoes";
+
+  const curtir = document.createElement("button");
+  curtir.type = "button";
+  curtir.className = "ponto-comentario-curtir";
+  let curtido = Array.isArray(c.curtidoPor) && meuUid ? c.curtidoPor.includes(meuUid) : false;
+  let quantas = c.numCurtidas || 0;
+  const pintarCurtida = () => {
+    curtir.classList.toggle("curtido", curtido);
+    curtir.textContent = `♥ ${quantas}`;
+    curtir.setAttribute("aria-pressed", curtido ? "true" : "false");
+  };
+  pintarCurtida();
+  curtir.addEventListener("click", async () => {
+    if (!meuUid) {
+      mostrarErroComentarioPonto("Entre na sua conta para curtir.");
+      return;
+    }
+    // Otimista: pinta na hora e desfaz se o servidor recusar.
+    curtido = !curtido;
+    quantas += curtido ? 1 : -1;
+    pintarCurtida();
+    try {
+      await window.raspadinhaAuth.curtirComentarioPonto(pontoAbertoId, c.id, curtido);
+    } catch (erro) {
+      curtido = !curtido;
+      quantas += curtido ? 1 : -1;
+      pintarCurtida();
+      console.error("Falha ao curtir comentário:", erro);
+    }
+  });
+
+  const responder = document.createElement("button");
+  responder.type = "button";
+  responder.className = "ponto-comentario-responder";
+  responder.textContent = "Responder";
+
+  acoes.append(curtir, responder);
+  corpo.appendChild(acoes);
+
+  linha.append(avatar, corpo);
+
+  // Moderação: o dono apaga o próprio; contas abusivas são bloqueadas
+  // pelo painel de Configurações, que já corta a escrita em tudo.
+  if (meuUid && c.autorUid === meuUid) {
+    const apagar = document.createElement("button");
+    apagar.type = "button";
+    apagar.className = "ponto-comentario-apagar";
+    apagar.setAttribute("aria-label", "Apagar meu comentário");
+    apagar.textContent = "✕";
+    apagar.addEventListener("click", async () => {
+      apagar.disabled = true;
+      try {
+        await window.raspadinhaAuth.excluirComentarioPonto(pontoAbertoId, c.id);
+        bloco.remove();
+        if (!lista.children.length) vazio.classList.remove("oculto");
+      } catch (erro) {
+        apagar.disabled = false;
+        mostrarErroComentarioPonto("Não deu para apagar agora.");
+        console.error(erro);
+      }
+    });
+    linha.appendChild(apagar);
+  }
+
+  bloco.appendChild(linha);
+
+  // ---- Respostas ----
+  const respostasEl = document.createElement("div");
+  respostasEl.className = "ponto-respostas";
+  bloco.appendChild(respostasEl);
+
+  const desenharResposta = (r) => {
+    const item = document.createElement("div");
+    item.className = "ponto-resposta";
+    const quem = document.createElement("strong");
+    quem.textContent = r.autorApelido || "?";
+    const oQue = document.createElement("span");
+    oQue.textContent = r.texto || "";
+    item.append(quem, oQue);
+    if (meuUid && r.autorUid === meuUid) {
+      const x = document.createElement("button");
+      x.type = "button";
+      x.className = "ponto-comentario-apagar";
+      x.setAttribute("aria-label", "Apagar minha resposta");
+      x.textContent = "✕";
+      x.addEventListener("click", async () => {
+        x.disabled = true;
+        try {
+          await window.raspadinhaAuth.excluirRespostaPonto(pontoAbertoId, c.id, r.id);
+          item.remove();
+        } catch (erro) {
+          x.disabled = false;
+          console.error(erro);
+        }
+      });
+      item.appendChild(x);
+    }
+    respostasEl.appendChild(item);
+  };
+
+  let respostasCarregadas = false;
+  const carregarRespostas = async () => {
+    if (respostasCarregadas) return;
+    respostasCarregadas = true;
+    try {
+      (await window.raspadinhaAuth.listarRespostasPonto(pontoAbertoId, c.id)).forEach(
+        desenharResposta
+      );
+    } catch (erro) {
+      console.error("Falha ao carregar respostas:", erro);
+    }
+  };
+  carregarRespostas();
+
+  /* RESPONDER É PRA QUALQUER PESSOA LOGADA, mesmo sem ter ido ao lugar:
+     é aqui que quem tem dúvida pergunta a quem esteve lá. Comentar de
+     primeira é que exige o GPS. */
+  responder.addEventListener("click", async () => {
+    if (!window.raspadinhaAuth?.usuarioAtual?.uid) {
+      mostrarErroComentarioPonto("Entre na sua conta para responder.");
+      return;
+    }
+    if (bloco.querySelector(".ponto-resposta-form")) return; // já aberto
+
+    const form = document.createElement("div");
+    form.className = "ponto-resposta-form";
+    const campo = document.createElement("input");
+    campo.type = "text";
+    campo.maxLength = 500;
+    campo.placeholder = `Responder a ${c.autorApelido || ""}…`;
+    const enviar = document.createElement("button");
+    enviar.type = "button";
+    enviar.textContent = "Enviar";
+
+    const submeter = async () => {
+      const valor = campo.value.trim();
+      if (!valor) return;
+      enviar.disabled = true;
+      try {
+        const id = await window.raspadinhaAuth.responderComentarioPonto(
+          pontoAbertoId,
+          c.id,
+          valor,
+          c.autorUid
+        );
+        desenharResposta({
+          id,
+          autorUid: window.raspadinhaAuth.usuarioAtual.uid,
+          autorApelido: window.raspadinhaAuth.apelido || "?",
+          texto: valor,
+        });
+        form.remove();
+      } catch (erro) {
+        enviar.disabled = false;
+        console.error("Falha ao responder:", erro);
+        mostrarErroComentarioPonto("Não deu para enviar a resposta agora.");
+      }
+    };
+    enviar.addEventListener("click", submeter);
+    campo.addEventListener("keydown", (evento) => {
+      if (evento.key === "Enter") {
+        evento.preventDefault();
+        submeter();
+      }
+    });
+
+    form.append(campo, enviar);
+    bloco.appendChild(form);
+    campo.focus();
+  });
+
+  return bloco;
+}
+
+/** Envia o comentário digitado no ponto aberto. */
+async function enviarComentarioDoPonto() {
+  const campo = document.getElementById("input-comentario-ponto");
+  const botao = document.getElementById("btn-comentar-ponto");
+  const texto = campo.value.trim();
+  if (!texto || !pontoAbertoId) return;
+
+  botao.disabled = true;
+  try {
+    await window.raspadinhaAuth.comentarPonto(pontoAbertoId, pontoAbertoMunicipio, texto);
+    campo.value = "";
+    renderizarComentariosDoPonto(
+      await window.raspadinhaAuth.listarComentariosPonto(pontoAbertoId)
+    );
+  } catch (erro) {
+    console.error("Falha ao comentar no ponto:", erro);
+    // A regra do Firestore recusa quem não tem o município verificado.
+    mostrarErroComentarioPonto(
+      /permission|insufficient/i.test(String(erro?.message || erro))
+        ? "Só quem teve a presença confirmada por GPS neste município pode comentar."
+        : "Não deu para enviar seu comentário agora."
+    );
+  } finally {
+    botao.disabled = false;
+  }
 }
 
 function fecharPontoTuristico() {
@@ -7090,9 +7763,19 @@ const CHAVE_CONQUISTAS_NOTIFICADAS = "scratchMapRJ_conquistas_notificadas_v1";
  */
 function verificarNovasConquistasDesbloqueadas() {
   const ctx = calcularContextoConquistas();
-  const jaNotificadas = new Set(
-    JSON.parse(localStorage.getItem(chaveComUid(CHAVE_CONQUISTAS_NOTIFICADAS)) || "[]")
-  );
+  /* Todo outro JSON.parse de localStorage no arquivo é protegido; este
+   * era o único cru. Chave corrompida (aba fechada no meio da escrita,
+   * cota estourada) fazia o parse lançar e derrubava a checagem inteira
+   * de conquistas -- ninguém mais era avisado de nada. Cair no conjunto
+   * vazio, no pior caso, só reavisa uma conquista já vista. */
+  let jaNotificadas;
+  try {
+    jaNotificadas = new Set(
+      JSON.parse(localStorage.getItem(chaveComUid(CHAVE_CONQUISTAS_NOTIFICADAS)) || "[]")
+    );
+  } catch {
+    jaNotificadas = new Set();
+  }
   let mudou = false;
 
   DEFINICOES_CONQUISTAS.forEach((def) => {
@@ -10478,10 +11161,14 @@ function construirSlugsDeMunicipios() {
  * do IBGE) -- usado tanto pelo botão da barra de topo (sem filtro)
  * quanto pelo botão "@" no popup do município (com filtro).
  */
-function abrirPainelSocial(municipioId = null) {
+function abrirPainelSocial(municipioId = null, { pontoId = null, rotuloPonto = "" } = {}) {
   filtroMunicipioSocialId = municipioId || null;
+  filtroPontoSocialId = pontoId || null;
   const filtroEl = document.getElementById("social-filtro-municipio");
-  if (filtroMunicipioSocialId) {
+  if (filtroPontoSocialId) {
+    document.getElementById("social-filtro-municipio-nome").textContent = `📍 ${rotuloPonto}`;
+    filtroEl.classList.remove("oculto");
+  } else if (filtroMunicipioSocialId) {
     document.getElementById("social-filtro-municipio-nome").textContent =
       `📍 ${idParaNomeMunicipio[filtroMunicipioSocialId] || ""}`;
     filtroEl.classList.remove("oculto");
@@ -10533,7 +11220,11 @@ async function carregarFeedSocial(resetar) {
     if (abaSocialAtual === "amigos") {
       const [amigos, resultado] = await Promise.all([
         window.raspadinhaAuth.listarAmigos(),
-        window.raspadinhaAuth.buscarFeedGlobal({ municipioId: filtroMunicipioSocialId, limiteN: 50 }),
+        window.raspadinhaAuth.buscarFeedGlobal({
+          municipioId: filtroMunicipioSocialId,
+          pontoId: filtroPontoSocialId,
+          limiteN: 50,
+        }),
       ]);
       const uidsAmigos = new Set(amigos.map((a) => a.uid));
       const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
@@ -10542,6 +11233,7 @@ async function carregarFeedSocial(resetar) {
     } else {
       const resultado = await window.raspadinhaAuth.buscarFeedGlobal({
         municipioId: filtroMunicipioSocialId,
+        pontoId: filtroPontoSocialId,
         cursor: resetar ? null : cursorFeedSocial,
       });
       posts = resultado.posts;
@@ -10838,7 +11530,7 @@ async function aoCurtirPost(post, card) {
   if (novoEstado) dispararPopCoracao(botao);
 
   try {
-    await window.raspadinhaAuth.curtirPost(post.id, novoEstado);
+    await window.raspadinhaAuth.curtirPost(post.id, novoEstado, post.autorUid);
   } catch (erro) {
     console.error("Falha ao curtir post:", erro);
     botao.classList.toggle("curtido", jaCurtido);
@@ -10875,7 +11567,7 @@ async function enviarComentario(post, card, input) {
 
   input.disabled = true;
   try {
-    await window.raspadinhaAuth.comentarPost(post.id, texto);
+    await window.raspadinhaAuth.comentarPost(post.id, texto, post.autorUid);
     input.value = "";
 
     post.numComentarios = (post.numComentarios || 0) + 1;
@@ -11041,13 +11733,104 @@ function abrirEscolherMunicipio({ selecionado = null, permitirNenhum = false, ao
   escolherMunicipioContexto = { selecionado, permitirNenhum, aoEscolher };
   const busca = document.getElementById("input-busca-municipio");
   busca.value = "";
+  document.getElementById("escolher-municipio-titulo").textContent = "Escolher município";
+  busca.placeholder = "Buscar município...";
   renderizarListaEscolherMunicipio("");
   document.getElementById("modal-escolher-municipio").classList.remove("oculto");
+}
+
+/* Ponto turístico escolhido no formulário de post. Quando é null, o
+   post fica só com o município, como sempre foi -- marcar o ponto é
+   OPCIONAL de propósito: a maioria das fotos é da cidade, não de um
+   ponto específico. */
+let pontoNovoPost = null;
+let escolherPontoContexto = null;
+
+/**
+ * Mostra/esconde o seletor de ponto conforme haja município escolhido,
+ * e atualiza o texto do botão.
+ *
+ * Município sem nenhum ponto cadastrado também esconde: abrir uma lista
+ * vazia é pior que não oferecer.
+ */
+function atualizarSeletorDePontoDoPost() {
+  const botao = document.getElementById("btn-ponto-post");
+  if (!botao) return;
+
+  const pontos = municipioNovoPost
+    ? (destinosPorMunicipio[municipioNovoPost]?.destinos || []).filter((p) => p.id)
+    : [];
+  botao.classList.toggle("oculto", pontos.length === 0);
+
+  const escolhido = pontos.find((p) => p.id === pontoNovoPost);
+  if (!escolhido) pontoNovoPost = null;
+  document.getElementById("btn-ponto-post-valor").textContent =
+    escolhido ? escolhido.nome : "Nenhum";
+}
+
+/**
+ * Mesma folha do seletor de município, com outra lista dentro.
+ *
+ * Reaproveitar em vez de duplicar: são o mesmo componente (cabeçalho +
+ * busca + lista de opções), e um segundo modal significaria repetir
+ * markup, CSS e a animação de abrir/fechar só pra trocar a fonte dos
+ * dados. O contexto ativo (`escolherPontoContexto` x
+ * `escolherMunicipioContexto`) é o que decide quem responde à busca.
+ */
+function abrirEscolherPonto({ municipioId, selecionado = null, aoEscolher }) {
+  const municipio = destinosPorMunicipio[municipioId];
+  if (!municipio) return;
+
+  escolherMunicipioContexto = null;
+  escolherPontoContexto = { municipioId, selecionado, aoEscolher };
+
+  const busca = document.getElementById("input-busca-municipio");
+  busca.value = "";
+  busca.placeholder = "Buscar ponto...";
+  document.getElementById("escolher-municipio-titulo").textContent =
+    `Ponto em ${municipio.nome}`;
+  renderizarListaEscolherPonto("");
+  document.getElementById("modal-escolher-municipio").classList.remove("oculto");
+}
+
+function renderizarListaEscolherPonto(termo) {
+  const lista = document.getElementById("lista-escolher-municipio");
+  const ctx = escolherPontoContexto;
+  if (!ctx) return;
+
+  const alvo = normalizarBusca(termo || "");
+  const pontos = (destinosPorMunicipio[ctx.municipioId]?.destinos || []).filter(
+    (p) => p.id && (!alvo || normalizarBusca(p.nome).includes(alvo))
+  );
+
+  lista.innerHTML = "";
+
+  // "Nenhum" só sem busca ativa, igual ao seletor de município: com
+  // termo digitado ele viraria uma opção sem relação com o que se
+  // procura, sempre no topo.
+  if (!alvo) {
+    lista.appendChild(criarOpcaoMunicipio("", "Nenhum", !ctx.selecionado));
+  }
+
+  if (!pontos.length) {
+    const vazio = document.createElement("p");
+    vazio.className = "municipio-opcao-vazio";
+    vazio.textContent = alvo
+      ? "Nenhum ponto com esse nome."
+      : "Este município ainda não tem pontos cadastrados.";
+    lista.appendChild(vazio);
+    return;
+  }
+
+  pontos.forEach((p) => {
+    lista.appendChild(criarOpcaoMunicipio(p.id, p.nome, ctx.selecionado === p.id));
+  });
 }
 
 function fecharEscolherMunicipio() {
   fecharComAnimacao(document.getElementById("modal-escolher-municipio"));
   escolherMunicipioContexto = null;
+  escolherPontoContexto = null;
 }
 
 function renderizarListaEscolherMunicipio(termo) {
@@ -11087,7 +11870,10 @@ function criarOpcaoMunicipio(id, nome, ativo) {
   opcao.setAttribute("aria-selected", ativo ? "true" : "false");
   opcao.innerHTML = `<span>${escaparHtml(nome)}</span>${ativo ? "<span>✓</span>" : ""}`;
   opcao.addEventListener("click", () => {
-    const aoEscolher = escolherMunicipioContexto?.aoEscolher;
+    // A mesma folha serve município e ponto: quem responde é o contexto
+    // que estiver ativo (só um deles é não-nulo por vez).
+    const aoEscolher =
+      escolherPontoContexto?.aoEscolher || escolherMunicipioContexto?.aoEscolher;
     fecharEscolherMunicipio();
     if (typeof aoEscolher === "function") aoEscolher(id || null);
   });
@@ -11462,6 +12248,7 @@ function abrirPostDoLinkSeExistir(usuario) {
 
 async function abrirPainelSocialComPost(postId) {
   filtroMunicipioSocialId = null;
+  filtroPontoSocialId = null;
   document.getElementById("social-filtro-municipio").classList.add("oculto");
   fecharModalNovoPost();
   document.getElementById("btn-social-carregar-mais").classList.add("oculto");
@@ -11633,6 +12420,7 @@ async function publicarPost() {
       arquivoFoto: fotoComprimida,
       texto,
       municipioId,
+      pontoId: pontoNovoPost || null,
       pessoasMarcadas: pessoasMarcadasForm,
     });
     resetarFormularioCriarPost();
@@ -11654,6 +12442,8 @@ function resetarFormularioCriarPost() {
   document.getElementById("input-legenda-post").value = "";
   municipioNovoPost = null;
   document.getElementById("btn-municipio-post-valor").textContent = "Nenhum";
+  pontoNovoPost = null;
+  atualizarSeletorDePontoDoPost();
   limparDropzone("dropzone-post", "Toque para escolher uma foto");
   document.getElementById("input-marcar-pessoa").value = "";
   document.getElementById("social-form-erro").classList.add("oculto");

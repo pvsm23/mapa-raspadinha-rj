@@ -33,6 +33,21 @@ const INCLUIR = [
   "sitemap.xml",
 ];
 
+/* ---- Changelog publicado ----
+   Regenera data/versoes.json a partir do HISTORICO_VERSOES antes de
+   qualquer outra coisa. É o arquivo que um APK DESATUALIZADO busca na
+   web pra saber o que mudou nas versões que ele não conhece (o
+   changelog dele próprio para na versão instalada).
+
+   Roda aqui pra não depender de alguém lembrar: o gerador ABORTA se o
+   topo do histórico não bater com a VERSAO_APP, então esquecer de
+   anotar a entrega quebra o build em vez de publicar um aviso vazio. */
+require("child_process").execFileSync(
+  process.execPath,
+  [path.join(__dirname, "gerar-versoes-json.js")],
+  { stdio: "inherit" }
+);
+
 /* ---- Manifesto do pacote offline (PRO) ----
    Lista o que baixarDadosOffline() em js/script.js manda pro cache.
    É GERADO, não escrito à mão: a alternativa seria o app chutar 276

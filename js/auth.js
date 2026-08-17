@@ -264,6 +264,19 @@ window.raspadinhaAuth = {
   comentarSugestao: async () => {},
   listarComentariosSugestao: async () => [],
   excluirSugestao: async () => {},
+  // ---- Comentários nos pontos turísticos ----
+  comentarPonto: async () => {},
+  listarComentariosPonto: async () => [],
+  excluirComentarioPonto: async () => {},
+  curtirComentarioPonto: async () => {},
+  responderComentarioPonto: async () => {},
+  listarRespostasPonto: async () => [],
+  excluirRespostaPonto: async () => {},
+  // ---- Notificações ----
+  listarNotificacoes: async () => [],
+  contarNotificacoesNaoLidas: async () => 0,
+  marcarNotificacoesLidas: async () => {},
+  excluirNotificacao: async () => {},
   // ---- Moderação e exclusão de conta ----
   UID_DONO,
   registrarAtividadeSuspeita: async () => {},
@@ -1152,7 +1165,7 @@ if (CONFIGURADO) {
    * ANTES de gravar (doc(collection(...)).id) pra poder nomear o
    * arquivo da foto com o mesmo id do post.
    */
-  window.raspadinhaAuth.criarPost = async ({ arquivoFoto, texto, municipioId, pessoasMarcadas }) => {
+  window.raspadinhaAuth.criarPost = async ({ arquivoFoto, texto, municipioId, pontoId, pessoasMarcadas }) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     if (!arquivoFoto) throw new Error("Escolha uma foto pra postar.");
@@ -1180,6 +1193,11 @@ if (CONFIGURADO) {
         fotoUrl,
         fotoDriveId: fotoId,
         municipioId: municipioId || null,
+        // Id ESTAVEL do ponto turistico (ex. 3302106-praca-da-matematica),
+        // nunca o indice do array. Opcional: a maioria das fotos e da
+        // cidade, nao de um ponto especifico. E o que permite o botao
+        // "Posts" no painel do ponto achar o que foi marcado la.
+        pontoId: pontoId || null,
         // Guarda os dois: uids "crus" (array-contains, pra um dia dar
         // pra consultar "posts que me marcaram") e a lista com apelido
         // já junto (pra renderizar o card sem precisar buscar cada
@@ -1710,9 +1728,13 @@ if (CONFIGURADO) {
    * Firestore mesmo oferece criar (link direto no erro do console) na
    * primeira vez que essa consulta rodar de verdade.
    */
-  window.raspadinhaAuth.buscarFeedGlobal = async ({ municipioId, cursor, limiteN = 15 } = {}) => {
+  window.raspadinhaAuth.buscarFeedGlobal = async ({ municipioId, pontoId, cursor, limiteN = 15 } = {}) => {
     const clausulas = [orderBy("criadoEm", "desc"), limit(limiteN)];
-    if (municipioId) clausulas.unshift(where("municipioId", "==", municipioId));
+    /* `pontoId` já carrega o município no prefixo (3302106-...), então
+       filtrar pelos dois seria redundante -- e pediria um índice
+       composto a mais pro Firestore. Quando vem ponto, ele manda. */
+    if (pontoId) clausulas.unshift(where("pontoId", "==", pontoId));
+    else if (municipioId) clausulas.unshift(where("municipioId", "==", municipioId));
     if (cursor) clausulas.push(startAfter(cursor));
 
     const consulta = query(collection(db, "posts"), ...clausulas);
@@ -1729,12 +1751,16 @@ if (CONFIGURADO) {
    * `curtidoPor` -- a regra do Firestore só deixa mexer nesse campo
    * (ou em numComentarios) se não for o autor do post.
    */
-  window.raspadinhaAuth.curtirPost = (postId, curtir) => {
+  window.raspadinhaAuth.curtirPost = async (postId, curtir, autorDoPostUid) => {
     const usuario = auth.currentUser;
-    if (!usuario) return Promise.reject(new Error("Faça login primeiro."));
-    return updateDoc(doc(db, "posts", postId), {
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await updateDoc(doc(db, "posts", postId), {
       curtidoPor: curtir ? arrayUnion(usuario.uid) : arrayRemove(usuario.uid),
     });
+    /* Só o CURTIR avisa. Descurtir não manda nada e não apaga o aviso
+     * anterior: notificação é registro do que aconteceu, não estado --
+     * apagar deixaria a caixa mudando sozinha depois de lida. */
+    if (curtir && autorDoPostUid) notificar(autorDoPostUid, { tipo: "curtida-post", postId });
   };
 
   /**
@@ -1745,7 +1771,7 @@ if (CONFIGURADO) {
    * "perdido" no meio do caminho (falha de rede entre as duas
    * escritas) não é grave).
    */
-  window.raspadinhaAuth.comentarPost = async (postId, texto) => {
+  window.raspadinhaAuth.comentarPost = async (postId, texto, autorDoPostUid) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     const textoLimpo = (texto || "").trim().slice(0, 500);
@@ -1758,6 +1784,13 @@ if (CONFIGURADO) {
       criadoEm: serverTimestamp(),
     });
     await updateDoc(doc(db, "posts", postId), { numComentarios: increment(1) });
+    if (autorDoPostUid) {
+      notificar(autorDoPostUid, {
+        tipo: "comentario-post",
+        postId,
+        texto: textoLimpo.slice(0, 120),
+      });
+    }
   };
 
   window.raspadinhaAuth.listarComentarios = async (postId) => {
@@ -1912,6 +1945,215 @@ if (CONFIGURADO) {
     );
     const resultado = await getDocs(consulta);
     return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  /* ---------- Comentários nos pontos turísticos ----------
+   *
+   * Coleção: pontosTuristicos/{pontoId}/comentarios/{id}
+   * O `pontoId` é o id ESTÁVEL de data/destinos.json
+   * (ex. 3302106-praca-da-matematica), nunca o índice do array --
+   * excluir ou reordenar um ponto migraria comentário de lugar.
+   *
+   * REGRA DE QUEM PODE COMENTAR: só quem teve a presença confirmada
+   * por GPS no município do ponto. A trava de verdade é a Regra do
+   * Firestore, que confere
+   *   estadoMunicipios[municipioId].verificado == true
+   * no doc do próprio usuário. A checagem aqui no cliente é só pra
+   * não deixar a pessoa digitar um comentário que o servidor vai
+   * recusar depois -- quem abrir o DevTools passa por ela, mas
+   * esbarra na regra.
+   *
+   * O doc pai (pontosTuristicos/{pontoId}) não precisa existir: no
+   * Firestore uma subcoleção vive sem documento pai. Por isso não há
+   * contador denormalizado aqui -- não há onde guardá-lo sem inventar
+   * uma escrita a mais que a regra teria que liberar pra qualquer um.
+   */
+  window.raspadinhaAuth.comentarPonto = async (pontoId, municipioId, texto) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const textoLimpo = (texto || "").trim().slice(0, 500);
+    if (!textoLimpo) return null;
+
+    const referencia = await addDoc(
+      collection(db, "pontosTuristicos", pontoId, "comentarios"),
+      {
+        autorUid: usuario.uid,
+        autorApelido: window.raspadinhaAuth.apelido || "?",
+        municipioId: String(municipioId),
+        texto: textoLimpo,
+        criadoEm: serverTimestamp(),
+      }
+    );
+    return referencia.id;
+  };
+
+  window.raspadinhaAuth.listarComentariosPonto = async (pontoId) => {
+    /* Ordena por CRIAÇÃO aqui e por CURTIDAS no cliente
+     * (renderizarComentariosDoPonto). Pedir ao Firestore
+     * `orderBy('numCurtidas','desc')` exigiria manter um índice e, pior,
+     * pagina errado quando alguém curte no meio da rolagem. Um ponto não
+     * tem centenas de comentários -- ordenar em memória é exato e de
+     * graça. */
+    const consulta = query(
+      collection(db, "pontosTuristicos", pontoId, "comentarios"),
+      orderBy("criadoEm", "asc")
+    );
+    const resultado = await getDocs(consulta);
+    return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  /**
+   * Curtir/descurtir um comentário de ponto. Só mexe no próprio uid
+   * dentro de `curtidoPor`; `numCurtidas` acompanha pra a ordenação não
+   * precisar contar array a cada render.
+   *
+   * Qualquer pessoa logada curte -- diferente de COMENTAR, que exige o
+   * município verificado por GPS.
+   */
+  window.raspadinhaAuth.curtirComentarioPonto = async (pontoId, comentarioId, curtir) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await updateDoc(doc(db, "pontosTuristicos", pontoId, "comentarios", comentarioId), {
+      curtidoPor: curtir ? arrayUnion(usuario.uid) : arrayRemove(usuario.uid),
+      numCurtidas: increment(curtir ? 1 : -1),
+    });
+  };
+
+  /* ---------- Respostas dentro de um comentário ----------
+   *
+   * pontosTuristicos/{pontoId}/comentarios/{id}/respostas/{id}
+   *
+   * QUALQUER PESSOA LOGADA RESPONDE, mesmo sem ter ido ao lugar --
+   * decisão do Paulo: é onde quem tem dúvida pergunta a quem esteve
+   * lá. Comentar de primeira continua exigindo GPS; perguntar, não.
+   */
+  window.raspadinhaAuth.responderComentarioPonto = async (
+    pontoId,
+    comentarioId,
+    texto,
+    donoDoComentarioUid
+  ) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const textoLimpo = (texto || "").trim().slice(0, 500);
+    if (!textoLimpo) return null;
+
+    const referencia = await addDoc(
+      collection(db, "pontosTuristicos", pontoId, "comentarios", comentarioId, "respostas"),
+      {
+        autorUid: usuario.uid,
+        autorApelido: window.raspadinhaAuth.apelido || "?",
+        texto: textoLimpo,
+        criadoEm: serverTimestamp(),
+      }
+    );
+
+    // Avisa o dono do comentário (menos quando ele responde a si mesmo).
+    if (donoDoComentarioUid && donoDoComentarioUid !== usuario.uid) {
+      notificar(donoDoComentarioUid, {
+        tipo: "resposta-comentario",
+        texto: textoLimpo.slice(0, 120),
+        pontoId,
+      });
+    }
+    return referencia.id;
+  };
+
+  window.raspadinhaAuth.listarRespostasPonto = async (pontoId, comentarioId) => {
+    const consulta = query(
+      collection(db, "pontosTuristicos", pontoId, "comentarios", comentarioId, "respostas"),
+      orderBy("criadoEm", "asc")
+    );
+    const resultado = await getDocs(consulta);
+    return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  window.raspadinhaAuth.excluirRespostaPonto = async (pontoId, comentarioId, respostaId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await deleteDoc(
+      doc(db, "pontosTuristicos", pontoId, "comentarios", comentarioId, "respostas", respostaId)
+    );
+  };
+
+  /* ============================================================
+     NOTIFICAÇÕES  --  usuarios/{uid}/notificacoes/{id}
+
+     QUEM ESCREVE É O CLIENTE DE QUEM AGE, não um gatilho de servidor:
+     Cloud Functions exigem o plano Blaze, e o projeto está no Spark
+     (ver BLAZE.md). Então, quando eu curto o seu post, é o MEU app que
+     grava o aviso na SUA caixa.
+
+     Consequências que valem saber:
+     - a regra do Firestore libera qualquer autenticado a CRIAR na caixa
+       de qualquer um, exigindo só que `deUid` seja o próprio uid. Dá
+       pra abusar disso com o DevTools; ler/apagar continua só do dono.
+     - se o app de quem agiu cair entre a ação e o aviso, a notificação
+       se perde. Por isso ela é sempre "melhor esforço": nunca derruba a
+       ação principal (o like já foi, o comentário já está lá).
+     Quando o Blaze entrar, isso vira um gatilho no servidor.
+     ============================================================ */
+
+  /** Melhor esforço: nunca lança, nunca trava a ação que a gerou. */
+  function notificar(paraUid, dados) {
+    const usuario = auth.currentUser;
+    if (!usuario || !paraUid || paraUid === usuario.uid) return;
+    addDoc(collection(db, "usuarios", paraUid, "notificacoes"), {
+      deUid: usuario.uid,
+      deApelido: window.raspadinhaAuth.apelido || "?",
+      lida: false,
+      criadoEm: serverTimestamp(),
+      ...dados,
+    }).catch((erro) => console.warn("Não deu pra notificar:", erro));
+  }
+
+  window.raspadinhaAuth.listarNotificacoes = async (limiteN = 40) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return [];
+    const consulta = query(
+      collection(db, "usuarios", usuario.uid, "notificacoes"),
+      orderBy("criadoEm", "desc"),
+      limit(limiteN)
+    );
+    const resultado = await getDocs(consulta);
+    return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  window.raspadinhaAuth.contarNotificacoesNaoLidas = async () => {
+    const usuario = auth.currentUser;
+    if (!usuario) return 0;
+    const consulta = query(
+      collection(db, "usuarios", usuario.uid, "notificacoes"),
+      where("lida", "==", false)
+    );
+    // getCountFromServer: conta sem baixar os documentos.
+    const resultado = await getCountFromServer(consulta);
+    return resultado.data().count;
+  };
+
+  window.raspadinhaAuth.marcarNotificacoesLidas = async (ids) => {
+    const usuario = auth.currentUser;
+    if (!usuario || !ids?.length) return;
+    await Promise.all(
+      ids.map((id) =>
+        updateDoc(doc(db, "usuarios", usuario.uid, "notificacoes", id), { lida: true }).catch(
+          () => {}
+        )
+      )
+    );
+  };
+
+  window.raspadinhaAuth.excluirNotificacao = async (id) => {
+    const usuario = auth.currentUser;
+    if (!usuario) return;
+    await deleteDoc(doc(db, "usuarios", usuario.uid, "notificacoes", id));
+  };
+
+  /** Só o autor apaga o próprio -- a regra do Firestore confere o uid. */
+  window.raspadinhaAuth.excluirComentarioPonto = async (pontoId, comentarioId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await deleteDoc(doc(db, "pontosTuristicos", pontoId, "comentarios", comentarioId));
   };
 
   /**

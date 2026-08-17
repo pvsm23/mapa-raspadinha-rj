@@ -10314,3 +10314,427 @@ button:disabled:active {
   text-align: center;
   color: var(--fraco);
 }
+
+/* ============ AVISO DE VERSÃO (#modal-versao) ============
+   Serve aos dois casos de avisarSobreVersao em js/script.js: "acabou
+   de atualizar" e "tem versão nova". A diferença entre eles é só o
+   botão de atualizar aparecer ou não.
+
+   Estas regras ficam DEPOIS da CAMADA UI MODERNA de propósito. Aquela
+   camada força `background: var(--surf2) !important` em todo `button`,
+   e sem vir por último o botão principal sairia cinza em vez de verde
+   -- a mesma armadilha do segmented control de Aparência. */
+#modal-versao {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120; /* acima do #modal-novidades (110) */
+  padding: 16px;
+  animation: janela-fade 0.2s ease;
+}
+#modal-versao.oculto { display: none; }
+
+#versao-caixa {
+  position: relative;
+  background: var(--surf);
+  border: 1px solid var(--linha);
+  border-radius: 20px;
+  padding: 28px 22px 20px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  animation: janela-surge 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#btn-fechar-versao {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: transparent !important;
+  border: none;
+  color: var(--fraco);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 6px;
+  line-height: 1;
+}
+
+#versao-emblema {
+  font-size: 2.2rem;
+  line-height: 1;
+  display: block;
+  margin-bottom: 10px;
+}
+#versao-titulo {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+  color: var(--txt);
+}
+#versao-subtitulo {
+  margin: 0 0 18px;
+  font-size: 0.86rem;
+  color: var(--fraco);
+  line-height: 1.45;
+}
+
+/* O corpo é o único pedaço que rola: cabeçalho e botões ficam sempre
+   visíveis, mesmo com changelog de várias versões acumuladas. */
+#versao-lista {
+  overflow-y: auto;
+  text-align: left;
+  margin-bottom: 18px;
+}
+.versao-bloco + .versao-bloco {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--linha);
+}
+.versao-bloco-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fraco);
+  margin-bottom: 8px;
+}
+#versao-lista ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#versao-lista li {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--txt);
+}
+#versao-lista li::marker { color: var(--verde); }
+
+#versao-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#versao-acoes button {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+#btn-versao-atualizar {
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+}
+#btn-versao-atualizar.oculto { display: none; }
+#btn-versao-depois {
+  background: transparent !important;
+  color: var(--fraco) !important;
+  font-weight: 500;
+}
+
+/* ============ COMENTÁRIOS DO PONTO TURÍSTICO ============
+   Todo mundo lê; só comenta quem teve a presença confirmada por GPS
+   no município (ver montarComentariosDoPonto em js/script.js).
+
+   Depois da CAMADA UI MODERNA de propósito: ela força
+   `background: var(--surf2) !important` em todo `button`, e sem vir
+   por último o "Comentar" sairia cinza em vez de verde. */
+#ponto-comentarios {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--linha);
+}
+#ponto-comentarios.oculto { display: none; }
+#ponto-comentarios-titulo {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: var(--txt);
+}
+
+#ponto-comentarios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ponto-comentario {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ponto-comentario-avatar {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  /* O gradiente vem do corAvatar() no JS; este é só o fallback. */
+  background: var(--surf2);
+}
+.ponto-comentario-corpo {
+  flex: 1 1 auto;
+  min-width: 0; /* deixa o texto quebrar em vez de esticar a linha */
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--txt);
+  overflow-wrap: anywhere;
+}
+.ponto-comentario-corpo strong {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--fraco);
+  margin-bottom: 2px;
+}
+.ponto-comentario-apagar {
+  flex: 0 0 auto;
+  background: transparent !important;
+  border: none;
+  color: var(--fraco);
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+}
+
+#ponto-comentarios-vazio,
+#ponto-comentar-bloqueado {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+#ponto-comentarios-vazio.oculto,
+#ponto-comentar-bloqueado.oculto,
+#ponto-comentario-erro.oculto,
+#ponto-comentar-area.oculto { display: none; }
+
+#ponto-comentar-area {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#input-comentario-ponto {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--linha);
+  background: var(--surf2);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+#input-comentario-ponto::placeholder { color: var(--fraco); }
+#btn-comentar-ponto {
+  align-self: flex-end;
+  padding: 9px 20px;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+}
+#btn-comentar-ponto:disabled { opacity: 0.55; cursor: default; }
+
+#ponto-comentario-erro {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--erro);
+}
+
+/* ---- Curtidas e respostas dentro do comentário do ponto ----
+   Ordenação por curtidas é feita no JS (renderizarComentariosDoPonto).
+   RESPONDER é liberado pra qualquer pessoa logada, mesmo sem GPS: é
+   onde quem tem dúvida pergunta a quem esteve lá. */
+.ponto-comentario-bloco + .ponto-comentario-bloco { margin-top: 14px; }
+
+.ponto-comentario-acoes {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 5px;
+}
+.ponto-comentario-curtir,
+.ponto-comentario-responder {
+  background: transparent !important;
+  border: none;
+  padding: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--fraco) !important;
+  cursor: pointer;
+  line-height: 1;
+}
+.ponto-comentario-curtir.curtido { color: var(--erro) !important; }
+
+/* Recuo alinhado ao avatar (30px) + o gap (10px) da linha de cima:
+   a resposta fica visualmente pendurada no comentário que responde. */
+.ponto-respostas {
+  margin: 8px 0 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ponto-resposta {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: var(--txt);
+  overflow-wrap: anywhere;
+}
+.ponto-resposta strong {
+  flex: 0 0 auto;
+  color: var(--fraco);
+  font-size: 0.78rem;
+}
+.ponto-resposta span { flex: 1 1 auto; min-width: 0; }
+
+.ponto-resposta-form {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0 0 40px;
+}
+.ponto-resposta-form input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--linha);
+  background: var(--surf2);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.84rem;
+}
+.ponto-resposta-form input::placeholder { color: var(--fraco); }
+.ponto-resposta-form button {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+}
+.ponto-resposta-form button:disabled { opacity: 0.55; }
+
+/* ============ NOTIFICAÇÕES ============
+   Sino na barra de topo + folha com a lista. O contador some quando
+   zera e vira "9+" acima de nove (ver atualizarBadgeNotificacoes). */
+#btn-topo-notificacoes { position: relative; }
+#badge-notificacoes {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  /* Vermelho PRÓPRIO, mais escuro que o --erro do app.
+     O --erro (#F0616D) é pensado pra TEXTO de erro sobre fundo escuro;
+     usado como FUNDO com texto branco em cima ele dá 3,16:1, abaixo do
+     mínimo de 4,5. Este dá 6,5:1. Não mexi no --erro pra não alterar
+     todas as mensagens de erro do app por causa de um badge. */
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  pointer-events: none;
+}
+#badge-notificacoes.oculto { display: none; }
+
+#lista-notificacoes {
+  display: flex;
+  flex-direction: column;
+}
+.notificacao-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 4px;
+  border: none;
+  border-bottom: 1px solid var(--linha);
+  background: transparent !important;
+  text-align: left;
+  cursor: pointer;
+}
+/* Não lida ganha um ponto verde na esquerda em vez de fundo colorido:
+   fundo brigaria com o tema claro e com a folha. */
+.notificacao-nova { position: relative; padding-left: 14px; }
+.notificacao-nova::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--verde);
+}
+.notificacao-avatar {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--surf2);
+}
+.notificacao-corpo {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.notificacao-corpo strong {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--txt);
+}
+.notificacao-corpo span {
+  font-size: 0.8rem;
+  color: var(--fraco);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+#notificacoes-vazio {
+  margin: 24px 0;
+  text-align: center;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--fraco);
+}
+#notificacoes-vazio.oculto { display: none; }

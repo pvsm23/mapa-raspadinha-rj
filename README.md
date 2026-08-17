@@ -159,6 +159,30 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
           match /atividadeSuspeita/{id} {
             allow read, create, delete: if request.auth != null && request.auth.uid == uid;
           }
+
+          // NOTIFICAÇÕES (curtida/comentário nas suas coisas da
+          // Comunidade, resposta no seu comentário de ponto).
+          //
+          // Quem CRIA é o cliente de QUEM AGE, não um gatilho de
+          // servidor: Cloud Functions exigem o plano Blaze e o projeto
+          // está no Spark (ver BLAZE.md). Por isso o create é liberado
+          // pra qualquer autenticado escrever na caixa de QUALQUER um
+          // -- exigindo só que `deUid` seja o próprio uid, pra ninguém
+          // forjar aviso em nome de outra pessoa.
+          //
+          // LIMITE CONHECIDO: dá pra encher a caixa de alguém pelo
+          // DevTools. Ler, marcar como lida e apagar continuam só do
+          // dono. Quando o Blaze entrar, isso vira gatilho no servidor
+          // e o create pode fechar de vez.
+          match /notificacoes/{id} {
+            allow read, delete: if request.auth != null && request.auth.uid == uid;
+            allow create: if request.auth != null
+              && request.resource.data.deUid == request.auth.uid;
+            // O dono só marca como lida -- não reescreve o conteúdo.
+            allow update: if request.auth != null
+              && request.auth.uid == uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lida']);
+          }
         }
 
         // Fila de e-mails pro Firebase Extension "Trigger Email"
@@ -314,6 +338,67 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
             allow read: if request.auth != null;
             allow create: if request.auth != null
               && request.resource.data.autorUid == request.auth.uid;
+            allow delete: if request.auth != null
+              && request.auth.uid == resource.data.autorUid;
+          }
+        }
+
+        // Comentários nos PONTOS TURÍSTICOS.
+        //
+        // O {pontoId} é o id ESTÁVEL de data/destinos.json
+        // (ex. 3302106-praca-da-matematica), nunca o índice do array:
+        // excluir ou reordenar um ponto migraria comentário de lugar.
+        //
+        // AQUI MORA A TRAVA DE VERDADE: só comenta quem teve a
+        // presença CONFIRMADA POR GPS no município do ponto. A tela
+        // esconde o campo de escrita, mas quem abre o DevTools passa
+        // por ela -- e esbarra aqui. A regra lê o doc do PRÓPRIO
+        // usuário e confere estadoMunicipios[municipioId].verificado.
+        //
+        // Raspar o selo NÃO basta de propósito: dá pra raspar o
+        // estado inteiro do sofá, e aí o comentário deixaria de valer
+        // como relato de quem esteve lá.
+        //
+        // O municipioId vem no próprio comentário porque o {pontoId}
+        // é opaco pra regra (ela não lê data/destinos.json). Por isso
+        // o create também exige que ele seja o PREFIXO do pontoId --
+        // sem isso, alguém com Niterói verificado poderia comentar num
+        // ponto de Paraty declarando "municipioId: Niterói".
+        //
+        // O update existe só pras CURTIDAS: o texto nunca muda --
+        // comentário não se edita, se apaga e escreve de novo. Delete é
+        // só do autor (a moderação de conta, mais acima, é o que corta
+        // quem abusa).
+        match /pontosTuristicos/{pontoId}/comentarios/{comentarioId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null
+            && request.resource.data.autorUid == request.auth.uid
+            && request.resource.data.texto is string
+            && request.resource.data.texto.size() > 0
+            && request.resource.data.texto.size() <= 500
+            && pontoId.split('-')[0] == request.resource.data.municipioId
+            && get(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+                 .data.estadoMunicipios[request.resource.data.municipioId]
+                 .get('verificado', false) == true;
+          // Curtir é de QUALQUER pessoa logada (só comentar exige GPS).
+          // O update só pode mexer em curtidoPor + numCurtidas, e nunca
+          // no texto -- comentário não se edita.
+          allow update: if request.auth != null
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['curtidoPor', 'numCurtidas']);
+          allow delete: if request.auth != null
+            && request.auth.uid == resource.data.autorUid;
+
+          // RESPOSTAS dentro do comentário: qualquer pessoa logada
+          // responde, MESMO SEM ter ido ao lugar. É de propósito -- é
+          // onde quem tem dúvida pergunta a quem esteve lá.
+          match /respostas/{respostaId} {
+            allow read: if request.auth != null;
+            allow create: if request.auth != null
+              && request.resource.data.autorUid == request.auth.uid
+              && request.resource.data.texto is string
+              && request.resource.data.texto.size() > 0
+              && request.resource.data.texto.size() <= 500;
             allow delete: if request.auth != null
               && request.auth.uid == resource.data.autorUid;
           }
