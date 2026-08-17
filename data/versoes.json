@@ -1,5 +1,15 @@
 [
   {
+    "versao": "0.26.08.17.94",
+    "itens": [
+      "Conquistas, Rotas, Loja e Comunidade agora são de cada estado: você vê o conteúdo do mapa que estiver aberto, e nos estados novos aparece o aviso de que essa parte ainda está sendo montada.",
+      "A Comunidade mostra só os posts do estado ativo.",
+      "A lupa passou a funcionar nos estados novos, procurando as cidades do mapa aberto e levando você até elas.",
+      "O Ranking ganhou a aba Estadual, entre a Global e a de Amigos.",
+      "A bússola avisa quando você está em outro estado, dizendo em qual."
+    ]
+  },
+  {
     "versao": "0.26.08.17.93",
     "itens": [
       "Entrar em Minas Gerais ou São Paulo não apaga mais o aplicativo: a barra de topo, o menu de baixo e os botões continuam onde estavam — só o mapa é que troca.",

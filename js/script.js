@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.93";
+const VERSAO_APP = "0.26.08.17.94";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.93";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.94", itens: ["Conquistas, Rotas, Loja e Comunidade agora são de cada estado: você vê o conteúdo do mapa que estiver aberto, e nos estados novos aparece o aviso de que essa parte ainda está sendo montada.", "A Comunidade mostra só os posts do estado ativo.", "A lupa passou a funcionar nos estados novos, procurando as cidades do mapa aberto e levando você até elas.", "O Ranking ganhou a aba Estadual, entre a Global e a de Amigos.", "A bússola avisa quando você está em outro estado, dizendo em qual."] },
   { versao: "0.26.08.17.93", itens: ["Entrar em Minas Gerais ou São Paulo não apaga mais o aplicativo: a barra de topo, o menu de baixo e os botões continuam onde estavam — só o mapa é que troca.", "Nesses estados, a barra de progresso mostra o nome do estado em vez de fingir o total do Rio, e o botão de modos do mapa some enquanto o clima de lá não existe.", "O Modo Viagem continua funcionando em qualquer estado."] },
   { versao: "0.26.08.17.92", itens: ["O mapa de Minas Gerais e de São Paulo ficou bem mais leve de mexer com o mapa afastado: antes o app desenhava todo o detalhe das divisas mesmo quando ele nem dava pra ver."] },
   { versao: "0.26.08.17.91", itens: ["Correção: no aplicativo Android, baixar o mapa de Minas Gerais ou de São Paulo falhava dizendo que era a conexão — o app procurava o arquivo dentro dele mesmo, e não no site.", "Quando um download falha, o app passa a dizer o motivo de verdade em vez de culpar a internet."] },
@@ -1154,6 +1155,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (evento.target.id === "modal-ranking") fecharRanking();
   });
   document.getElementById("btn-ranking-global").addEventListener("click", () => alternarAbaRanking("global"));
+  document.getElementById("btn-ranking-estadual").addEventListener("click", () => alternarAbaRanking("estadual"));
   document.getElementById("btn-ranking-amigos").addEventListener("click", () => alternarAbaRanking("amigos"));
 
   // ---- Conquistas ----
@@ -2439,6 +2441,15 @@ function configurarLoja() {
 async function abrirLoja() {
   document.getElementById("modal-loja")?.classList.remove("oculto");
   atualizarBannerVoucherLoja();
+
+  /* A Loja é do estado ativo: os produtos se desbloqueiam por município
+     (regraDesbloqueio), e todos os cadastrados hoje apontam pro RJ. Num
+     estado sem catálogo, a grade sairia vazia sem explicação. */
+  if (emEstadoLimitado()) {
+    avisarConteudoEmDesenvolvimento(document.getElementById("loja-grade"), "Loja");
+    return;
+  }
+
   document.getElementById("loja-grade").innerHTML = '<div class="spinner"></div>';
   try {
     lojaProdutos = await window.raspadinhaAuth.buscarProdutos();
@@ -5385,6 +5396,36 @@ async function mostrarOndeEstou() {
 
   try {
     const { lat, lon } = await obterLocalizacaoAtual();
+
+    /* Fora do estado que está na tela, a bússola vira só um "você está
+       aqui" de nível ESTADUAL. Duas razões: a geometria fina que o app
+       carrega é a do RJ (data/rj-municipios.geojson), então não dá pra
+       dizer o município de quem está em Minas; e confirmar presença num
+       estado não publicado marcaria progresso em cima do lugar errado.
+       Antes disso, quem estivesse fora ouvia só "você parece estar fora
+       do Rio de Janeiro" -- verdade, mas inútil. */
+    const siglaOndeEstou = await siglaDoEstadoNoPonto(lat, lon);
+    if (siglaOndeEstou && siglaOndeEstou !== estadoAtual) {
+      colocarMarcadorLocalAtual(null, null);
+      const estados = await carregarEstadosJson();
+      const nome =
+        Object.values(estados).find(
+          (e) => String(e.sigla).toLowerCase() === siglaOndeEstou
+        )?.nome || siglaOndeEstou.toUpperCase();
+      mostrarToastOndeEstou(`📍 Você está em ${nome}.`);
+      return;
+    }
+
+    // Dentro de um estado ainda não publicado não há município pra
+    // apontar nem presença pra confirmar -- só a informação de onde é.
+    if (emEstadoLimitado()) {
+      colocarMarcadorLocalAtual(null, null);
+      mostrarToastOndeEstou(
+        `📍 Você está em ${nomeDoEstadoAberto}. Os municípios daqui ainda estão em desenvolvimento.`
+      );
+      return;
+    }
+
     const id = encontrarMunicipioPorCoordenada(lon, lat);
 
     if (!id) {
@@ -6660,7 +6701,15 @@ async function mostrarEstatisticaSeloRegiao(regiaoId) {
 
 function construirIndiceBusca() {
   const itens = [];
-  document.querySelectorAll("#mapa-rj .municipio").forEach((path) => {
+  /* Busca dentro do mapa que está NA TELA. Era fixo em "#mapa-rj", e
+     por isso a lupa em Minas listava municípios do Rio -- que ao serem
+     escolhidos mandavam o mapa focar num id inexistente ali. No estado
+     em desenvolvimento indexa só os municípios (não há ponto turístico
+     cadastrado), e escolher um leva o mapa até ele sem abrir selo. */
+  const seletor = emEstadoLimitado()
+    ? "#estado-viewport #mun-detalhe .municipio"
+    : "#mapa-rj .municipio";
+  document.querySelectorAll(seletor).forEach((path) => {
     const id = path.dataset.municipio;
     const nome = path.dataset.nome;
     itens.push({ tipo: "municipio", id, nomeMunicipio: nome, texto: nome });
@@ -6728,6 +6777,13 @@ function filtrarBuscaLocal() {
  */
 function selecionarResultadoBusca(item) {
   fecharBuscaLocal();
+  // Em estado não publicado a busca serve pra ACHAR no mapa, não pra
+  // abrir selo (não existe) -- e nem exige login por isso.
+  if (emEstadoLimitado()) {
+    focarMunicipioEstadual(item.id);
+    mostrarToastEstadual(item.nomeMunicipio);
+    return;
+  }
   exigirLogin(() => {
     window.controleMapa?.focarEmMunicipio(item.id);
     setTimeout(() => abrirSeloPorId(item.id, item.nomeMunicipio), 650);
@@ -8184,6 +8240,14 @@ function abrirConquistas() {
   const container = document.getElementById("conquistas-lista");
   container.innerHTML = "";
 
+  /* Conquistas são POR ESTADO. As de hoje são todas do RJ -- contam
+     municípios, regiões e rotas do Rio -- então em MG/SP não há o que
+     mostrar, e exibir as do Rio seria creditá-las ao estado errado. */
+  if (emEstadoLimitado()) {
+    avisarConteudoEmDesenvolvimento(container, "Conquistas");
+    return;
+  }
+
   const ctx = calcularContextoConquistas();
 
   DEFINICOES_CONQUISTAS.forEach((def) => {
@@ -8359,7 +8423,12 @@ function abrirRanking() {
 function alternarAbaRanking(aba) {
   abaRankingAtual = aba;
   document.getElementById("btn-ranking-global").classList.toggle("ranking-aba-ativa", aba === "global");
+  document.getElementById("btn-ranking-estadual").classList.toggle("ranking-aba-ativa", aba === "estadual");
   document.getElementById("btn-ranking-amigos").classList.toggle("ranking-aba-ativa", aba === "amigos");
+  // O rótulo segue o mapa: "Estadual" em Minas tem que dizer Minas.
+  document.getElementById("btn-ranking-estadual").textContent = emEstadoLimitado()
+    ? nomeDoEstadoAberto
+    : "Estadual";
   carregarRanking();
 }
 
@@ -8403,6 +8472,17 @@ async function carregarRanking() {
   try {
     const meuUid = window.raspadinhaAuth.usuarioAtual.uid;
     const meuCount = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
+
+    /* Aba Estadual: o ranking do estado que está no mapa.
+       Hoje ela repete o Global de propósito -- todo selo existente é do
+       RJ, então o recorte por estado dá exatamente o mesmo conjunto. Os
+       dois se separam sozinhos quando o segundo estado for publicado e o
+       `count` passar a ser contado por estado. Num estado ainda sem
+       conteúdo não há ranking nenhum pra mostrar. */
+    if (abaRankingAtual === "estadual" && emEstadoLimitado()) {
+      avisarConteudoEmDesenvolvimento(lista, "Ranking");
+      return;
+    }
 
     if (abaRankingAtual === "amigos") {
       const amigos = await window.raspadinhaAuth.listarAmigos();
@@ -9564,6 +9644,12 @@ function mudarAbaRotas(aba) {
 function abrirRotas() {
   const lista = document.getElementById("rotas-lista");
   lista.innerHTML = "";
+
+  // Cada estado terá as suas rotas; as de data/rotas.json são do RJ.
+  if (emEstadoLimitado()) {
+    avisarConteudoEmDesenvolvimento(lista, "Rotas");
+    return;
+  }
 
   const idsRotas = Object.keys(rotasInfo).sort((a, b) =>
     (rotasInfo[a]?.nome || a).localeCompare(rotasInfo[b]?.nome || b, "pt-BR")
@@ -11675,6 +11761,10 @@ let nomeDoEstadoAberto = "";
 // Reseta o zoom/posição na próxima abertura -- definido por
 // inicializarPanZoomEstadual(), chamado uma vez na inicialização.
 let resetarZoomEstadual = () => {};
+// Centraliza e aproxima um município do mapa estadual (usado pela lupa).
+// Definido dentro de inicializarPanZoomEstadual, que é quem enxerga a
+// escala e os deslocamentos.
+let focarMunicipioEstadual = () => {};
 
 /**
  * Caminho do mapa de um estado, usado como CHAVE no CacheStorage.
@@ -11949,6 +12039,56 @@ function emEstadoLimitado() {
   return estadoAtual !== "rj";
 }
 
+/* ---- A que estado uma coisa pertence ----
+   Os 2 primeiros dígitos do código IBGE de um município são o código do
+   estado (33 = RJ, 31 = MG, 35 = SP). Como post, produto, selo e rota já
+   guardam o código do município, dá pra saber o estado de cada um SEM
+   inventar campo novo e sem migrar nada do que já está no Firestore. */
+let prefixoIbgePorSigla = null;
+async function prefixoIbgeDoEstado(sigla) {
+  if (!prefixoIbgePorSigla) {
+    const estados = await carregarEstadosJson();
+    prefixoIbgePorSigla = {};
+    for (const [codigo, dados] of Object.entries(estados)) {
+      prefixoIbgePorSigla[String(dados.sigla).toLowerCase()] = codigo;
+    }
+  }
+  return prefixoIbgePorSigla[sigla] || "";
+}
+
+/** É deste estado? Item sem município não pertence a estado nenhum. */
+function ehDoEstado(codigoMunicipio, prefixo) {
+  if (!codigoMunicipio) return false;
+  return String(codigoMunicipio).startsWith(prefixo);
+}
+
+/**
+ * Enche uma tela com o aviso de "ainda não tem isso aqui".
+ *
+ * Conquistas, Rotas, Loja e Comunidade são conteúdo POR ESTADO (decisão
+ * do Paulo). Enquanto o estado não é publicado, mostrar a tela do Rio
+ * seria mentir sobre o que a pessoa está vendo, e mostrar vazio sem
+ * explicação pareceria defeito. Então explica e oferece a saída.
+ */
+function avisarConteudoEmDesenvolvimento(container, oQue) {
+  if (!container) return;
+  const nome = nomeDoEstadoAberto || "Este estado";
+  container.innerHTML = `
+    <div class="conteudo-em-dev">
+      <span class="conteudo-em-dev-icone" aria-hidden="true">🚧</span>
+      <h3>${escaparHtml(oQue)} de ${escaparHtml(nome)}</h3>
+      <p>Ainda estamos montando esta parte. Enquanto isso, dá pra explorar
+         o mapa de ${escaparHtml(nome)} à vontade.</p>
+      <button type="button" class="conteudo-em-dev-btn">Voltar para o Rio de Janeiro</button>
+    </div>`;
+  container.querySelector(".conteudo-em-dev-btn").addEventListener("click", () => {
+    // Fecha a folha/modal que estiver por cima antes de trocar o mapa,
+    // senão a pessoa volta pro RJ sem ver que voltou.
+    document.querySelectorAll("[id^=modal-]:not(.oculto)").forEach((m) => m.classList.add("oculto"));
+    fecharMapaEstadual();
+  });
+}
+
 /**
  * Liga/desliga o que ainda não existe fora do RJ.
  *
@@ -11983,6 +12123,25 @@ function aplicarLimitesDoEstado() {
   // chips ficariam pendurados no mapa do outro estado.
   if (limitado && modoClimaLigado) alternarModoClima();
   atualizarContadorDeModos();
+
+  // A aba "Estadual" do ranking leva o nome do estado da vez.
+  const abaEstadual = document.getElementById("btn-ranking-estadual");
+  if (abaEstadual) {
+    abaEstadual.textContent = limitado ? nomeDoEstadoAberto : "Estadual";
+  }
+
+  /* Recarrega o que estiver ABERTO na hora da troca. Sem isto, trocar de
+     estado com a Comunidade aberta deixava na tela o feed do estado
+     anterior, sem nenhum sinal de que estava velho. */
+  if (!document.getElementById("modal-social")?.classList.contains("oculto")) {
+    carregarFeedSocial(true);
+  }
+  if (!document.getElementById("modal-conquistas")?.classList.contains("oculto")) {
+    abrirConquistas();
+  }
+  if (!document.getElementById("modal-rotas")?.classList.contains("oculto")) {
+    abrirRotas();
+  }
 }
 
 /* ============================================================
@@ -12341,6 +12500,41 @@ function inicializarPanZoomEstadual() {
     aplicarTransform();
   };
 
+  /* Centraliza um município e aproxima -- é o que a lupa usa no mapa
+     estadual. Fica aqui dentro porque só daqui se enxerga `escala` e os
+     deslocamentos; o mundo lá fora chama pela variável exposta. */
+  focarMunicipioEstadual = (id) => {
+    const svg = svgAtual();
+    if (!svg) return;
+    /* Mede na camada que está RENDERIZADA. getBBox() num elemento com
+       display:none devolve tudo zero, e a camada de detalhe está
+       justamente escondida no zoom em que a pessoa usa a lupa -- o mapa
+       voaria pro canto superior esquerdo. */
+    const camada = svg.classList.contains("detalhe-perto") ? "#mun-detalhe" : "#mun-simples";
+    const alvo = svg.querySelector(`${camada} [data-municipio="${id}"]`);
+    if (!alvo) return;
+    const caixa = alvo.getBBox();
+    if (!caixa.width && !caixa.height) return;
+    const vb = svg.viewBox.baseVal;
+    const rect = viewport.getBoundingClientRect();
+    const ajuste = Math.min(rect.width / vb.width, rect.height / vb.height);
+
+    // Zoom que faz o município ocupar ~60% da menor dimensão da tela,
+    // preso entre "dá pra ver o vizinho" e o teto do mapa.
+    const alvoNaTela = 0.6 * Math.min(rect.width, rect.height);
+    escala = Math.max(
+      ZOOM_DETALHE_ESTADUAL,
+      Math.min(40, alvoNaTela / (Math.max(caixa.width, caixa.height) * ajuste))
+    );
+
+    // Do centro do desenho até o centro do município, em pixels de tela.
+    const cx = (caixa.x + caixa.width / 2 - vb.width / 2) * ajuste;
+    const cy = (caixa.y + caixa.height / 2 - vb.height / 2) * ajuste;
+    deslocX = -cx * escala;
+    deslocY = -cy * escala;
+    aplicarTransform();
+  };
+
   // ---- Mouse ----
   let arrastando = false;
   let inicioX = 0, inicioY = 0, deslocXIni = 0, deslocYIni = 0;
@@ -12586,8 +12780,24 @@ async function carregarFeedSocial(resetar) {
       feedSocialAcabou = !resultado.proximoCursor;
     }
 
+    /* A Comunidade é a do mapa ATIVO. O estado sai dos 2 primeiros
+       dígitos do código IBGE do município do post -- nada de campo novo
+       nem migração do que já está no Firestore.
+
+       Post sem município fica de fora do recorte: ele não pertence a
+       estado nenhum, e deixá-lo aparecer em todos faria o feed de Minas
+       nascer com conversa do Rio. O filtro é no cliente porque a
+       consulta já vem paginada de lá; com estado publicado e volume de
+       verdade, isso vira índice no Firestore. */
+    const prefixo = await prefixoIbgeDoEstado(estadoAtual);
+    if (prefixo) posts = posts.filter((p) => ehDoEstado(p.municipioId, prefixo));
+
     if (resetar) {
-      feedEl.innerHTML = posts.length ? "" : "<p>Nenhum post por aqui ainda. Seja o primeiro a postar!</p>";
+      feedEl.innerHTML = posts.length
+        ? ""
+        : emEstadoLimitado()
+          ? `<p>Ainda não há posts de ${escaparHtml(nomeDoEstadoAberto)}. Seja o primeiro!</p>`
+          : "<p>Nenhum post por aqui ainda. Seja o primeiro a postar!</p>";
     }
     posts.forEach((post) => feedEl.appendChild(renderizarCardPost(post)));
     btnMais.classList.toggle("oculto", feedSocialAcabou);

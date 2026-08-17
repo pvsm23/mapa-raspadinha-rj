@@ -759,6 +759,51 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
    ao dar zoom (fica sempre ~0.5px na tela), então as divisas ficam
    precisas em qualquer aproximação -- diferente do RJ, onde a borda
    engrossa junto com o mapa. */
+/* Aviso de "esta parte ainda não existe neste estado", usado por
+   Conquistas, Rotas, Loja e Ranking (ver avisarConteudoEmDesenvolvimento
+   em js/script.js). Um só componente pras quatro telas. */
+.conteudo-em-dev {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--fraco);
+}
+
+.conteudo-em-dev-icone {
+  font-size: 2.2rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.conteudo-em-dev h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  color: var(--txt);
+}
+
+.conteudo-em-dev p {
+  margin: 0 auto;
+  max-width: 320px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+/* Qualificado e com !important pelo mesmo motivo dos outros componentes
+   novos: a "CAMADA UI MODERNA" no fim deste arquivo força
+   background: var(--surf2) em todo button de painel. */
+#configuracoes-conteudo .conteudo-em-dev-btn,
+.conteudo-em-dev-btn {
+  margin-top: 18px;
+  padding: 10px 20px !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--verde) !important;
+  border: 1px solid var(--verde) !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  width: auto !important;
+}
+
 /* ---- Estado ainda não publicado (MG, SP) ----
    O app INTEIRO continua na tela: barra de topo, menu, botões. Só o que
    depende de conteúdo que ainda não existe pro estado é que sai de
