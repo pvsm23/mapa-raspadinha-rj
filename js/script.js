@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.92";
+const VERSAO_APP = "0.26.08.17.93";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.92";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.93", itens: ["Entrar em Minas Gerais ou São Paulo não apaga mais o aplicativo: a barra de topo, o menu de baixo e os botões continuam onde estavam — só o mapa é que troca.", "Nesses estados, a barra de progresso mostra o nome do estado em vez de fingir o total do Rio, e o botão de modos do mapa some enquanto o clima de lá não existe.", "O Modo Viagem continua funcionando em qualquer estado."] },
   { versao: "0.26.08.17.92", itens: ["O mapa de Minas Gerais e de São Paulo ficou bem mais leve de mexer com o mapa afastado: antes o app desenhava todo o detalhe das divisas mesmo quando ele nem dava pra ver."] },
   { versao: "0.26.08.17.91", itens: ["Correção: no aplicativo Android, baixar o mapa de Minas Gerais ou de São Paulo falhava dizendo que era a conexão — o app procurava o arquivo dentro dele mesmo, e não no site.", "Quando um download falha, o app passa a dizer o motivo de verdade em vez de culpar a internet."] },
   { versao: "0.26.08.17.90", itens: ["Correção: Minas Gerais aparecia como \"chega em breve\" e não abria, mesmo já estando pronto — o app estava usando uma cópia antiga do mapa do Brasil guardada no aparelho.", "No mapa dos estados, as divisas agora afinam conforme você aproxima, em vez de virarem tarjas grossas, e os nomes das cidades ficam do mesmo tamanho na tela em qualquer zoom."] },
@@ -1344,10 +1345,10 @@ document.addEventListener("DOMContentLoaded", () => {
     abrirColaborar();
   });
 
-  // ---- Mapa estadual em tela cheia (SP, MG: em desenvolvimento) ----
-  // Abre o mapa do Brasil por cima dele pra trocar de estado / voltar
-  // pro RJ (selecionar RJ lá o fecha, ver confirmarEstadoNoMapaBrasil).
-  document.getElementById("btn-estado-brasil").addEventListener("click", abrirMapaBrasil);
+  // ---- Mapa estadual (SP, MG: em desenvolvimento) ----
+  // Não tem mais botão 🇧🇷 próprio: o mapa do estado agora divide a tela
+  // com o resto do app, e o #btn-mapa-brasil da lateral serve pros dois
+  // (selecionar RJ lá volta pro Rio, ver confirmarEstadoNoMapaBrasil).
   document.getElementById("btn-estado-popup-fechar").addEventListener("click", esconderPopupDevEstadual);
   // Pan/zoom próprio do mapa estadual: anexa ao #estado-viewport uma vez
   // só (o SVG lá dentro é trocado a cada abertura, mas o viewport é fixo).
@@ -11271,6 +11272,10 @@ function regiaoEstaCompleta(regiaoId) {
  * verificado por localização (ver estaVerificado).
  */
 function atualizarContador() {
+  /* Fora do RJ quem manda na barra é aplicarLimitesDoEstado: sem esta
+     guarda, qualquer coisa que mexesse no progresso (raspar, sincronizar
+     com o Firestore) reescrevia "X de 92" por cima do mapa de Minas. */
+  if (emEstadoLimitado()) return;
   const total = document.querySelectorAll("#mapa-rj .municipio").length;
   const visitados = Object.keys(estadoMapa).filter((id) => estaVerificado(id)).length;
 
@@ -11884,7 +11889,7 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla, nomeDoEstado) {
 
   const nome = nomeDoEstado || s.toUpperCase();
   nomeDoEstadoAberto = nome;
-  document.getElementById("modal-estado").classList.remove("oculto");
+  mostrarEstadoNoViewport(s);
   const painel = document.getElementById("estado-baixar");
 
   if (await mapaEstadualJaBaixado(s)) {
@@ -11906,8 +11911,78 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla, nomeDoEstado) {
   painel.classList.remove("oculto");
 }
 
+/* ============================================================
+   Troca de estado SEM trocar de tela
+
+   O mapa estadual era um modal em tela cheia por cima de tudo, então
+   entrar em SP/MG apagava o app inteiro: sem barra de topo, sem menu,
+   sem botões. Agora os dois mapas moram no mesmo #mapa-viewport e se
+   revezam -- a UI, que já flutua por cima do mapa, nunca sai do lugar.
+
+   `estadoAtual` vive só em memória de propósito: o RJ é o produto, e
+   reabrir o app direto em Minas -- um estado sem nada pra fazer, e cujo
+   mapa pode nem estar baixado -- seria uma boas-vindas ruim. Os demais
+   estados entram em modo LIMITADO (ver aplicarLimitesDoEstado).
+   ============================================================ */
+
+let estadoAtual = "rj";
+
+/** Mostra o mapa do estado e esconde o do RJ (e vice-versa). */
+function mostrarEstadoNoViewport(sigla) {
+  estadoAtual = sigla;
+  document.getElementById("mapa-rj").classList.toggle("oculto", sigla !== "rj");
+  document.getElementById("estado-viewport").classList.toggle("oculto", sigla === "rj");
+  aplicarLimitesDoEstado();
+}
+
+/** Volta pro mapa do RJ, o único estado publicado. */
 function fecharMapaEstadual() {
-  document.getElementById("modal-estado").classList.add("oculto");
+  nomeDoEstadoAberto = "";
+  esconderPopupDevEstadual();
+  document.getElementById("estado-toast").classList.add("oculto");
+  document.getElementById("estado-baixar").classList.add("oculto");
+  mostrarEstadoNoViewport("rj");
+}
+
+/** Estamos num estado que ainda não foi publicado? */
+function emEstadoLimitado() {
+  return estadoAtual !== "rj";
+}
+
+/**
+ * Liga/desliga o que ainda não existe fora do RJ.
+ *
+ * O corte é por CONTEÚDO, não por capricho: progresso, conquistas,
+ * rotas e clima são todos do RJ hoje, e mostrar os números do Rio
+ * enquanto a pessoa olha Minas seria mentira. O Modo Viagem continua
+ * valendo -- ele é GPS e odômetro, não depende de município publicado.
+ *
+ * Quando um estado for publicado, cada um vai ter os seus (ver a
+ * decisão registrada em 17/08/2026): então isto aqui é um estado
+ * TRANSITÓRIO, não um "fora do RJ não tem".
+ */
+function aplicarLimitesDoEstado() {
+  const limitado = emEstadoLimitado();
+  document.body.classList.toggle("estado-limitado", limitado);
+
+  // Progresso da barra de topo: mostra o do estado que está na tela.
+  const txt = document.querySelector("#topo-prog-txt span");
+  const preench = document.getElementById("topo-prog-preench");
+  if (limitado) {
+    if (txt) txt.textContent = nomeDoEstadoAberto || "Em breve";
+    document.getElementById("contador").textContent = "0";
+    document.getElementById("total").textContent = "—";
+    if (preench) preench.style.width = "0%";
+  } else {
+    if (txt) txt.textContent = "Municípios";
+    atualizarContador();
+  }
+
+  // Modo Clima só existe pros 92 municípios do RJ (ver
+  // tools/apps-script-clima.gs). Desliga antes de esconder, senão os
+  // chips ficariam pendurados no mapa do outro estado.
+  if (limitado && modoClimaLigado) alternarModoClima();
+  atualizarContadorDeModos();
 }
 
 /* ============================================================

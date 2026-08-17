@@ -732,13 +732,6 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
 
 /* Não é mais uma janela centralizada (foi tirado do grupo do
    #modal-brasil): agora é o próprio mapa ocupando a tela toda. */
-#modal-estado {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: #191c22;
-}
-
 #estado-viewport {
   position: absolute;
   inset: 0;
@@ -766,6 +759,26 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
    ao dar zoom (fica sempre ~0.5px na tela), então as divisas ficam
    precisas em qualquer aproximação -- diferente do RJ, onde a borda
    engrossa junto com o mapa. */
+/* ---- Estado ainda não publicado (MG, SP) ----
+   O app INTEIRO continua na tela: barra de topo, menu, botões. Só o que
+   depende de conteúdo que ainda não existe pro estado é que sai de
+   cena. Ver aplicarLimitesDoEstado em js/script.js.
+
+   Modos do mapa (hoje só o Modo Clima) some porque o clima é publicado
+   município a município, e só os 92 do RJ têm (ver
+   tools/apps-script-clima.gs). O Modo Viagem NÃO entra aqui de
+   propósito: é GPS e odômetro, funciona em qualquer lugar do Brasil --
+   e é justamente quem está viajando pra Minas que vai querer usar. */
+body.estado-limitado #btn-modos {
+  display: none;
+}
+
+/* A barra de progresso vira um traço apagado em vez de fingir 0 de 92
+   -- o número do Rio não vale pra Minas. */
+body.estado-limitado #topo-prog-preench {
+  background: var(--linha);
+}
+
 /* ---- Nível de detalhe: só uma das duas camadas por vez ----
    O SVG traz o mesmo estado duas vezes (ver EPS_LONGE em
    tools/geojson-municipios-to-svg.js): #mun-simples, com 1/7 dos pontos,
@@ -885,9 +898,12 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 }
 
 /* Aviso pequeno de "em desenvolvimento" no topo do mapa estadual. */
+/* Abaixo da barra de topo, não por cima dela. Quando isto vivia dentro
+   de um modal em tela cheia não havia barra nenhuma pra desviar; agora
+   há, e o aviso nascia colado no topo, em cima do avatar e da busca. */
 #estado-popup-dev {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 112px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -926,29 +942,6 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 
 /* Botão flutuante pra abrir o mapa do Brasil (trocar de estado / voltar
    pro RJ). Fica no canto, como um controle de mapa. */
-#btn-estado-brasil {
-  position: absolute;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-  right: calc(env(safe-area-inset-right, 0px) + 20px);
-  z-index: 20;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: none;
-  background: var(--surf);
-  color: var(--txt);
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#btn-estado-brasil:hover {
-  background: #22272F;
-}
-
 /* Aviso flutuante ao tocar num município do SP. */
 /* ---- Convite pra baixar o mapa do estado ----
    Aparece POR CIMA do viewport vazio quando o mapa ainda não está no
@@ -956,7 +949,7 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
    nada pra fazer aqui, e o 🇧🇷 continua acessível por cima (z-index
    maior). Ver abrirMapaEstadoEmDesenvolvimento em js/script.js. */
 #estado-baixar {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 15;
   display: flex;
@@ -1047,7 +1040,7 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 }
 
 #estado-toast {
-  position: absolute;
+  position: fixed;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
   left: 50%;
   transform: translateX(-50%);
@@ -8007,11 +8000,11 @@ select:focus {
   z-index: 100;
 }
 
-/* O mapa do Brasil precisa ficar ACIMA do mapa de SP (#modal-estado, z-index
-   100) porque é aberto POR CIMA dele pra trocar de estado / voltar pro
-   Rio. Regra dedicada e DEPOIS da de cima (que o punha em 100 junto com
-   os outros) -- senão o SP, mais abaixo no HTML, cobria o Brasil e o
-   botão 🇧🇷 parecia "não abrir". */
+/* O mapa do Brasil fica acima de todo o resto porque é aberto POR CIMA
+   do mapa pra trocar de estado. Vale desde quando o mapa estadual era um
+   modal em z-index 100 e o cobria; o modal saiu, mas o 200 continua
+   certo -- ele também precisa passar por cima dos avisos flutuantes do
+   mapa estadual (#estado-popup-dev, #estado-baixar). */
 #modal-brasil {
   z-index: 200;
 }

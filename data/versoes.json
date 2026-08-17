@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.17.93",
+    "itens": [
+      "Entrar em Minas Gerais ou São Paulo não apaga mais o aplicativo: a barra de topo, o menu de baixo e os botões continuam onde estavam — só o mapa é que troca.",
+      "Nesses estados, a barra de progresso mostra o nome do estado em vez de fingir o total do Rio, e o botão de modos do mapa some enquanto o clima de lá não existe.",
+      "O Modo Viagem continua funcionando em qualquer estado."
+    ]
+  },
+  {
     "versao": "0.26.08.17.92",
     "itens": [
       "O mapa de Minas Gerais e de São Paulo ficou bem mais leve de mexer com o mapa afastado: antes o app desenhava todo o detalhe das divisas mesmo quando ele nem dava pra ver."
