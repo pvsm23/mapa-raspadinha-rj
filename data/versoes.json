@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.17.87",
+    "itens": [
+      "O mapa ficou mais limpo: o Modo Viagem virou um botão verde grande no centro, e os modos do mapa (como o Clima) moram agora num menu próprio.",
+      "Municípios, rotas e conquistas sem arte pronta ganharam um selo desenhado na hora, com borda dourada e a cor sempre igual para o mesmo lugar.",
+      "Ficou óbvio o que ainda está bloqueado: cadeado discreto e card apagado; o que você já conquistou ganha brilho dourado."
+    ]
+  },
+  {
     "versao": "0.26.08.17.86",
     "itens": [
       "O clima agora vem pronto de um servidor nosso, atualizado de meia em meia hora — abre mais rápido e gasta menos internet do seu aparelho."

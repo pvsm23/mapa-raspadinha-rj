@@ -471,24 +471,13 @@
        Cada botão só aciona o botão antigo correspondente (que agora
        fica escondido), pra reaproveitar os handlers já existentes sem
        reescrever nada. Ver configurarNavInferior em js/script.js. -->
-  <nav id="nav-inferior">
-    <!-- Gota do Modo Viagem: um ressalto que sobe do meio da barra,
-         no formato dos módulos de câmera "gota d'água" de celular, só
-         que de cabeça pra baixo. Fica exatamente sobre "Conquistas"
-         (3º de 5 itens = o centro).
-         O <svg> desenha SÓ o fundo: os ombros côncavos emendam com a
-         barra, coisa que border-radius não faz. O botão vai por cima.
-         Ver #viagem-gota em css/styles.css. -->
-    <div id="viagem-gota" class="oculto">
-      <svg viewBox="0 0 96 34" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0 34 C 20 34, 19 2, 48 2 C 77 2, 76 34, 96 34 Z"/>
-      </svg>
-      <!-- Modo Viagem: só aparece no app instalado (Android/Capacitor),
-           ver configurarModoViagem em js/script.js. Mora DENTRO da gota,
-           no meio da barra inferior. -->
-      <button id="btn-modo-viagem" class="oculto" aria-label="Ativar Modo Viagem" title="Modo Viagem"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 17.5H9l1.5-5H14l3 5"/><path d="M10.5 12.5 12 8h3l1.5 3"/><path d="M6.5 12.5h3"/></svg></button>
-    </div>
+  <!-- Modo Viagem: FAB centralizado logo acima da barra inferior.
+       So aparece no app instalado (Android/Capacitor), ver
+       configurarModoViagem em js/script.js. E a acao PRIMARIA do mapa:
+       verde neon, redondo e com glow -- chama pra pilotar. -->
+  <button id="btn-modo-viagem" class="oculto" aria-label="Ativar Modo Viagem" title="Modo Viagem"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 17.5H9l1.5-5H14l3 5"/><path d="M10.5 12.5 12 8h3l1.5 3"/><path d="M6.5 12.5h3"/></svg></button>
 
+  <nav id="nav-inferior">
     <button type="button" data-nav="mapa" class="nav-item nav-ativa">
       <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span><span class="nav-txt">Mapa</span>
     </button>
@@ -559,9 +548,67 @@
   <button id="btn-onde-estou" aria-label="Mostrar onde estou no mapa" title="Onde estou?"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></button>
 
 
-  <!-- Modo Clima: liga/desliga os chips de temperatura no mapa.
-       Ver alternarModoClima em js/script.js. -->
-  <button id="btn-modo-clima" aria-label="Modo Clima" title="Modo Clima" aria-pressed="false"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 12.2A4.4 4.4 0 0 1 15 9.4"/><path d="M12 3.4v1.7M4.6 10.8H2.9M6.3 5.1 5.1 3.9M17.7 5.1l1.2-1.2"/><path d="M8.4 19.6h9a3.3 3.3 0 0 0 .2-6.6 5 5 0 0 0-9.6-1.1 3.9 3.9 0 0 0 .4 7.7z"/></svg></button>
+  <!-- Botão de MODOS (camadas). Substitui o antigo botão solto do Modo
+       Clima: em vez de um botão por modo brigando por espaço na
+       lateral, um só abre a folha com todos. É o que permite crescer
+       (Satélite, Rodovias) sem poluir mais o mapa.
+       O contador mostra quantos modos estão ligados. -->
+  <button id="btn-modos" aria-label="Modos do mapa" title="Modos do mapa" aria-haspopup="dialog"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span id="modos-contador" class="oculto"></span></button>
+
+  <!-- Folha de Modos. Cada modo é uma linha com switch; para acrescentar
+       um novo, basta copiar um <li> e ligar o id em configurarModos()
+       (js/script.js) -- a estrutura já está pronta pra isso. -->
+  <div id="modal-modos" class="sheet-overlay oculto">
+    <div id="modos-sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="modos-titulo">
+      <div class="sheet-cabecalho">
+        <span class="sheet-alca" aria-hidden="true"></span>
+        <h3 id="modos-titulo">Modos do mapa</h3>
+        <button type="button" class="sheet-fechar" id="btn-fechar-modos" aria-label="Fechar">✕</button>
+      </div>
+      <div class="sheet-corpo">
+        <ul id="modos-lista">
+          <li class="modo-item">
+            <span class="modo-icone" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 12.2A4.4 4.4 0 0 1 15 9.4"/><path d="M12 3.4v1.7M4.6 10.8H2.9M6.3 5.1 5.1 3.9M17.7 5.1l1.2-1.2"/><path d="M8.4 19.6h9a3.3 3.3 0 0 0 .2-6.6 5 5 0 0 0-9.6-1.1 3.9 3.9 0 0 0 .4 7.7z"/></svg></span>
+            <span class="modo-texto">
+              <strong>Clima</strong>
+              <small>Temperatura de cada cidade sobre o mapa</small>
+            </span>
+            <label class="modo-switch">
+              <input type="checkbox" id="switch-modo-clima" aria-describedby="modos-titulo">
+              <span class="modo-switch-trilho" aria-hidden="true"></span>
+            </label>
+          </li>
+
+          <!-- Modos futuros: mesma estrutura, com .modo-item-embreve
+               enquanto não existirem. Aparecem apagados e com o switch
+               desligado, pra a pessoa saber o que vem por aí. -->
+          <li class="modo-item modo-item-embreve">
+            <span class="modo-icone" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 0 0-7.1 17"/><path d="M19.1 19A10 10 0 0 0 12 2"/><path d="M4.9 19h14.2"/></svg></span>
+            <span class="modo-texto">
+              <strong>Satélite</strong>
+              <small>Em breve</small>
+            </span>
+            <label class="modo-switch">
+              <input type="checkbox" disabled>
+              <span class="modo-switch-trilho" aria-hidden="true"></span>
+            </label>
+          </li>
+
+          <li class="modo-item modo-item-embreve">
+            <span class="modo-icone" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 9 5M15 5l5 14M12 5v2M12 11v2M12 17v2"/></svg></span>
+            <span class="modo-texto">
+              <strong>Rodovias</strong>
+              <small>Em breve</small>
+            </span>
+            <label class="modo-switch">
+              <input type="checkbox" disabled>
+              <span class="modo-switch-trilho" aria-hidden="true"></span>
+            </label>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
   <!-- Camada dos chips de clima. Fica FORA do <svg> de propósito: chip
        dentro do SVG escalaria junto com o zoom (texto de 60px viraria

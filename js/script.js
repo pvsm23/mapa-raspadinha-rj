@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.86";
+const VERSAO_APP = "0.26.08.17.87";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.86";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.87", itens: ["O mapa ficou mais limpo: o Modo Viagem virou um botão verde grande no centro, e os modos do mapa (como o Clima) moram agora num menu próprio.", "Municípios, rotas e conquistas sem arte pronta ganharam um selo desenhado na hora, com borda dourada e a cor sempre igual para o mesmo lugar.", "Ficou óbvio o que ainda está bloqueado: cadeado discreto e card apagado; o que você já conquistou ganha brilho dourado."] },
   { versao: "0.26.08.17.86", itens: ["O clima agora vem pronto de um servidor nosso, atualizado de meia em meia hora — abre mais rápido e gasta menos internet do seu aparelho."] },
   { versao: "0.26.08.17.85", itens: ["O botão do Modo Viagem saiu do canto direito e virou um botão em destaque no meio da barra de baixo — sobrou espaço e ficou mais fácil de alcançar com o polegar.", "No Modo Clima, as temperaturas agora acompanham o mapa enquanto você arrasta, em vez de só pularem para o lugar quando você solta.", "E os marcadores de pontos turísticos somem enquanto o Modo Clima está ligado, pra não embolar com as temperaturas."] },
   { versao: "0.26.08.17.84", itens: ["O município agora mostra o clima: temperatura de agora no canto do selo e, tocando nela, a previsão dos próximos 3 dias.", "Junto vêm a altitude da cidade e o horário do pôr do sol — útil pra planejar a hora de pegar a estrada.", "Novo botão Modo Clima no mapa: liga e mostra a temperatura das cidades direto sobre elas."] },
@@ -809,8 +810,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-ver-novidades")?.addEventListener("click", abrirNovidades);
   document.getElementById("btn-fechar-novidades")?.addEventListener("click", fecharNovidades);
 
-  // ---- Clima ----
-  document.getElementById("btn-modo-clima")?.addEventListener("click", alternarModoClima);
+  // ---- Modos do mapa ----
+  configurarModos();
   document.getElementById("clima-pilula")?.addEventListener("click", (evento) => {
     // A pílula fica POR CIMA da raspadinha: sem isto, tocar nela
     // contaria como raspar o selo.
@@ -5998,11 +5999,76 @@ function nivelVisivelDeClima(escala) {
   return maior;
 }
 
+/* ============ MODOS DO MAPA (camadas) ============
+ *
+ * Antes cada modo era um botão solto flutuando sobre o mapa. Com dois
+ * já ficava apertado no canto (GPS + Clima + Modo Viagem), e cada modo
+ * novo pioraria. Agora um botão só abre a folha com todos.
+ *
+ * PRA ACRESCENTAR UM MODO: copie um <li class="modo-item"> no
+ * index.html, dê um id ao <input>, e registre aqui em MODOS. O resto
+ * -- contador no botão, estado do switch, fechar a folha -- funciona
+ * sozinho.
+ */
+const MODOS = [
+  {
+    id: "switch-modo-clima",
+    ligado: () => modoClimaLigado,
+    alternar: (deveLigar) => {
+      if (deveLigar !== modoClimaLigado) alternarModoClima();
+    },
+  },
+];
+
+function configurarModos() {
+  const abrir = () => {
+    // Sincroniza os switches ANTES de abrir: o estado pode ter mudado
+    // por outro caminho (ex: o modo desligado ao sair do mapa).
+    MODOS.forEach((m) => {
+      const input = document.getElementById(m.id);
+      if (input) input.checked = m.ligado();
+    });
+    document.getElementById("modal-modos").classList.remove("oculto");
+  };
+  const fechar = () => fecharComAnimacao(document.getElementById("modal-modos"));
+
+  document.getElementById("btn-modos")?.addEventListener("click", abrir);
+  document.getElementById("btn-fechar-modos")?.addEventListener("click", fechar);
+  document.getElementById("modal-modos")?.addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-modos") fechar();
+  });
+
+  MODOS.forEach((m) => {
+    const input = document.getElementById(m.id);
+    if (!input) return;
+    input.addEventListener("change", () => {
+      m.alternar(input.checked);
+      atualizarContadorDeModos();
+    });
+  });
+
+  atualizarContadorDeModos();
+}
+
+/**
+ * Bolinha com o número de modos ligados, no canto do botão.
+ *
+ * Sem ela, um modo ligado ficaria invisível com a folha fechada -- a
+ * pessoa veria os chips de clima no mapa sem entender de onde vieram
+ * nem como desligar.
+ */
+function atualizarContadorDeModos() {
+  const contador = document.getElementById("modos-contador");
+  const botao = document.getElementById("btn-modos");
+  if (!contador || !botao) return;
+  const quantos = MODOS.filter((m) => m.ligado()).length;
+  contador.textContent = String(quantos);
+  contador.classList.toggle("oculto", quantos === 0);
+  botao.classList.toggle("com-modo-ativo", quantos > 0);
+}
+
 function alternarModoClima() {
   modoClimaLigado = !modoClimaLigado;
-  const botao = document.getElementById("btn-modo-clima");
-  botao.classList.toggle("ativo", modoClimaLigado);
-  botao.setAttribute("aria-pressed", modoClimaLigado ? "true" : "false");
   const camada = document.getElementById("camada-clima");
   camada.classList.toggle("oculto", !modoClimaLigado);
 
@@ -6020,6 +6086,9 @@ function alternarModoClima() {
 
   if (modoClimaLigado) redesenharChipsDeClima();
   else camada.innerHTML = "";
+  // O contador do botão de Modos precisa acompanhar mesmo quando o
+  // modo é alternado por outro caminho que não o switch.
+  atualizarContadorDeModos();
 }
 
 /**
@@ -6384,7 +6453,15 @@ async function resolverImagemColorida(
   const caminhoNormal = `${prefixo}.webp`;
   if (await carregarImagem(caminhoNormal)) return { url: caminhoNormal, arteReal: true };
   return {
-    url: gerarSeloPlaceholder(idParaPlaceholder, nomeParaPlaceholder, tamanhoPlaceholder),
+    // `brilhante` chega aqui também: sem arte, o selo dourado é
+    // desenhado em ouro em vez de na cor do nome -- senão raspar com
+    // sorte num município sem arte não mostrava diferença nenhuma.
+    url: gerarSeloPlaceholder(
+      idParaPlaceholder,
+      nomeParaPlaceholder,
+      tamanhoPlaceholder,
+      brilhante
+    ),
     arteReal: false,
   };
 }
@@ -8095,7 +8172,10 @@ function abrirConquistas() {
     const desbloqueada = atual >= meta;
 
     const item = document.createElement("div");
-    item.className = "conquista-item";
+    /* O card INTEIRO comunica o estado, nao so a medalha: bloqueado
+       fica apagado e com a borda mais discreta. Antes so a medalha
+       mudava, e numa lista longa a diferenca passava batido. */
+    item.className = "conquista-item" + (desbloqueada ? " conquista-item-livre" : " conquista-item-bloqueada");
     item.innerHTML = `
       <div class="conquista-medalha" id="conquista-selo-${def.chave}"></div>
       <div class="conquista-info">
@@ -9497,6 +9577,22 @@ function abrirRotas() {
     }
     const thumb = envolverComPlaceholder(img, "dourado");
     thumb.classList.add("rota-card-thumb");
+
+    /* Cadeado na rota não iniciada.
+       Cuidado com a história: na v0.11.12 os cadeados foram REMOVIDOS
+       das rotas -- mas o que saiu foi o emoji 🔒 amarelo e berrante. O
+       que entra aqui é o MESMO SVG minimalista que as conquistas já
+       usam, sobre a miniatura já dessaturada. É a mesma transição que
+       as conquistas fizeram (emoji -> traço fino), não uma volta atrás. */
+    if (!iniciada) {
+      const cadeado = document.createElement("span");
+      cadeado.className = "cadeado-sobreposto";
+      cadeado.setAttribute("aria-hidden", "true");
+      cadeado.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+      thumb.appendChild(cadeado);
+    }
+
     item.appendChild(thumb);
 
     const infoCol = document.createElement("div");
@@ -10595,33 +10691,231 @@ async function gerarCartaoRotaPersonalizada(rota) {
  * não existem. A cor é derivada do id para variar entre eles.
  * `tamanho` é maior para o mega-selo de região (ver abrirPopupRegiao).
  */
-function gerarSeloPlaceholder(id, nome, tamanho = 260) {
-  const canvas = document.createElement("canvas");
-  canvas.width = tamanho;
-  canvas.height = tamanho;
-  const ctx = canvas.getContext("2d");
-  const centro = tamanho / 2;
+/* ============ COR DETERMINÍSTICA DO SELO ============
+ *
+ * O MESMO nome dá SEMPRE a mesma cor: "Cordeiro" é sempre o mesmo azul,
+ * em qualquer tela e em qualquer aparelho. Isso importa porque o selo
+ * dinâmico é o rosto de 49 dos 92 municípios (só 43 têm arte pronta) --
+ * se a cor mudasse a cada render, o usuário nunca reconheceria o
+ * "selo do Cordeiro", e a coleção pareceria aleatória.
+ *
+ * Hasheia o NOME, não o id: nome é o que a pessoa vê e lembra.
+ */
+function hashDoNome(nome) {
+  let h = 2166136261; // FNV-1a: espalha melhor que o (h*31) pra textos curtos
+  const texto = String(nome || "");
+  for (let i = 0; i < texto.length; i++) {
+    h ^= texto.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
 
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+/**
+ * Cor de fundo do selo + a cor de texto que se lê melhor sobre ela.
+ *
+ * A escolha do texto NÃO é chutada: calcula a luminância relativa da
+ * cor (fórmula do WCAG, com a correção de gama) e compara o contraste
+ * contra branco e contra preto, ficando com o maior. É por isso que um
+ * selo amarelo vem com letra preta e um azul-marinho com letra branca,
+ * sem ninguém ter que catalogar exceção.
+ */
+function corDoSelo(nome) {
+  const hash = hashDoNome(nome);
+
+  /* Matiz livre (0-359), mas saturação e luminosidade em faixa ESTREITA
+     de propósito. Soltas, saíam selos quase pretos e outros lavados, e
+     a coleção perdia a unidade -- o dourado da borda é o que amarra
+     tudo, e ele só funciona sobre um fundo de peso parecido. */
   const matiz = hash % 360;
+  const saturacao = 42 + ((hash >>> 9) % 26); // 42-67%
+  const luz = 30 + ((hash >>> 17) % 26); // 30-55%
 
-  ctx.fillStyle = `hsl(${matiz}, 55%, 35%)`;
-  ctx.fillRect(0, 0, tamanho, tamanho);
+  const { r, g, b } = hslParaRgb(matiz, saturacao, luz);
+  const hex =
+    "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 
-  ctx.fillStyle = `hsl(${matiz}, 55%, 55%)`;
+  // Luminância relativa (WCAG 2.x): canal linearizado e depois pesado
+  // pela sensibilidade do olho a cada cor (o verde pesa 71%).
+  const canal = (v) => {
+    const n = v / 255;
+    return n <= 0.03928 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+  };
+  const luminancia = 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+
+  const contrasteComBranco = 1.05 / (luminancia + 0.05);
+  const contrasteComPreto = (luminancia + 0.05) / 0.05;
+  const texto = contrasteComBranco >= contrasteComPreto ? "#FFFFFF" : "#101418";
+
+  return { fundo: hex, texto, matiz, saturacao, luz };
+}
+
+/** HSL (0-360, 0-100, 0-100) -> RGB 0-255. */
+function hslParaRgb(h, s, l) {
+  const sat = s / 100;
+  const luz = l / 100;
+  const c = (1 - Math.abs(2 * luz - 1)) * sat;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = luz - c / 2;
+  const faixa = Math.floor(h / 60) % 6;
+  const [r1, g1, b1] = [
+    [c, x, 0], [x, c, 0], [0, c, x], [0, x, c], [x, 0, c], [c, 0, x],
+  ][faixa];
+  return {
+    r: Math.round((r1 + m) * 255),
+    g: Math.round((g1 + m) * 255),
+    b: Math.round((b1 + m) * 255),
+  };
+}
+
+/* Dourado da borda -- o MESMO em todos os selos, com ou sem arte.
+   É ele que faz o selo gerado parecer da mesma coleção que os
+   ilustrados, em vez de um cartão qualquer com o nome escrito. */
+const OURO_CLARO = "#F7E7A6";
+const OURO = "#D4AF37";
+const OURO_ESCURO = "#8A6B15";
+
+/**
+ * Selo dinâmico para quem ainda não tem arte: círculo com borda
+ * dourada, fundo na cor determinística do nome e o nome centralizado
+ * em até 3 linhas.
+ *
+ * Devolve um data URL de canvas -- o mesmo formato que a arte real,
+ * então quem chama (resolverImagemColorida) não distingue os dois e
+ * nenhum outro lugar do app precisou mudar.
+ *
+ * `brilhante` troca o fundo pelo degradê dourado: é o selo raspado com
+ * sorte, e ele precisa se parecer com o dourado real dos ilustrados.
+ */
+function gerarSeloPlaceholder(id, nome, tamanho = 260, brilhante = false) {
+  /* Renderiza em resolução de DISPOSITIVO e reduz por CSS. Sem isso o
+     selo sai borrado em tela retina -- foi a mesma lição da raspadinha
+     (ver js/scratch-card.js). Teto de 3 pra não gerar canvas gigante
+     em aparelho topo de linha. */
+  const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(tamanho * dpr);
+  canvas.height = Math.round(tamanho * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  const centro = tamanho / 2;
+  const raio = tamanho * 0.47;
+  const { fundo, texto } = corDoSelo(nome);
+
+  // ---- Miolo ----
+  if (brilhante) {
+    const brilho = ctx.createLinearGradient(0, 0, tamanho, tamanho);
+    brilho.addColorStop(0, "#F9EFC0");
+    brilho.addColorStop(0.45, OURO);
+    brilho.addColorStop(0.75, "#B8891C");
+    brilho.addColorStop(1, "#F2DE95");
+    ctx.fillStyle = brilho;
+  } else {
+    // Degradê sutil na cor do nome: dá volume sem virar outra cor.
+    const g = ctx.createLinearGradient(0, 0, 0, tamanho);
+    g.addColorStop(0, clarear(fundo, 12));
+    g.addColorStop(1, clarear(fundo, -14));
+    ctx.fillStyle = g;
+  }
   ctx.beginPath();
-  ctx.arc(centro, centro * 0.81, tamanho * 0.21, 0, Math.PI * 2);
+  ctx.arc(centro, centro, raio, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#f1f5f9";
-  ctx.font = `bold ${Math.round(tamanho * 0.06)}px system-ui, sans-serif`;
+  // ---- Borda dourada (3 anéis: claro/ouro/escuro dá relevo) ----
+  const anel = (raioAnel, cor, espessura) => {
+    ctx.beginPath();
+    ctx.arc(centro, centro, raioAnel, 0, Math.PI * 2);
+    ctx.strokeStyle = cor;
+    ctx.lineWidth = espessura;
+    ctx.stroke();
+  };
+  anel(raio, OURO_ESCURO, tamanho * 0.035);
+  anel(raio - tamanho * 0.012, OURO, tamanho * 0.022);
+  anel(raio - tamanho * 0.026, OURO_CLARO, tamanho * 0.008);
+  // Fio fino por dentro, separando a moldura do miolo.
+  anel(raio - tamanho * 0.052, "rgba(255,255,255,0.22)", tamanho * 0.004);
+
+  // ---- Nome ----
+  const corTexto = brilhante ? "#3A2C05" : texto;
+  ctx.fillStyle = corTexto;
   ctx.textAlign = "center";
-  quebrarTextoEmLinhas(ctx, nome, centro * 1.46, tamanho * 0.85, tamanho * 0.077).forEach((linha) => {
-    ctx.fillText(linha.texto, centro, linha.y);
+  ctx.textBaseline = "middle";
+
+  /* Fonte que ENCOLHE conforme o nome cresce: "Rio" pede letra grande,
+     "São Francisco de Itabapoana" pede pequena. Sem isso, ou o nome
+     curto fica minúsculo ou o comprido estoura o círculo. */
+  const linhasMaximas = 3;
+  const larguraUtil = raio * 1.42; // corda segura dentro do círculo
+  let fonte = Math.round(tamanho * 0.13);
+  let linhas = [];
+  while (fonte > tamanho * 0.055) {
+    ctx.font = `700 ${fonte}px system-ui, -apple-system, sans-serif`;
+    linhas = quebrarEmLinhas(ctx, nome, larguraUtil, linhasMaximas);
+    if (linhas.cabe) break;
+    fonte -= 2;
+  }
+  ctx.font = `700 ${fonte}px system-ui, -apple-system, sans-serif`;
+
+  const alturaLinha = fonte * 1.15;
+  const alturaBloco = alturaLinha * linhas.length;
+  const yInicial = centro - alturaBloco / 2 + alturaLinha / 2;
+
+  // Sombra leve: garante leitura mesmo se a cor cair perto do limite.
+  ctx.shadowColor = corTexto === "#FFFFFF" ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.35)";
+  ctx.shadowBlur = Math.max(2, tamanho * 0.012);
+  linhas.forEach((linha, i) => {
+    ctx.fillText(linha, centro, yInicial + i * alturaLinha);
   });
+  ctx.shadowBlur = 0;
 
   return canvas.toDataURL();
+}
+
+/** Clareia (positivo) ou escurece (negativo) um hex, em pontos de L. */
+function clarear(hex, delta) {
+  const n = parseInt(hex.slice(1), 16);
+  const ajusta = (v) => Math.max(0, Math.min(255, Math.round(v + (delta / 100) * 255)));
+  return (
+    "#" +
+    [ajusta((n >> 16) & 255), ajusta((n >> 8) & 255), ajusta(n & 255)]
+      .map((v) => v.toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
+/**
+ * Quebra o nome em no máximo `maximo` linhas.
+ *
+ * Devolve o array com uma propriedade `cabe`: false quando o texto não
+ * coube no limite de linhas, o que faz quem chama diminuir a fonte e
+ * tentar de novo. Palavra sozinha maior que a largura também não
+ * "cabe" -- é o caso de "Itabapoana" num selo pequeno.
+ */
+function quebrarEmLinhas(ctx, texto, larguraMaxima, maximo) {
+  const palavras = String(texto || "").trim().split(/\s+/);
+  const linhas = [];
+  let atual = "";
+
+  for (const palavra of palavras) {
+    const tentativa = atual ? `${atual} ${palavra}` : palavra;
+    if (ctx.measureText(tentativa).width <= larguraMaxima) {
+      atual = tentativa;
+      continue;
+    }
+    if (atual) linhas.push(atual);
+    atual = palavra;
+    if (linhas.length >= maximo) break;
+  }
+  if (atual && linhas.length < maximo) linhas.push(atual);
+
+  const coube =
+    linhas.length <= maximo &&
+    linhas.every((l) => ctx.measureText(l).width <= larguraMaxima) &&
+    linhas.join(" ").length >= String(texto || "").trim().length;
+
+  linhas.cabe = coube;
+  return linhas;
 }
 
 /**

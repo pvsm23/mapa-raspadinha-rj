@@ -33,17 +33,43 @@
  *       FIREBASE_PROJECT_ID = mapa-raspadinha-rj
  *    (não é segredo, mas fica fora do código como todos os outros)
  *
- * 3. Rode `atualizarClima` UMA VEZ à mão, pelo editor. O Google vai
- *    pedir autorização -- é o que emite o token que escreve no
- *    Firestore. Confira no Console do Firebase se o documento
- *    `clima/atual` apareceu.
+ * 3. DECLARE O ESCOPO DO FIRESTORE -- sem isto o passo 4 falha com
+ *    "403 ACCESS_TOKEN_SCOPE_INSUFFICIENT".
  *
- * 4. Gatilhos (ícone do relógio) -> Adicionar gatilho:
+ *    O Apps Script só pede os escopos que ele ADIVINHA lendo o código.
+ *    Como aqui só aparece UrlFetchApp, ele pede apenas o de requisição
+ *    externa -- e o Firestore fica de fora, mesmo o script tendo
+ *    acabado de escrever nele em teoria. O escopo do datastore precisa
+ *    ser declarado à mão.
+ *
+ *    - Configurações do projeto -> marque "Mostrar o arquivo de
+ *      manifesto appsscript.json no editor".
+ *    - Abra o appsscript.json e deixe com estes escopos:
+ *
+ *        "oauthScopes": [
+ *          "https://www.googleapis.com/auth/script.external_request",
+ *          "https://www.googleapis.com/auth/datastore"
+ *        ]
+ *
+ *    (o apps-script-asaas.gs tem a mesma exigência, pelo mesmo motivo)
+ *
+ * 4. Rode `atualizarClima` UMA VEZ à mão, pelo editor. O Google vai
+ *    pedir autorização -- é o que emite o token que escreve no
+ *    Firestore. Se você já tinha autorizado ANTES de mexer nos
+ *    escopos, ele vai pedir de novo: o conjunto de permissões mudou.
+ *    Confira no Console do Firebase se o documento `clima/atual`
+ *    apareceu, com `quantidade` = 92.
+ *
+ *    Ainda 403? Falta habilitar a API: Console do Google Cloud, com o
+ *    projeto do script selecionado, APIs e serviços -> Ativar ->
+ *    "Cloud Firestore API".
+ *
+ * 5. Gatilhos (ícone do relógio) -> Adicionar gatilho:
  *       função: atualizarClima
  *       origem: Acionador por tempo
  *       tipo: Timer por minuto -> A cada 30 minutos
  *
- * 5. Publique a regra do Firestore que libera a LEITURA pública de
+ * 6. Publique a regra do Firestore que libera a LEITURA pública de
  *    `clima/atual` (está no README.md).
  *
  * ============================================================

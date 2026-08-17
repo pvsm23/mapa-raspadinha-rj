@@ -1946,9 +1946,12 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
    dividido ao meio. ---- */
 
 /* O Modo Viagem DEIXOU de ser botão flutuante no canto direito: virou
-   a "gota" no meio da barra inferior (ver #viagem-gota no fim deste
-   arquivo). Aquele canto já tinha a bússola, o Modo Clima e a coluna
-   lateral -- botão demais no mesmo lugar.
+   um FAB centrado logo acima da barra inferior (ver "BOTÕES FLUTUANTES
+   DO MAPA" no fim deste arquivo). Aquele canto já tinha a bússola, o
+   Modo Clima e a coluna lateral -- botão demais no mesmo lugar.
+
+   (houve uma versão intermediária em que ele era uma "gota" recortada
+   na própria barra; o desenho não ficou bom e foi substituído pelo FAB)
 
    Tudo que posicionava/desenhava o botão saiu daqui. O que ficou é só
    o estado escondido, que continua valendo em qualquer lugar.
@@ -10964,97 +10967,6 @@ button:disabled:active {
   animation: clima-chip-entra 0.26s ease;
 }
 
-/* ============ GOTA DO MODO VIAGEM ============
-   O botão saiu da pilha da direita (que já tinha bússola, Modo Clima e
-   os laterais) e virou um ressalto no meio da barra inferior, no
-   formato dos módulos de câmera "gota d'água", de cabeça pra baixo.
-
-   Por que um <svg> e não border-radius: os OMBROS precisam ser
-   CÔNCAVOS pra emendar com a linha reta da barra. border-radius só faz
-   canto convexo -- sairia um círculo colado na barra, com dois
-   entalhes nas laterais. O path desenha a emenda contínua. */
-#nav-inferior { overflow: visible; }
-
-#viagem-gota {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  /* Sobe 32px acima da borda da barra: é a altura do bico. */
-  bottom: 100%;
-  margin-bottom: -1px; /* cobre a borda de 1px da nav, sem costura */
-  width: 104px;
-  /* Alta o bastante pra o botão ANINHAR dentro do bico, como a lente
-     dentro do módulo de câmera. Com 34px o botão de 46 transbordava e
-     virava um círculo colado na barra, não uma gota. */
-  height: 50px;
-  pointer-events: none; /* só o botão dentro recebe toque */
-  z-index: 1;
-}
-#viagem-gota.oculto { display: none; }
-
-#viagem-gota > svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-#viagem-gota > svg path {
-  /* Mesmo fundo e mesma borda da barra: a gota tem que parecer parte
-     dela, não um adesivo colado por cima. */
-  fill: var(--vidro, rgba(15, 18, 22, 0.96));
-  stroke: var(--linha);
-  stroke-width: 1;
-  /* O traço some na base (onde emenda com a barra) porque o path fecha
-     em Z ali; o -1px de margin cobre o resto. */
-}
-
-/* O botão flutua dentro do bico. `position:absolute` sobrescreve o
-   `fixed` da regra antiga, que o prendia no canto direito. */
-#nav-inferior #btn-modo-viagem {
-  position: absolute;
-  left: 50%;
-  bottom: 7px;
-  transform: translateX(-50%);
-  pointer-events: auto;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto; /* a nav é flex e esticaria o botão */
-  padding: 0;
-  border-radius: 50%;
-  border: none;
-  background: var(--verde, #2BD576) !important;
-  color: var(--verde-tinta, #06210F) !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  z-index: 2;
-  transition: transform 0.18s ease, background-color 0.2s ease;
-}
-#nav-inferior #btn-modo-viagem.oculto { display: none; }
-#nav-inferior #btn-modo-viagem .ico-svg { width: 21px; height: 21px; }
-#nav-inferior #btn-modo-viagem:active { transform: translateX(-50%) scale(0.92); }
-
-/* Viagem em andamento: pulsa devagar, pra se notar de relance que o
-   rastreio está ligado. */
-#nav-inferior #btn-modo-viagem.viagem-ativa {
-  animation: gota-pulsa 2.2s ease-in-out infinite;
-}
-@keyframes gota-pulsa {
-  0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 0 rgba(43,213,118,0.5); }
-  50%      { box-shadow: 0 4px 14px rgba(0,0,0,0.35), 0 0 0 9px rgba(43,213,118,0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #nav-inferior #btn-modo-viagem.viagem-ativa { animation: none; }
-}
-
-/* Com o Modo Viagem fora da coluna da direita, a bússola e o Modo
-   Clima sobem: sobrou o espaço que ele ocupava. */
-#btn-onde-estou { bottom: 138px !important; }
-#btn-modo-clima { bottom: 78px !important; }
-#dica-mapa { bottom: 200px !important; }
 
 /* No Modo Clima os pontos turísticos somem.
    Nos mesmos zooms em que os chips de temperatura aparecem, os pinos de
@@ -11077,3 +10989,246 @@ button:disabled:active {
    getComputedStyle aqui, mesmo com a regra comprovadamente aplicada).
    `display` no elemento é observável e não disputa com nada. */
 #mapa-rj.modo-clima #pontos-turisticos { pointer-events: none; }
+
+/* ============ BOTÕES FLUTUANTES DO MAPA ============
+   Hierarquia visual em três níveis, em vez de três botões iguais
+   disputando o mesmo canto:
+
+     PRIMÁRIO   Modo Viagem -- FAB centrado, verde neon, com glow.
+                É a ação que o app quer que a pessoa faça: pilotar.
+     SECUNDÁRIO Modos e GPS -- vidro escuro, menores, na lateral.
+     (o Modo Clima virou uma linha DENTRO da folha de Modos)
+
+   Antes eram três botões soltos empilhados à direita, todos do mesmo
+   tamanho e peso -- nada dizia o que era importante, e cada modo novo
+   ia empilhar mais um. */
+
+/* ---- FAB do Modo Viagem ---- */
+#btn-modo-viagem {
+  position: fixed;
+  left: 50%;
+  /* Acima da barra inferior (~64px + área segura). */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 78px);
+  transform: translateX(-50%);
+  z-index: 60;
+  width: 62px;
+  height: 62px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--verde, #2BD576) !important;
+  color: var(--verde-tinta, #06210F) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  /* Glow: duas sombras verdes de raios diferentes + uma escura por
+     baixo pra descolar do mapa. É o que dá o "neon" sem borda. */
+  box-shadow:
+    0 0 0 6px rgba(43, 213, 118, 0.14),
+    0 6px 22px rgba(43, 213, 118, 0.5),
+    0 3px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.25s ease;
+}
+#btn-modo-viagem.oculto { display: none; }
+#btn-modo-viagem .ico-svg { width: 30px; height: 30px; stroke-width: 2.2; }
+#btn-modo-viagem:active { transform: translateX(-50%) scale(0.93); }
+
+/* Viagem em andamento: o glow pulsa devagar, pra se notar de relance
+   que o rastreio está ligado mesmo sem olhar a notificação. */
+#btn-modo-viagem.viagem-ativa { animation: viagem-pulsa 2.2s ease-in-out infinite; }
+@keyframes viagem-pulsa {
+  0%, 100% {
+    box-shadow: 0 0 0 6px rgba(43,213,118,0.14),
+                0 6px 22px rgba(43,213,118,0.5),
+                0 3px 10px rgba(0,0,0,0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(43,213,118,0),
+                0 6px 26px rgba(43,213,118,0.75),
+                0 3px 10px rgba(0,0,0,0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #btn-modo-viagem.viagem-ativa { animation: none; }
+}
+
+/* ---- Botões secundários da lateral (Modos e GPS) ---- */
+#btn-modos {
+  position: fixed;
+  right: calc(env(safe-area-inset-right, 0px) + 16px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 148px);
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(23, 27, 33, 0.9) !important;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff !important;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+#btn-modos .ico-svg { width: 21px; height: 21px; }
+/* Com algum modo ligado o botão fica verde: é o único aviso visível
+   quando a folha está fechada. */
+#btn-modos.com-modo-ativo {
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+}
+#modos-contador {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  pointer-events: none;
+}
+#modos-contador.oculto { display: none; }
+
+/* GPS: o menor dos três -- é o mais secundário. */
+#btn-onde-estou {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 96px) !important;
+  width: 42px !important;
+  height: 42px !important;
+}
+#btn-onde-estou .ico-svg { width: 19px; height: 19px; }
+
+/* A dica do mapa sobe pra não encostar no FAB. */
+#dica-mapa { bottom: 152px !important; }
+
+/* ---- Folha de Modos ---- */
+#modos-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.modo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--linha);
+}
+.modo-item:last-child { border-bottom: none; }
+.modo-icone {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--surf2);
+  color: var(--txt);
+}
+.modo-icone svg { width: 20px; height: 20px; }
+.modo-texto { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.modo-texto strong { font-size: 0.92rem; font-weight: 600; color: var(--txt); }
+.modo-texto small { font-size: 0.76rem; color: var(--fraco); line-height: 1.35; }
+
+/* Modo ainda não implementado: apagado, mas visível -- mostra o que
+   vem por aí sem prometer que já funciona. */
+.modo-item-embreve { opacity: 0.45; }
+.modo-item-embreve .modo-switch { cursor: default; }
+
+/* Switch: input escondido + trilho desenhado, o mesmo padrão dos
+   toggles de Configurações. */
+.modo-switch { flex: 0 0 auto; position: relative; cursor: pointer; }
+.modo-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.modo-switch-trilho {
+  display: block;
+  width: 46px;
+  height: 27px;
+  border-radius: 999px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  position: relative;
+  transition: background-color 0.22s ease, border-color 0.22s ease;
+}
+.modo-switch-trilho::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--fraco);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.22s ease;
+}
+.modo-switch input:checked + .modo-switch-trilho {
+  background: var(--verde);
+  border-color: var(--verde);
+}
+.modo-switch input:checked + .modo-switch-trilho::after {
+  transform: translateX(19px);
+  background: var(--verde-tinta);
+}
+.modo-switch input:disabled + .modo-switch-trilho { opacity: 0.6; }
+/* Foco visível pra quem navega por teclado -- o input é invisível, então
+   o anel precisa aparecer no trilho. */
+.modo-switch input:focus-visible + .modo-switch-trilho {
+  outline: 2px solid var(--verde);
+  outline-offset: 2px;
+}
+
+/* ============ BLOQUEADO x DESBLOQUEADO ============
+   O status tem que ser óbvio de relance, numa lista longa, sem ler
+   texto nenhum. Três sinais somados: opacidade, cor e o cadeado. */
+
+/* ---- Conquistas ---- */
+.conquista-item-bloqueada {
+  opacity: 0.55;
+}
+/* A medalha NÃO herda a opacidade do card: ela já é escura e apagada
+   por conta própria, e somar as duas coisas some com o cadeado. */
+.conquista-item-bloqueada .conquista-medalha { opacity: 1; }
+.conquista-item-bloqueada h3 { color: var(--fraco); font-weight: 600; }
+
+/* Desbloqueada: anel dourado com glow em volta da medalha. É a
+   recompensa visual -- o mesmo dourado da borda dos selos, pra a
+   coleção inteira falar a mesma língua. */
+.conquista-item-livre .conquista-medalha {
+  position: relative;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px rgba(212, 175, 55, 0.85),
+    0 0 14px rgba(212, 175, 55, 0.35);
+}
+
+/* ---- Cadeado sobre miniatura (rotas, e reaproveitável) ---- */
+.cadeado-sobreposto {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* Véu escuro por baixo do ícone: sem ele o cadeado sumia em cima de
+     miniatura clara, mesmo com a dessaturação. */
+  background: rgba(10, 13, 17, 0.45);
+  border-radius: inherit;
+  color: #B9C2CE;
+  pointer-events: none;
+}
+.cadeado-sobreposto svg { width: 40%; height: 40%; max-width: 26px; max-height: 26px; }
