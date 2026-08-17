@@ -104,6 +104,57 @@ async function limpar(entrada, saida, lado = 320) {
     }
   }
 
+  /* Terceira passada: apaga PEDAÇOS SOLTOS minúsculos.
+   *
+   * É o que tira a marca d'água do Gemini -- aquela estrelinha no canto
+   * inferior direito. Ela é clara sobre fundo escuro, então nenhuma das
+   * passadas de cor a alcança: pra elas, é desenho.
+   *
+   * A regra é de TAMANHO, não de posição: o desenho é um bloco
+   * conectado e a marca é uma ilha solta. Medido nas quatro primeiras
+   * artes, cada uma tinha exatamente dois pedaços -- o desenho (100%) e
+   * a estrelinha (0,09% a 0,17%). O corte em 2% passa longe dos dois
+   * lados.
+   *
+   * Melhor que recortar um retângulo do canto: se numa arte futura o
+   * desenho encostar ali, o retângulo comeria parte dele; e se a marca
+   * mudar de lugar, o retângulo não a pega. */
+  const opaco = (p) => data[p * C + 3] > 40;
+  const dono = new Int32Array(L * A).fill(-1);
+  const pecas = [];
+  for (let inicio = 0; inicio < L * A; inicio++) {
+    if (dono[inicio] >= 0 || !opaco(inicio)) continue;
+    const id = pecas.length;
+    const pixels = [];
+    const pilha = [inicio];
+    dono[inicio] = id;
+    while (pilha.length) {
+      const p = pilha.pop();
+      pixels.push(p);
+      const x = p % L;
+      const y = (p / L) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= L || ny >= A) continue;
+        const q = ny * L + nx;
+        if (dono[q] < 0 && opaco(q)) {
+          dono[q] = id;
+          pilha.push(q);
+        }
+      }
+    }
+    pecas.push(pixels);
+  }
+
+  const maior = pecas.reduce((m, p) => Math.max(m, p.length), 0);
+  const sobras = [];
+  for (const pixels of pecas) {
+    if (pixels.length >= maior * 0.02) continue;
+    sobras.push(pixels.length);
+    for (const p of pixels) data[p * C + 3] = 0;
+  }
+
   const buffer = await sharp(data, { raw: { width: L, height: A, channels: C } })
     .png()
     .trim()
@@ -121,6 +172,11 @@ async function limpar(entrada, saida, lado = 320) {
   console.log(
     `${path.basename(saida)}: ${meta.width}x${meta.height}, ${Math.round(buffer.length / 1024)} KB (${pct}% do quadro era fundo${nota})`
   );
+  // Impresso sempre: é assim que se percebe se a regra de tamanho comeu
+  // um pedaço legítimo do desenho numa arte nova.
+  if (sobras.length) {
+    console.log(`   pedaços soltos apagados (marca d'água e afins): ${sobras.join(", ")} px`);
+  }
 }
 
 const [entrada, saida] = process.argv.slice(2);

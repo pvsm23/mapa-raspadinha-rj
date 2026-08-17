@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.12.81";
+const VERSAO_APP = "0.26.08.17.82";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.12.81";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.17.82", itens: ["Todos os 456 pontos turísticos agora têm a história completa — os 92 municípios do estado, um por um.", "Cada ponto foi conferido na internet: nomes errados foram corrigidos, lugares que não existiam saíram da lista e alguns estavam até na cidade errada.", "Vários marcadores estavam no lugar errado dentro da cidade certa e foram para o ponto exato, e mais 39 pontos ganharam marcador no mapa."] },
   { versao: "0.26.08.12.81", itens: ["Pão de Açúcar e Fortaleza de Santa Cruz da Barra ganharam desenho próprio no mapa."] },
   { versao: "0.26.08.12.80", itens: ["Os pontos turísticos aparecem bem antes no mapa, a partir de um zoom bem menor.", "Quando vários pontos ficam colados no mesmo lugar, tocar neles abre uma lista para você escolher qual quer ver."] },
   { versao: "0.26.08.12.79", itens: ["Os pontos turísticos ganharam marcador no mapa em 75 dos 92 municípios — 173 lugares no total, cada um no ponto exato onde fica."] },
@@ -4450,9 +4451,17 @@ function inicializarPanZoomDoMapa() {
   // lugar pra detalhe dentro do município.
   const ESCALA_MAXIMA = 40;
   const LIMIAR_ARRASTO = 5;
-  // Fracao minima do mapa que precisa continuar visivel na tela,
-  // mesmo arrastando para o canto mais longe possivel (nao pode
-  // "se perder" num vazio sem mapa nenhum).
+  /* Fracao minima da TELA que precisa continuar coberta por mapa, mesmo
+   * arrastando pro canto mais longe possivel -- a pessoa nao pode
+   * "se perder" olhando pro vazio sem saber como voltar.
+   *
+   * DA TELA, e nao do mapa: era do mapa antes, e isso tornava as
+   * extremidades inalcancaveis no zoom alto. Exigir "10% do mapa na
+   * tela" fica cada vez mais caro conforme o mapa cresce, porque 10% de
+   * um mapa ampliado 40x e enorme; a conta so fechava ate escala 5.
+   * Dai pra cima o mapa era puxado de volta pro centro e nao dava pra
+   * aproximar de Paraty nem de Itaperuna. Medido em fracao de TELA, o
+   * limite acompanha o zoom e a borda fica sempre alcancavel. */
   const FRACAO_MINIMA_VISIVEL = 0.1;
   // Bem afastado (perto da escala minima) mostra as 8 regioes; a
   // partir daqui, mostra os 92 municipios individualmente.
@@ -4466,17 +4475,30 @@ function inicializarPanZoomDoMapa() {
   let deslocY = 0;
 
   /**
-   * Limita deslocX/deslocY para que pelo menos FRACAO_MINIMA_VISIVEL
-   * do mapa (largura E altura) continue dentro da tela, em qualquer
-   * zoom. Sem isso, dava pra arrastar o mapa inteiro pra fora da
-   * tela e ficar olhando pro vazio sem noção de como voltar.
+   * Limita deslocX/deslocY pra que pelo menos FRACAO_MINIMA_VISIVEL da
+   * TELA continue coberta por mapa, em qualquer zoom.
+   *
+   * O tamanho usado é o do DESENHO, não o do elemento: o <svg> ocupa a
+   * tela inteira, mas o mapa dentro dele é encaixado pelo
+   * preserveAspectRatio e sobra faixa vazia em cima e embaixo. Medindo
+   * pelo elemento, a faixa vazia contaria como "mapa visível" e daria
+   * pra parar numa tela sem nada.
    */
   function limitarDesloc() {
     const rect = viewport.getBoundingClientRect();
-    const mapaLargura = rect.width * escala;
-    const mapaAltura = rect.height * escala;
-    const limiteX = rect.width / 2 + mapaLargura * (0.5 - FRACAO_MINIMA_VISIVEL);
-    const limiteY = rect.height / 2 + mapaAltura * (0.5 - FRACAO_MINIMA_VISIVEL);
+    const caixa = svg.viewBox.baseVal;
+    // Quanto o viewBox encolhe pra caber no elemento (o "meet" do
+    // preserveAspectRatio pega o menor dos dois fatores).
+    const ajuste = caixa && caixa.width ? Math.min(rect.width / caixa.width, rect.height / caixa.height) : 1;
+    const desenhoLargura = (caixa?.width || rect.width) * ajuste * escala;
+    const desenhoAltura = (caixa?.height || rect.height) * ajuste * escala;
+
+    // O mapa vai de (centro + desloc - metade) a (centro + desloc +
+    // metade). Pra sobrar FRACAO da tela coberta dos dois lados, o
+    // deslocamento cabe nesta folga -- que cresce junto com o zoom, e é
+    // isso que mantém a borda alcançável.
+    const limiteX = desenhoLargura / 2 + rect.width * (0.5 - FRACAO_MINIMA_VISIVEL);
+    const limiteY = desenhoAltura / 2 + rect.height * (0.5 - FRACAO_MINIMA_VISIVEL);
     deslocX = Math.max(-limiteX, Math.min(limiteX, deslocX));
     deslocY = Math.max(-limiteY, Math.min(limiteY, deslocY));
   }
@@ -10223,6 +10245,8 @@ function inicializarPanZoomSP() {
   const viewport = document.getElementById("sp-viewport");
   const ESCALA_MAXIMA = 80;
   const LIMIAR_ARRASTO = 5;
+  // Fração mínima da TELA coberta por mapa -- mesma regra do RJ, e pelo
+  // mesmo motivo (ver limitarDesloc em inicializarPanZoomDoMapa).
   const FRACAO_MINIMA_VISIVEL = 0.1;
   // Abaixo disto (mapa afastado) mostra as 15 mesorregiões coloridas
   // com o nome; acima, os municípios cinza individualmente.
@@ -10241,10 +10265,12 @@ function inicializarPanZoomSP() {
 
   function limitarDesloc() {
     const rect = viewport.getBoundingClientRect();
-    const mapaLargura = rect.width * escala;
-    const mapaAltura = rect.height * escala;
-    const limiteX = rect.width / 2 + mapaLargura * (0.5 - FRACAO_MINIMA_VISIVEL);
-    const limiteY = rect.height / 2 + mapaAltura * (0.5 - FRACAO_MINIMA_VISIVEL);
+    const caixa = svgAtual()?.viewBox?.baseVal;
+    const ajuste = caixa && caixa.width ? Math.min(rect.width / caixa.width, rect.height / caixa.height) : 1;
+    const desenhoLargura = (caixa?.width || rect.width) * ajuste * escala;
+    const desenhoAltura = (caixa?.height || rect.height) * ajuste * escala;
+    const limiteX = desenhoLargura / 2 + rect.width * (0.5 - FRACAO_MINIMA_VISIVEL);
+    const limiteY = desenhoAltura / 2 + rect.height * (0.5 - FRACAO_MINIMA_VISIVEL);
     deslocX = Math.max(-limiteX, Math.min(limiteX, deslocX));
     deslocY = Math.max(-limiteY, Math.min(limiteY, deslocY));
   }

@@ -140,32 +140,93 @@ function consultasPara(nomePonto, nomeMunicipio) {
    * Ponto sem resultado fica SEM COORDENADA de propósito: no mapa ele
    * simplesmente não aparece, e isso é melhor que aparecer no lugar
    * errado. */
+  /* IGREJA: o OSM quase nunca guarda "Igreja Matriz de X". Ele guarda
+   * "Paróquia X" -- que é como a diocese nomeia, e quem cadastra copia
+   * de lá. Foi assim que a matriz de Rio Bonito apareceu: buscar
+   * "Igreja Matriz Nossa Senhora da Conceição" devolvia a "Matriz
+   * AUXILIAR", outro prédio; "Paróquia Nossa Senhora da Conceição"
+   * devolveu a igreja certa, a 110 m dali.
+   *
+   * O padroeiro é o que sobra depois de tirar o prefixo -- e é ele que
+   * indexa, não a palavra "matriz". */
+  const padroeiro = nomePonto
+    .replace(/^(Igreja\s+Matriz|Matriz|Igreja|Paróquia|Catedral|Santuário|Capela|Basílica)\s*/i, "")
+    .replace(/^(de|da|do|dos|das)\s+/i, "")
+    .replace(/\s*\([^)]*\)/g, "")
+    .trim();
+  const ehIgreja = /^(Igreja|Matriz|Paróquia|Catedral|Santuário|Capela|Basílica)/i.test(nomePonto);
+
+  /* ESTAÇÃO: o OSM cadastra como "Estação <município>", sem a palavra
+   * "Ferroviária" e sem o "de". Buscar "Estação Ferroviária de Paraíba
+   * do Sul" não achava nada; "Estação Paraíba do Sul" achou de primeira. */
+  const ehEstacao = /^(Estação|Antiga Estação)/i.test(nomePonto);
+
+  /* EQUIPAMENTO COM NOME PRÓPRIO (Teatro Marlice Margarida, Museu
+   * Casimiro de Abreu): às vezes o nó está cadastrado só pelo nome de
+   * batismo, sem o tipo na frente. */
+  const nomeProprio = nomePonto
+    .replace(/^(Museu|Teatro|Centro Cultural|Casa de Cultura|Biblioteca|Palácio|Parque)\s+/i, "")
+    .replace(/^(Municipal|Histórico|Cultural)\s+/i, "")
+    .replace(/\s*\([^)]*\)/g, "")
+    .trim();
+  const temNomeProprio =
+    /^(Museu|Teatro|Centro Cultural|Casa de Cultura|Biblioteca|Palácio|Parque)\s/i.test(nomePonto) &&
+    nomeProprio.length > 6 &&
+    nomeProprio !== semParenteses;
+
+  /* "ESTAÇÃO" É PALAVRA PERIGOSA em português: também é estação de
+   * TRATAMENTO DE ÁGUA e estação de DISTRIBUIÇÃO de energia. Sem filtro,
+   * a consulta "Estação <município>" trouxe:
+   *
+   *   Carmo        -> Parque da Estação de Tratamento
+   *   Piraí        -> Estação de Distribuição de Piraí (subestação)
+   *   Silva Jardim -> Estação de Tratamento de Água de Silva Jardim
+   *   Vassouras    -> um nó chamado "Estacao" na beira da RJ-115
+   *
+   * Todos DENTRO do município certo, então o polígono não salvava. Por
+   * isso estas consultas exigem que o elemento seja ferroviário de
+   * verdade: `tipos` só aceita station/halt/stop. As estações que
+   * sobraram (Japeri, Paracambi, Queimados) são da malha ativa da
+   * SuperVia; as desativadas simplesmente não estão no OSM, e ficar sem
+   * pino é a resposta certa pra elas. */
+  const TIPOS_FERROVIA = new Set(["station", "halt", "stop", "subway_entrance"]);
+
   const tentativas = [
-    `${nomePonto}, ${nomeMunicipio}, RJ`,
-    `${limpo}, ${nomeMunicipio}, RJ`,
+    { q: `${nomePonto}, ${nomeMunicipio}, RJ` },
+    { q: `${limpo}, ${nomeMunicipio}, RJ` },
     // O ponto de acesso vem ANTES do nome sem parênteses: pra feição
     // grande, ele é o que dá a coordenada certa, e o nome sozinho é
     // justamente o que erra de município.
-    dentroDoParenteses && `${dentroDoParenteses}, ${nomeMunicipio}, RJ`,
-    `${semParenteses}, ${nomeMunicipio}, RJ`,
+    dentroDoParenteses && { q: `${dentroDoParenteses}, ${nomeMunicipio}, RJ` },
+    { q: `${semParenteses}, ${nomeMunicipio}, RJ` },
+    ehIgreja && padroeiro && { q: `Paróquia ${padroeiro}, ${nomeMunicipio}, RJ` },
+    ehIgreja && padroeiro && { q: `Igreja ${padroeiro}, ${nomeMunicipio}, RJ` },
+    ehEstacao && { q: `Estação ${nomeMunicipio}`, tipos: TIPOS_FERROVIA },
+    ehEstacao && { q: `Estação Ferroviária de ${nomeMunicipio}`, tipos: TIPOS_FERROVIA },
+    temNomeProprio && { q: `${nomeProprio}, ${nomeMunicipio}, RJ` },
     /* Sem vírgula e com "município-RJ" colado, como se escreve num
      * endereço à mão. O Nominatim quebra a consulta em pedaços de forma
      * diferente quando não há vírgula separando os campos, e nome
      * genérico ("Praça da Matriz") às vezes só casa por esse caminho. */
-    `${limpo} ${nomeMunicipio}-RJ`,
+    { q: `${limpo} ${nomeMunicipio}-RJ` },
   ].filter(Boolean);
 
-  return [...new Set(tentativas)].map((q) => ({ q, limitar: false }));
+  const vistas = new Set();
+  return tentativas.filter((t) => !vistas.has(t.q) && vistas.add(t.q));
 }
 
 async function coordenadaDe(nomePonto, nomeMunicipio, aneis, aoConsultar) {
   const caixa = caixaDe(aneis);
-  for (const { q, limitar } of consultasPara(nomePonto, nomeMunicipio)) {
+  for (const { q, limitar, tipos } of consultasPara(nomePonto, nomeMunicipio)) {
     const resultados = await buscar(q, limitar ? caixa : null);
     await aoConsultar();
     // A caixa é retangular e o município não: o polígono continua sendo
     // a palavra final mesmo nas buscas limitadas.
-    const bom = resultados.find((r) => dentroDoPoligono(Number(r.lon), Number(r.lat), aneis));
+    const bom = resultados.find(
+      (r) =>
+        (!tipos || tipos.has(r.type)) &&
+        dentroDoPoligono(Number(r.lon), Number(r.lat), aneis),
+    );
     if (bom) {
       return {
         lat: Number(Number(bom.lat).toFixed(6)),
@@ -279,6 +340,19 @@ async function coordenadaDe(nomePonto, nomeMunicipio, aneis, aoConsultar) {
     for (const ponto of municipio.destinos || []) {
       if (typeof ponto.lat === "number") {
         pulou++;
+        continue;
+      }
+      /* `_geoFixo` marca ponto já conferido À MÃO. Sem isso, tirar uma
+       * coordenada errada não adianta: a próxima rodada busca de novo,
+       * acha o MESMO resultado errado e recoloca.
+       *
+       * Aconteceu com a "Praia de Itacuruçá" de Mangaratiba: a busca
+       * devolve a Praia do Sino, na restinga da Marambaia, a ~20 km da
+       * vila. Apagar a coordenada resolveu por cinco minutos, até este
+       * script rodar outra vez. */
+      if (ponto._geoFixo) {
+        pulou++;
+        console.log(`  --   ${municipio.nome} / ${ponto.nome}  (conferido à mão, não mexer)`);
         continue;
       }
       const r = await coordenadaDe(ponto.nome, municipio.nome, aneis, respirar);
