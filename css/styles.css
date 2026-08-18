@@ -11701,3 +11701,465 @@ button:disabled:active {
   pointer-events: none;
 }
 .cadeado-sobreposto svg { width: 40%; height: 40%; max-width: 26px; max-height: 26px; }
+
+
+/* ---- Indicar selo ----
+   Município sem arte própria: quem esteve lá manda uma foto candidata.
+   Ver abrirIndicarSelo em js/script.js. */
+#modal-indicar-selo {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop, rgba(15, 18, 22, 0.85));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+#modal-indicar-selo.oculto {
+  display: none;
+}
+
+#indicar-selo-conteudo {
+  position: relative;
+  background: var(--surf);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+#indicar-selo-conteudo h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+#indicar-selo-municipio {
+  margin: 0 0 14px;
+  color: var(--verde);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.indicar-selo-texto {
+  margin: 0 0 16px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--fraco);
+}
+
+/* As regras ficam num bloco separado e com peso visual: são elas que
+   evitam foto que não dá pra usar, e reduzem retrabalho de moderação. */
+.indicar-selo-regras {
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.indicar-selo-regras h3 {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fraco);
+}
+
+.indicar-selo-regras h3 + ul {
+  margin: 0 0 12px;
+}
+
+.indicar-selo-regras ul {
+  padding-left: 18px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--txt);
+}
+
+.indicar-selo-regras li {
+  margin-bottom: 4px;
+}
+
+.indicar-selo-aviso {
+  margin: 4px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+#indicar-selo-previa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+#indicar-selo-previa.oculto {
+  display: none;
+}
+
+#indicar-selo-previa-img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--linha);
+}
+
+#indicar-selo-nome-arquivo {
+  font-size: 0.78rem;
+  color: var(--fraco);
+  word-break: break-all;
+}
+
+#indicar-selo-status {
+  margin: 12px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+#indicar-selo-status.oculto {
+  display: none;
+}
+
+.indicar-selo-status-ok {
+  color: var(--verde);
+}
+
+.indicar-selo-status-erro {
+  color: var(--erro);
+}
+
+.indicar-selo-status-neutro {
+  color: var(--fraco);
+}
+
+#btn-enviar-selo {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#btn-enviar-selo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Não reusa .settings-btn-secundario: aquela classe só é estilizada
+   dentro de #configuracoes-conteudo, então aqui fora sairia sem borda
+   nenhuma. */
+#btn-escolher-foto-selo {
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--verde);
+  border: 1px solid var(--verde);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-escolher-foto-selo:hover {
+  background: var(--verde-esc, rgba(43, 213, 118, 0.12));
+}
+
+/* ---- Selos indicados (painel de Admin) ---- */
+#selos-indicados-filtros {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 12px;
+  flex-wrap: wrap;
+}
+
+.selo-indicado-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.selo-indicado-foto {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--linha);
+  flex: 0 0 auto;
+}
+
+.selo-indicado-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.82rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.selo-indicado-info span {
+  color: var(--fraco);
+  font-size: 0.76rem;
+}
+
+.selo-indicado-info a {
+  color: var(--verde);
+  font-size: 0.76rem;
+}
+
+.selo-indicado-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+#admin-conteudo .selo-indicado-acoes button {
+  padding: 7px 12px !important;
+  font-size: 0.78rem !important;
+  border-radius: 8px !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+/* Os filtros são chips, não botões de painel. Sem esta regra a
+   "#admin-conteudo button" lá de cima os deixa block/100%, e os três
+   viram uma pilha ocupando meia tela. Mesmo cuidado que os outros
+   componentes novos do admin precisam ter. */
+#admin-conteudo #selos-indicados-filtros .chip {
+  display: inline-flex !important;
+  width: auto !important;
+  padding: 7px 14px !important;
+  border-radius: 999px !important;
+  font-size: 0.8rem !important;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha) !important;
+  color: var(--fraco) !important;
+  margin: 0 !important;
+}
+
+#admin-conteudo #selos-indicados-filtros .chip-ativo {
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+  border-color: var(--verde) !important;
+  font-weight: 700 !important;
+}
+
+/* ---- Denunciar conteúdo ---- */
+#modal-denuncia {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop, rgba(15, 18, 22, 0.85));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  padding: 16px;
+}
+
+#modal-denuncia.oculto {
+  display: none;
+}
+
+#denuncia-conteudo {
+  position: relative;
+  background: var(--surf);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: left;
+}
+
+#denuncia-conteudo h2 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+/* O trecho denunciado fica citado: sem ele a pessoa não tem certeza de
+   que está denunciando o conteúdo certo. */
+#denuncia-alvo {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  background: var(--surf2);
+  border-left: 3px solid var(--linha);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--fraco);
+  word-break: break-word;
+}
+
+.denuncia-titulo {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fraco);
+  font-weight: 700;
+}
+
+#denuncia-motivos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.denuncia-motivo {
+  text-align: left;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.denuncia-motivo.ativo {
+  border-color: var(--erro);
+  color: var(--erro);
+  font-weight: 600;
+}
+
+#denuncia-detalhe {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-size: 0.88rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+#denuncia-status {
+  margin: 12px 0 0;
+  font-size: 0.84rem;
+}
+
+#denuncia-status.oculto {
+  display: none;
+}
+
+.denuncia-status-ok { color: var(--verde); }
+.denuncia-status-erro { color: var(--erro); }
+.denuncia-status-neutro { color: var(--fraco); }
+
+#btn-enviar-denuncia {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--erro);
+  color: #2A0A0E;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#btn-enviar-denuncia:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.denuncia-rodape {
+  margin: 14px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+/* ---- Fila de denúncias (Admin) ---- */
+#denuncias-filtros {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 12px;
+  flex-wrap: wrap;
+}
+
+#admin-conteudo #denuncias-filtros .chip {
+  display: inline-flex !important;
+  width: auto !important;
+  padding: 7px 14px !important;
+  border-radius: 999px !important;
+  font-size: 0.8rem !important;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha) !important;
+  color: var(--fraco) !important;
+  margin: 0 !important;
+}
+
+#admin-conteudo #denuncias-filtros .chip-ativo {
+  background: var(--erro) !important;
+  color: #2A0A0E !important;
+  border-color: var(--erro) !important;
+  font-weight: 700 !important;
+}
+
+.denuncia-card {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.denuncia-card-topo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.denuncia-card-topo b {
+  font-size: 0.86rem;
+  color: var(--erro);
+}
+
+.denuncia-card-topo span {
+  font-size: 0.74rem;
+  color: var(--fraco);
+}
+
+.denuncia-card-detalhe {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  background: var(--surf2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--txt);
+  word-break: break-word;
+}
+
+.denuncia-card-acoes {
+  display: flex;
+  gap: 8px;
+}
+
+#admin-conteudo .denuncia-card-acoes button {
+  padding: 8px 14px !important;
+  font-size: 0.8rem !important;
+  border-radius: 8px !important;
+  width: auto !important;
+  margin: 0 !important;
+}

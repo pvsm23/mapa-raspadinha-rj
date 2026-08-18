@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.18.98";
+const VERSAO_APP = "0.26.08.18.99";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.18.98";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.18.99", itens: ["Agora dá pra denunciar post, sugestão e comentário que estiverem fora do lugar — antes não havia como avisar ninguém.", "Quem recebe três denúncias confirmadas tem a conta banida e o conteúdo retirado do ar.", "Quem for banido tem 90 dias para recorrer: o conteúdo fica guardado e volta inteiro se o recurso for aceito.", "Em municípios sem arte própria, quem já confirmou presença por GPS pode indicar uma foto para virar o selo do lugar."] },
   { versao: "0.26.08.18.98", itens: ["Os mapas dos estados que você já baixou agora se atualizam sozinhos quando saem melhorias — antes era preciso apagar e baixar de novo à mão pra ver as novidades.", "Só o mapa que mudou é rebaixado, e sem internet o app continua usando o que já está guardado no aparelho."] },
   { versao: "0.26.08.18.97", itens: ["Correção: os primeiros nomes a aparecer no mapa eram os de nome curto, e não os dos municípios grandes — Ubá vinha antes de Patos de Minas.", "Agora quem aparece primeiro é sempre o município maior, mesmo que o nome dele seja comprido.", "E os nomes não aparecem mais enquanto o mapa está mostrando as regiões, quando as divisas de município nem estão na tela."] },
   { versao: "0.26.08.18.96", itens: ["Nos estados grandes, o nome dos municípios enormes agora aparece bem antes e bem maior — antes ficava minúsculo e só surgia com muito zoom, e você tinha que procurar o nome dentro do próprio município.", "Cada município passou a mostrar o nome no zoom em que ele cabe ali dentro, em vez de todos aparecerem de uma vez.", "Os nomes vão entrando aos poucos conforme você aproxima, deixando o mapa mais limpo de longe."] },
@@ -1413,6 +1414,27 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-social-carregar-mais").addEventListener("click", () => carregarFeedSocial(false));
 
   // ---- Sugestões da Comunidade ----
+  // ---- Denunciar conteúdo ----
+  document.getElementById("btn-fechar-denuncia").addEventListener("click", fecharDenuncia);
+  document.getElementById("modal-denuncia").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-denuncia") fecharDenuncia();
+  });
+  document.getElementById("btn-enviar-denuncia").addEventListener("click", enviarDenuncia);
+
+  // ---- Indicar selo ----
+  document.getElementById("btn-indicar-selo").addEventListener("click", abrirIndicarSelo);
+  configurarSelosIndicadosAdmin();
+  configurarDenunciasAdmin();
+  document.getElementById("btn-fechar-indicar-selo").addEventListener("click", fecharIndicarSelo);
+  document.getElementById("modal-indicar-selo").addEventListener("click", (evento) => {
+    if (evento.target.id === "modal-indicar-selo") fecharIndicarSelo();
+  });
+  document
+    .getElementById("btn-escolher-foto-selo")
+    .addEventListener("click", () => document.getElementById("input-foto-selo").click());
+  document.getElementById("input-foto-selo").addEventListener("change", aoEscolherFotoDoSelo);
+  document.getElementById("btn-enviar-selo").addEventListener("click", enviarIndicacaoDeSelo);
+
   document
     .getElementById("btn-sugestoes-comunidade")
     .addEventListener("click", () => exigirLogin(() => abrirSugestoesComunidade(municipioSelecionadoId)));
@@ -2967,6 +2989,7 @@ const OVERLAYS_APP = [
   "modal-confirmar-viagem", "modal-municipios-pendentes",
   "modal-resumo-viagem", "modal-compartilhar-viagem", "modal-garagem",
   "modal-loja", "modal-checkout-loja",
+  "modal-denuncia", "modal-indicar-selo",
   "menu-sheet",
 ];
 
@@ -3676,6 +3699,8 @@ function abrirAdmin() {
   atualizarCheckboxAnuncioParaMim();
   carregarChavePixNoAdmin();
   carregarProdutosAdmin();
+  carregarSelosIndicados();
+  carregarDenuncias();
 }
 
 /**
@@ -3910,7 +3935,14 @@ function renderizarItemModeracao(container, conta) {
     <div class="moderacao-item">
       <div class="moderacao-item-nome">${escaparHtml(conta.apelido)}</div>
       <div class="moderacao-item-email">${escaparHtml(conta.email)}</div>
-      <div class="moderacao-item-status">Status atual: ${escaparHtml(conta.status)}</div>
+      <div class="moderacao-item-status">Status atual: ${escaparHtml(conta.status)}${
+        conta.denunciasAceitas ? ` · ${conta.denunciasAceitas} denúncia(s) aceita(s)` : ""
+      }</div>
+      ${
+        conta.status === "banido"
+          ? '<button type="button" class="moderacao-restaurar">↩️ Aceitar recurso e restaurar conteúdo</button>'
+          : ""
+      }
       <div class="moderacao-item-acoes">
         <button type="button" data-status="ativo">Ativo</button>
         <button type="button" data-status="suspenso">Suspenso</button>
@@ -3922,6 +3954,26 @@ function renderizarItemModeracao(container, conta) {
       </label>
     </div>
   `;
+  /* Recurso aceito: devolve o conteúdo arquivado pro lugar de origem e
+     reativa a conta, zerando os strikes. Só aparece pra conta banida
+     -- em conta ativa não há o que restaurar. */
+  container.querySelector(".moderacao-restaurar")?.addEventListener("click", async (evento) => {
+    if (!confirm(`Aceitar o recurso de ${conta.apelido}? O conteúdo volta pro app e a conta é reativada.`)) return;
+    const botao = evento.target;
+    botao.disabled = true;
+    botao.textContent = "Restaurando...";
+    try {
+      const r = await window.raspadinhaAuth.restaurarConteudoDaConta(conta.uid);
+      alert(`Conta reativada. ${r.restaurados} item(ns) devolvido(s) ao app.`);
+      buscarContaParaModerar();
+    } catch (erro) {
+      console.error("Falha ao restaurar:", erro);
+      alert(erro?.message || "Não deu pra restaurar agora.");
+      botao.disabled = false;
+      botao.textContent = "↩️ Aceitar recurso e restaurar conteúdo";
+    }
+  });
+
   container.querySelector("#check-anuncio-item-moderacao").checked = !!conta.anunciosAtivados;
   container.querySelector("#check-anuncio-item-moderacao").addEventListener("change", async (evento) => {
     const checkbox = evento.target;
@@ -6402,6 +6454,10 @@ function abrirModalRaspadinha(id, nome) {
   // Decide a sorte JÁ na abertura (não na conclusão): assim dá pra
   // carregar a arte dourada certa desde o início da raspagem, em vez
   // de trocar a imagem depois de já ter raspado a normal.
+  // Enquanto não raspou, não há selo pra substituir -- e a exigência de
+  // presença confirmada nem foi cumprida ainda.
+  document.getElementById("btn-indicar-selo").classList.add("oculto");
+
   const corpo = document.getElementById("scratch-modal-body");
 
   /* Deslogado: mostra o selo COBERTO e um botão de entrar, em vez da
@@ -6601,6 +6657,9 @@ function visualizarSeloRevelado(id, nome) {
 
   const brilhante = !!dados?.brilhante;
   resolverImagemColorida(`assets/img/selos/${id}`, brilhante, id, nome).then((resultado) => {
+    // resultado.arteReal diz se existe arquivo de selo pra este
+    // município. Sem ele, quem esteve aqui pode indicar uma foto.
+    atualizarBotaoIndicarSelo(id, resultado.arteReal);
     corpo.innerHTML = "";
     const wrapper = document.createElement("div");
     wrapper.className =
@@ -7442,6 +7501,26 @@ function criarLinhaComentarioPonto(c, lista, vazio) {
       }
     });
     linha.appendChild(apagar);
+  } else if (meuUid) {
+    /* Quem não é autor denuncia. Antes deste bloco o comentário de
+       ponto turístico era a única superfície sem NENHUMA saída: não
+       dava pra apagar (não é seu) nem pra avisar alguém. */
+    const denunciar = document.createElement("button");
+    denunciar.type = "button";
+    denunciar.className = "ponto-comentario-apagar";
+    denunciar.setAttribute("aria-label", "Denunciar comentário");
+    denunciar.title = "Denunciar";
+    denunciar.textContent = "🚩";
+    denunciar.addEventListener("click", () =>
+      abrirDenuncia({
+        tipo: "comentario-ponto",
+        referencia: `pontosTuristicos/${pontoAbertoId}/comentarios/${c.id}`,
+        resumo: c.texto,
+        autor: c.autorApelido,
+        autorUid: c.autorUid,
+      })
+    );
+    linha.appendChild(denunciar);
   }
 
   bloco.appendChild(linha);
@@ -13228,7 +13307,7 @@ function renderizarCardPost(post) {
         ${nomeMunicipio ? `<button type="button" class="post-card-municipio">📍 ${escaparHtml(nomeMunicipio)}</button>` : ""}
       </div>
       ${tempo ? `<span class="post-tempo">${tempo}</span>` : ""}
-      ${souAutor ? '<button type="button" class="post-card-excluir" aria-label="Opções">⋯</button>' : ""}
+      ${meuUid ? '<button type="button" class="post-card-opcoes" aria-label="Opções">⋯</button>' : ""}
     </div>
     ${temFoto ? MOLDURA_FOTO_POST : ""}
     <div class="post-card-acoes">
@@ -13272,7 +13351,12 @@ function renderizarCardPost(post) {
   card.querySelector(".post-card-comentar").addEventListener("click", () => aoAbrirComentarios(post, card));
   card.querySelector(".post-ver-comentarios")?.addEventListener("click", () => aoAbrirComentarios(post, card));
   card.querySelector(".post-card-compartilhar").addEventListener("click", () => compartilharPost(post.id));
-  card.querySelector(".post-card-excluir")?.addEventListener("click", () => aoExcluirPost(post, card));
+  /* O ⋯ agora existe pra todo mundo: autor apaga, os demais
+     denunciam. Antes ele só aparecia pro autor, e quem visse conteúdo
+     impróprio não tinha o que fazer -- nem havia pra quem avisar. */
+  card
+    .querySelector(".post-card-opcoes")
+    ?.addEventListener("click", () => abrirOpcoesDoPost(post, card, souAutor));
   card.querySelectorAll(".post-mencao-clicavel").forEach((mencao) => {
     mencao.addEventListener("click", () => {
       fecharPainelSocial();
@@ -13458,6 +13542,104 @@ async function enviarComentario(post, card, input) {
   }
 }
 
+
+/* ============================================================
+   Denúncia de conteúdo
+
+   Até a 0.26.08.18.98 não existia NENHUM caminho pra avisar sobre
+   conteúdo impróprio, em nenhuma das quatro superfícies onde qualquer
+   pessoa publica (post, comentário de post, comentário de ponto
+   turístico e sugestão). Quem visse algo não tinha o que fazer, e o
+   dono só descobriria por acaso -- e nem conseguiria apagar, porque a
+   regra do Firestore só aceitava o autor.
+   ============================================================ */
+
+const ROTULO_MOTIVO_DENUNCIA = {
+  "conteudo-sexual": "Conteúdo sexual ou nudez",
+  violencia: "Violência ou conteúdo chocante",
+  "discurso-de-odio": "Discurso de ódio ou ofensa",
+  "spam-propaganda": "Spam ou propaganda",
+  "informacao-falsa": "Informação falsa",
+  outro: "Outro motivo",
+};
+
+let denunciaEmCurso = null;
+
+/** O ⋯ do post: apagar (autor) ou denunciar (os demais). */
+function abrirOpcoesDoPost(post, card, souAutor) {
+  if (souAutor) {
+    aoExcluirPost(post, card);
+    return;
+  }
+  abrirDenuncia({
+    tipo: "post",
+    referencia: `posts/${post.id}`,
+    resumo: post.texto || "Post sem legenda",
+    autor: post.autorApelido,
+    autorUid: post.autorUid,
+  });
+}
+
+function abrirDenuncia({ tipo, referencia, resumo, autor, autorUid }) {
+  if (!window.raspadinhaAuth?.usuarioAtual) {
+    abrirTelaLogin();
+    return;
+  }
+  denunciaEmCurso = { tipo, referencia, autorUid };
+  document.getElementById("denuncia-alvo").textContent =
+    `${autor ? autor + ": " : ""}${String(resumo || "").slice(0, 120)}`;
+  document.getElementById("denuncia-detalhe").value = "";
+  document.getElementById("denuncia-status").className = "oculto";
+  document.getElementById("btn-enviar-denuncia").disabled = true;
+
+  const lista = document.getElementById("denuncia-motivos");
+  lista.innerHTML = "";
+  for (const [chave, rotulo] of Object.entries(ROTULO_MOTIVO_DENUNCIA)) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "denuncia-motivo";
+    b.dataset.motivo = chave;
+    b.textContent = rotulo;
+    b.addEventListener("click", () => {
+      lista.querySelectorAll(".denuncia-motivo").forEach((x) => x.classList.remove("ativo"));
+      b.classList.add("ativo");
+      denunciaEmCurso.motivo = chave;
+      document.getElementById("btn-enviar-denuncia").disabled = false;
+    });
+    lista.appendChild(b);
+  }
+  document.getElementById("modal-denuncia").classList.remove("oculto");
+}
+
+function fecharDenuncia() {
+  document.getElementById("modal-denuncia").classList.add("oculto");
+  denunciaEmCurso = null;
+}
+
+async function enviarDenuncia() {
+  if (!denunciaEmCurso?.motivo) return;
+  const botao = document.getElementById("btn-enviar-denuncia");
+  const status = document.getElementById("denuncia-status");
+  botao.disabled = true;
+  status.className = "denuncia-status-neutro";
+  status.textContent = "Enviando...";
+
+  try {
+    await window.raspadinhaAuth.denunciar({
+      ...denunciaEmCurso,
+      detalhe: document.getElementById("denuncia-detalhe").value,
+    });
+    status.className = "denuncia-status-ok";
+    status.textContent = "Denúncia enviada. Obrigado — vamos analisar.";
+    setTimeout(fecharDenuncia, 2000);
+  } catch (erro) {
+    console.error("Falha ao denunciar:", erro);
+    status.className = "denuncia-status-erro";
+    status.textContent = erro.message || "Não deu pra enviar agora.";
+    botao.disabled = false;
+  }
+}
+
 async function aoExcluirPost(post, card) {
   if (!confirm("Excluir esse post? Essa ação não pode ser desfeita.")) return;
   try {
@@ -13496,6 +13678,394 @@ function abrirSugestoesPeloAtalho() {
   if (!municipioId) return;
   fecharPainelSocial();
   abrirSugestoesComunidade(municipioId);
+}
+
+
+/* ============================================================
+   Indicar selo
+
+   Município sem arte própria mostra um selo desenhado na hora
+   (gerarSeloPlaceholder). Quem esteve lá pode mandar uma foto candidata
+   a virar o selo de verdade.
+
+   A foto NÃO vira selo sozinha, e isso é de propósito: a arte é um
+   arquivo do repositório (assets/img/selos/<id>.webp) que vai dentro do
+   APK. O app coleta candidatas; publicar continua passando pelo Paulo,
+   pelo tools/processar-selos.js e por um commit.
+   ============================================================ */
+
+let municipioIndicandoSelo = null;
+let fotoEscolhidaParaSelo = null;
+
+
+/* ---- Fila de denúncias (Admin) ----
+   Três saídas por denúncia: apagar o conteúdo, descartar (não era nada)
+   ou ir moderar a conta do autor. Apagar e descartar são coisas
+   diferentes de propósito -- descartar sem apagar registra que você
+   olhou e decidiu manter, o que evita reanalisar a mesma coisa. */
+let statusDenunciasAdmin = "aberta";
+
+function configurarDenunciasAdmin() {
+  const filtros = document.getElementById("denuncias-filtros");
+  if (!filtros) return;
+  filtros.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      filtros.querySelectorAll(".chip").forEach((c) => c.classList.remove("chip-ativo"));
+      chip.classList.add("chip-ativo");
+      statusDenunciasAdmin = chip.dataset.status;
+      carregarDenuncias();
+    });
+  });
+}
+
+async function carregarDenuncias() {
+  const lista = document.getElementById("denuncias-lista");
+  if (!lista) return;
+  lista.innerHTML = '<div class="spinner"></div>';
+
+  let itens;
+  try {
+    itens = await window.raspadinhaAuth.listarDenuncias(statusDenunciasAdmin);
+  } catch (erro) {
+    console.error("Falha ao listar denúncias:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar agora.</p>";
+    return;
+  }
+
+  if (!itens.length) {
+    lista.innerHTML = '<p class="admin-dica">Nenhuma denúncia aqui.</p>';
+    return;
+  }
+
+  lista.innerHTML = "";
+  for (const item of itens) {
+    const cartao = document.createElement("div");
+    cartao.className = "denuncia-card";
+
+    const topo = document.createElement("div");
+    topo.className = "denuncia-card-topo";
+    const motivo = document.createElement("b");
+    motivo.textContent = ROTULO_MOTIVO_DENUNCIA[item.motivo] || item.motivo;
+    const onde = document.createElement("span");
+    onde.textContent = descreverReferencia(item.referencia);
+    topo.append(motivo, onde);
+    cartao.appendChild(topo);
+
+    if (item.detalhe) {
+      const det = document.createElement("p");
+      det.className = "denuncia-card-detalhe";
+      det.textContent = item.detalhe;
+      cartao.appendChild(det);
+    }
+
+    const acoes = document.createElement("div");
+    acoes.className = "denuncia-card-acoes";
+
+    const botao = (rotulo, classe, aoClicar) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = classe;
+      b.textContent = rotulo;
+      b.addEventListener("click", async () => {
+        acoes.querySelectorAll("button").forEach((x) => (x.disabled = true));
+        try {
+          await aoClicar();
+          cartao.remove();
+        } catch (erro) {
+          console.error("Falha ao tratar denúncia:", erro);
+          alert(erro?.message || "Não deu pra concluir.");
+          acoes.querySelectorAll("button").forEach((x) => (x.disabled = false));
+        }
+      });
+      return b;
+    };
+
+    if (statusDenunciasAdmin === "aberta") {
+      acoes.appendChild(
+        botao("Aceitar e apagar", "settings-btn-perigo", async () => {
+          if (!confirm("Apagar o conteúdo denunciado? Não dá pra desfazer.")) throw new Error("");
+          /* Aceitar não é só apagar: soma um strike pro autor e, no
+             terceiro, bane a conta e varre tudo que ela publicou. */
+          const r = await window.raspadinhaAuth.aceitarDenuncia(item);
+          if (r.banido) {
+            const q = r.apagados || {};
+            alert(
+              `Conta banida (${r.strikes} denúncias aceitas).
+
+` +
+                `Apagados: ${q.posts || 0} posts, ${q.comentarios || 0} comentários, ` +
+                `${q.respostas || 0} respostas e ${q.sugestoes || 0} sugestões.`
+            );
+          } else if (r.strikes) {
+            alert(`Conteúdo apagado. Esta conta tem ${r.strikes} de ${window.raspadinhaAuth.DENUNCIAS_PARA_BANIR} denúncias aceitas.`);
+          }
+        })
+      );
+      acoes.appendChild(
+        botao("Descartar", "status-ativa", () =>
+          window.raspadinhaAuth.resolverDenuncia(item.id, "descartada")
+        )
+      );
+    } else {
+      acoes.appendChild(
+        botao("Reabrir", "status-ativa", () =>
+          window.raspadinhaAuth.resolverDenuncia(item.id, "aberta")
+        )
+      );
+    }
+
+    cartao.appendChild(acoes);
+    lista.appendChild(cartao);
+  }
+}
+
+/** "posts/abc" -> "Post"; "sugestoesComunidade/33.../itens/x" -> "Sugestão". */
+function descreverReferencia(referencia) {
+  const caminho = String(referencia || "");
+  if (caminho.startsWith("posts/") && caminho.includes("/comentarios/")) return "Comentário em post";
+  if (caminho.startsWith("posts/")) return "Post";
+  if (caminho.startsWith("sugestoesComunidade/") && caminho.includes("/comentarios/"))
+    return "Comentário em sugestão";
+  if (caminho.startsWith("sugestoesComunidade/")) return "Sugestão";
+  if (caminho.startsWith("pontosTuristicos/")) return "Comentário em ponto turístico";
+  return caminho;
+}
+/* ---- Revisão das indicações de selo (Admin) ----
+   Aprovar aqui NÃO publica o selo: a arte é arquivo do repositório
+   (assets/img/selos/<id>.webp), que vai dentro do APK. O fluxo é
+   aprovar, baixar a foto, passar no tools/processar-selos.js e
+   commitar. A tela existe pra decidir e pra achar a foto, não pra
+   publicar. */
+let statusSelosAdmin = "pendente";
+
+function configurarSelosIndicadosAdmin() {
+  const filtros = document.getElementById("selos-indicados-filtros");
+  if (!filtros) return;
+  filtros.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      filtros.querySelectorAll(".chip").forEach((c) => c.classList.remove("chip-ativo"));
+      chip.classList.add("chip-ativo");
+      statusSelosAdmin = chip.dataset.status;
+      carregarSelosIndicados();
+    });
+  });
+}
+
+async function carregarSelosIndicados() {
+  const lista = document.getElementById("selos-indicados-lista");
+  if (!lista) return;
+  lista.innerHTML = '<div class="spinner"></div>';
+
+  let itens;
+  try {
+    itens = await window.raspadinhaAuth.listarSelosIndicados(statusSelosAdmin);
+  } catch (erro) {
+    console.error("Falha ao listar selos indicados:", erro);
+    lista.innerHTML = "<p>Não foi possível carregar agora.</p>";
+    return;
+  }
+
+  if (!itens.length) {
+    lista.innerHTML = `<p class="admin-dica">Nenhuma indicação ${
+      statusSelosAdmin === "pendente" ? "pendente" : statusSelosAdmin + "a"
+    }.</p>`;
+    return;
+  }
+
+  lista.innerHTML = "";
+  for (const item of itens) {
+    const cartao = document.createElement("div");
+    cartao.className = "selo-indicado-card";
+
+    /* Só http(s) entra, tanto na miniatura quanto no link abaixo: o
+       fotoUrl vem de um documento que a PRÓPRIA pessoa grava, então é
+       entrada externa. Um "javascript:..." gravado ali abriria no
+       painel do dono, que é o pior lugar possível.
+       Usa o parser de URL do navegador em vez de expressão regular --
+       ele conhece as regras de esquema melhor que qualquer regex que eu
+       escrevesse, e não tem escape pra errar. */
+    const linkValido = (() => {
+      try {
+        return ["http:", "https:"].includes(new URL(item.fotoUrl).protocol);
+      } catch {
+        return false;
+      }
+    })();
+
+    const foto = document.createElement("img");
+    foto.className = "selo-indicado-foto";
+    if (linkValido) foto.src = item.fotoUrl;
+    else foto.classList.add("oculto");
+    foto.alt = "";
+    foto.loading = "lazy";
+    // Foto que não abre não pode virar um buraco no cartão: some e o
+    // link "Abrir foto" continua valendo pra conferir na mão.
+    foto.addEventListener("error", () => foto.classList.add("oculto"));
+
+    const info = document.createElement("div");
+    info.className = "selo-indicado-info";
+    const nome = idParaNomeMunicipio[item.municipioId] || item.municipioId;
+
+    const titulo = document.createElement("b");
+    titulo.textContent = nome;
+    const quem = document.createElement("span");
+    quem.textContent = item.apelido || "sem apelido";
+    info.append(titulo, quem);
+
+    /* Montado por DOM, e não por innerHTML: `fotoUrl` vem de um
+       documento que a PRÓPRIA pessoa grava, então é entrada externa.
+       O escaparHtml daqui não escapa aspas (usa textContent), o que o
+       torna impróprio pra atributo. E o esquema é checado porque um
+       "javascript:..." gravado ali executaria neste painel, que é
+       justamente o painel do dono. */
+    if (/^https?:\/\//i.test(item.fotoUrl || "")) {
+      const link = document.createElement("a");
+      link.href = item.fotoUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "Abrir foto";
+      info.appendChild(link);
+    } else {
+      const aviso = document.createElement("span");
+      aviso.textContent = "link de foto inválido";
+      info.appendChild(aviso);
+    }
+    const acoes = document.createElement("div");
+    acoes.className = "selo-indicado-acoes";
+    const decidir = (status, rotulo, classe) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = classe;
+      b.textContent = rotulo;
+      b.addEventListener("click", async () => {
+        b.disabled = true;
+        try {
+          await window.raspadinhaAuth.decidirSeloIndicado(item.municipioId, item.id, status);
+          cartao.remove();
+        } catch (erro) {
+          console.error("Falha ao decidir:", erro);
+          b.disabled = false;
+        }
+      });
+      return b;
+    };
+    if (statusSelosAdmin !== "aprovado") acoes.appendChild(decidir("aprovado", "Aprovar", "status-ativa"));
+    if (statusSelosAdmin !== "recusado") acoes.appendChild(decidir("recusado", "Recusar", "settings-btn-perigo"));
+
+    cartao.append(foto, info, acoes);
+    lista.appendChild(cartao);
+  }
+}
+
+/**
+ * Mostra o botão só onde ele faz sentido: município SEM arte própria e
+ * com presença confirmada por GPS.
+ *
+ * A exigência de presença é do Paulo, e é boa: quem indica a foto de um
+ * lugar deveria ter estado nele. `arteReal` vem do resolverImagemColorida
+ * -- o mesmo caminho que decide se desenha o selo na hora.
+ */
+function atualizarBotaoIndicarSelo(id, temArteReal) {
+  const botao = document.getElementById("btn-indicar-selo");
+  if (!botao) return;
+  const podeIndicar =
+    !temArteReal && estaVerificado(id) && !!window.raspadinhaAuth?.usuarioAtual;
+  botao.classList.toggle("oculto", !podeIndicar);
+}
+
+async function abrirIndicarSelo() {
+  const id = municipioSelecionadoId;
+  if (!id) return;
+  municipioIndicandoSelo = id;
+  fotoEscolhidaParaSelo = null;
+
+  document.getElementById("indicar-selo-municipio").textContent =
+    idParaNomeMunicipio[id] || "";
+  document.getElementById("indicar-selo-previa").classList.add("oculto");
+  document.getElementById("btn-enviar-selo").disabled = true;
+  document.getElementById("input-foto-selo").value = "";
+  definirStatusIndicacao("", "");
+  document.getElementById("modal-indicar-selo").classList.remove("oculto");
+
+  // Já mandou uma antes? Avisa que enviar de novo substitui.
+  try {
+    const anterior = await window.raspadinhaAuth.buscarMinhaIndicacao(id);
+    if (anterior) {
+      definirStatusIndicacao(
+        anterior.status === "aprovado"
+          ? "Sua indicação para este município foi aprovada. Obrigado!"
+          : "Você já indicou uma foto aqui. Enviar outra substitui a anterior.",
+        "neutro"
+      );
+    }
+  } catch (erro) {
+    console.warn("Não deu pra checar indicação anterior:", erro);
+  }
+}
+
+function fecharIndicarSelo() {
+  document.getElementById("modal-indicar-selo").classList.add("oculto");
+  fotoEscolhidaParaSelo = null;
+}
+
+function definirStatusIndicacao(texto, tipo) {
+  const alvo = document.getElementById("indicar-selo-status");
+  alvo.textContent = texto;
+  alvo.className = texto ? `indicar-selo-status-${tipo || "neutro"}` : "oculto";
+}
+
+/** Mostra a prévia do que a pessoa escolheu, antes de enviar. */
+function aoEscolherFotoDoSelo(evento) {
+  const arquivo = evento.target.files?.[0];
+  if (!arquivo) return;
+
+  /* Teto de 8 MB: a foto viaja em base64 pro Apps Script (ver
+     subirFotoPostParaDrive), o que já infla ~33%, e acima disso o
+     upload costuma estourar o tempo em rede de celular. */
+  const LIMITE_MB = 8;
+  if (arquivo.size > LIMITE_MB * 1024 * 1024) {
+    definirStatusIndicacao(
+      `Essa foto tem ${(arquivo.size / 1048576).toFixed(1)} MB. O limite é ${LIMITE_MB} MB.`,
+      "erro"
+    );
+    document.getElementById("btn-enviar-selo").disabled = true;
+    return;
+  }
+
+  fotoEscolhidaParaSelo = arquivo;
+  const previa = document.getElementById("indicar-selo-previa");
+  const img = document.getElementById("indicar-selo-previa-img");
+  // revoga o anterior pra não vazar object URL a cada troca de foto
+  if (img.dataset.blob) URL.revokeObjectURL(img.src);
+  img.src = URL.createObjectURL(arquivo);
+  img.dataset.blob = "1";
+  document.getElementById("indicar-selo-nome-arquivo").textContent = arquivo.name;
+  previa.classList.remove("oculto");
+  document.getElementById("btn-enviar-selo").disabled = false;
+  definirStatusIndicacao("", "");
+}
+
+async function enviarIndicacaoDeSelo() {
+  if (!fotoEscolhidaParaSelo || !municipioIndicandoSelo) return;
+  const botao = document.getElementById("btn-enviar-selo");
+  botao.disabled = true;
+  definirStatusIndicacao("Enviando sua foto...", "neutro");
+
+  try {
+    await window.raspadinhaAuth.indicarSelo({
+      municipioId: municipioIndicandoSelo,
+      arquivoFoto: fotoEscolhidaParaSelo,
+    });
+    definirStatusIndicacao(
+      "Indicação enviada! Vamos avaliar e, se entrar, ela vira o selo deste município.",
+      "ok"
+    );
+    setTimeout(fecharIndicarSelo, 2200);
+  } catch (erro) {
+    console.error("Falha ao indicar selo:", erro);
+    definirStatusIndicacao(erro.message || "Não deu pra enviar agora.", "erro");
+    botao.disabled = false;
+  }
 }
 
 function abrirSugestoesComunidade(municipioId) {
@@ -13919,12 +14489,25 @@ function renderizarCardSugestao(sugestao) {
     <div class="sugestao-card-rodape">
       <button type="button" class="sugestao-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span class="sugestao-card-curtidas">${curtidoPor.length}</span></button>
       <button type="button" class="sugestao-card-comentar">${ICONE_COMENTAR} <span class="sugestao-card-num-comentarios">${sugestao.numComentarios || 0}</span></button>
-      ${souAutor ? '<button type="button" class="sugestao-card-excluir" aria-label="Excluir sugestão">✕</button>' : ""}
+      ${souAutor ? '<button type="button" class="sugestao-card-excluir" aria-label="Excluir sugestão">✕</button>' : (meuUid ? '<button type="button" class="sugestao-card-denunciar" aria-label="Denunciar sugestão" title="Denunciar">🚩</button>' : "")}
     </div>
   `;
 
   const curtirBtn = card.querySelector(".sugestao-card-curtir");
   const comentarBtn = card.querySelector(".sugestao-card-comentar");
+  card.querySelector(".sugestao-card-denunciar")?.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    abrirDenuncia({
+      tipo: "sugestao",
+      referencia: `sugestoesComunidade/${municipioAtualSugestoes}/itens/${sugestao.id}`,
+      resumo: sugestao.titulo,
+      autor: sugestao.anonimo ? "Anônimo" : sugestao.autorApelido,
+      // O autorUid vai mesmo em sugestão anônima: anônimo é só como o
+      // app EXIBE, a responsabilidade continua sendo de quem postou.
+      autorUid: sugestao.autorUid,
+    });
+  });
+
   const excluirBtn = card.querySelector(".sugestao-card-excluir");
 
   // stopPropagation nos botões do rodapé: sem isso, curtir também

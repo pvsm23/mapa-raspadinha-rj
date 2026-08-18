@@ -264,6 +264,27 @@ window.raspadinhaAuth = {
   comentarSugestao: async () => {},
   listarComentariosSugestao: async () => [],
   excluirSugestao: async () => {},
+  // ---- Indicação de selo ----
+  indicarSelo: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
+  buscarMinhaIndicacao: async () => null,
+  // ---- Denúncias ----
+  denunciar: async () => {
+    throw new Error(AVISO_NAO_CONFIGURADO);
+  },
+  listarDenuncias: async () => [],
+  aceitarDenuncia: async () => ({ banido: false, strikes: null }),
+  apagarConteudoDaConta: async () => ({}),
+  arquivarConteudoDaConta: async () => ({}),
+  restaurarConteudoDaConta: async () => ({ restaurados: 0 }),
+  DIAS_DE_ARQUIVO: 90,
+  DENUNCIAS_PARA_BANIR: 3,
+  resolverDenuncia: async () => {},
+  apagarConteudoDenunciado: async () => {},
+  MOTIVOS_DENUNCIA: [],
+  listarSelosIndicados: async () => [],
+  decidirSeloIndicado: async () => {},
   // ---- Comentários nos pontos turísticos ----
   comentarPonto: async () => {},
   listarComentariosPonto: async () => [],
@@ -1298,6 +1319,7 @@ if (CONFIGURADO) {
    * alguém que já tinha cadastrado antes abrir a Garagem de novo,
    * migra pra dentro da subcoleção `motos` automaticamente.
    */
+
   async function migrarGaragemAntigaSeNecessario(uid) {
     const refPai = doc(db, "garagem", uid);
     const snapPai = await getDoc(refPai);
@@ -1818,6 +1840,370 @@ if (CONFIGURADO) {
     if (fotoDriveId) enviarParaPlanilha({ tipo: "excluir-foto-post", fotoId: fotoDriveId });
   };
 
+
+  /* ---- Denúncias ----
+     Até aqui não havia NENHUM caminho pra avisar sobre conteúdo
+     impróprio: quem visse algo não tinha o que fazer, e o Paulo só
+     descobriria vendo por acaso. Pior, a regra de delete só aceitava o
+     autor -- nem ele conseguia apagar (corrigido junto, com ehDono()).
+
+     O id do documento junta tipo + conteúdo + quem denunciou, o que dá
+     "uma denúncia por pessoa por conteúdo" de graça: denunciar duas
+     vezes sobrescreve a mesma linha em vez de inflar a fila. */
+  const MOTIVOS_DENUNCIA = [
+    "conteudo-sexual",
+    "violencia",
+    "discurso-de-odio",
+    "spam-propaganda",
+    "informacao-falsa",
+    "outro",
+  ];
+
+  async function denunciar({ tipo, referencia, motivo, detalhe, autorUid }) {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!tipo || !referencia) throw new Error("Conteúdo não identificado.");
+    if (!MOTIVOS_DENUNCIA.includes(motivo)) throw new Error("Escolha um motivo.");
+
+    const id = `${tipo}_${referencia}_${usuario.uid}`.replace(/\//g, "-");
+    await comTimeout(
+      setDoc(doc(db, "denuncias", id), {
+        tipo,
+        referencia,
+        motivo,
+        // De quem é o conteúdo. Sem isto não há em quem contar os
+        // strikes do banimento automático (ver aceitarDenuncia).
+        autorUid: autorUid || "",
+        // Corta no tamanho que a regra do Firestore aceita, pra a
+        // gravação não ser recusada por causa de um texto comprido.
+        detalhe: String(detalhe || "").slice(0, 500),
+        denuncianteUid: usuario.uid,
+        status: "aberta",
+        criadoEm: serverTimestamp(),
+      }),
+      15000,
+      "A conexão está lenta demais. Tente denunciar de novo."
+    );
+  }
+
+  /** Fila de denúncias (só o dono lê -- ver a regra do Firestore). */
+  async function listarDenuncias(status = "aberta") {
+    const consulta = query(
+      collection(db, "denuncias"),
+      where("status", "==", status),
+      limit(100)
+    );
+    const resultado = await getDocs(consulta);
+    return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  }
+
+  async function resolverDenuncia(denunciaId, status) {
+    return updateDoc(doc(db, "denuncias", denunciaId), {
+      status,
+      resolvidoEm: serverTimestamp(),
+    });
+  }
+
+  /**
+   * Apaga o conteúdo denunciado, seja ele qual for.
+   *
+   * `referencia` guarda o CAMINHO do documento no Firestore (ex.
+   * "posts/abc" ou "sugestoesComunidade/3304557/itens/xyz"), então uma
+   * função só cobre as quatro superfícies onde alguém publica. Sem
+   * isso seria um ramo por tipo, e o próximo tipo de conteúdo nasceria
+   * fora da moderação.
+   */
+  async function apagarConteudoDenunciado(referencia) {
+    const partes = String(referencia).split("/").filter(Boolean);
+    if (partes.length < 2 || partes.length % 2 !== 0) {
+      throw new Error("Referência de conteúdo inválida.");
+    }
+    return deleteDoc(doc(db, ...partes));
+  }
+
+  /* ---- Três denúncias aceitas = banimento ----
+     Contador por conta. Cada denúncia que o dono ACEITA (apagou o
+     conteúdo) soma um; ao chegar em DENUNCIAS_PARA_BANIR a conta é
+     banida e todo o conteúdo dela some junto.
+
+     O contador vive no doc da conta, e não somando denúncias na hora:
+     denúncia resolvida some da fila, e contar depois daria número
+     errado. */
+  const DENUNCIAS_PARA_BANIR = 3;
+
+
+  /* ---- Arquivo de banimento (90 dias) ----
+     Banir por três strikes é automático, e automático erra. Então o
+     conteúdo não é destruído na hora: ele sai do app e vai pra
+     arquivoBanimento/{uid}/itens, onde fica 90 dias. Recurso aceito
+     devolve tudo pro lugar; passado o prazo, um gatilho diário no Apps
+     Script apaga de vez (ver tools/apps-script-limpar-arquivo.gs).
+
+     As FOTOS não são apagadas, mas TÊM o acesso público revogado na
+     hora (ação "acesso-foto-post"). O arquivo continua no Drive com o
+     mesmo id, então o recurso religa o mesmo link -- e enquanto isso
+     ninguém alcança a imagem por um endereço que já tivesse. */
+  const DIAS_DE_ARQUIVO = 90;
+
+  /** Guarda um documento no arquivo, com o caminho de origem. */
+  async function arquivarDocumento(uid, ref, dados) {
+    await setDoc(doc(collection(db, "arquivoBanimento", uid, "itens")), {
+      caminhoOriginal: ref.path,
+      dados,
+      arquivadoEm: serverTimestamp(),
+    });
+  }
+
+  /** Tira a foto de circulação sem destruí-la (ver o comentário acima). */
+  function revogarAcessoDaFoto(fotoId) {
+    if (fotoId) enviarParaPlanilha({ tipo: "acesso-foto-post", fotoId, publica: false });
+  }
+
+  /**
+   * Arquiva e remove do app TODO o conteúdo público de uma conta.
+   *
+   * Os `collectionGroup` cobrem as quatro superfícies de uma vez:
+   * "comentarios" pega comentário de post, de sugestão e de ponto
+   * turístico; "itens" pega sugestão e indicação de selo.
+   */
+  async function arquivarConteudoDaConta(uid) {
+    const contagem = { posts: 0, comentarios: 0, respostas: 0, sugestoes: 0 };
+
+    const guardarEApagar = async (d, contador, campoFoto) => {
+      const dados = d.data();
+      await arquivarDocumento(uid, d.ref, dados);
+      await deleteDoc(d.ref);
+      if (campoFoto && dados[campoFoto]) revogarAcessoDaFoto(dados[campoFoto]);
+      contagem[contador]++;
+    };
+
+    const posts = await getDocs(query(collection(db, "posts"), where("autorUid", "==", uid)));
+    await Promise.all(posts.docs.map((d) => guardarEApagar(d, "posts", "fotoDriveId")));
+
+    const comentarios = await getDocs(
+      query(collectionGroup(db, "comentarios"), where("autorUid", "==", uid))
+    );
+    await Promise.all(comentarios.docs.map((d) => guardarEApagar(d, "comentarios")));
+
+    const respostas = await getDocs(
+      query(collectionGroup(db, "respostas"), where("autorUid", "==", uid))
+    );
+    await Promise.all(respostas.docs.map((d) => guardarEApagar(d, "respostas")));
+
+    const itens = await getDocs(query(collectionGroup(db, "itens"), where("autorUid", "==", uid)));
+    await Promise.all(itens.docs.map((d) => guardarEApagar(d, "sugestoes", "fotoDriveId")));
+
+    return contagem;
+  }
+
+  /**
+   * Recurso aceito: devolve o conteúdo pro lugar de origem e reativa a
+   * conta.
+   *
+   * `caminhoOriginal` guarda o caminho completo do documento, então a
+   * volta é exata -- o comentário renasce no mesmo post, a sugestão no
+   * mesmo município. Sem isso não daria pra reconstruir onde cada coisa
+   * morava.
+   */
+  async function restaurarConteudoDaConta(uid) {
+    const arquivados = await getDocs(collection(db, "arquivoBanimento", uid, "itens"));
+    let restaurados = 0;
+
+    await Promise.all(
+      arquivados.docs.map(async (d) => {
+        const { caminhoOriginal, dados } = d.data();
+        const partes = String(caminhoOriginal || "").split("/").filter(Boolean);
+        if (partes.length < 2 || partes.length % 2 !== 0) return;
+        await setDoc(doc(db, ...partes), dados);
+        if (dados?.fotoDriveId) {
+          enviarParaPlanilha({ tipo: "acesso-foto-post", fotoId: dados.fotoDriveId, publica: true });
+        }
+        await deleteDoc(d.ref);
+        restaurados++;
+      })
+    );
+
+    await updateDoc(doc(db, "usuarios", uid), { status: "ativo", denunciasAceitas: 0 });
+    return { restaurados };
+  }
+
+  /**
+   * Apaga TODO o conteúdo público de uma conta, sem apagar a conta.
+   *
+   * Diferente de apagarDadosDaConta (que é a exclusão da própria conta,
+   * pela pessoa): aqui a conta CONTINUA existindo, banida, pra ela não
+   * conseguir simplesmente criar tudo de novo com o mesmo e-mail.
+   *
+   * Os `collectionGroup` cobrem as quatro superfícies de uma vez:
+   * "comentarios" pega comentário de post, de sugestão e de ponto
+   * turístico; "itens" pega sugestão e indicação de selo. Filtrar por
+   * caminho depois é o que evita apagar coisa de outra coleção que
+   * venha a usar o mesmo nome.
+   */
+  async function apagarConteudoDaConta(uid) {
+    const apagados = { posts: 0, comentarios: 0, respostas: 0, sugestoes: 0 };
+
+    const postsSnap = await getDocs(query(collection(db, "posts"), where("autorUid", "==", uid)));
+    await Promise.all(
+      postsSnap.docs.map(async (d) => {
+        const post = d.data();
+        await deleteDoc(d.ref);
+        apagados.posts++;
+        if (post.fotoDriveId) enviarParaPlanilha({ tipo: "excluir-foto-post", fotoId: post.fotoDriveId });
+      })
+    );
+
+    const comentariosSnap = await getDocs(
+      query(collectionGroup(db, "comentarios"), where("autorUid", "==", uid))
+    );
+    await Promise.all(
+      comentariosSnap.docs.map((d) => {
+        apagados.comentarios++;
+        return deleteDoc(d.ref);
+      })
+    );
+
+    const respostasSnap = await getDocs(
+      query(collectionGroup(db, "respostas"), where("autorUid", "==", uid))
+    );
+    await Promise.all(
+      respostasSnap.docs.map((d) => {
+        apagados.respostas++;
+        return deleteDoc(d.ref);
+      })
+    );
+
+    const itensSnap = await getDocs(
+      query(collectionGroup(db, "itens"), where("autorUid", "==", uid))
+    );
+    await Promise.all(
+      itensSnap.docs.map(async (d) => {
+        const dados = d.data();
+        await deleteDoc(d.ref);
+        apagados.sugestoes++;
+        if (dados.fotoDriveId) enviarParaPlanilha({ tipo: "excluir-foto-post", fotoId: dados.fotoDriveId });
+      })
+    );
+
+    return apagados;
+  }
+
+  /**
+   * Aceita uma denúncia: apaga o conteúdo, soma o strike do autor e,
+   * no terceiro, bane a conta e varre tudo que ela publicou.
+   *
+   * Devolve o que aconteceu pra a tela poder contar isso ao dono --
+   * banir alguém em silêncio seria pior que não banir.
+   */
+  async function aceitarDenuncia(denuncia) {
+    await apagarConteudoDenunciado(denuncia.referencia);
+    await resolverDenuncia(denuncia.id, "resolvida");
+
+    const uid = denuncia.autorUid;
+    // Denúncia antiga (de antes deste campo) não tem em quem contar --
+    // o conteúdo já foi apagado, que é o principal.
+    if (!uid) return { banido: false, strikes: null };
+
+    const refConta = doc(db, "usuarios", uid);
+    const snap = await getDoc(refConta);
+    if (!snap.exists()) return { banido: false, strikes: null };
+
+    const strikes = (snap.data().denunciasAceitas || 0) + 1;
+    const banir = strikes >= DENUNCIAS_PARA_BANIR;
+    await updateDoc(refConta, {
+      denunciasAceitas: strikes,
+      ...(banir ? { status: "banido" } : {}),
+    });
+
+    if (!banir) return { banido: false, strikes };
+    /* Arquiva em vez de destruir: banimento por três strikes é
+       automático, e automático erra. A pessoa tem 90 dias pra recorrer
+       (ver arquivarConteudoDaConta). */
+    const apagados = await arquivarConteudoDaConta(uid);
+    return { banido: true, strikes, apagados, diasParaRecorrer: DIAS_DE_ARQUIVO };
+  }
+  /* ---- Indicação de selo ----
+     Município sem arte própria mostra um selo desenhado na hora. Quem
+     esteve lá pode mandar uma foto candidata a virar o selo de verdade.
+
+     O id do documento é o UID de quem indica, de propósito: isso dá "uma
+     por município por pessoa" de graça, sem contar nada -- mandar de
+     novo SUBSTITUI a anterior, que é o comportamento que a gente quer.
+
+     Fica PRIVADO: a regra do Firestore só deixa a própria pessoa e o
+     dono do projeto lerem. A foto em si, porém, vai pro Drive com link
+     público (única saída no plano Spark, mesmo caminho das fotos da
+     Comunidade) -- por isso o aviso na tela. */
+  async function indicarSelo({ municipioId, arquivoFoto }) {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    if (!municipioId) throw new Error("Município não identificado.");
+    if (!arquivoFoto) throw new Error("Escolha uma foto.");
+
+    const { fotoUrl, fotoId } = await comTimeout(
+      subirFotoPostParaDrive(arquivoFoto, `selo-${municipioId}-${usuario.uid}.jpg`),
+      30000,
+      "A conexão está lenta demais pra subir a foto. Verifique sua internet e tente de novo."
+    );
+
+    await comTimeout(
+      setDoc(doc(db, "selosIndicados", municipioId, "itens", usuario.uid), {
+        autorUid: usuario.uid,
+        apelido: window.raspadinhaAuth.apelido || "",
+        municipioId,
+        fotoUrl,
+        fotoDriveId: fotoId,
+        status: "pendente",
+        criadoEm: serverTimestamp(),
+      }),
+      15000,
+      "A conexão está lenta demais. Sua foto subiu, mas a indicação não foi registrada -- tente enviar de novo."
+    );
+    return { fotoUrl };
+  }
+
+  /** A indicação que ESTA pessoa já fez neste município, ou null. */
+  async function buscarMinhaIndicacao(municipioId) {
+    const usuario = auth.currentUser;
+    if (!usuario || !municipioId) return null;
+    const instantaneo = await getDoc(
+      doc(db, "selosIndicados", municipioId, "itens", usuario.uid)
+    );
+    return instantaneo.exists() ? { id: instantaneo.id, ...instantaneo.data() } : null;
+  }
+
+  /**
+   * Todas as indicações de selo com um dado status, de todos os
+   * municípios.
+   *
+   * `collectionGroup` porque as indicações moram numa subcoleção por
+   * município (selosIndicados/{municipioId}/itens) -- sem ele daria uma
+   * consulta por município, 5.570 idas ao banco pra montar uma lista.
+   * Só o dono consegue ler isto: a regra do Firestore exige ehDono()
+   * pra ler documento de outra pessoa.
+   */
+  async function listarSelosIndicados(status = "pendente") {
+    const consulta = query(
+      collectionGroup(db, "itens"),
+      where("status", "==", status),
+      limit(100)
+    );
+    const resultado = await getDocs(consulta);
+    return resultado.docs
+      // O collectionGroup pega QUALQUER subcoleção chamada "itens" --
+      // e sugestoesComunidade também usa esse nome. Filtra pelo caminho.
+      .filter((d) => d.ref.path.startsWith("selosIndicados/"))
+      .map((d) => ({ id: d.id, caminho: d.ref.path, ...d.data() }));
+  }
+
+  /** Marca uma indicação como aprovada ou recusada. */
+  async function decidirSeloIndicado(municipioId, uid, status) {
+    return updateDoc(doc(db, "selosIndicados", municipioId, "itens", uid), {
+      status,
+      decididoEm: serverTimestamp(),
+    });
+  }
+
   /* ============================================================
      Sugestões da Comunidade: uma subcoleção por município
      (sugestoesComunidade/{municipioId}/itens/{itemId}) -- assim o
@@ -1838,6 +2224,23 @@ if (CONFIGURADO) {
    * continua gravado, porque a regra do Firestore precisa dele pra
    * saber quem pode editar/excluir.
    */
+  window.raspadinhaAuth.denunciar = denunciar;
+  window.raspadinhaAuth.aceitarDenuncia = aceitarDenuncia;
+  window.raspadinhaAuth.apagarConteudoDaConta = apagarConteudoDaConta;
+  window.raspadinhaAuth.arquivarConteudoDaConta = arquivarConteudoDaConta;
+  window.raspadinhaAuth.restaurarConteudoDaConta = restaurarConteudoDaConta;
+  window.raspadinhaAuth.DIAS_DE_ARQUIVO = DIAS_DE_ARQUIVO;
+  window.raspadinhaAuth.DENUNCIAS_PARA_BANIR = DENUNCIAS_PARA_BANIR;
+  window.raspadinhaAuth.listarDenuncias = listarDenuncias;
+  window.raspadinhaAuth.resolverDenuncia = resolverDenuncia;
+  window.raspadinhaAuth.apagarConteudoDenunciado = apagarConteudoDenunciado;
+  window.raspadinhaAuth.MOTIVOS_DENUNCIA = MOTIVOS_DENUNCIA;
+
+  window.raspadinhaAuth.indicarSelo = indicarSelo;
+  window.raspadinhaAuth.listarSelosIndicados = listarSelosIndicados;
+  window.raspadinhaAuth.decidirSeloIndicado = decidirSeloIndicado;
+  window.raspadinhaAuth.buscarMinhaIndicacao = buscarMinhaIndicacao;
+
   window.raspadinhaAuth.criarSugestao = async ({
     municipioId,
     titulo,

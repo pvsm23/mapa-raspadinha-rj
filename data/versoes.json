@@ -1,5 +1,14 @@
 [
   {
+    "versao": "0.26.08.18.99",
+    "itens": [
+      "Agora dá pra denunciar post, sugestão e comentário que estiverem fora do lugar — antes não havia como avisar ninguém.",
+      "Quem recebe três denúncias confirmadas tem a conta banida e o conteúdo retirado do ar.",
+      "Quem for banido tem 90 dias para recorrer: o conteúdo fica guardado e volta inteiro se o recurso for aceito.",
+      "Em municípios sem arte própria, quem já confirmou presença por GPS pode indicar uma foto para virar o selo do lugar."
+    ]
+  },
+  {
     "versao": "0.26.08.18.98",
     "itens": [
       "Os mapas dos estados que você já baixou agora se atualizam sozinhos quando saem melhorias — antes era preciso apagar e baixar de novo à mão pra ver as novidades.",

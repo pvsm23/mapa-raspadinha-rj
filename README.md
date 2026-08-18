@@ -117,7 +117,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
               // A conta dona pode mudar SÓ os campos "status" e/ou
               // "anunciosAtivados" de qualquer conta (inclusive a
               // própria) -- usado pelo painel de Admin.
-              || (ehDono() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'anunciosAtivados']))
+              || (ehDono() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'anunciosAtivados', 'denunciasAceitas']))
             );
           allow delete: if request.auth != null && request.auth.uid == uid;
 
@@ -223,7 +223,9 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
         match /posts/{postId} {
           allow read: if request.auth != null;
           allow create: if request.auth != null
-            && request.resource.data.autorUid == request.auth.uid;
+            // ehDono() aqui é pra RESTAURAR conteúdo arquivado: quem
+            // grava é o dono, mas o autorUid é de quem recorreu.
+            && (request.resource.data.autorUid == request.auth.uid || ehDono());
           allow update: if request.auth != null
             && (
               request.auth.uid == resource.data.autorUid
@@ -233,16 +235,16 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
                    .hasOnly(['numComentarios'])
             );
           allow delete: if request.auth != null
-            && request.auth.uid == resource.data.autorUid;
+            && (request.auth.uid == resource.data.autorUid || ehDono());
 
           // Comentario: qualquer autenticado le/cria; só o autor do
           // proprio comentario (nao do post) pode apagar o dele.
           match /comentarios/{comentarioId} {
             allow read: if request.auth != null;
             allow create: if request.auth != null
-              && request.resource.data.autorUid == request.auth.uid;
+              && (request.resource.data.autorUid == request.auth.uid || ehDono());
             allow delete: if request.auth != null
-              && request.auth.uid == resource.data.autorUid;
+              && (request.auth.uid == resource.data.autorUid || ehDono());
           }
         }
 
@@ -302,14 +304,16 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
         match /motoclubeItens/{itemId} {
           allow read: if request.auth != null;
           allow create: if request.auth != null
-            && request.resource.data.autorUid == request.auth.uid;
+            // ehDono() aqui é pra RESTAURAR conteúdo arquivado: quem
+            // grava é o dono, mas o autorUid é de quem recorreu.
+            && (request.resource.data.autorUid == request.auth.uid || ehDono());
           allow update: if request.auth != null
             && (
               request.auth.uid == resource.data.autorUid
               || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['curtidoPor'])
             );
           allow delete: if request.auth != null
-            && request.auth.uid == resource.data.autorUid;
+            && (request.auth.uid == resource.data.autorUid || ehDono());
         }
 
         // Sugestões da Comunidade: uma subcoleção POR MUNICÍPIO (o id
@@ -322,7 +326,9 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
         match /sugestoesComunidade/{municipioId}/itens/{itemId} {
           allow read: if request.auth != null;
           allow create: if request.auth != null
-            && request.resource.data.autorUid == request.auth.uid;
+            // ehDono() aqui é pra RESTAURAR conteúdo arquivado: quem
+            // grava é o dono, mas o autorUid é de quem recorreu.
+            && (request.resource.data.autorUid == request.auth.uid || ehDono());
           allow update: if request.auth != null
             && (
               request.auth.uid == resource.data.autorUid
@@ -332,15 +338,76 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
                    .hasOnly(['numComentarios'])
             );
           allow delete: if request.auth != null
-            && request.auth.uid == resource.data.autorUid;
+            && (request.auth.uid == resource.data.autorUid || ehDono());
 
           match /comentarios/{comentarioId} {
             allow read: if request.auth != null;
             allow create: if request.auth != null
-              && request.resource.data.autorUid == request.auth.uid;
+              && (request.resource.data.autorUid == request.auth.uid || ehDono());
             allow delete: if request.auth != null
-              && request.auth.uid == resource.data.autorUid;
+              && (request.auth.uid == resource.data.autorUid || ehDono());
           }
+        }
+
+        // ---- Indicação de selo ----
+        // Município sem arte própria: quem esteve lá manda uma foto
+        // candidata a virar o selo. É PRIVADO -- só quem indicou e o
+        // dono do projeto leem. O id do documento é o UID de quem
+        // indica, o que dá "uma por município por pessoa" sem precisar
+        // contar nada: mandar de novo substitui a anterior.
+        //
+        // A revisão continua sendo humana. As regras que o app pede
+        // (sem pessoas, sem propaganda, sem estabelecimento particular)
+        // não têm como ser verificadas aqui -- e a foto em si vai pro
+        // Drive com link público, mesma limitação das fotos de post.
+        match /selosIndicados/{municipioId}/itens/{uid} {
+          allow read: if request.auth != null
+            && (request.auth.uid == uid || ehDono());
+          // create e update juntos: reenviar substitui a indicação
+          // anterior. Não usa `write` porque `write` inclui delete, e
+          // o delete abaixo tem regra própria (o dono também apaga).
+          allow create, update: if request.auth != null
+            && request.auth.uid == uid
+            && request.resource.data.autorUid == request.auth.uid
+            && request.resource.data.municipioId == municipioId;
+          allow delete: if request.auth != null
+            && (request.auth.uid == uid || ehDono());
+        }
+
+        // ---- Denúncias ----
+        // Qualquer pessoa logada denuncia; só o dono lê e resolve. Não
+        // dá pra listar denúncia alheia nem descobrir quem denunciou --
+        // se desse, denunciar viraria risco pra quem denuncia.
+        //
+        // O id do documento é "<tipo>_<idDoConteudo>_<uid>", o que dá
+        // "uma denúncia por pessoa por conteúdo" sem precisar contar
+        // nada: denunciar de novo sobrescreve a mesma linha.
+        match /denuncias/{denunciaId} {
+          allow read, update, delete: if request.auth != null && ehDono();
+          allow create: if request.auth != null
+            && request.resource.data.denuncianteUid == request.auth.uid
+            && request.resource.data.autorUid is string
+            && request.resource.data.tipo is string
+            && request.resource.data.referencia is string
+            && request.resource.data.motivo is string
+            && request.resource.data.motivo.size() <= 500;
+        }
+
+        // ---- Arquivo de banimento ----
+        // Conteúdo de conta banida fica aqui 90 dias, pra ela poder
+        // recorrer, e depois é apagado por um gatilho diário (ver
+        // tools/apps-script-limpar-arquivo.gs).
+        //
+        // Só o dono acessa: é conteúdo que já foi retirado do ar por
+        // denúncia aceita, e deixar terceiro ler seria republicá-lo por
+        // outra porta. A PRÓPRIA pessoa banida também não lê -- ela
+        // recorre falando com você, não navegando no arquivo.
+        //
+        // O gatilho do Apps Script NÃO passa por esta regra: ele usa
+        // token administrativo (ScriptApp.getOAuthToken), que ignora as
+        // regras do Firestore.
+        match /arquivoBanimento/{uid}/itens/{itemId} {
+          allow read, write: if request.auth != null && ehDono();
         }
 
         // Comentários nos PONTOS TURÍSTICOS.
@@ -371,15 +438,25 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
         // quem abusa).
         match /pontosTuristicos/{pontoId}/comentarios/{comentarioId} {
           allow read: if request.auth != null;
+          // O ehDono() no fim existe pra RESTAURAR conteúdo arquivado:
+          // nesse caso quem grava é o dono, mas o autorUid é de outra
+          // pessoa -- e ela não tem como refazer a verificação por GPS
+          // de meses atrás. Por isso ele é alternativa ao bloco INTEIRO,
+          // e não só ao autorUid.
           allow create: if request.auth != null
-            && request.resource.data.autorUid == request.auth.uid
-            && request.resource.data.texto is string
-            && request.resource.data.texto.size() > 0
-            && request.resource.data.texto.size() <= 500
-            && pontoId.split('-')[0] == request.resource.data.municipioId
-            && get(/databases/$(database)/documents/usuarios/$(request.auth.uid))
-                 .data.estadoMunicipios[request.resource.data.municipioId]
-                 .get('verificado', false) == true;
+            && (
+              (
+                request.resource.data.autorUid == request.auth.uid
+                && request.resource.data.texto is string
+                && request.resource.data.texto.size() > 0
+                && request.resource.data.texto.size() <= 500
+                && pontoId.split('-')[0] == request.resource.data.municipioId
+                && get(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+                     .data.estadoMunicipios[request.resource.data.municipioId]
+                     .get('verificado', false) == true
+              )
+              || ehDono()
+            );
           // Curtir é de QUALQUER pessoa logada (só comentar exige GPS).
           // O update só pode mexer em curtidoPor + numCurtidas, e nunca
           // no texto -- comentário não se edita.
@@ -387,7 +464,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['curtidoPor', 'numCurtidas']);
           allow delete: if request.auth != null
-            && request.auth.uid == resource.data.autorUid;
+            && (request.auth.uid == resource.data.autorUid || ehDono());
 
           // RESPOSTAS dentro do comentário: qualquer pessoa logada
           // responde, MESMO SEM ter ido ao lugar. É de propósito -- é
@@ -400,7 +477,7 @@ dentro da tag `<svg id="mapa-rj">` em `index.html`.
               && request.resource.data.texto.size() > 0
               && request.resource.data.texto.size() <= 500;
             allow delete: if request.auth != null
-              && request.auth.uid == resource.data.autorUid;
+              && (request.auth.uid == resource.data.autorUid || ehDono());
           }
         }
 

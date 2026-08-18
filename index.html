@@ -1032,6 +1032,13 @@
           <span class="modal-acao-icone">💡</span>
           <span class="modal-acao-label">Sugestões</span>
         </button>
+        <!-- Só aparece em município SEM arte própria (o selo é desenhado
+             na hora) e pra quem já confirmou presença por GPS ali -- ver
+             atualizarBotaoIndicarSelo em js/script.js. -->
+        <button type="button" id="btn-indicar-selo" class="modal-acao-btn oculto">
+          <span class="modal-acao-icone">📷</span>
+          <span class="modal-acao-label">Indicar selo</span>
+        </button>
       </div>
 
       <!-- So aparece na visualizacao de um selo ja raspado (numero
@@ -1224,6 +1231,87 @@
        mais curtido primeiro; dá pra trocar de município de dentro do
        próprio modal (#btn-municipio-sugestoes abre o seletor com
        busca), sem precisar fechar e abrir outro no mapa. -->
+
+
+  <!-- ---- Denunciar conteúdo ----
+       Serve pras quatro superfícies onde qualquer pessoa publica: post,
+       comentário de post, comentário de ponto turístico e sugestão. A
+       denúncia é privada -- só o dono do projeto lê (ver a regra de
+       /denuncias no README). Ver abrirDenuncia em js/script.js. -->
+  <div id="modal-denuncia" class="oculto">
+    <div id="denuncia-conteudo">
+      <button id="btn-fechar-denuncia" aria-label="Fechar">✕</button>
+      <h2>🚩 Denunciar</h2>
+      <p id="denuncia-alvo"></p>
+
+      <h3 class="denuncia-titulo">Qual o motivo?</h3>
+      <div id="denuncia-motivos"></div>
+
+      <label for="denuncia-detalhe" class="denuncia-titulo">Quer explicar? (opcional)</label>
+      <textarea id="denuncia-detalhe" maxlength="500" rows="3"
+        placeholder="O que há de errado com esse conteúdo?"></textarea>
+
+      <p id="denuncia-status" class="oculto"></p>
+      <button type="button" id="btn-enviar-denuncia" disabled>Enviar denúncia</button>
+
+      <!-- O e-mail é alternativa, não o caminho principal: o domínio
+           ainda não recebe mensagem (ver o aviso ao lado). -->
+      <p class="denuncia-rodape">
+        Casos graves ou urgentes também podem ir para
+        <b>denuncia@desbravaapp.com.br</b>.
+      </p>
+    </div>
+  </div>
+  <!-- ---- Indicar selo ----
+       Município sem arte própria usa um selo desenhado na hora. Aqui a
+       pessoa que ESTEVE lá manda uma foto candidata a virar o selo de
+       verdade. A foto NÃO vira selo sozinha: a arte é um arquivo do
+       repositório (assets/img/selos/<id>.webp) que vai dentro do APK,
+       então o Paulo revisa, processa e publica. Ver abrirIndicarSelo em
+       js/script.js. -->
+  <div id="modal-indicar-selo" class="oculto">
+    <div id="indicar-selo-conteudo">
+      <button id="btn-fechar-indicar-selo" aria-label="Fechar">✕</button>
+      <h2>📷 Indicar selo</h2>
+      <p id="indicar-selo-municipio"></p>
+
+      <p class="indicar-selo-texto">
+        Este município ainda não tem arte própria — o selo que aparece é
+        desenhado pelo app. Se você tem uma foto boa daqui, mande: ela
+        pode virar o selo de verdade, pra todo mundo.
+      </p>
+
+      <div class="indicar-selo-regras">
+        <h3>O que serve de selo</h3>
+        <ul>
+          <li><b>Paisagem, natureza ou um marco da cidade</b> — igreja, praça, ponte, mirante, o que representa o lugar.</li>
+          <li><b>Foto sua</b>, tirada por você.</li>
+        </ul>
+        <h3>O que não entra</h3>
+        <ul>
+          <li><b>Pessoas</b> — nem você, nem terceiros.</li>
+          <li><b>Propaganda</b> de qualquer tipo.</li>
+          <li><b>Estabelecimento particular</b> — loja, restaurante, pousada.</li>
+        </ul>
+        <p class="indicar-selo-aviso">
+          Ao enviar, você autoriza o uso da foto como selo do Desbrava.
+          A imagem fica com um link público enquanto está sendo avaliada.
+        </p>
+      </div>
+
+      <input type="file" id="input-foto-selo" accept="image/*" class="oculto">
+      <button type="button" id="btn-escolher-foto-selo">
+        🖼️ Escolher foto
+      </button>
+      <div id="indicar-selo-previa" class="oculto">
+        <img id="indicar-selo-previa-img" alt="Prévia da foto escolhida">
+        <span id="indicar-selo-nome-arquivo"></span>
+      </div>
+
+      <p id="indicar-selo-status" class="oculto"></p>
+      <button type="button" id="btn-enviar-selo" disabled>Enviar indicação</button>
+    </div>
+  </div>
   <div id="modal-sugestoes-comunidade" class="oculto">
     <div id="sugestoes-comunidade-conteudo">
       <button id="btn-fechar-sugestoes-comunidade" aria-label="Fechar">✕</button>
@@ -1553,6 +1641,40 @@
         <div id="moderacao-resultado"></div>
       </div>
 
+
+
+      <!-- ---- Denúncias ----
+           Fila do que a comunidade reportou. Três saídas: apagar o
+           conteúdo, descartar a denúncia, ou abrir a moderação da conta
+           do autor. Ver carregarDenuncias em js/script.js. -->
+      <div id="secao-denuncias">
+        <h3>Denúncias</h3>
+        <div id="denuncias-filtros">
+          <button type="button" class="chip chip-ativo" data-status="aberta">Abertas</button>
+          <button type="button" class="chip" data-status="resolvida">Resolvidas</button>
+          <button type="button" class="chip" data-status="descartada">Descartadas</button>
+        </div>
+        <div id="denuncias-lista"></div>
+      </div>
+      <!-- ---- Selos indicados pela comunidade ----
+           Município sem arte própria: quem esteve lá manda uma foto
+           candidata (ver abrirIndicarSelo em js/script.js). Aqui elas
+           são revisadas. Aprovar NÃO publica o selo: a arte é arquivo
+           do repositório, então o fluxo é aprovar aqui, baixar a foto,
+           passar no tools/processar-selos.js e commitar. -->
+      <div id="secao-selos-indicados">
+        <h3>Selos indicados</h3>
+        <p class="admin-dica">
+          Aprovar só marca a foto como escolhida. Pra virar selo de
+          verdade, baixe a imagem e rode <code>tools/processar-selos.js</code>.
+        </p>
+        <div id="selos-indicados-filtros">
+          <button type="button" class="chip chip-ativo" data-status="pendente">Pendentes</button>
+          <button type="button" class="chip" data-status="aprovado">Aprovadas</button>
+          <button type="button" class="chip" data-status="recusado">Recusadas</button>
+        </div>
+        <div id="selos-indicados-lista"></div>
+      </div>
       <!-- 3 controles independentes de anúncio (Google AdSense):
            pra mim (a própria conta dona), pra um usuário específico
            (busca por apelido, ver o toggle dentro do resultado da

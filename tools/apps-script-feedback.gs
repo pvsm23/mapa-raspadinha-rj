@@ -66,6 +66,10 @@ function doPost(e) {
     return excluirFotoPost(dados);
   }
 
+  if (dados.tipo === "acesso-foto-post") {
+    return definirAcessoFotoPost(dados);
+  }
+
   var config = {
     bug: { aba: "Bugs", cabecalho: ["Data", "Apelido", "E-mail", "Texto"] },
     sugestao: { aba: "Sugestões", cabecalho: ["Data", "Apelido", "E-mail", "Texto"] },
@@ -184,6 +188,37 @@ function uploadFotoPost(dados) {
  * esforço", não trava a exclusão do post/conta se o arquivo já tiver
  * sido apagado ou não for encontrado.
  */
+
+/**
+ * Liga/desliga o acesso público de uma foto, SEM apagá-la.
+ *
+ * Existe pro arquivamento de banimento: quando uma conta é banida, o
+ * conteúdo dela sai do app mas fica guardado 90 dias pra ela poder
+ * recorrer. Só que a foto no Drive tem link "qualquer um com o link",
+ * e uma imagem denunciada continuaria acessível a quem já tivesse o
+ * endereço -- justamente a parte que mais causa dano.
+ *
+ * Revogar o compartilhamento resolve sem perder o arquivo: o ID
+ * continua o mesmo, a URL passa a devolver erro, e um recurso aceito
+ * religa o acesso com o mesmo link de antes.
+ *
+ * RESSALVA: o lh3.googleusercontent.com é CDN e guarda cache. O acesso
+ * direto morre na hora, mas uma cópia em cache pode sobreviver um
+ * tempo. Quem precisa de corte imediato e definitivo tem que apagar
+ * (excluir-foto-post), não só revogar.
+ */
+function definirAcessoFotoPost(dados) {
+  var arquivo = DriveApp.getFileById(dados.fotoId);
+  if (dados.publica) {
+    arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } else {
+    arquivo.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+  }
+  return ContentService.createTextOutput(
+    JSON.stringify({ ok: true, publica: !!dados.publica })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
 function excluirFotoPost(dados) {
   try {
     if (dados.fotoId) DriveApp.getFileById(dados.fotoId).setTrashed(true);
