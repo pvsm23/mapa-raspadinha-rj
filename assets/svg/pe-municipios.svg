@@ -375,187 +375,187 @@
   <text class="rotulo-municipio" data-nivel="2" x="765.68" y="71.57" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">Abreu e Lima</text>
   <text class="rotulo-municipio" data-nivel="3" x="457.4" y="59.48" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Afogados da Ingazeira</text>
   <text class="rotulo-municipio" data-nivel="1" x="45.64" y="166.14" style="--rotulo-base:6.7" font-size="6.7" pointer-events="none">Afrânio</text>
-  <text class="rotulo-municipio" data-nivel="2" x="660.52" y="146.36" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Agrestina</text>
+  <text class="rotulo-municipio" data-nivel="3" x="660.52" y="146.36" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Agrestina</text>
   <text class="rotulo-municipio" data-nivel="2" x="717.91" y="180.41" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">Água Preta</text>
   <text class="rotulo-municipio" data-nivel="2" x="523.52" y="225.4" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Águas Belas</text>
-  <text class="rotulo-municipio" data-nivel="2" x="562.24" y="149.53" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Alagoinha</text>
-  <text class="rotulo-municipio" data-nivel="2" x="751.45" y="39.83" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Aliança</text>
-  <text class="rotulo-municipio" data-nivel="1" x="643.4" y="151.14" style="--rotulo-base:3.3" font-size="3.3" pointer-events="none">Altinho</text>
-  <text class="rotulo-municipio" data-nivel="1" x="721.03" y="136.05" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Amaraji</text>
-  <text class="rotulo-municipio" data-nivel="2" x="621.16" y="200.77" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Angelim</text>
-  <text class="rotulo-municipio" data-nivel="2" x="765.69" y="61.91" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Araçoiaba</text>
-  <text class="rotulo-municipio" data-nivel="2" x="108.49" y="33.93" style="--rotulo-base:4.9" font-size="4.9" pointer-events="none">Araripina</text>
+  <text class="rotulo-municipio" data-nivel="3" x="562.24" y="149.53" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Alagoinha</text>
+  <text class="rotulo-municipio" data-nivel="3" x="751.45" y="39.83" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Aliança</text>
+  <text class="rotulo-municipio" data-nivel="2" x="643.4" y="151.14" style="--rotulo-base:3.3" font-size="3.3" pointer-events="none">Altinho</text>
+  <text class="rotulo-municipio" data-nivel="3" x="721.03" y="136.05" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Amaraji</text>
+  <text class="rotulo-municipio" data-nivel="3" x="621.16" y="200.77" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Angelim</text>
+  <text class="rotulo-municipio" data-nivel="4" x="765.69" y="61.91" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Araçoiaba</text>
+  <text class="rotulo-municipio" data-nivel="1" x="108.49" y="33.93" style="--rotulo-base:4.9" font-size="4.9" pointer-events="none">Araripina</text>
   <text class="rotulo-municipio" data-nivel="2" x="533.64" y="135.41" style="--rotulo-base:2.8" font-size="2.8" pointer-events="none">Arcoverde</text>
   <text class="rotulo-municipio" data-nivel="3" x="698.44" y="141.51" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Barra de Guabiraba</text>
   <text class="rotulo-municipio" data-nivel="2" x="749.88" y="189.19" style="--rotulo-base:3.4" font-size="3.4" pointer-events="none">Barreiros</text>
-  <text class="rotulo-municipio" data-nivel="3" x="675.21" y="164.19" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Belém de Maria</text>
-  <text class="rotulo-municipio" data-nivel="3" x="290.57" y="161.84" style="--rotulo-base:7.1" font-size="7.1" pointer-events="none">Belém do São Francisco</text>
-  <text class="rotulo-municipio" data-nivel="2" x="603.83" y="124.54" style="--rotulo-base:4.4" font-size="4.4" pointer-events="none">Belo Jardim</text>
+  <text class="rotulo-municipio" data-nivel="4" x="675.21" y="164.19" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Belém de Maria</text>
+  <text class="rotulo-municipio" data-nivel="1" x="290.57" y="161.84" style="--rotulo-base:4.2" font-size="4.2" pointer-events="none">Belém do São Francisco</text>
+  <text class="rotulo-municipio" data-nivel="1" x="603.83" y="124.54" style="--rotulo-base:4.4" font-size="4.4" pointer-events="none">Belo Jardim</text>
   <text class="rotulo-municipio" data-nivel="1" x="410.08" y="126" style="--rotulo-base:4.4" font-size="4.4" pointer-events="none">Betânia</text>
-  <text class="rotulo-municipio" data-nivel="1" x="680.78" y="113.99" style="--rotulo-base:3.2" font-size="3.2" pointer-events="none">Bezerros</text>
+  <text class="rotulo-municipio" data-nivel="2" x="680.78" y="113.99" style="--rotulo-base:3.2" font-size="3.2" pointer-events="none">Bezerros</text>
   <text class="rotulo-municipio" data-nivel="1" x="163.61" y="27.11" style="--rotulo-base:4.4" font-size="4.4" pointer-events="none">Bodocó</text>
   <text class="rotulo-municipio" data-nivel="2" x="577.09" y="240.13" style="--rotulo-base:4.3" font-size="4.3" pointer-events="none">Bom Conselho</text>
   <text class="rotulo-municipio" data-nivel="2" x="707.67" y="62.89" style="--rotulo-base:3.3" font-size="3.3" pointer-events="none">Bom Jardim</text>
-  <text class="rotulo-municipio" data-nivel="1" x="684.17" y="152.62" style="--rotulo-base:3.3" font-size="3.3" pointer-events="none">Bonito</text>
-  <text class="rotulo-municipio" data-nivel="2" x="589.59" y="216.96" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Brejão</text>
-  <text class="rotulo-municipio" data-nivel="2" x="494.17" y="6.92" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Brejinho</text>
-  <text class="rotulo-municipio" data-nivel="3" x="619.88" y="97.24" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Brejo da Madre de Deus</text>
-  <text class="rotulo-municipio" data-nivel="2" x="734.06" y="57.63" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Buenos Aires</text>
-  <text class="rotulo-municipio" data-nivel="1" x="512.69" y="167.01" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Buíque</text>
-  <text class="rotulo-municipio" data-nivel="3" x="773.14" y="124.78" style="--rotulo-base:3.8" font-size="3.8" pointer-events="none">Cabo de Santo Agostinho</text>
+  <text class="rotulo-municipio" data-nivel="2" x="684.17" y="152.62" style="--rotulo-base:3.3" font-size="3.3" pointer-events="none">Bonito</text>
+  <text class="rotulo-municipio" data-nivel="4" x="589.59" y="216.96" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Brejão</text>
+  <text class="rotulo-municipio" data-nivel="3" x="494.17" y="6.92" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Brejinho</text>
+  <text class="rotulo-municipio" data-nivel="2" x="619.88" y="97.24" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Brejo da Madre de Deus</text>
+  <text class="rotulo-municipio" data-nivel="3" x="734.06" y="57.63" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Buenos Aires</text>
+  <text class="rotulo-municipio" data-nivel="2" x="512.69" y="167.01" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Buíque</text>
+  <text class="rotulo-municipio" data-nivel="2" x="773.14" y="124.78" style="--rotulo-base:3.8" font-size="3.8" pointer-events="none">Cabo de Santo Agostinho</text>
   <text class="rotulo-municipio" data-nivel="1" x="250.9" y="138.36" style="--rotulo-base:5.8" font-size="5.8" pointer-events="none">Cabrobó</text>
   <text class="rotulo-municipio" data-nivel="3" x="620.88" y="149.16" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cachoeirinha</text>
-  <text class="rotulo-municipio" data-nivel="1" x="568.87" y="186.11" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Caetés</text>
-  <text class="rotulo-municipio" data-nivel="2" x="614.2" y="181.84" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Calçado</text>
-  <text class="rotulo-municipio" data-nivel="1" x="398.06" y="86.01" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Calumbi</text>
-  <text class="rotulo-municipio" data-nivel="3" x="777.96" y="89.41" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Camaragibe</text>
+  <text class="rotulo-municipio" data-nivel="2" x="568.87" y="186.11" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Caetés</text>
+  <text class="rotulo-municipio" data-nivel="3" x="614.2" y="181.84" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Calçado</text>
+  <text class="rotulo-municipio" data-nivel="2" x="398.06" y="86.01" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Calumbi</text>
+  <text class="rotulo-municipio" data-nivel="4" x="777.96" y="89.41" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Camaragibe</text>
   <text class="rotulo-municipio" data-nivel="4" x="683.15" y="132.56" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Camocim de São Félix</text>
-  <text class="rotulo-municipio" data-nivel="3" x="738.83" y="20.48" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Camutanga</text>
+  <text class="rotulo-municipio" data-nivel="4" x="738.83" y="20.48" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Camutanga</text>
   <text class="rotulo-municipio" data-nivel="2" x="635.24" y="200.69" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Canhotinho</text>
-  <text class="rotulo-municipio" data-nivel="2" x="580.45" y="175.39" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Capoeiras</text>
-  <text class="rotulo-municipio" data-nivel="1" x="439.53" y="64.59" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Carnaíba</text>
-  <text class="rotulo-municipio" data-nivel="3" x="323.31" y="140.5" style="--rotulo-base:4.0" font-size="4.0" pointer-events="none">Carnaubeira da Penha</text>
-  <text class="rotulo-municipio" data-nivel="1" x="745.53" y="71.9" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Carpina</text>
-  <text class="rotulo-municipio" data-nivel="1" x="645.72" y="103.44" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Caruaru</text>
-  <text class="rotulo-municipio" data-nivel="2" x="686.68" y="59.52" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Casinhas</text>
-  <text class="rotulo-municipio" data-nivel="2" x="688.28" y="171.65" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Catende</text>
-  <text class="rotulo-municipio" data-nivel="1" x="261.8" y="57.72" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cedro</text>
-  <text class="rotulo-municipio" data-nivel="3" x="749.77" y="87.85" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Chã de Alegria</text>
-  <text class="rotulo-municipio" data-nivel="3" x="717.93" y="118.72" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Chã Grande</text>
-  <text class="rotulo-municipio" data-nivel="2" x="763.52" y="40.87" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Condado</text>
+  <text class="rotulo-municipio" data-nivel="3" x="580.45" y="175.39" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Capoeiras</text>
+  <text class="rotulo-municipio" data-nivel="2" x="439.53" y="64.59" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Carnaíba</text>
+  <text class="rotulo-municipio" data-nivel="2" x="323.31" y="140.5" style="--rotulo-base:4.0" font-size="4.0" pointer-events="none">Carnaubeira da Penha</text>
+  <text class="rotulo-municipio" data-nivel="3" x="745.53" y="71.9" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Carpina</text>
+  <text class="rotulo-municipio" data-nivel="2" x="645.72" y="103.44" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Caruaru</text>
+  <text class="rotulo-municipio" data-nivel="3" x="686.68" y="59.52" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Casinhas</text>
+  <text class="rotulo-municipio" data-nivel="3" x="688.28" y="171.65" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Catende</text>
+  <text class="rotulo-municipio" data-nivel="3" x="261.8" y="57.72" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cedro</text>
+  <text class="rotulo-municipio" data-nivel="4" x="749.77" y="87.85" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Chã de Alegria</text>
+  <text class="rotulo-municipio" data-nivel="4" x="717.93" y="118.72" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Chã Grande</text>
+  <text class="rotulo-municipio" data-nivel="4" x="763.52" y="40.87" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Condado</text>
   <text class="rotulo-municipio" data-nivel="2" x="612.22" y="227.8" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Correntes</text>
-  <text class="rotulo-municipio" data-nivel="1" x="713.33" y="146.09" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cortês</text>
-  <text class="rotulo-municipio" data-nivel="1" x="688.56" y="96.31" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Cumaru</text>
-  <text class="rotulo-municipio" data-nivel="2" x="661.63" y="161.97" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cupira</text>
-  <text class="rotulo-municipio" data-nivel="1" x="450.4" y="106.68" style="--rotulo-base:4.2" font-size="4.2" pointer-events="none">Custódia</text>
-  <text class="rotulo-municipio" data-nivel="2" x="93.54" y="153.49" style="--rotulo-base:5.7" font-size="5.7" pointer-events="none">Dormentes</text>
-  <text class="rotulo-municipio" data-nivel="1" x="743.25" y="134.89" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Escada</text>
-  <text class="rotulo-municipio" data-nivel="0" x="196.33" y="30.04" style="--rotulo-base:4.0" font-size="4.0" pointer-events="none">Exu</text>
-  <text class="rotulo-municipio" data-nivel="2" x="729.05" y="84.28" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Feira Nova</text>
-  <text class="rotulo-municipio" data-nivel="2" x="745.04" y="23.42" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Ferreiros</text>
+  <text class="rotulo-municipio" data-nivel="3" x="713.33" y="146.09" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cortês</text>
+  <text class="rotulo-municipio" data-nivel="2" x="688.56" y="96.31" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Cumaru</text>
+  <text class="rotulo-municipio" data-nivel="3" x="661.63" y="161.97" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cupira</text>
+  <text class="rotulo-municipio" data-nivel="2" x="450.4" y="106.68" style="--rotulo-base:4.2" font-size="4.2" pointer-events="none">Custódia</text>
+  <text class="rotulo-municipio" data-nivel="1" x="93.54" y="153.49" style="--rotulo-base:5.7" font-size="5.7" pointer-events="none">Dormentes</text>
+  <text class="rotulo-municipio" data-nivel="2" x="743.25" y="134.89" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Escada</text>
+  <text class="rotulo-municipio" data-nivel="2" x="196.33" y="30.04" style="--rotulo-base:4.0" font-size="4.0" pointer-events="none">Exu</text>
+  <text class="rotulo-municipio" data-nivel="3" x="729.05" y="84.28" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Feira Nova</text>
+  <text class="rotulo-municipio" data-nivel="3" x="745.04" y="23.42" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Ferreiros</text>
   <text class="rotulo-municipio" data-nivel="1" x="424.17" y="82.95" style="--rotulo-base:4.6" font-size="4.6" pointer-events="none">Flores</text>
-  <text class="rotulo-municipio" data-nivel="1" x="370.95" y="153.92" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Floresta</text>
+  <text class="rotulo-municipio" data-nivel="0" x="370.95" y="153.92" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Floresta</text>
   <text class="rotulo-municipio" data-nivel="3" x="669.39" y="81.72" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Frei Miguelinho</text>
   <text class="rotulo-municipio" data-nivel="2" x="728.91" y="165.46" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Gameleira</text>
   <text class="rotulo-municipio" data-nivel="2" x="593.79" y="201.15" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Garanhuns</text>
   <text class="rotulo-municipio" data-nivel="2" x="738.75" y="91.12" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Glória do Goitá</text>
-  <text class="rotulo-municipio" data-nivel="1" x="786.13" y="42.07" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Goiana</text>
-  <text class="rotulo-municipio" data-nivel="1" x="203.21" y="64.23" style="--rotulo-base:2.8" font-size="2.8" pointer-events="none">Granito</text>
-  <text class="rotulo-municipio" data-nivel="1" x="706.64" y="110.51" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Gravatá</text>
-  <text class="rotulo-municipio" data-nivel="0" x="547.55" y="224.76" style="--rotulo-base:3.2" font-size="3.2" pointer-events="none">Iati</text>
+  <text class="rotulo-municipio" data-nivel="2" x="786.13" y="42.07" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Goiana</text>
+  <text class="rotulo-municipio" data-nivel="2" x="203.21" y="64.23" style="--rotulo-base:2.8" font-size="2.8" pointer-events="none">Granito</text>
+  <text class="rotulo-municipio" data-nivel="3" x="706.64" y="110.51" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Gravatá</text>
+  <text class="rotulo-municipio" data-nivel="2" x="547.55" y="224.76" style="--rotulo-base:3.2" font-size="3.2" pointer-events="none">Iati</text>
   <text class="rotulo-municipio" data-nivel="1" x="465.12" y="162.69" style="--rotulo-base:6.0" font-size="6.0" pointer-events="none">Ibimirim</text>
-  <text class="rotulo-municipio" data-nivel="2" x="628.47" y="166.45" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Ibirajuba</text>
-  <text class="rotulo-municipio" data-nivel="1" x="779.97" y="70.53" style="--rotulo-base:2.9" font-size="2.9" pointer-events="none">Igarassu</text>
+  <text class="rotulo-municipio" data-nivel="3" x="628.47" y="166.45" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Ibirajuba</text>
+  <text class="rotulo-municipio" data-nivel="2" x="779.97" y="70.53" style="--rotulo-base:2.9" font-size="2.9" pointer-events="none">Igarassu</text>
   <text class="rotulo-municipio" data-nivel="1" x="484.29" y="72.94" style="--rotulo-base:5.0" font-size="5.0" pointer-events="none">Iguaracy</text>
   <text class="rotulo-municipio" data-nivel="4" x="794.15" y="60.16" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Ilha de Itamaracá</text>
   <text class="rotulo-municipio" data-nivel="1" x="423.48" y="187.16" style="--rotulo-base:5.8" font-size="5.8" pointer-events="none">Inajá</text>
-  <text class="rotulo-municipio" data-nivel="2" x="479.93" y="55.68" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Ingazeira</text>
-  <text class="rotulo-municipio" data-nivel="1" x="767.35" y="143.74" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">Ipojuca</text>
-  <text class="rotulo-municipio" data-nivel="1" x="138.19" y="20.51" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Ipubi</text>
+  <text class="rotulo-municipio" data-nivel="3" x="479.93" y="55.68" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Ingazeira</text>
+  <text class="rotulo-municipio" data-nivel="2" x="767.35" y="143.74" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">Ipojuca</text>
+  <text class="rotulo-municipio" data-nivel="2" x="138.19" y="20.51" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Ipubi</text>
   <text class="rotulo-municipio" data-nivel="2" x="320.14" y="181.13" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Itacuruba</text>
   <text class="rotulo-municipio" data-nivel="1" x="494.41" y="206.68" style="--rotulo-base:4.7" font-size="4.7" pointer-events="none">Itaíba</text>
-  <text class="rotulo-municipio" data-nivel="1" x="763.78" y="23.54" style="--rotulo-base:3.9" font-size="3.9" pointer-events="none">Itambé</text>
-  <text class="rotulo-municipio" data-nivel="1" x="519.69" y="19.44" style="--rotulo-base:3.3" font-size="3.3" pointer-events="none">Itapetim</text>
-  <text class="rotulo-municipio" data-nivel="3" x="787.65" y="57.32" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Itapissuma</text>
-  <text class="rotulo-municipio" data-nivel="2" x="771.52" y="51.62" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Itaquitinga</text>
+  <text class="rotulo-municipio" data-nivel="2" x="763.78" y="23.54" style="--rotulo-base:3.9" font-size="3.9" pointer-events="none">Itambé</text>
+  <text class="rotulo-municipio" data-nivel="2" x="519.69" y="19.44" style="--rotulo-base:3.3" font-size="3.3" pointer-events="none">Itapetim</text>
+  <text class="rotulo-municipio" data-nivel="4" x="787.65" y="57.32" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Itapissuma</text>
+  <text class="rotulo-municipio" data-nivel="3" x="771.52" y="51.62" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Itaquitinga</text>
   <text class="rotulo-municipio" data-nivel="3" x="774.24" y="107.76" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jaboatão dos Guararapes</text>
-  <text class="rotulo-municipio" data-nivel="2" x="677.64" y="180.97" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jaqueira</text>
-  <text class="rotulo-municipio" data-nivel="1" x="592.57" y="93.11" style="--rotulo-base:3.5" font-size="3.5" pointer-events="none">Jataúba</text>
-  <text class="rotulo-municipio" data-nivel="1" x="384.07" y="239.88" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jatobá</text>
-  <text class="rotulo-municipio" data-nivel="2" x="708.9" y="72.27" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">João Alfredo</text>
-  <text class="rotulo-municipio" data-nivel="3" x="709.41" y="155.53" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Joaquim Nabuco</text>
-  <text class="rotulo-municipio" data-nivel="2" x="598.02" y="182.67" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jucati</text>
-  <text class="rotulo-municipio" data-nivel="1" x="605.03" y="173.57" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jupi</text>
-  <text class="rotulo-municipio" data-nivel="2" x="636.72" y="182.82" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jurema</text>
-  <text class="rotulo-municipio" data-nivel="3" x="740.1" y="78.65" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lagoa de Itaenga</text>
-  <text class="rotulo-municipio" data-nivel="3" x="735.47" y="71.77" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lagoa do Carro</text>
+  <text class="rotulo-municipio" data-nivel="4" x="677.64" y="180.97" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jaqueira</text>
+  <text class="rotulo-municipio" data-nivel="2" x="592.57" y="93.11" style="--rotulo-base:3.5" font-size="3.5" pointer-events="none">Jataúba</text>
+  <text class="rotulo-municipio" data-nivel="2" x="384.07" y="239.88" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jatobá</text>
+  <text class="rotulo-municipio" data-nivel="3" x="708.9" y="72.27" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">João Alfredo</text>
+  <text class="rotulo-municipio" data-nivel="4" x="709.41" y="155.53" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Joaquim Nabuco</text>
+  <text class="rotulo-municipio" data-nivel="4" x="598.02" y="182.67" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jucati</text>
+  <text class="rotulo-municipio" data-nivel="4" x="605.03" y="173.57" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jupi</text>
+  <text class="rotulo-municipio" data-nivel="3" x="636.72" y="182.82" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Jurema</text>
+  <text class="rotulo-municipio" data-nivel="4" x="740.1" y="78.65" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lagoa de Itaenga</text>
+  <text class="rotulo-municipio" data-nivel="4" x="735.47" y="71.77" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lagoa do Carro</text>
   <text class="rotulo-municipio" data-nivel="3" x="598.11" y="230.75" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lagoa do Ouro</text>
   <text class="rotulo-municipio" data-nivel="3" x="666.35" y="174.08" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lagoa dos Gatos</text>
-  <text class="rotulo-municipio" data-nivel="2" x="137.05" y="179.26" style="--rotulo-base:4.9" font-size="4.9" pointer-events="none">Lagoa Grande</text>
-  <text class="rotulo-municipio" data-nivel="1" x="621.19" y="175.56" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lajedo</text>
-  <text class="rotulo-municipio" data-nivel="2" x="721.55" y="73.52" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Limoeiro</text>
-  <text class="rotulo-municipio" data-nivel="3" x="720.51" y="29.44" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Macaparana</text>
-  <text class="rotulo-municipio" data-nivel="2" x="715.79" y="53.11" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Machados</text>
-  <text class="rotulo-municipio" data-nivel="1" x="465.36" y="199.69" style="--rotulo-base:3.2" font-size="3.2" pointer-events="none">Manari</text>
-  <text class="rotulo-municipio" data-nivel="2" x="682.92" y="190.38" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Maraial</text>
-  <text class="rotulo-municipio" data-nivel="2" x="313.72" y="103.46" style="--rotulo-base:4.6" font-size="4.6" pointer-events="none">Mirandiba</text>
+  <text class="rotulo-municipio" data-nivel="1" x="137.05" y="179.26" style="--rotulo-base:4.9" font-size="4.9" pointer-events="none">Lagoa Grande</text>
+  <text class="rotulo-municipio" data-nivel="3" x="621.19" y="175.56" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Lajedo</text>
+  <text class="rotulo-municipio" data-nivel="3" x="721.55" y="73.52" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Limoeiro</text>
+  <text class="rotulo-municipio" data-nivel="4" x="720.51" y="29.44" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Macaparana</text>
+  <text class="rotulo-municipio" data-nivel="4" x="715.79" y="53.11" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Machados</text>
+  <text class="rotulo-municipio" data-nivel="2" x="465.36" y="199.69" style="--rotulo-base:3.2" font-size="3.2" pointer-events="none">Manari</text>
+  <text class="rotulo-municipio" data-nivel="3" x="682.92" y="190.38" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Maraial</text>
+  <text class="rotulo-municipio" data-nivel="1" x="313.72" y="103.46" style="--rotulo-base:4.6" font-size="4.6" pointer-events="none">Mirandiba</text>
   <text class="rotulo-municipio" data-nivel="2" x="224.61" y="42.54" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Moreilândia</text>
-  <text class="rotulo-municipio" data-nivel="1" x="756.44" y="106.81" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Moreno</text>
+  <text class="rotulo-municipio" data-nivel="3" x="756.44" y="106.81" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Moreno</text>
   <text class="rotulo-municipio" data-nivel="3" x="746.14" y="58.68" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Nazaré da Mata</text>
-  <text class="rotulo-municipio" data-nivel="2" x="793.67" y="89.23" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Olinda</text>
-  <text class="rotulo-municipio" data-nivel="1" x="704.56" y="52.02" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Orobó</text>
-  <text class="rotulo-municipio" data-nivel="1" x="217.85" y="158.05" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Orocó</text>
-  <text class="rotulo-municipio" data-nivel="1" x="155.66" y="87.74" style="--rotulo-base:8.0" font-size="8.0" pointer-events="none">Ouricuri</text>
-  <text class="rotulo-municipio" data-nivel="2" x="701.31" y="171.74" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Palmares</text>
+  <text class="rotulo-municipio" data-nivel="4" x="793.67" y="89.23" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Olinda</text>
+  <text class="rotulo-municipio" data-nivel="3" x="704.56" y="52.02" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Orobó</text>
+  <text class="rotulo-municipio" data-nivel="3" x="217.85" y="158.05" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Orocó</text>
+  <text class="rotulo-municipio" data-nivel="0" x="155.66" y="87.74" style="--rotulo-base:7.4" font-size="7.4" pointer-events="none">Ouricuri</text>
+  <text class="rotulo-municipio" data-nivel="3" x="701.31" y="171.74" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Palmares</text>
   <text class="rotulo-municipio" data-nivel="2" x="618.85" y="213.66" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Palmeirina</text>
-  <text class="rotulo-municipio" data-nivel="1" x="648.82" y="170.54" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Panelas</text>
+  <text class="rotulo-municipio" data-nivel="2" x="648.82" y="170.54" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Panelas</text>
   <text class="rotulo-municipio" data-nivel="2" x="568.36" y="199.9" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Paranatama</text>
-  <text class="rotulo-municipio" data-nivel="2" x="199.82" y="107.96" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Parnamirim</text>
-  <text class="rotulo-municipio" data-nivel="1" x="710.27" y="90.55" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Passira</text>
-  <text class="rotulo-municipio" data-nivel="1" x="757.53" y="78.72" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Paudalho</text>
-  <text class="rotulo-municipio" data-nivel="1" x="791.4" y="82.73" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Paulista</text>
-  <text class="rotulo-municipio" data-nivel="1" x="547.2" y="184.78" style="--rotulo-base:3.6" font-size="3.6" pointer-events="none">Pedra</text>
+  <text class="rotulo-municipio" data-nivel="0" x="199.82" y="107.96" style="--rotulo-base:6.9" font-size="6.9" pointer-events="none">Parnamirim</text>
+  <text class="rotulo-municipio" data-nivel="2" x="710.27" y="90.55" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Passira</text>
+  <text class="rotulo-municipio" data-nivel="2" x="757.53" y="78.72" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Paudalho</text>
+  <text class="rotulo-municipio" data-nivel="3" x="791.4" y="82.73" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Paulista</text>
+  <text class="rotulo-municipio" data-nivel="2" x="547.2" y="184.78" style="--rotulo-base:3.6" font-size="3.6" pointer-events="none">Pedra</text>
   <text class="rotulo-municipio" data-nivel="2" x="564.24" y="132.2" style="--rotulo-base:4.1" font-size="4.1" pointer-events="none">Pesqueira</text>
-  <text class="rotulo-municipio" data-nivel="2" x="368.7" y="199.72" style="--rotulo-base:5.0" font-size="5.0" pointer-events="none">Petrolândia</text>
-  <text class="rotulo-municipio" data-nivel="2" x="91.02" y="201.79" style="--rotulo-base:8.3" font-size="8.3" pointer-events="none">Petrolina</text>
-  <text class="rotulo-municipio" data-nivel="1" x="569.41" y="117.17" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Poção</text>
-  <text class="rotulo-municipio" data-nivel="1" x="730.5" y="112.8" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Pombos</text>
-  <text class="rotulo-municipio" data-nivel="2" x="727.14" y="126.26" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Primavera</text>
-  <text class="rotulo-municipio" data-nivel="2" x="652.4" y="194.6" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Quipapá</text>
-  <text class="rotulo-municipio" data-nivel="1" x="429.27" y="55.49" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Quixaba</text>
-  <text class="rotulo-municipio" data-nivel="1" x="785.79" y="97.23" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Recife</text>
+  <text class="rotulo-municipio" data-nivel="1" x="368.7" y="199.72" style="--rotulo-base:5.0" font-size="5.0" pointer-events="none">Petrolândia</text>
+  <text class="rotulo-municipio" data-nivel="0" x="91.02" y="201.79" style="--rotulo-base:6.9" font-size="6.9" pointer-events="none">Petrolina</text>
+  <text class="rotulo-municipio" data-nivel="3" x="569.41" y="117.17" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Poção</text>
+  <text class="rotulo-municipio" data-nivel="3" x="730.5" y="112.8" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Pombos</text>
+  <text class="rotulo-municipio" data-nivel="3" x="727.14" y="126.26" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Primavera</text>
+  <text class="rotulo-municipio" data-nivel="3" x="652.4" y="194.6" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Quipapá</text>
+  <text class="rotulo-municipio" data-nivel="3" x="429.27" y="55.49" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Quixaba</text>
+  <text class="rotulo-municipio" data-nivel="3" x="785.79" y="97.23" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Recife</text>
   <text class="rotulo-municipio" data-nivel="2" x="666.46" y="102.86" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Riacho das Almas</text>
-  <text class="rotulo-municipio" data-nivel="1" x="730.19" y="149.83" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Ribeirão</text>
+  <text class="rotulo-municipio" data-nivel="2" x="730.19" y="149.83" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Ribeirão</text>
   <text class="rotulo-municipio" data-nivel="2" x="755.1" y="173.11" style="--rotulo-base:2.9" font-size="2.9" pointer-events="none">Rio Formoso</text>
-  <text class="rotulo-municipio" data-nivel="1" x="693.44" y="129.9" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Sairé</text>
-  <text class="rotulo-municipio" data-nivel="2" x="700.77" y="78.76" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Salgadinho</text>
-  <text class="rotulo-municipio" data-nivel="2" x="283.65" y="115.65" style="--rotulo-base:5.6" font-size="5.6" pointer-events="none">Salgueiro</text>
-  <text class="rotulo-municipio" data-nivel="1" x="563.35" y="212.43" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Saloá</text>
-  <text class="rotulo-municipio" data-nivel="2" x="586.11" y="133.75" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Sanharó</text>
+  <text class="rotulo-municipio" data-nivel="3" x="693.44" y="129.9" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Sairé</text>
+  <text class="rotulo-municipio" data-nivel="3" x="700.77" y="78.76" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Salgadinho</text>
+  <text class="rotulo-municipio" data-nivel="1" x="283.65" y="115.65" style="--rotulo-base:5.6" font-size="5.6" pointer-events="none">Salgueiro</text>
+  <text class="rotulo-municipio" data-nivel="2" x="563.35" y="212.43" style="--rotulo-base:2.7" font-size="2.7" pointer-events="none">Saloá</text>
+  <text class="rotulo-municipio" data-nivel="3" x="586.11" y="133.75" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Sanharó</text>
   <text class="rotulo-municipio" data-nivel="2" x="127.12" y="126.8" style="--rotulo-base:4.1" font-size="4.1" pointer-events="none">Santa Cruz</text>
   <text class="rotulo-municipio" data-nivel="4" x="387.53" y="73.62" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Santa Cruz da Baixa Verde</text>
-  <text class="rotulo-municipio" data-nivel="3" x="613.32" y="74.88" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">Santa Cruz do Capibaribe</text>
+  <text class="rotulo-municipio" data-nivel="2" x="613.32" y="74.88" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Santa Cruz do Capibaribe</text>
   <text class="rotulo-municipio" data-nivel="2" x="97.52" y="120.87" style="--rotulo-base:4.0" font-size="4.0" pointer-events="none">Santa Filomena</text>
-  <text class="rotulo-municipio" data-nivel="3" x="180.7" y="160.67" style="--rotulo-base:6.3" font-size="6.3" pointer-events="none">Santa Maria da Boa Vista</text>
+  <text class="rotulo-municipio" data-nivel="1" x="180.7" y="160.67" style="--rotulo-base:3.4" font-size="3.4" pointer-events="none">Santa Maria da Boa Vista</text>
   <text class="rotulo-municipio" data-nivel="4" x="668.81" y="68.07" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Santa Maria do Cambucá</text>
   <text class="rotulo-municipio" data-nivel="3" x="479.18" y="19.8" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Santa Terezinha</text>
-  <text class="rotulo-municipio" data-nivel="3" x="665.78" y="188.72" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São Benedito do Sul</text>
+  <text class="rotulo-municipio" data-nivel="4" x="665.78" y="188.72" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São Benedito do Sul</text>
   <text class="rotulo-municipio" data-nivel="2" x="601.46" y="156.04" style="--rotulo-base:3.4" font-size="3.4" pointer-events="none">São Bento do Una</text>
-  <text class="rotulo-municipio" data-nivel="2" x="637.34" y="129.45" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São Caitano</text>
-  <text class="rotulo-municipio" data-nivel="2" x="607.66" y="195.49" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São João</text>
+  <text class="rotulo-municipio" data-nivel="3" x="637.34" y="129.45" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São Caitano</text>
+  <text class="rotulo-municipio" data-nivel="3" x="607.66" y="195.49" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São João</text>
   <text class="rotulo-municipio" data-nivel="3" x="672.06" y="142.82" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São Joaquim do Monte</text>
-  <text class="rotulo-municipio" data-nivel="4" x="756.24" y="196.35" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São José da Coroa Grande</text>
-  <text class="rotulo-municipio" data-nivel="3" x="314.88" y="72.02" style="--rotulo-base:4.6" font-size="4.6" pointer-events="none">São José do Belmonte</text>
-  <text class="rotulo-municipio" data-nivel="2" x="499.32" y="28.57" style="--rotulo-base:4.7" font-size="4.7" pointer-events="none">São José do Egito</text>
-  <text class="rotulo-municipio" data-nivel="3" x="764.82" y="93.22" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">São Lourenço da Mata</text>
+  <text class="rotulo-municipio" data-nivel="3" x="756.24" y="196.35" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São José da Coroa Grande</text>
+  <text class="rotulo-municipio" data-nivel="1" x="314.88" y="72.02" style="--rotulo-base:2.9" font-size="2.9" pointer-events="none">São José do Belmonte</text>
+  <text class="rotulo-municipio" data-nivel="1" x="499.32" y="28.57" style="--rotulo-base:3.6" font-size="3.6" pointer-events="none">São José do Egito</text>
+  <text class="rotulo-municipio" data-nivel="2" x="764.82" y="93.22" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">São Lourenço da Mata</text>
   <text class="rotulo-municipio" data-nivel="4" x="716.75" y="40.57" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">São Vicente Férrer</text>
-  <text class="rotulo-municipio" data-nivel="2" x="363.53" y="97.75" style="--rotulo-base:6.7" font-size="6.7" pointer-events="none">Serra Talhada</text>
+  <text class="rotulo-municipio" data-nivel="1" x="363.53" y="97.75" style="--rotulo-base:6.6" font-size="6.6" pointer-events="none">Serra Talhada</text>
   <text class="rotulo-municipio" data-nivel="1" x="238.25" y="68.21" style="--rotulo-base:5.3" font-size="5.3" pointer-events="none">Serrita</text>
   <text class="rotulo-municipio" data-nivel="1" x="490.85" y="116.15" style="--rotulo-base:6.6" font-size="6.6" pointer-events="none">Sertânia</text>
   <text class="rotulo-municipio" data-nivel="2" x="751.27" y="155.86" style="--rotulo-base:2.9" font-size="2.9" pointer-events="none">Sirinhaém</text>
-  <text class="rotulo-municipio" data-nivel="1" x="452.77" y="37.14" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Solidão</text>
-  <text class="rotulo-municipio" data-nivel="1" x="684.27" y="75.27" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Surubim</text>
-  <text class="rotulo-municipio" data-nivel="1" x="468.61" y="35.02" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Tabira</text>
-  <text class="rotulo-municipio" data-nivel="2" x="620.28" y="133.03" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Tacaimbó</text>
+  <text class="rotulo-municipio" data-nivel="3" x="452.77" y="37.14" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Solidão</text>
+  <text class="rotulo-municipio" data-nivel="3" x="684.27" y="75.27" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Surubim</text>
+  <text class="rotulo-municipio" data-nivel="3" x="468.61" y="35.02" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Tabira</text>
+  <text class="rotulo-municipio" data-nivel="3" x="620.28" y="133.03" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Tacaimbó</text>
   <text class="rotulo-municipio" data-nivel="1" x="398.88" y="220.02" style="--rotulo-base:4.6" font-size="4.6" pointer-events="none">Tacaratu</text>
   <text class="rotulo-municipio" data-nivel="2" x="740.86" y="181.61" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">Tamandaré</text>
-  <text class="rotulo-municipio" data-nivel="3" x="640.79" y="74.07" style="--rotulo-base:2.9" font-size="2.9" pointer-events="none">Taquaritinga do Norte</text>
-  <text class="rotulo-municipio" data-nivel="2" x="575.85" y="221.88" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Terezinha</text>
+  <text class="rotulo-municipio" data-nivel="2" x="640.79" y="74.07" style="--rotulo-base:2.9" font-size="2.9" pointer-events="none">Taquaritinga do Norte</text>
+  <text class="rotulo-municipio" data-nivel="3" x="575.85" y="221.88" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Terezinha</text>
   <text class="rotulo-municipio" data-nivel="2" x="244.03" y="106.32" style="--rotulo-base:2.8" font-size="2.8" pointer-events="none">Terra Nova</text>
-  <text class="rotulo-municipio" data-nivel="1" x="734.43" y="34.05" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Timbaúba</text>
-  <text class="rotulo-municipio" data-nivel="3" x="646.27" y="89.49" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Toritama</text>
-  <text class="rotulo-municipio" data-nivel="2" x="754.83" y="64.02" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Tracunhaém</text>
-  <text class="rotulo-municipio" data-nivel="2" x="129.41" y="58.21" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Trindade</text>
-  <text class="rotulo-municipio" data-nivel="2" x="400.08" y="74.41" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Triunfo</text>
+  <text class="rotulo-municipio" data-nivel="2" x="734.43" y="34.05" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Timbaúba</text>
+  <text class="rotulo-municipio" data-nivel="4" x="646.27" y="89.49" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Toritama</text>
+  <text class="rotulo-municipio" data-nivel="3" x="754.83" y="64.02" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Tracunhaém</text>
+  <text class="rotulo-municipio" data-nivel="4" x="129.41" y="58.21" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Trindade</text>
+  <text class="rotulo-municipio" data-nivel="3" x="400.08" y="74.41" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Triunfo</text>
   <text class="rotulo-municipio" data-nivel="2" x="494" y="147.17" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Tupanatinga</text>
   <text class="rotulo-municipio" data-nivel="2" x="495.27" y="48.05" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Tuparetama</text>
   <text class="rotulo-municipio" data-nivel="2" x="551.79" y="162.92" style="--rotulo-base:2.5" font-size="2.5" pointer-events="none">Venturosa</text>
   <text class="rotulo-municipio" data-nivel="2" x="289.33" y="86.78" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Verdejante</text>
   <text class="rotulo-municipio" data-nivel="3" x="676.36" y="62.56" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Vertente do Lério</text>
-  <text class="rotulo-municipio" data-nivel="2" x="658.19" y="71.14" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Vertentes</text>
-  <text class="rotulo-municipio" data-nivel="1" x="738.57" y="47.63" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Vicência</text>
-  <text class="rotulo-municipio" data-nivel="3" x="741.87" y="105.12" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Vitória de Santo Antão</text>
-  <text class="rotulo-municipio" data-nivel="1" x="697.63" y="193.46" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Xexéu</text>
+  <text class="rotulo-municipio" data-nivel="3" x="658.19" y="71.14" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Vertentes</text>
+  <text class="rotulo-municipio" data-nivel="3" x="738.57" y="47.63" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Vicência</text>
+  <text class="rotulo-municipio" data-nivel="2" x="741.87" y="105.12" style="--rotulo-base:2.6" font-size="2.6" pointer-events="none">Vitória de Santo Antão</text>
+  <text class="rotulo-municipio" data-nivel="3" x="697.63" y="193.46" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Xexéu</text>
   <g id="rotulos-regioes">
   <text class="rotulo-regiao" data-cor="0" x="603.58" y="145.00" pointer-events="none">Agreste Pernambucano</text>
   <text class="rotulo-regiao" data-cor="1" x="719.48" y="107.75" pointer-events="none">Mata Pernambucana</text>

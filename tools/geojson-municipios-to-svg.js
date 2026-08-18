@@ -149,45 +149,54 @@ function douglasPeucker(pontos, eps) {
 /* ---- Tamanho e momento de aparecer, decididos POR MUNICÍPIO ----
  *
  * O Paulo reclamou do Altamira: município gigante, nome minúsculo que
- * só surge com muito zoom -- então você fica procurando o nome dentro
- * do próprio território. Medi os 5.584 e eram DUAS falhas somadas:
+ * só surgia com muito zoom -- você ficava procurando o nome dentro do
+ * próprio território.
  *
- *   - a fonte tinha teto fixo em 4, então o maior município do Brasil
- *     recebia a mesma letra de um município médio;
- *   - o momento de aparecer era único (zoom 7) pra todos, e 86,8%
- *     deles já CABERIAM antes disso. Altamira cabe desde o zoom 0,45 --
- *     ficava escondido por 15x mais zoom do que precisava.
+ * A PRIMEIRA tentativa perguntava "a partir de que zoom o nome CABE
+ * aqui dentro?". Estava errada, e o proprio mapa denunciou: em Minas os
+ * primeiros nomes a aparecer eram Ibiá, Luz, Poté, Ubá, Ubaí e Unaí --
+ * todos de 3 ou 4 letras. A regra premiava NOME CURTO, não município
+ * grande. Ubá (largura 19, dos menores) vinha antes de João Pinheiro e
+ * Patos de Minas (85 e 84, dos maiores).
  *
- * Agora cada um responde a mesma pergunta: "a partir de que zoom meu
- * nome cabe dentro de mim?". A conta é direta -- a letra tem tamanho
- * fixo NA TELA (ver o CSS), e a largura do município na tela cresce com
- * o zoom, então existe um zoom em que o nome passa a caber:
+ * Agora quem manda é o TAMANHO: um município ganha nome quando fica
+ * largo o bastante na tela pra merecer um. E a fonte é a maior que
+ * couber nele naquele momento -- assim nome comprido não empurra um
+ * município grande pro fim da fila, só ganha letra menor.
  *
- *     largura do texto = nº de letras x LARGURA_LETRA x base x MULT_CSS
- *     zoom que cabe    = largura do texto / largura do município
- *
- * O resultado vira `data-nivel`, e o CSS revela cada nível na sua faixa
- * (ver ZOOM_ROTULO_ESTADUAL em js/script.js). O critério se autolimita:
- * um nome só aparece quando cabe DENTRO do território, então vizinhos
- * não disputam o mesmo espaço.
+ *     zoom por tamanho = LARGURA_MINIMA_TELA / (largura x FATOR_TELA)
+ *     fonte            = a maior que cabe no municipio nesse zoom
  */
+const FATOR_TELA = 0.469; // 375 px de tela / 800 do viewBox
+const LARGURA_MINIMA_TELA = 100; // px que o município precisa ter pra ganhar nome
 const LARGURA_LETRA = 0.55; // fração do tamanho da fonte, por caractere
 const MULT_CSS = 7; // o multiplicador de #estado-viewport svg .rotulo-municipio
 const FONTE_MIN = 2.4;
-const FONTE_MAX = 9; // teto novo: 4 achatava os gigantes no mesmo tamanho
-/* Faixas de zoom em que cada nível é revelado. Tem que bater com o
-   ZOOM_ROTULO_ESTADUAL do js/script.js. */
-const FAIXAS_ROTULO = [1.5, 3, 6, 12, 22];
+const FONTE_MAX = 9; // teto 4 achatava os gigantes no tamanho de um médio
+
+/* Faixas de zoom em que cada nível é revelado -- tem que bater com o
+   ZOOM_ROTULO_ESTADUAL do js/script.js.
+   A primeira faixa começa DEPOIS do LIMIAR_REGIOES (2.4) de propósito:
+   abaixo dele o mapa está em modo regiões, sem divisa de município
+   nenhuma, e nome de município ali é nome sobre um mapa que não está
+   mostrando municípios. */
+const FAIXAS_ROTULO = [2.6, 4.5, 8, 14, 24];
 
 function estiloDoRotulo(nome, largura) {
-  // Arredonda ANTES de decidir o nível: é este valor que vai pro arquivo,
-  // e calcular com o número cheio fazia o nome ser revelado um triz antes
-  // de caber.
-  const fonte = Number(Math.max(FONTE_MIN, Math.min(FONTE_MAX, largura / 11)).toFixed(1));
-  const larguraTexto = nome.length * LARGURA_LETRA * fonte * MULT_CSS;
-  const zoomQueCabe = largura > 0 ? larguraTexto / largura : Infinity;
-  let nivel = FAIXAS_ROTULO.findIndex((z) => zoomQueCabe <= z);
-  if (nivel === -1) nivel = FAIXAS_ROTULO.length - 1; // nome que nunca cabe: último
+  if (!(largura > 0)) return { fonte: FONTE_MIN, nivel: FAIXAS_ROTULO.length - 1 };
+
+  const zoomPorTamanho = LARGURA_MINIMA_TELA / (largura * FATOR_TELA);
+  let nivel = FAIXAS_ROTULO.findIndex((z) => zoomPorTamanho <= z);
+  if (nivel === -1) nivel = FAIXAS_ROTULO.length - 1;
+
+  // A maior fonte que cabe na largura do município no zoom em que ele
+  // vai aparecer. O outro limite (largura/11) é estético: mantém a
+  // letra proporcional ao município em vez de esticar até o teto.
+  const zoomRevela = FAIXAS_ROTULO[nivel];
+  const cabeNoZoom = (largura * zoomRevela) / (nome.length * LARGURA_LETRA * MULT_CSS);
+  const fonte = Number(
+    Math.max(FONTE_MIN, Math.min(FONTE_MAX, largura / 11, cabeNoZoom)).toFixed(1)
+  );
   return { fonte, nivel };
 }
 

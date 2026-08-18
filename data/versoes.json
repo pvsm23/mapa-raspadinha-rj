@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.18.97",
+    "itens": [
+      "Correção: os primeiros nomes a aparecer no mapa eram os de nome curto, e não os dos municípios grandes — Ubá vinha antes de Patos de Minas.",
+      "Agora quem aparece primeiro é sempre o município maior, mesmo que o nome dele seja comprido.",
+      "E os nomes não aparecem mais enquanto o mapa está mostrando as regiões, quando as divisas de município nem estão na tela."
+    ]
+  },
+  {
     "versao": "0.26.08.18.96",
     "itens": [
       "Nos estados grandes, o nome dos municípios enormes agora aparece bem antes e bem maior — antes ficava minúsculo e só surgia com muito zoom, e você tinha que procurar o nome dentro do próprio município.",

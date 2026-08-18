@@ -39,19 +39,19 @@
   <text class="rotulo-municipio" data-nivel="0" x="733.51" y="471.16" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Amapá</text>
   <text class="rotulo-municipio" data-nivel="0" x="584.37" y="316.73" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Calçoene</text>
   <text class="rotulo-municipio" data-nivel="0" x="723.54" y="552.62" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Cutias</text>
-  <text class="rotulo-municipio" data-nivel="1" x="596.37" y="596.17" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Ferreira Gomes</text>
-  <text class="rotulo-municipio" data-nivel="1" x="684.1" y="642.81" style="--rotulo-base:7.8" font-size="7.8" pointer-events="none">Itaubal</text>
+  <text class="rotulo-municipio" data-nivel="0" x="596.37" y="596.17" style="--rotulo-base:8.7" font-size="8.7" pointer-events="none">Ferreira Gomes</text>
+  <text class="rotulo-municipio" data-nivel="0" x="684.1" y="642.81" style="--rotulo-base:7.8" font-size="7.8" pointer-events="none">Itaubal</text>
   <text class="rotulo-municipio" data-nivel="0" x="214.57" y="429.44" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Laranjal do Jari</text>
   <text class="rotulo-municipio" data-nivel="0" x="635.34" y="676.58" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Macapá</text>
   <text class="rotulo-municipio" data-nivel="0" x="463.65" y="711.34" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Mazagão</text>
   <text class="rotulo-municipio" data-nivel="0" x="518.2" y="180.23" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Oiapoque</text>
-  <text class="rotulo-municipio" data-nivel="2" x="363.04" y="550.07" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Pedra Branca do Amapari</text>
-  <text class="rotulo-municipio" data-nivel="1" x="531.51" y="619.52" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Porto Grande</text>
+  <text class="rotulo-municipio" data-nivel="0" x="363.04" y="550.07" style="--rotulo-base:6.4" font-size="6.4" pointer-events="none">Pedra Branca do Amapari</text>
+  <text class="rotulo-municipio" data-nivel="0" x="531.51" y="619.52" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Porto Grande</text>
   <text class="rotulo-municipio" data-nivel="0" x="522.95" y="482.96" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Pracuúba</text>
   <text class="rotulo-municipio" data-nivel="1" x="553.36" y="699" style="--rotulo-base:6.9" font-size="6.9" pointer-events="none">Santana</text>
-  <text class="rotulo-municipio" data-nivel="1" x="410.65" y="433.76" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Serra do Navio</text>
-  <text class="rotulo-municipio" data-nivel="2" x="630.13" y="515.19" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Tartarugalzinho</text>
-  <text class="rotulo-municipio" data-nivel="2" x="415.66" y="874.55" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Vitória do Jari</text>
+  <text class="rotulo-municipio" data-nivel="0" x="410.65" y="433.76" style="--rotulo-base:8.1" font-size="8.1" pointer-events="none">Serra do Navio</text>
+  <text class="rotulo-municipio" data-nivel="0" x="630.13" y="515.19" style="--rotulo-base:7.7" font-size="7.7" pointer-events="none">Tartarugalzinho</text>
+  <text class="rotulo-municipio" data-nivel="0" x="415.66" y="874.55" style="--rotulo-base:5.6" font-size="5.6" pointer-events="none">Vitória do Jari</text>
   <g id="rotulos-regioes">
   <text class="rotulo-regiao" data-cor="0" x="527.75" y="286.24" pointer-events="none">Norte do Amapá</text>
   <text class="rotulo-regiao" data-cor="1" x="399.41" y="622.76" pointer-events="none">Sul do Amapá</text>

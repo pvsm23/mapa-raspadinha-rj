@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.18.96";
+const VERSAO_APP = "0.26.08.18.97";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.18.96";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.18.97", itens: ["Correção: os primeiros nomes a aparecer no mapa eram os de nome curto, e não os dos municípios grandes — Ubá vinha antes de Patos de Minas.", "Agora quem aparece primeiro é sempre o município maior, mesmo que o nome dele seja comprido.", "E os nomes não aparecem mais enquanto o mapa está mostrando as regiões, quando as divisas de município nem estão na tela."] },
   { versao: "0.26.08.18.96", itens: ["Nos estados grandes, o nome dos municípios enormes agora aparece bem antes e bem maior — antes ficava minúsculo e só surgia com muito zoom, e você tinha que procurar o nome dentro do próprio município.", "Cada município passou a mostrar o nome no zoom em que ele cabe ali dentro, em vez de todos aparecerem de uma vez.", "Os nomes vão entrando aos poucos conforme você aproxima, deixando o mapa mais limpo de longe."] },
   { versao: "0.26.08.18.95", itens: ["O Brasil inteiro entrou no mapa: os 26 estados e o Distrito Federal agora dá pra explorar município por município, no mesmo nível de detalhe do Rio.", "No Distrito Federal aparecem as 33 Regiões Administrativas, já que ele tem um município só.", "Cada mapa é baixado quando você quiser, um estado de cada vez, e depois abre sem internet — nenhum deles pesa no tamanho do aplicativo.", "A tela do Mapa do Brasil foi refeita: o país inteiro cabe na tela sem arrastar, e agora tem uma lista de estados embaixo, com alvos grandes de tocar.", "Configurações, a leitura sobre os municípios e a Loja deixaram de exigir login — só raspar selo e comprar é que pedem conta.", "Correção: o aviso de estado em desenvolvimento ficava escondido atrás da barra do app."] },
   { versao: "0.26.08.17.94", itens: ["Conquistas, Rotas, Loja e Comunidade agora são de cada estado: você vê o conteúdo do mapa que estiver aberto, e nos estados novos aparece o aviso de que essa parte ainda está sendo montada.", "A Comunidade mostra só os posts do estado ativo.", "A lupa passou a funcionar nos estados novos, procurando as cidades do mapa aberto e levando você até elas.", "O Ranking ganhou a aba Estadual, entre a Global e a de Amigos.", "A bússola avisa quando você está em outro estado, dizendo em qual."] },
@@ -12578,10 +12579,14 @@ function inicializarPanZoomEstadual() {
      carimba o data-nivel de cada município.
 
      Era um limiar único (7) pra todo mundo, e 86,8% dos municípios já
-     caberiam antes disso -- Altamira cabe desde o zoom 0,45 e ficava
-     escondido até o 7. Agora cada nome aparece no zoom em que ele cabe
-     dentro do próprio território. */
-  const ZOOM_ROTULO_ESTADUAL = [1.5, 3, 6, 12, 22];
+     caberiam antes disso -- Altamira ficava escondido por 15x mais zoom
+     do que precisava. Agora o município ganha nome quando fica largo o
+     bastante na tela, e a fonte é a maior que couber nele.
+
+     A primeira faixa começa depois do LIMIAR_REGIOES (2.4): abaixo
+     disso o mapa está em modo regiões, sem divisa de município, e nome
+     ali é nome sobre um mapa que não está mostrando municípios. */
+  const ZOOM_ROTULO_ESTADUAL = [2.6, 4.5, 8, 14, 24];
   /* Zoom em que cada degrau de afinamento da divisa entra (classes
      .zoom-n1 a .zoom-n4). Vai até bem mais fundo que o do RJ porque
      aqui o mapa vai até 80x, contra 40x lá. */

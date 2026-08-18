@@ -71,35 +71,35 @@
   </g>
   <text class="rotulo-municipio" data-nivel="2" x="216.9" y="282" style="--rotulo-base:3.7" font-size="3.7" pointer-events="none">Águas Claras</text>
   <text class="rotulo-municipio" data-nivel="2" x="225.2" y="307.81" style="--rotulo-base:3.5" font-size="3.5" pointer-events="none">Arniqueira</text>
-  <text class="rotulo-municipio" data-nivel="1" x="132.08" y="61.69" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Brazlândia</text>
-  <text class="rotulo-municipio" data-nivel="2" x="279.52" y="299.96" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Candangolândia</text>
-  <text class="rotulo-municipio" data-nivel="1" x="41.29" y="292.32" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Ceilândia</text>
-  <text class="rotulo-municipio" data-nivel="2" x="283.74" y="250.67" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cruzeiro</text>
+  <text class="rotulo-municipio" data-nivel="0" x="132.08" y="61.69" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Brazlândia</text>
+  <text class="rotulo-municipio" data-nivel="3" x="279.52" y="299.96" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Candangolândia</text>
+  <text class="rotulo-municipio" data-nivel="0" x="41.29" y="292.32" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Ceilândia</text>
+  <text class="rotulo-municipio" data-nivel="4" x="283.74" y="250.67" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Cruzeiro</text>
   <text class="rotulo-municipio" data-nivel="0" x="326.72" y="38.31" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Fercal</text>
   <text class="rotulo-municipio" data-nivel="0" x="109.28" y="421.87" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Gama</text>
-  <text class="rotulo-municipio" data-nivel="1" x="256.21" y="277.81" style="--rotulo-base:4.2" font-size="4.2" pointer-events="none">Guará</text>
-  <text class="rotulo-municipio" data-nivel="1" x="450.61" y="206.7" style="--rotulo-base:8.7" font-size="8.7" pointer-events="none">Itapoã</text>
-  <text class="rotulo-municipio" data-nivel="2" x="374.57" y="415.52" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Jardim Botânico</text>
-  <text class="rotulo-municipio" data-nivel="2" x="362.46" y="178.2" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Lago Norte</text>
-  <text class="rotulo-municipio" data-nivel="1" x="320.05" y="307.97" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Lago Sul</text>
-  <text class="rotulo-municipio" data-nivel="3" x="260.41" y="315.86" style="--rotulo-base:3.4" font-size="3.4" pointer-events="none">Núcleo Bandeirante</text>
+  <text class="rotulo-municipio" data-nivel="2" x="256.21" y="277.81" style="--rotulo-base:4.2" font-size="4.2" pointer-events="none">Guará</text>
+  <text class="rotulo-municipio" data-nivel="0" x="450.61" y="206.7" style="--rotulo-base:8.7" font-size="8.7" pointer-events="none">Itapoã</text>
+  <text class="rotulo-municipio" data-nivel="0" x="374.57" y="415.52" style="--rotulo-base:7.4" font-size="7.4" pointer-events="none">Jardim Botânico</text>
+  <text class="rotulo-municipio" data-nivel="0" x="362.46" y="178.2" style="--rotulo-base:7.7" font-size="7.7" pointer-events="none">Lago Norte</text>
+  <text class="rotulo-municipio" data-nivel="0" x="320.05" y="307.97" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Lago Sul</text>
+  <text class="rotulo-municipio" data-nivel="2" x="260.41" y="315.86" style="--rotulo-base:3.4" font-size="3.4" pointer-events="none">Núcleo Bandeirante</text>
   <text class="rotulo-municipio" data-nivel="0" x="651.72" y="385.75" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Paranoá</text>
-  <text class="rotulo-municipio" data-nivel="1" x="279.85" y="373.34" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Park Way</text>
+  <text class="rotulo-municipio" data-nivel="0" x="279.85" y="373.34" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Park Way</text>
   <text class="rotulo-municipio" data-nivel="0" x="644.52" y="159.94" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Planaltina</text>
-  <text class="rotulo-municipio" data-nivel="1" x="232.64" y="149" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Plano Piloto</text>
-  <text class="rotulo-municipio" data-nivel="2" x="170.58" y="349.9" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Recanto das Emas</text>
-  <text class="rotulo-municipio" data-nivel="2" x="230.19" y="332.91" style="--rotulo-base:4.7" font-size="4.7" pointer-events="none">Riacho Fundo</text>
-  <text class="rotulo-municipio" data-nivel="2" x="217.27" y="365.59" style="--rotulo-base:5.7" font-size="5.7" pointer-events="none">Riacho Fundo II</text>
-  <text class="rotulo-municipio" data-nivel="1" x="102.79" y="324.77" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Samambaia</text>
-  <text class="rotulo-municipio" data-nivel="1" x="253.67" y="434.08" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Santa Maria</text>
-  <text class="rotulo-municipio" data-nivel="1" x="472.05" y="410.61" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">São Sebastião</text>
-  <text class="rotulo-municipio" data-nivel="0" x="236.95" y="234.13" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">SCIA</text>
-  <text class="rotulo-municipio" data-nivel="0" x="270.62" y="225.32" style="--rotulo-base:5.6" font-size="5.6" pointer-events="none">SIA</text>
-  <text class="rotulo-municipio" data-nivel="1" x="395.25" y="54.61" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Sobradinho</text>
-  <text class="rotulo-municipio" data-nivel="1" x="233.68" y="37.19" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Sobradinho II</text>
-  <text class="rotulo-municipio" data-nivel="3" x="109.82" y="280.85" style="--rotulo-base:6.2" font-size="6.2" pointer-events="none">Sol Nascente/Pôr do Sol</text>
-  <text class="rotulo-municipio" data-nivel="3" x="297.05" y="247.03" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Sudoeste/Octogonal</text>
-  <text class="rotulo-municipio" data-nivel="2" x="170.55" y="240.49" style="--rotulo-base:6.5" font-size="6.5" pointer-events="none">Taguatinga</text>
-  <text class="rotulo-municipio" data-nivel="1" x="328.38" y="173.87" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Varjão</text>
-  <text class="rotulo-municipio" data-nivel="2" x="212.28" y="250.54" style="--rotulo-base:5.0" font-size="5.0" pointer-events="none">Vicente Pires</text>
+  <text class="rotulo-municipio" data-nivel="0" x="232.64" y="149" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Plano Piloto</text>
+  <text class="rotulo-municipio" data-nivel="0" x="170.58" y="349.9" style="--rotulo-base:7.7" font-size="7.7" pointer-events="none">Recanto das Emas</text>
+  <text class="rotulo-municipio" data-nivel="1" x="230.19" y="332.91" style="--rotulo-base:4.7" font-size="4.7" pointer-events="none">Riacho Fundo</text>
+  <text class="rotulo-municipio" data-nivel="1" x="217.27" y="365.59" style="--rotulo-base:4.9" font-size="4.9" pointer-events="none">Riacho Fundo II</text>
+  <text class="rotulo-municipio" data-nivel="0" x="102.79" y="324.77" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Samambaia</text>
+  <text class="rotulo-municipio" data-nivel="0" x="253.67" y="434.08" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Santa Maria</text>
+  <text class="rotulo-municipio" data-nivel="0" x="472.05" y="410.61" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">São Sebastião</text>
+  <text class="rotulo-municipio" data-nivel="2" x="236.95" y="234.13" style="--rotulo-base:3.1" font-size="3.1" pointer-events="none">SCIA</text>
+  <text class="rotulo-municipio" data-nivel="1" x="270.62" y="225.32" style="--rotulo-base:5.6" font-size="5.6" pointer-events="none">SIA</text>
+  <text class="rotulo-municipio" data-nivel="0" x="395.25" y="54.61" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Sobradinho</text>
+  <text class="rotulo-municipio" data-nivel="0" x="233.68" y="37.19" style="--rotulo-base:9.0" font-size="9.0" pointer-events="none">Sobradinho II</text>
+  <text class="rotulo-municipio" data-nivel="1" x="109.82" y="280.85" style="--rotulo-base:3.5" font-size="3.5" pointer-events="none">Sol Nascente/Pôr do Sol</text>
+  <text class="rotulo-municipio" data-nivel="2" x="297.05" y="247.03" style="--rotulo-base:3.0" font-size="3.0" pointer-events="none">Sudoeste/Octogonal</text>
+  <text class="rotulo-municipio" data-nivel="1" x="170.55" y="240.49" style="--rotulo-base:6.5" font-size="6.5" pointer-events="none">Taguatinga</text>
+  <text class="rotulo-municipio" data-nivel="3" x="328.38" y="173.87" style="--rotulo-base:2.4" font-size="2.4" pointer-events="none">Varjão</text>
+  <text class="rotulo-municipio" data-nivel="1" x="212.28" y="250.54" style="--rotulo-base:4.9" font-size="4.9" pointer-events="none">Vicente Pires</text>
 </svg>
