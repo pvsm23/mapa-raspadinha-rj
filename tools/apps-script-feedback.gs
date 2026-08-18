@@ -184,12 +184,6 @@ function uploadFotoPost(dados) {
 }
 
 /**
- * Chamado ao excluir um post (ou a conta inteira) -- "melhor
- * esforço", não trava a exclusão do post/conta se o arquivo já tiver
- * sido apagado ou não for encontrado.
- */
-
-/**
  * Liga/desliga o acesso público de uma foto, SEM apagá-la.
  *
  * Existe pro arquivamento de banimento: quando uma conta é banida, o
@@ -219,6 +213,11 @@ function definirAcessoFotoPost(dados) {
   ).setMimeType(ContentService.MimeType.JSON);
 }
 
+/**
+ * Chamado ao excluir um post (ou a conta inteira) -- "melhor
+ * esforço", não trava a exclusão do post/conta se o arquivo já tiver
+ * sido apagado ou não for encontrado.
+ */
 function excluirFotoPost(dados) {
   try {
     if (dados.fotoId) DriveApp.getFileById(dados.fotoId).setTrashed(true);
