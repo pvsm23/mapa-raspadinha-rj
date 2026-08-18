@@ -55,6 +55,16 @@
  *    autorizar. Com o arquivo vazio ela não faz nada e devolve 0 --
  *    é o esperado.
  *
+ *    NA PRIMEIRA VEZ ela falha com "Firestore 400: The query requires
+ *    a COLLECTION_GROUP_ASC index for collection itens and field
+ *    arquivadoEm". Isso NÃO é erro no código: toda query collectionGroup
+ *    com filtro de campo exige um índice que o Firestore não cria
+ *    sozinho. O próprio erro traz um link que abre a criação já
+ *    preenchida -- ou, à mão: Firestore -> Índices -> Campo único ->
+ *    Adicionar isenção, coleção `itens`, campo `arquivadoEm`, escopo
+ *    Grupo de coleção, Crescente. Espere sair de "Criando" e rode de
+ *    novo.
+ *
  * 5. Gatilhos (ícone do relógio) -> Adicionar gatilho:
  *       função: limparArquivoVencido
  *       origem: Acionador por tempo
