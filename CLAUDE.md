@@ -96,7 +96,7 @@ apontando pro JBR do Android Studio. `tools/publicar-apk.ps1` publica o
 release à mão (usa o `gh`, instalado em `C:\Program Files\GitHub CLI`,
 fora do PATH).
 
-**Quatro projetos Apps Script**, cada um SEPARADO (o `doPost` roteia por
+**Cinco projetos Apps Script**, cada um SEPARADO (o `doPost` roteia por
 `tipo` e eles brigariam entre si; e a URL do de feedback está no repo
 público, onde endpoint de pagamento não pode ficar). Nenhum segredo nos
 arquivos — tudo em Propriedades do script. Publicar de novo é passo
@@ -104,6 +104,9 @@ manual do Paulo; alterar o `.gs` aqui não muda nada até ele republicar.
 - `apps-script-feedback.gs` — feedback, fotos da Comunidade no Drive e
   o acesso público delas (`acesso-foto-post`, `excluir-foto-post`).
 - `apps-script-gerar-cobranca.gs` — cobrança Pix do Motoclube.
+- `apps-script-clima.gs` — gatilho de 30 min que busca o clima dos 92
+  municípios no Open-Meteo e grava UM documento no Firestore (o app lê
+  esse documento em vez de falar com a API).
 - `apps-script-asaas.gs` — webhook do pagamento.
 - `apps-script-limpar-arquivo.gs` — gatilho DIÁRIO que apaga o arquivo
   de banimento vencido. Sem ele o "arquivo de 90 dias" vira "pra
