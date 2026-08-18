@@ -11,8 +11,13 @@ temáticas (oficiais + personalizadas, sem selo), comunidade
 (posts/curtidas/comentários), Motoclube Desbrava (dicas/lojas pra
 motociclistas, Garagem Virtual), Loja Desbrava (e-commerce gamificado,
 sem gateway de pagamento real) e verificação por GPS via Modo Viagem
-(rastreio só em primeiro plano, ligado à mão pelo usuário). Estado de
-SP em expansão (mapa navegável, sem conteúdo ainda).
+(rastreio só em primeiro plano, ligado à mão pelo usuário).
+
+**Os 26 estados + DF já estão no mapa** (desde a v0.26.08.18.95),
+navegáveis município a município na mesma qualidade do RJ -- mas só o
+RJ é PUBLICADO. Nos outros dá pra explorar o mapa e nada mais: não
+raspa, não conta progresso. Cada um ganha conteúdo e é publicado
+separadamente (ver "Expansão por estado" abaixo).
 
 Regras fixas:
 - **Versão** (`VERSAO_APP` em `js/script.js` + `versionCode`/
@@ -91,7 +96,162 @@ apontando pro JBR do Android Studio. `tools/publicar-apk.ps1` publica o
 release à mão (usa o `gh`, instalado em `C:\Program Files\GitHub CLI`,
 fora do PATH).
 
-## Última funcionalidade (v0.11.21 a v0.11.24)
+**Quatro projetos Apps Script**, cada um SEPARADO (o `doPost` roteia por
+`tipo` e eles brigariam entre si; e a URL do de feedback está no repo
+público, onde endpoint de pagamento não pode ficar). Nenhum segredo nos
+arquivos — tudo em Propriedades do script. Publicar de novo é passo
+manual do Paulo; alterar o `.gs` aqui não muda nada até ele republicar.
+- `apps-script-feedback.gs` — feedback, fotos da Comunidade no Drive e
+  o acesso público delas (`acesso-foto-post`, `excluir-foto-post`).
+- `apps-script-gerar-cobranca.gs` — cobrança Pix do Motoclube.
+- `apps-script-asaas.gs` — webhook do pagamento.
+- `apps-script-limpar-arquivo.gs` — gatilho DIÁRIO que apaga o arquivo
+  de banimento vencido. Sem ele o "arquivo de 90 dias" vira "pra
+  sempre".
+
+Os que falam com o Firestore precisam do escopo `datastore` declarado à
+mão no `appsscript.json` — o Apps Script só adivinha escopo pelo código,
+e como lá só aparece `UrlFetchApp` ele deixa o Firestore de fora e a
+chamada falha com `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
+
+## Última funcionalidade (v0.26.08.17.89 a v0.26.08.18.99)
+
+**Moderação: denúncia, banimento e arquivo** (v0.26.08.18.99). Não
+existia NADA disso: busca por "denunciar/reportar/abuso" no app dava
+zero, a regra do Firestore só deixava o AUTOR apagar (nem o dono), e
+banir a conta não tirava o conteúdo dela do ar. Alguém postava algo
+impróprio e a única saída era o Console do Firebase.
+- Denúncia em post, sugestão e comentário de ponto turístico. O menu
+  "⋮" do post existia só pro autor; agora aparece pra todos — autor
+  apaga, os demais denunciam. É PRIVADA: só o dono lê, e ninguém
+  descobre quem denunciou (senão denunciar vira risco pra quem
+  denuncia).
+- Id do documento = `<tipo>_<conteudo>_<uid>`, o que dá "uma denúncia
+  por pessoa por conteúdo" sem precisar de contador. Fila no painel de
+  Admin, com o caminho do Firestore traduzido (`posts/abc` → "Post").
+- **3 denúncias aceitas = banimento automático.** O contador
+  (`denunciasAceitas`) vive no doc da conta, e não somando denúncias na
+  hora: denúncia resolvida sai da fila, e contar depois daria número
+  errado.
+- **Arquivo de 90 dias**: banimento automático erra, então o conteúdo
+  vai pra `arquivoBanimento/{uid}/itens` em vez de ser destruído. O
+  campo `caminhoOriginal` guarda o caminho completo, então o recurso
+  devolve cada item ao lugar exato (o comentário renasce no mesmo
+  post). Vencido o prazo, `tools/apps-script-limpar-arquivo.gs`
+  (gatilho diário, 4º projeto Apps Script) apaga de vez.
+- As fotos NÃO são apagadas, mas têm o acesso público revogado na hora
+  (ação `acesso-foto-post` no `apps-script-feedback.gs`): o id do Drive
+  continua o mesmo, então o recurso religa o mesmo link. **Ressalva**:
+  o `lh3.googleusercontent.com` é CDN e guarda cache — o corte não é
+  instantâneo pra quem já tinha carregado.
+- **Armadilha das regras**: restaurar = o DONO gravar um documento cujo
+  `autorUid` é de outra pessoa, e todo `create` exigia
+  `autorUid == request.auth.uid`. Por isso 6 `create` e 7 `delete`
+  ganharam `|| ehDono()`. No comentário de ponto turístico o `ehDono()`
+  é alternativa ao bloco INTEIRO, não só ao autorUid, porque ele também
+  exige GPS verificado — que a pessoa não tem como refazer meses depois.
+  E `denunciasAceitas` entrou no `hasOnly` do dono: sem isso o banco
+  recusa o contador e o banimento nunca dispara.
+
+**Indicar selo** (v0.26.08.18.99): município sem arte própria mostra
+selo desenhado na hora; quem já confirmou presença por GPS ali pode
+mandar uma foto candidata (`selosIndicados/{municipioId}/itens/{uid}` —
+o uid como id do doc dá "uma por pessoa por município" de graça), com as
+regras na tela (sem pessoas, sem propaganda, sem estabelecimento
+particular) e revisão no Admin. A detecção reusa o `arteReal` do
+`resolverImagemColorida`, o mesmo caminho que decide desenhar o selo.
+A foto **não vira selo sozinha**: a arte é arquivo do repo que vai
+dentro do APK, então publicar continua passando por
+`tools/processar-selos.js` e um commit.
+
+**O Brasil inteiro no mapa** (v0.26.08.18.95): 27 UFs, **5.601
+divisões** — a conta bate na unidade com o IBGE (5.570 municípios, +32
+do DF que entra com 33 Regiões Administrativas no lugar de 1, −1 de
+Fernando de Noronha). Os 26 mapas somam ~17 MB comprimidos e ficam
+**fora do APK**, que segue em 20,5 MB (`FORA_DO_APK` em
+`tools/montar-www.js`).
+- Cada estado é `emDesenvolvimento: true` em `data/estados.json` + o par
+  `assets/svg/<uf>-municipios.svg`. Nenhum precisou de código próprio.
+- **DF**: tem UM município, então a API de malhas devolvia uma mancha
+  só. As divisões reais são as RAs, que o IBGE classifica como
+  *subdistritos* — e a API não serve isso (a v3 aceita só mesorregiao/
+  microrregiao/municipio; a v2 devolve a mesma feature). A geometria só
+  existe nos shapefiles do geoftp, daí `tools/shapefile-para-geojson.js`
+  (leitor de .shp/.dbf sem dependência). Duas armadilhas achadas ali: o
+  IBGE usa **PolygonM (tipo 25)**, não Polygon (5) — filtrar por 5
+  devolve zero feature; e a codificação varia por arquivo (2010 é
+  latin1, 2022 é UTF-8), então lê o `.cpg`.
+- **Ilhas oceânicas distantes saem do desenho**: Trindade esticava a
+  caixa do ES de 2,2° pra 13° e achatava o estado. A regra é por
+  PROXIMIDADE DO CONTINENTE — a primeira versão media distância até a
+  mediana dos centros, o que mede TAMANHO do estado, não isolamento, e
+  apagou 355 anéis de Minas, que nem litoral tem. Município 100%
+  oceânico sai inteiro (Fernando de Noronha), **rótulo junto**: sem isso
+  sobrava um `<path d="">` indexado pela lupa e um nome solto fora do
+  mapa.
+- **Modo regiões só entra se o estado TIVER regiões** — o DF não tem, e
+  o mapa afastado dele virava uma mancha cinza sem divisa.
+
+**A UI do app continua nos outros estados** (v0.26.08.18.93/94): o mapa
+estadual era um modal em tela cheia por cima de tudo, então entrar em SP
+apagava o app inteiro. Agora o `#estado-viewport` é irmão do `#mapa-rj`
+dentro do mesmo `#mapa-viewport` e os dois se revezam — a UI já flutuava
+por cima do mapa, então não precisou duplicar nada.
+- Conteúdo é **por estado ativo**, e a chave são os 2 primeiros dígitos
+  do código IBGE (33 = RJ, 31 = MG): post, produto e selo já guardam o
+  código do município, então dá pra saber o estado sem campo novo nem
+  migração. Conquistas, Rotas, Loja e Biblioteca mostram aviso de "em
+  desenvolvimento"; a Comunidade filtra pelo estado ativo; o Ranking
+  ganhou aba com a **SIGLA** (não o nome — "Rio Grande do Sul" estoura a
+  aba). A bússola fora do estado ativo diz onde a pessoa está.
+- **O RJ não é mais "o padrão"** — é o único publicado, e todos terão o
+  mesmo peso. Nada no código pergunta "é o RJ?"; pergunta "este estado
+  está publicado?" (`emEstadoLimitado()`, `SIGLA_MAPA_EMBUTIDO` lido do
+  DOM em vez de fixo no código).
+
+**Rótulo por município** (v0.26.08.18.96/97): nome de município gigante
+ficava minúsculo e só aparecia com muito zoom. Eram duas falhas — teto
+de fonte fixo em 4, e um limiar único (zoom 7) sendo que 86,8% já
+caberiam antes. A **primeira correção estava errada e o mapa denunciou**:
+premiava NOME CURTO (Ubá antes de Patos de Minas). Agora o TAMANHO
+decide quando, e a fonte é a maior que couber — nome comprido custa
+letra menor, não atraso na fila. `FAIXAS_ROTULO`/`ZOOM_ROTULO_ESTADUAL`
+são os mesmos 5 valores nos dois lados e precisam mudar juntos.
+
+**Mapa estadual se atualiza sozinho** (v0.26.08.18.98): o
+`CACHE_OFFLINE` nunca é limpo (é o que evita perder o download a cada
+deploy), então mapa já baixado ficava CONGELADO — o Paulo teve que
+apagar e rebaixar à mão pra ver os rótulos novos. Agora cada mapa tem
+uma impressão digital (`data/mapas-estaduais.json`, gerada no build) e o
+app confere em segundo plano, rebaixando só o que mudou.
+- **A primeira versão não funcionava**: o `sw.js` trata `.svg` como
+  imagem e responde com `caches.match`, que varre TODOS os caches —
+  inclusive o que tem a cópia velha. O rebaixe devolvia a mesma coisa. A
+  busca leva `?v=<hash>` só pra a URL diferir; a gravação continua na
+  chave limpa, senão o download não seria reencontrado.
+
+**Login deixou de ser exigido pra LER** (v0.26.08.18.99):
+Configurações, painel do município e Loja abrem sem conta. O portão foi
+pra ação: raspar e comprar continuam exigindo login. Não bastava
+esconder o botão — sem tratar, o canvas era criado e a pessoa raspava de
+verdade, gravando num localStorage sem UID.
+
+**Modal "Mapa do Brasil" híbrido**: o SVG tinha `min-width: 520px` +
+`overflow-x: auto`, obrigando a ARRASTAR o país dentro de um modal no
+celular. Era deliberado — sem o zoom, RJ e SE viram alvos de 6 px. Agora
+o mapa é leitura (cabe inteiro) e a ação vai pra uma lista de cards:
+**RJ no mapa tem 26×18 px; no card, 293×63**.
+
+## Expansão por estado
+
+O Paulo publica **um estado por vez**: malha (feito pros 27), depois
+histórico/curiosidades, depois selos — e só então sai de "em
+desenvolvimento". Quando publicar, cada estado terá **progresso,
+conquistas e rotas próprios**, e o ranking terá aba por estado + geral.
+O Modo Clima hoje só existe pros 92 do RJ, mas cada estado terá o seu.
+Não tratar nada disso como "coisa do RJ" em definitivo.
+
+## Anterior: pagamento do Motoclube (v0.11.21 a v0.11.24)
 
 **Pagamento do Motoclube, via Apps Script** (v0.11.24): Cloud Functions
 exigem Blaze, então os dois backends são Apps Script publicados como
