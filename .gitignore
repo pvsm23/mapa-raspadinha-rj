@@ -42,3 +42,49 @@ pontos-auditoria.txt
 # está no histórico desde antes desta regra -- deixei como está, tirar
 # agora não apagaria os 4,3 MB que o Git já guarda.
 data/mg-municipios.geojson
+
+# Malha bruta do IBGE do ES (0,7 MB) -- mesmo motivo do MG acima:
+# insumo de geracao, o app nunca le, refaz com
+#   node tools/baixar-malha-estado.js es
+data/es-municipios.geojson
+
+# Malhas brutas do IBGE dos estados do Sul -- mesmo motivo do MG e do ES:
+# insumo de geracao, o app nunca le, refaz com
+#   node tools/baixar-malha-estado.js <sigla>
+data/pr-municipios.geojson
+data/sc-municipios.geojson
+data/rs-municipios.geojson
+
+# Malhas brutas do IBGE do Centro-Oeste -- mesmo motivo dos anteriores.
+# O do DF nao vem da API: e convertido do shapefile de SUBDISTRITOS do
+# geoftp (as Regioes Administrativas), ver tools/shapefile-para-geojson.js
+data/ms-municipios.geojson
+data/mt-municipios.geojson
+data/go-municipios.geojson
+data/df-municipios.geojson
+
+# Malhas brutas do IBGE de BA, SE e AL -- mesmo motivo dos anteriores.
+data/ba-municipios.geojson
+data/se-municipios.geojson
+data/al-municipios.geojson
+
+# Malhas brutas do IBGE de TO, MA e PI -- mesmo motivo dos anteriores.
+data/to-municipios.geojson
+data/ma-municipios.geojson
+data/pi-municipios.geojson
+
+# Malhas brutas do IBGE de CE, RN, PB e PE -- mesmo motivo dos anteriores.
+data/ce-municipios.geojson
+data/rn-municipios.geojson
+data/pb-municipios.geojson
+data/pe-municipios.geojson
+
+# Malhas brutas do IBGE de PA, AP e RR -- mesmo motivo dos anteriores.
+data/pa-municipios.geojson
+data/ap-municipios.geojson
+data/rr-municipios.geojson
+
+# Malhas brutas do IBGE de RO, AC e AM -- fecham os 26 estados + DF.
+data/ro-municipios.geojson
+data/ac-municipios.geojson
+data/am-municipios.geojson

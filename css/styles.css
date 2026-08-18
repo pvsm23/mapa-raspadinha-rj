@@ -625,21 +625,156 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
   margin: 0 0 12px;
 }
 
+/* O Brasil INTEIRO, sem arrastar.
+   Havia aqui um `min-width: 520px` no SVG + `overflow-x: auto` no
+   container: em celular isso obrigava a arrastar o mapa pros lados
+   dentro de um modal, que é dos piores gestos possíveis. O motivo era
+   real -- sem o zoom, RJ, SE, AL e DF viram alvos de 6 px, impossíveis
+   de acertar com o dedo. A saída não é escolher um dos dois males: o
+   mapa passa a ser SÓ leitura (cabe inteiro, situa a pessoa) e quem
+   recebe o toque é a lista de cards embaixo, com alvos grandes. */
 #brasil-mapa-container svg {
   width: 100%;
   height: auto;
   display: block;
-  /* Piso de largura: em telas estreitas o SVG passa a rolar
-     horizontalmente dentro do container (ver overflow abaixo), pra os
-     estados pequenos não virarem toques impossíveis num aparelho de
-     360-400px de largura. */
-  min-width: 520px;
+  /* Teto de altura pra o mapa não empurrar a lista pra fora da tela em
+     aparelho baixo -- é a lista que precisa estar à mão. */
+  max-height: 42vh;
 }
 
 #brasil-mapa-container {
-  overflow-x: auto;
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--bg);
+  padding: 8px;
+}
+
+/* ---- Lista de estados (a navegação de verdade) ---- */
+#brasil-grid {
+  margin-top: 18px;
+  text-align: left;
+}
+
+.brasil-grupo + .brasil-grupo {
+  margin-top: 22px;
+}
+
+.brasil-grupo-titulo {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fraco);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Contagem discreta ao lado do título ("24") -- ajuda a entender que a
+   lista longa lá embaixo é só "o resto do Brasil". */
+.brasil-grupo-conta {
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+.brasil-cards {
+  display: grid;
+  /* auto-fit + minmax: 1 coluna no celular estreito, 2 ou 3 conforme
+     couber, sem media query. */
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+/* Alvo grande de propósito: 52px de altura mínima passa folgado do
+   mínimo recomendado de toque (44px), que é o problema que esta tela
+   inteira existe pra resolver. */
+#brasil-conteudo .brasil-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha) !important;
+  color: var(--txt) !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  text-align: left;
+  width: 100% !important;
+  margin: 0 !important;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+#brasil-conteudo .brasil-card:active {
+  transform: scale(0.98);
+}
+
+.brasil-card-ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.brasil-card-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.brasil-card-nome {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brasil-card-sub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--fraco);
+}
+
+/* Liberado: verde, o único com brilho. */
+#brasil-conteudo .brasil-card-liberado {
+  border-color: rgba(43, 213, 118, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(43, 213, 118, 0.12), 0 4px 16px rgba(43, 213, 118, 0.1);
+}
+
+#brasil-conteudo .brasil-card-liberado .brasil-card-ponto {
+  background: var(--verde);
+}
+
+#brasil-conteudo .brasil-card-liberado .brasil-card-sub {
+  color: var(--verde);
+}
+
+/* Em desenvolvimento: âmbar. CLICÁVEL -- abre a prévia do mapa. */
+#brasil-conteudo .brasil-card-dev {
+  border-color: rgba(233, 185, 73, 0.45) !important;
+}
+
+#brasil-conteudo .brasil-card-dev .brasil-card-ponto {
+  background: var(--ouro, #E9B949);
+}
+
+#brasil-conteudo .brasil-card-dev .brasil-card-sub {
+  color: #E9B949;
+}
+
+/* Em breve: apagado, sem borda de cor. Continua tocável pra explicar
+   por que não abre -- botão morto sem resposta deixa a pessoa achando
+   que o app travou. */
+#brasil-conteudo .brasil-card-breve {
+  opacity: 0.5;
+  background: transparent !important;
+}
+
+#brasil-conteudo .brasil-card-breve .brasil-card-ponto {
+  background: var(--fraco);
 }
 
 #brasil-mapa-container .estado {
@@ -696,34 +831,8 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
   filter: none;
 }
 
-#btn-confirmar-estado {
-  display: block;
-  width: 100%;
-  background: #2BD576;
-  color: #0F1216;
-  border: none;
-  padding: 12px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin: 12px 0 0;
-  transition: background 0.15s ease, opacity 0.15s ease;
-}
-
-#btn-confirmar-estado:hover:not(:disabled) {
-  background: #1FA85C;
-}
-
-#btn-confirmar-estado:disabled {
-  background: #262C35;
-  color: var(--fraco);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
 /* ============================================================
-   Mapa de São Paulo em TELA CHEIA (como o do RJ): pan/zoom próprio,
+   Mapa estadual em TELA CHEIA (como o do RJ): pan/zoom próprio,
    nomes dos municípios aparecem ao dar zoom, mas é só visualização --
    tocar num município mostra um aviso, não abre raspadinha. Espelha o
    #mapa-viewport/#mapa-rj. Ver abrirMapaEstadoEmDesenvolvimento e
@@ -759,6 +868,49 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
    ao dar zoom (fica sempre ~0.5px na tela), então as divisas ficam
    precisas em qualquer aproximação -- diferente do RJ, onde a borda
    engrossa junto com o mapa. */
+/* Convite de login no lugar da raspadinha (ver abrirModalRaspadinha).
+   Quem não tem conta abre o município e lê tudo -- curiosidade, história
+   completa e pontos turísticos --, mas raspar guarda progresso, e
+   progresso sem conta se perderia. Ocupa o mesmo espaço do selo pra o
+   popup não pular de tamanho ao entrar. */
+.raspadinha-convite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 190px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surf2);
+  border: 1px dashed var(--linha);
+  text-align: center;
+}
+
+.raspadinha-convite-icone {
+  font-size: 1.7rem;
+  opacity: 0.75;
+}
+
+.raspadinha-convite p {
+  margin: 0;
+  max-width: 240px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+.raspadinha-convite-btn {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* Aviso de "esta parte ainda não existe neste estado", usado por
    Conquistas, Rotas, Loja e Ranking (ver avisarConteudoEmDesenvolvimento
    em js/script.js). Um só componente pras quatro telas. */
@@ -951,7 +1103,10 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   top: calc(env(safe-area-inset-top, 0px) + 112px);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
+  /* Acima da barra de topo (50) e da barra inferior (90), abaixo dos
+     modais (100). Estava em 20 e sumia ATRAS da UI: quando isto vivia
+     dentro de um modal em tela cheia nao havia UI nenhuma por cima. */
+  z-index: 95;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1086,10 +1241,17 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
 
 #estado-toast {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  /* Pousa ACIMA do botao de Modo Viagem, nao em cima dele.
+     Duas armadilhas aqui, nesta ordem: 24px punha o toast atras da
+     barra inferior (~63px); 80px o tirava de la mas o jogava em cima
+     do FAB verde do Modo Viagem, tapando a acao primaria do mapa.
+     A conta sai do proprio FAB: ele fica a 78px do rodape e tem 62px
+     de altura, entao o topo dele esta em 140px -- mexeu naqueles dois
+     numeros, mexa neste. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 152px);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 95;
   max-width: min(88vw, 360px);
   background: rgba(23, 27, 33, 0.96);
   color: var(--txt);

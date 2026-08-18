@@ -352,14 +352,18 @@
       <button id="btn-fechar-brasil" aria-label="Fechar">✕</button>
       <h2>🇧🇷 Mapa do Brasil</h2>
       <p id="brasil-intro">O Desbrava começou pelo Rio de Janeiro. Conforme cada estado ficar pronto, ele desbloqueia aqui.</p>
+      <!-- MAPA = leitura, LISTA = ação.
+           O mapa cabia inteiro só com scroll horizontal dentro do modal
+           (o SVG tinha min-width: 520px), porque sem isso RJ, SE, AL e
+           DF viravam alvos impossíveis de acertar com o dedo. Trocar o
+           zoom pela lista resolve os dois de uma vez: o mapa passa a
+           caber por completo e serve pra situar, e quem escolhe de fato
+           é a lista embaixo, com alvos grandes.
+           A lista é montada por renderizarGridEstados (js/script.js) a
+           partir do próprio SVG -- estado novo aparece sozinho. -->
       <div id="brasil-mapa-container"></div>
-      <p id="brasil-status"></p>
-      <!-- Fluxo em duas etapas (tocar seleciona, botão confirma):
-           antes o toque abria direto, o que ficava difícil de acertar em
-           estados pequenos (ES, SE, AL, DF...). Agora um toque em cima
-           só destaca o estado (data-selecionado="true" no path) e libera
-           o "Confirmar" pra abrir. Ver abrirMapaBrasil em js/script.js. -->
-      <button type="button" id="btn-confirmar-estado" disabled>Selecione um estado no mapa</button>
+      <p id="brasil-status" role="status" aria-live="polite"></p>
+      <div id="brasil-grid"></div>
       <!-- Reaproveitado em qualquer tela com conteúdo "em breve" (ver
            .btn-colaborar-em-breve em css/styles.css e abrirColaborar
            em js/script.js) -- estimula quem quiser ajudar a acelerar. -->
@@ -490,8 +494,12 @@
   <button id="btn-modo-viagem" class="oculto" aria-label="Ativar Modo Viagem" title="Modo Viagem"><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 17.5H9l1.5-5H14l3 5"/><path d="M10.5 12.5 12 8h3l1.5 3"/><path d="M6.5 12.5h3"/></svg></button>
 
   <nav id="nav-inferior">
-    <button type="button" data-nav="mapa" class="nav-item nav-ativa">
-      <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span><span class="nav-txt">Mapa</span>
+    <!-- Era "Mapa" aqui, e não fazia sentido: o mapa é o FUNDO da tela,
+         está sempre visível atrás de tudo -- o botão levava pra onde a
+         pessoa já estava. A Loja ocupa o lugar; ela não tinha entrada
+         na barra e só era alcançável pelo Menu. -->
+    <button type="button" data-nav="alvo" data-alvo="btn-abrir-loja">
+      <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z"/><path d="M3 7h18"/><path d="M16 11a4 4 0 0 1-8 0"/></svg></span><span class="nav-txt">Loja</span>
     </button>
     <button type="button" data-nav="alvo" data-alvo="btn-social">
       <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-txt">Comunidade</span>
@@ -1315,6 +1323,13 @@
         <p id="conta-status">Você não está conectado.</p>
         <p id="dados-email"></p>
 
+        <!-- Configurações deixou de exigir login (tema, som e mapas dos
+             estados valem pra qualquer um), então o que só existe com
+             conta precisa se esconder sozinho -- ver
+             ajustarConfiguracoesParaVisitante em js/script.js. -->
+        <button type="button" id="btn-entrar-config" class="settings-btn-primario oculto">Entrar na minha conta</button>
+
+        <div id="settings-bloco-apelido">
         <label for="input-apelido-config" class="settings-campo-label">Apelido</label>
         <input type="text" id="input-apelido-config" maxlength="30" placeholder="Como quer ser chamado?">
         <p id="erro-apelido-config" class="oculto"></p>
@@ -1335,6 +1350,7 @@
             <span class="settings-toggle-slider"></span>
           </span>
         </label>
+        </div><!-- /#settings-bloco-apelido -->
       </div>
 
       <!-- Card 2: Preferências -- som e notificações, os dois únicos
@@ -1443,7 +1459,7 @@
            Excluir conta tem 3 confirmações crescentes (2 confirm() +
            digitar "EXCLUIR") antes de chamar excluirConta -- ver
            abrirFluxoExclusaoConta em js/script.js. -->
-      <div class="settings-card settings-card-perigo">
+      <div class="settings-card settings-card-perigo" id="settings-card-conta">
         <h3 class="settings-card-titulo">Conta</h3>
         <button id="btn-logout" class="settings-btn-secundario">🚪 Sair da conta</button>
 

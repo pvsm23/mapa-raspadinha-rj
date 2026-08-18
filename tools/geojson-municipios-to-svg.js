@@ -152,19 +152,86 @@ function poligonosDaFeature(feature) {
   throw new Error(`Tipo de geometria inesperado: ${feature.geometry.type}`);
 }
 
-let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+/* ---- Ilhas oceânicas distantes ficam FORA do enquadramento ----
+ *
+ * O Espírito Santo revelou isto: o município de Vitória inclui as Ilhas
+ * de Trindade e Martim Vaz, a ~1.100 km da costa. Elas esticavam a
+ * caixa do mapa de 2,2° para 13° de largura, e o estado inteiro saía
+ * achatado numa faixa (viewBox 800x222 em vez de 800x1200).
+ *
+ * Não é caso isolado: Pernambuco tem Fernando de Noronha e a Bahia tem
+ * Abrolhos. Então a regra é geral, e é de PROXIMIDADE DO CONTINENTE:
+ * parte do maior anel e vai absorvendo quem encosta nele (ver abaixo).
+ *
+ * Elas saem do desenho POR COMPLETO, e não só do enquadramento.
+ * Primeiro tentei deixá-las no arquivo, recortadas pelo viewBox: como
+ * são invisíveis de todo jeito, pareceu inofensivo. Não era. O getBBox
+ * de Vitória passava a ter 4161 unidades de largura (a de Vila Velha
+ * tem 79), e buscar "Vitória" na lupa centralizava o mapa a 5.000 px
+ * da tela, em pleno Atlântico. Invisível e ainda assim nocivo.
+ *
+ * O mapa é pra raspar município que dá pra visitar de moto; 1.100 km
+ * de oceano aberto até uma base naval não serve a ninguém.
+ */
+const LIMITE_ILHA_DISTANTE = 0.5; // graus (~55 km) de folga ao redor do continente
+
+const aneisComCaixa = [];
 for (const feature of geojson.features) {
   for (const poligono of poligonosDaFeature(feature)) {
     for (const anel of poligono) {
+      let a = Infinity, b = -Infinity, c = Infinity, d = -Infinity;
       for (const [lon, lat] of anel) {
-        if (lon < minLon) minLon = lon;
-        if (lon > maxLon) maxLon = lon;
-        if (lat < minLat) minLat = lat;
-        if (lat > maxLat) maxLat = lat;
+        if (lon < a) a = lon;
+        if (lon > b) b = lon;
+        if (lat < c) c = lat;
+        if (lat > d) d = lat;
       }
+      aneisComCaixa.push({ anel, minLon: a, maxLon: b, minLat: c, maxLat: d, n: anel.length });
     }
   }
 }
+
+/* Cresce a partir do MAIOR anel (o continente) e vai absorvendo quem
+   encosta nele, até parar de crescer. Quem nunca é absorvido está
+   isolado no oceano.
+
+   A primeira versão disto media a distância até a MEDIANA dos centros,
+   com limiar de 2,5°. Parecia razoável e estava errada: num estado
+   largo como Minas, o Triângulo Mineiro fica a 7° do centro, e a regra
+   apagou 355 anéis de um estado que nem litoral tem -- um terço do
+   arquivo. Proximidade do continente é o critério certo; distância do
+   centro mede o tamanho do estado, não isolamento. */
+const continente = aneisComCaixa.reduce((maior, r) => (r.n > maior.n ? r : maior));
+let minLon = continente.minLon, maxLon = continente.maxLon;
+let minLat = continente.minLat, maxLat = continente.maxLat;
+
+const dentro = new Set([continente]);
+let cresceu = true;
+while (cresceu) {
+  cresceu = false;
+  for (const r of aneisComCaixa) {
+    if (dentro.has(r)) continue;
+    const encosta =
+      r.minLon <= maxLon + LIMITE_ILHA_DISTANTE &&
+      r.maxLon >= minLon - LIMITE_ILHA_DISTANTE &&
+      r.minLat <= maxLat + LIMITE_ILHA_DISTANTE &&
+      r.maxLat >= minLat - LIMITE_ILHA_DISTANTE;
+    if (!encosta) continue;
+    dentro.add(r);
+    if (r.minLon < minLon) minLon = r.minLon;
+    if (r.maxLon > maxLon) maxLon = r.maxLon;
+    if (r.minLat < minLat) minLat = r.minLat;
+    if (r.maxLat > maxLat) maxLat = r.maxLat;
+    cresceu = true;
+  }
+}
+
+const ilhasIgnoradas = aneisComCaixa.filter((r) => !dentro.has(r));
+const municipiosForaDoMapa = [];
+const aneisDistantes = new Set(ilhasIgnoradas.map((r) => r.anel));
+
+
+
 
 const latMedia = (minLat + maxLat) / 2;
 const correcaoLon = Math.cos((latMedia * Math.PI) / 180);
@@ -441,7 +508,17 @@ const paths = featuresOrdenadas
     const dCor = cor !== undefined ? ` data-cor="${cor}"` : "";
     const aneis = poligonosDaFeature(feature)
       .flat()
+      .filter((anel) => !aneisDistantes.has(anel))
       .map((anel) => anel.map(projetar));
+
+    /* Município que só existe longe da costa sai do mapa inteiro.
+       Fernando de Noronha é o caso: TODOS os 5 anéis dele são oceânicos,
+       e sem esta guarda sobrava um <path d=""> -- invisível, mas dentro
+       da lupa, levando a um município que não dá pra mostrar. */
+    if (!aneis.length) {
+      municipiosForaDoMapa.push(nome);
+      return null;
+    }
     // Coleta arestas da geometria COMPLETA (pros contornos de região),
     // antes de simplificar qualquer preenchimento.
     if (regiaoId) for (const projetados of aneis) coletarArestasDeAnel(projetados, regiaoId);
@@ -459,8 +536,9 @@ const paths = featuresOrdenadas
     };
   });
 
-const pathsDetalhe = paths.map((p) => p.detalhe).join("\n");
-const pathsLonge = paths.map((p) => p.longe).join("\n");
+const pathsComGeometria = paths.filter(Boolean);
+const pathsDetalhe = pathsComGeometria.map((p) => p.detalhe).join("\n");
+const pathsLonge = pathsComGeometria.map((p) => p.longe).join("\n");
 
 // Rótulos das regiões (mesorregiões), mostrados só no "modo regiões"
 // (mapa afastado, ver CSS). Posição = centro do bounding box de TODOS
@@ -499,6 +577,11 @@ const rotulosRegioes = Object.entries(regioesInfo)
   .join("\n");
 
 const rotulos = featuresOrdenadas
+  // Sem o mesmo filtro dos paths, o nome de um município só oceânico
+  // sobrava sozinho no arquivo, posicionado FORA do viewBox (Fernando
+  // de Noronha saía em x=1090, y=-421) -- invisível, mas ainda assim
+  // indexado pela lupa e apontando pro vazio.
+  .filter((feature) => !municipiosForaDoMapa.includes(feature.properties.name))
   .map((feature) => {
     const codigoIbge = feature.properties.id;
     const nome = feature.properties.name;
@@ -555,3 +638,5 @@ console.log(
     `(${(pontosDepois / pontosLonge).toFixed(1)}x mais leve que a de detalhe)`
 );
 console.log(`tamanho do arquivo: ${(svg.length / 1024).toFixed(1)} KB`);
+if (ilhasIgnoradas.length) console.log(`ilhas oceanicas fora do enquadramento: ${ilhasIgnoradas.length} anel(eis)`);
+if (municipiosForaDoMapa.length) console.log(`municipios so oceanicos, fora do mapa: ${municipiosForaDoMapa.join(", ")}`);

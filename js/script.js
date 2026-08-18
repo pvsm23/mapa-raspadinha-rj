@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.17.94";
+const VERSAO_APP = "0.26.08.18.95";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.17.94";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.18.95", itens: ["O Brasil inteiro entrou no mapa: os 26 estados e o Distrito Federal agora dá pra explorar município por município, no mesmo nível de detalhe do Rio.", "No Distrito Federal aparecem as 33 Regiões Administrativas, já que ele tem um município só.", "Cada mapa é baixado quando você quiser, um estado de cada vez, e depois abre sem internet — nenhum deles pesa no tamanho do aplicativo.", "A tela do Mapa do Brasil foi refeita: o país inteiro cabe na tela sem arrastar, e agora tem uma lista de estados embaixo, com alvos grandes de tocar.", "Configurações, a leitura sobre os municípios e a Loja deixaram de exigir login — só raspar selo e comprar é que pedem conta.", "Correção: o aviso de estado em desenvolvimento ficava escondido atrás da barra do app."] },
   { versao: "0.26.08.17.94", itens: ["Conquistas, Rotas, Loja e Comunidade agora são de cada estado: você vê o conteúdo do mapa que estiver aberto, e nos estados novos aparece o aviso de que essa parte ainda está sendo montada.", "A Comunidade mostra só os posts do estado ativo.", "A lupa passou a funcionar nos estados novos, procurando as cidades do mapa aberto e levando você até elas.", "O Ranking ganhou a aba Estadual, entre a Global e a de Amigos.", "A bússola avisa quando você está em outro estado, dizendo em qual."] },
   { versao: "0.26.08.17.93", itens: ["Entrar em Minas Gerais ou São Paulo não apaga mais o aplicativo: a barra de topo, o menu de baixo e os botões continuam onde estavam — só o mapa é que troca.", "Nesses estados, a barra de progresso mostra o nome do estado em vez de fingir o total do Rio, e o botão de modos do mapa some enquanto o clima de lá não existe.", "O Modo Viagem continua funcionando em qualquer estado."] },
   { versao: "0.26.08.17.92", itens: ["O mapa de Minas Gerais e de São Paulo ficou bem mais leve de mexer com o mapa afastado: antes o app desenhava todo o detalhe das divisas mesmo quando ele nem dava pra ver."] },
@@ -962,7 +963,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document
     .getElementById("btn-configuracoes")
-    .addEventListener("click", () => exigirLogin(abrirConfiguracoes));
+    .addEventListener("click", abrirConfiguracoes);
 
   document
     .getElementById("btn-fechar-configuracoes")
@@ -987,6 +988,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btn-compartilhar-de-fato").addEventListener("click", compartilharApp);
   document.getElementById("btn-logout").addEventListener("click", sairDaConta);
+  document.getElementById("btn-entrar-config")?.addEventListener("click", abrirTelaLogin);
   document
     .getElementById("btn-compartilhar-progresso")
     .addEventListener("click", abrirCartaoProgresso);
@@ -1341,7 +1343,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-brasil").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-brasil") fecharMapaBrasil();
   });
-  document.getElementById("btn-confirmar-estado").addEventListener("click", confirmarEstadoNoMapaBrasil);
   document.getElementById("btn-brasil-colaborar").addEventListener("click", () => {
     fecharMapaBrasil();
     abrirColaborar();
@@ -1350,7 +1351,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---- Mapa estadual (SP, MG: em desenvolvimento) ----
   // Não tem mais botão 🇧🇷 próprio: o mapa do estado agora divide a tela
   // com o resto do app, e o #btn-mapa-brasil da lateral serve pros dois
-  // (selecionar RJ lá volta pro Rio, ver confirmarEstadoNoMapaBrasil).
+  // (selecionar RJ lá volta pro Rio, ver escolherEstado).
   document.getElementById("btn-estado-popup-fechar").addEventListener("click", esconderPopupDevEstadual);
   // Pan/zoom próprio do mapa estadual: anexa ao #estado-viewport uma vez
   // só (o SVG lá dentro é trocado a cada abertura, mas o viewport é fixo).
@@ -2420,7 +2421,7 @@ let lojaProdutoSelecionadoCheckout = null;
 let lojaFreteCalculado = null; // { valor, uf } ou null se ainda não calculado
 
 function configurarLoja() {
-  document.getElementById("btn-abrir-loja")?.addEventListener("click", () => exigirLogin(abrirLoja));
+  document.getElementById("btn-abrir-loja")?.addEventListener("click", abrirLoja);
   document.getElementById("btn-fechar-loja")?.addEventListener("click", fecharLoja);
   document.getElementById("modal-loja")?.addEventListener("click", (e) => {
     if (e.target.id === "modal-loja") fecharLoja();
@@ -2593,6 +2594,14 @@ function montarCardProduto(produto) {
 }
 
 function abrirCheckoutLoja(produto) {
+  /* Navegar na Loja é livre; COMPRAR não. O pedido é gravado no
+     Firestore em nome de um usuário (ver criarPedido em js/auth.js) --
+     sem conta não há em nome de quem, nem pra onde mandar. O gate saiu
+     da porta da Loja e ficou aqui, que é onde ele significa algo. */
+  if (!window.raspadinhaAuth?.usuarioAtual) {
+    abrirTelaLogin();
+    return;
+  }
   lojaProdutoSelecionadoCheckout = produto;
   lojaFreteCalculado = produto.tipo === "digital" ? { valor: 0, uf: null } : null;
 
@@ -2974,15 +2983,10 @@ function configurarNavInferior() {
     nav.querySelectorAll("button").forEach((b) => b.classList.remove("nav-ativa"));
     if (botao) botao.classList.add("nav-ativa");
   };
-  const abaMapa = () => nav.querySelector('[data-nav="mapa"]');
-
   nav.querySelectorAll("button").forEach((botao) => {
     botao.addEventListener("click", () => {
       const tipo = botao.dataset.nav;
-      if (tipo === "mapa") {
-        fecharTodosOsModais();
-        acender(botao);
-      } else if (tipo === "menu") {
+      if (tipo === "menu") {
         menu.classList.remove("oculto");
       } else if (tipo === "alvo") {
         acender(botao);
@@ -3003,21 +3007,19 @@ function configurarNavInferior() {
     if (e.target === menu) menu.classList.add("oculto");
   });
 
-  // Sempre que nenhum modal estiver aberto, a aba "Mapa" fica acesa.
-  // Um observer barato: checa a cada clique em qualquer botão de fechar.
+  /* Fechou tudo? Nenhuma aba acesa -- o mapa é o fundo da tela, não um
+     destino. Antes existia uma aba "Mapa" que ficava acesa aqui; ela
+     saiu porque levava exatamente pra onde a pessoa já estava. */
   document.addEventListener("click", (e) => {
     if (e.target.closest("[id^='btn-fechar']")) {
       setTimeout(() => {
-        if (!algumOverlayAberto()) acender(abaMapa());
+        if (!algumOverlayAberto()) acender(null);
       }, 50);
     }
   });
 }
 
-/**
- * Fecha qualquer painel/modal aberto -- usado pela aba "Mapa" da barra
- * inferior pra voltar ao mapa limpo de onde estiver.
- */
+/** Fecha qualquer painel/modal aberto, voltando ao mapa limpo. */
 function fecharTodosOsModais() {
   OVERLAYS_APP.forEach((id) => document.getElementById(id)?.classList.add("oculto"));
 }
@@ -3577,6 +3579,9 @@ async function atualizarUiDeConta(detalhe) {
     voltarParaEstadoAnonimo();
     atualizarAvisoBrilhantePendente();
   }
+  // Entrar ou sair muda o que Configurações pode mostrar, e o painel
+  // pode estar ABERTO na hora (dá pra entrar por dentro dele agora).
+  ajustarConfiguracoesParaVisitante();
 }
 
 /**
@@ -5087,7 +5092,7 @@ function aoClicarMunicipio(path) {
   if (modoRegioes) {
     exigirLogin(() => abrirPopupRegiao(path.dataset.regiao));
   } else {
-    exigirLogin(() => abrirSeloPorId(path.dataset.municipio, path.dataset.nome));
+    abrirSeloPorId(path.dataset.municipio, path.dataset.nome);
   }
 }
 
@@ -6324,7 +6329,7 @@ async function redesenharChipsDeClima() {
        montado, porque montarClimaDoMunicipio acha tudo em cache. */
     chip.addEventListener("click", (evento) => {
       evento.stopPropagation();
-      exigirLogin(() => abrirSeloPorId(m.id, idParaNomeMunicipio[m.id]));
+      abrirSeloPorId(m.id, idParaNomeMunicipio[m.id]);
     });
     camada.appendChild(chip);
   }
@@ -6370,9 +6375,18 @@ function definirStatusMunicipio(texto, estado = "neutro") {
 function abrirModalRaspadinha(id, nome) {
   prepararModal(nome, id);
   definirStatusMunicipio("");
-  document.getElementById("modal-instrucao").textContent = estadoMapa[id]?.presencaConfirmadaEm
-    ? "Raspe com o dedo ou o mouse para revelar! (sua presença aqui já foi confirmada antes por GPS -- não precisa estar no local agora)"
-    : "Raspe com o dedo ou o mouse para revelar!";
+  /* LER não exige conta; RASPAR exige.
+     O gate saiu do clique no mapa (ver aoClicarMunicipio) pra qualquer
+     um poder abrir o município e ler a curiosidade, a história completa
+     e os pontos turísticos. Mas raspar grava progresso, e progresso sem
+     conta se perderia na primeira limpeza do navegador -- e nunca
+     chegaria ao ranking. Então a raspadinha vira um convite pra entrar. */
+  const logado = !!window.raspadinhaAuth?.usuarioAtual;
+  document.getElementById("modal-instrucao").textContent = !logado
+    ? "Entre na sua conta para raspar este selo e guardar seu progresso."
+    : estadoMapa[id]?.presencaConfirmadaEm
+      ? "Raspe com o dedo ou o mouse para revelar! (sua presença aqui já foi confirmada antes por GPS -- não precisa estar no local agora)"
+      : "Raspe com o dedo ou o mouse para revelar!";
   document.getElementById("modal-selo-estatistica").textContent = "";
   // A curiosidade/história do município aparece SEMPRE -- mesmo antes de
   // raspar (a pedido do Paulo). mostrarCuriosidade() reescreve todo o
@@ -6385,9 +6399,32 @@ function abrirModalRaspadinha(id, nome) {
   // Decide a sorte JÁ na abertura (não na conclusão): assim dá pra
   // carregar a arte dourada certa desde o início da raspagem, em vez
   // de trocar a imagem depois de já ter raspado a normal.
+  const corpo = document.getElementById("scratch-modal-body");
+
+  /* Deslogado: mostra o selo COBERTO e um botão de entrar, em vez da
+     raspadinha. Não é só esconder o botão -- sem isto o canvas seria
+     criado e a pessoa raspava de verdade, gravando num localStorage sem
+     UID que o login depois não teria como reivindicar. */
+  if (!logado) {
+    corpo.innerHTML = "";
+    const convite = document.createElement("div");
+    convite.className = "raspadinha-convite";
+    convite.innerHTML =
+      '<span class="raspadinha-convite-icone" aria-hidden="true">🔒</span>' +
+      "<p>O selo deste município fica guardado na sua conta.</p>";
+    const entrar = document.createElement("button");
+    entrar.type = "button";
+    entrar.className = "raspadinha-convite-btn";
+    entrar.textContent = "Entrar para raspar";
+    entrar.addEventListener("click", abrirTelaLogin);
+    convite.appendChild(entrar);
+    corpo.appendChild(convite);
+    return; // o prepararModal lá em cima já revelou a janela
+  }
+
   const brilhante = decidirBrilhante(id);
   const caminhoCapa = `assets/img/selos/${id}fundo.webp`;
-  mostrarSpinnerGrande(document.getElementById("scratch-modal-body"), true);
+  mostrarSpinnerGrande(corpo, true);
 
   const iniciar = (imageUrl, imageUrlCapa) => {
     document.getElementById("scratch-modal-body").innerHTML = "";
@@ -6784,10 +6821,9 @@ function selecionarResultadoBusca(item) {
     mostrarToastEstadual(item.nomeMunicipio);
     return;
   }
-  exigirLogin(() => {
-    window.controleMapa?.focarEmMunicipio(item.id);
-    setTimeout(() => abrirSeloPorId(item.id, item.nomeMunicipio), 650);
-  });
+  // Sem login: ler sobre o município não exige conta (só raspar exige).
+  window.controleMapa?.focarEmMunicipio(item.id);
+  setTimeout(() => abrirSeloPorId(item.id, item.nomeMunicipio), 650);
 }
 
 /**
@@ -7556,7 +7592,7 @@ function verCidadeDoPonto() {
   if (!id) return;
   fecharPontoTuristico();
   const nome = destinosPorMunicipio[id]?.nome;
-  exigirLogin(() => abrirSeloPorId(id, nome));
+  abrirSeloPorId(id, nome);
 }
 
 /**
@@ -7850,6 +7886,16 @@ function abrirBibliotecaSelos() {
   const grade = document.getElementById("biblioteca-grade");
   grade.innerHTML = "";
 
+  /* A Biblioteca é o álbum de selos DO ESTADO. Num estado ainda não
+     publicado não existe selo nenhum -- e listar os do estado publicado
+     aqui daria a entender que são de outro lugar. Revela o modal na
+     própria guarda, igual a Conquistas e Rotas. */
+  if (emEstadoLimitado()) {
+    avisarConteudoEmDesenvolvimento(grade, "Biblioteca de selos");
+    document.getElementById("biblioteca-selos").classList.remove("oculto");
+    return;
+  }
+
   const municipios = Array.from(document.querySelectorAll("#mapa-rj .municipio"))
     .map((path) => ({ id: path.dataset.municipio, nome: path.dataset.nome }))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
@@ -8047,8 +8093,25 @@ function fecharBibliotecaSelos() {
   document.getElementById("biblioteca-selos").classList.add("oculto");
 }
 
+/**
+ * Esconde de quem não tem conta o que só existe com conta.
+ *
+ * Configurações deixou de exigir login: tema, som e os mapas dos
+ * estados são do APARELHO, não da conta, e mandar alguém criar login
+ * pra trocar o tema é barreira sem contrapartida. Mas apelido, perfil
+ * público, "sair" e "excluir conta" não fazem sentido nenhum sem uma --
+ * "Sair da conta" sem conta é botão que só pode dar errado.
+ */
+function ajustarConfiguracoesParaVisitante() {
+  const logado = !!window.raspadinhaAuth?.usuarioAtual;
+  document.getElementById("settings-bloco-apelido")?.classList.toggle("oculto", !logado);
+  document.getElementById("settings-card-conta")?.classList.toggle("oculto", !logado);
+  document.getElementById("btn-entrar-config")?.classList.toggle("oculto", logado);
+}
+
 function abrirConfiguracoes() {
   sincronizarCheckboxNotificacoes();
+  ajustarConfiguracoesParaVisitante();
   document.getElementById("modal-configuracoes").classList.remove("oculto");
   // Assíncrono (consulta o CacheStorage): monta depois de abrir, pra
   // não segurar o painel. A lista aparece em um quadro.
@@ -8240,11 +8303,16 @@ function abrirConquistas() {
   const container = document.getElementById("conquistas-lista");
   container.innerHTML = "";
 
-  /* Conquistas são POR ESTADO. As de hoje são todas do RJ -- contam
-     municípios, regiões e rotas do Rio -- então em MG/SP não há o que
-     mostrar, e exibir as do Rio seria creditá-las ao estado errado. */
+  /* Conquistas são POR ESTADO. Num estado ainda não publicado não há o
+     que mostrar, e exibir as de outro seria creditá-las ao lugar errado.
+
+     ATENÇÃO: o modal é aberto AQUI e não só no fim da função. Quando eu
+     pus este `return`, a última linha (que revela o modal) deixou de ser
+     alcançada -- Conquistas e Rotas simplesmente não abriam nada em
+     MG/SP, e o aviso ficava montado numa janela invisível. */
   if (emEstadoLimitado()) {
     avisarConteudoEmDesenvolvimento(container, "Conquistas");
+    document.getElementById("modal-conquistas").classList.remove("oculto");
     return;
   }
 
@@ -8425,10 +8493,7 @@ function alternarAbaRanking(aba) {
   document.getElementById("btn-ranking-global").classList.toggle("ranking-aba-ativa", aba === "global");
   document.getElementById("btn-ranking-estadual").classList.toggle("ranking-aba-ativa", aba === "estadual");
   document.getElementById("btn-ranking-amigos").classList.toggle("ranking-aba-ativa", aba === "amigos");
-  // O rótulo segue o mapa: "Estadual" em Minas tem que dizer Minas.
-  document.getElementById("btn-ranking-estadual").textContent = emEstadoLimitado()
-    ? nomeDoEstadoAberto
-    : "Estadual";
+  document.getElementById("btn-ranking-estadual").textContent = siglaDoEstadoAtual();
   carregarRanking();
 }
 
@@ -9645,9 +9710,11 @@ function abrirRotas() {
   const lista = document.getElementById("rotas-lista");
   lista.innerHTML = "";
 
-  // Cada estado terá as suas rotas; as de data/rotas.json são do RJ.
+  // Cada estado terá as suas rotas. O modal é revelado aqui pelo mesmo
+  // motivo do de Conquistas: a linha que o abre fica lá no fim.
   if (emEstadoLimitado()) {
     avisarConteudoEmDesenvolvimento(lista, "Rotas");
+    document.getElementById("modal-rotas").classList.remove("oculto");
     return;
   }
 
@@ -11681,62 +11748,116 @@ async function abrirMapaBrasil() {
   }
 
   container.innerHTML = svgMapaBrasilCache;
-  estadoSelecionadoNoMapaBrasil = null;
-  atualizarBotaoConfirmarEstado();
+  document.getElementById("brasil-status").textContent = "";
+  // Tocar no mapa vale, mas não é a via principal -- ver renderizarGridEstados.
   container.querySelectorAll(".estado").forEach((path) => {
-    path.addEventListener("click", () => selecionarEstadoNoMapaBrasil(path));
+    path.addEventListener("click", () =>
+      escolherEstado(path.dataset.sigla, path.dataset.nome, situacaoDoPath(path))
+    );
   });
+  renderizarGridEstados();
 }
 
-// Referência ao <path> do estado atualmente destacado. Uma seleção só
-// existe enquanto o modal está aberto -- reabrir zera (ver o reset no
-// começo de abrirMapaBrasil).
-let estadoSelecionadoNoMapaBrasil = null;
-
-function selecionarEstadoNoMapaBrasil(path) {
-  const container = document.getElementById("brasil-mapa-container");
-  // Desmarca o anterior, se houver.
-  container.querySelectorAll(".estado[data-selecionado='true']").forEach((el) => {
-    el.removeAttribute("data-selecionado");
-  });
-  path.setAttribute("data-selecionado", "true");
-  estadoSelecionadoNoMapaBrasil = path;
-  document.getElementById("brasil-status").textContent = `Selecionado: ${path.dataset.nome}`;
-  atualizarBotaoConfirmarEstado();
+/** "liberado" | "dev" | "breve", lido da classe que o gerador escreveu. */
+function situacaoDoPath(path) {
+  if (path.classList.contains("estado-liberado")) return "liberado";
+  if (path.classList.contains("estado-em-desenvolvimento")) return "dev";
+  return "breve";
 }
 
-function atualizarBotaoConfirmarEstado() {
-  const botao = document.getElementById("btn-confirmar-estado");
-  const path = estadoSelecionadoNoMapaBrasil;
-  if (!path) {
-    botao.disabled = true;
-    botao.textContent = "Selecione um estado no mapa";
-    return;
+/* Ordem e textos de cada grupo da lista. "breve" vem por último porque
+   são 24 estados -- o que interessa fica em cima, sem rolar. */
+const GRUPOS_DE_ESTADO = [
+  { chave: "liberado", titulo: "Disponíveis", classe: "brasil-card-liberado", sub: "Pronto pra desbravar" },
+  { chave: "dev", titulo: "Em desenvolvimento", classe: "brasil-card-dev", sub: "Dá pra explorar o mapa" },
+  { chave: "breve", titulo: "Em breve", classe: "brasil-card-breve", sub: "Ainda não disponível" },
+];
+
+/**
+ * Monta a lista de estados embaixo do mapa.
+ *
+ * É a navegação DE VERDADE desta tela: o mapa cabe inteiro agora, e num
+ * Brasil inteiro numa tela de celular o RJ tem uns 6 px -- alvo que
+ * ninguém acerta. A lista dá alvos de 52px, acima do mínimo de toque.
+ *
+ * Sai do próprio SVG (data-sigla, data-nome e a classe de situação), e
+ * não de uma lista à parte: estado que mudar de fase em
+ * data/estados.json aparece aqui sozinho, sem tocar em código.
+ */
+function renderizarGridEstados() {
+  const grid = document.getElementById("brasil-grid");
+  const paths = [...document.querySelectorAll("#brasil-mapa-container .estado")];
+  if (!grid || !paths.length) return;
+
+  const porSituacao = { liberado: [], dev: [], breve: [] };
+  paths.forEach((p) => porSituacao[situacaoDoPath(p)].push(p));
+
+  grid.innerHTML = "";
+  for (const grupo of GRUPOS_DE_ESTADO) {
+    const desteGrupo = porSituacao[grupo.chave].sort((a, b) =>
+      a.dataset.nome.localeCompare(b.dataset.nome, "pt-BR")
+    );
+    if (!desteGrupo.length) continue;
+
+    const secao = document.createElement("section");
+    secao.className = "brasil-grupo";
+    const titulo = document.createElement("h3");
+    titulo.className = "brasil-grupo-titulo";
+    titulo.textContent = grupo.titulo;
+    // Contagem só onde ajuda: "Disponíveis 1" é ruído, "Em breve 24" não.
+    if (desteGrupo.length > 2) {
+      const conta = document.createElement("span");
+      conta.className = "brasil-grupo-conta";
+      conta.textContent = desteGrupo.length;
+      titulo.appendChild(conta);
+    }
+    secao.appendChild(titulo);
+
+    const cards = document.createElement("div");
+    cards.className = "brasil-cards";
+    for (const path of desteGrupo) {
+      const nome = path.dataset.nome;
+      const sigla = path.dataset.sigla;
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = `brasil-card ${grupo.classe}`;
+      card.innerHTML =
+        '<span class="brasil-card-ponto" aria-hidden="true"></span>' +
+        '<span class="brasil-card-texto">' +
+        `<span class="brasil-card-nome">${escaparHtml(nome)}</span>` +
+        `<span class="brasil-card-sub">${escaparHtml(grupo.sub)}</span>` +
+        "</span>";
+      card.addEventListener("click", () => escolherEstado(sigla, nome, grupo.chave));
+      cards.appendChild(card);
+    }
+    secao.appendChild(cards);
+    grid.appendChild(secao);
   }
-  botao.disabled = false;
-  botao.textContent = `Confirmar ${path.dataset.nome}`;
 }
 
-function confirmarEstadoNoMapaBrasil() {
-  const path = estadoSelecionadoNoMapaBrasil;
-  if (!path) return;
-  const nome = path.dataset.nome;
-  const sigla = path.dataset.sigla;
-  if (path.classList.contains("estado-liberado")) {
-    // Estado já pronto (RJ) -- fecha o mapa do Brasil E o mapa estadual
-    // (se estava aberto por cima), revelando o mapa detalhado do RJ, que
-    // É o app principal.
+/**
+ * O que acontece ao escolher um estado -- pela lista ou pelo mapa.
+ *
+ * Um caminho só pros dois: antes o mapa exigia tocar e depois confirmar
+ * num botão, muleta que existia porque acertar o estado no mapa era
+ * difícil. Com a lista resolvendo a mira, o passo extra virou atrito.
+ */
+function escolherEstado(sigla, nome, situacao) {
+  if (situacao === "liberado") {
+    // Estado pronto (RJ) -- fecha esta tela E o mapa estadual, se havia
+    // um aberto, revelando o mapa detalhado do RJ, que É o app principal.
     fecharMapaBrasil();
     fecharMapaEstadual();
     return;
   }
-  if (path.classList.contains("estado-em-desenvolvimento")) {
-    // Estado com a malha pronta mas ainda sem conteúdo pra raspar
-    // (SP e MG) -- abre o mapa dele em tela cheia.
+  if (situacao === "dev") {
+    // Malha pronta, sem conteúdo pra raspar (SP, MG) -- abre a prévia.
     fecharMapaBrasil();
     abrirMapaEstadoEmDesenvolvimento(sigla, nome);
     return;
   }
+  /* "Em breve" responde em vez de ficar mudo: um card que não faz nada
+     ao ser tocado passa a impressão de app travado. */
   document.getElementById("brasil-status").textContent = `${nome} chega em breve!`;
 }
 
@@ -11810,7 +11931,7 @@ async function mapaEstadualJaBaixado(sigla) {
    deve descobrir que gastou 5 MB depois do fato, ainda mais um público
    que usa o app na estrada. São os números do arquivo comprimido, que
    é o que realmente trafega. */
-const PESO_DO_MAPA = { sp: "1,2 MB", mg: "2,0 MB" };
+const PESO_DO_MAPA = { df: "0,2 MB", al: "0,1 MB", rn: "0,2 MB", se: "0,2 MB", pi: "0,3 MB", pb: "0,3 MB", pe: "0,3 MB", es: "0,3 MB", ac: "0,2 MB", ap: "0,2 MB", rr: "0,2 MB", ce: "0,5 MB", ma: "0,7 MB", ro: "0,3 MB", pa: "0,7 MB", ms: "0,7 MB", to: "0,8 MB", sc: "0,8 MB", am: "0,6 MB", mt: "1,1 MB", pr: "1,2 MB", go: "1,2 MB", rs: "1,2 MB", ba: "1,1 MB", sp: "1,4 MB", mg: "2,2 MB" };
 
 /* Um download por estado de cada vez. Sem isso, tocar em "Baixar" no
    mapa e depois em "Baixar todos" em Configurações puxaria os mesmos
@@ -11979,7 +12100,7 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla, nomeDoEstado) {
 
   const nome = nomeDoEstado || s.toUpperCase();
   nomeDoEstadoAberto = nome;
-  mostrarEstadoNoViewport(s);
+  mostrarEstadoNoViewport(s, "dev");
   const painel = document.getElementById("estado-baixar");
 
   if (await mapaEstadualJaBaixado(s)) {
@@ -12009,34 +12130,62 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla, nomeDoEstado) {
    sem botões. Agora os dois mapas moram no mesmo #mapa-viewport e se
    revezam -- a UI, que já flutua por cima do mapa, nunca sai do lugar.
 
-   `estadoAtual` vive só em memória de propósito: o RJ é o produto, e
-   reabrir o app direto em Minas -- um estado sem nada pra fazer, e cujo
-   mapa pode nem estar baixado -- seria uma boas-vindas ruim. Os demais
-   estados entram em modo LIMITADO (ver aplicarLimitesDoEstado).
+   O RJ NÃO é "o estado padrão" -- ele é só o ÚNICO PUBLICADO hoje, e o
+   único cujo mapa vem embutido no app. Quando os outros forem
+   publicados, todos terão o mesmo peso. Por isso nada aqui pergunta "é
+   o RJ?": pergunta "este estado está publicado?" (`situacaoEstadoAtual`,
+   que vem de data/estados.json via as classes do mapa do Brasil), e
+   "qual estado tem o mapa embutido?" (lido do DOM, não escrito à mão).
+
+   `estadoAtual` vive só em memória de propósito: reabrir o app num
+   estado sem conteúdo, e cujo mapa pode nem estar baixado, seria uma
+   boas-vindas ruim.
    ============================================================ */
 
-let estadoAtual = "rj";
+/* Qual estado tem o mapa embutido no app. Lido do próprio DOM em vez de
+   escrito "rj" no código: é uma propriedade TEMPORÁRIA de qual estado
+   está publicado, não um privilégio do Rio. */
+const SIGLA_MAPA_EMBUTIDO = (
+  document.querySelector('#mapa-viewport svg[id^="mapa-"]')?.id.slice(5) || "rj"
+).toLowerCase();
 
-/** Mostra o mapa do estado e esconde o do RJ (e vice-versa). */
-function mostrarEstadoNoViewport(sigla) {
+let estadoAtual = SIGLA_MAPA_EMBUTIDO;
+// "liberado" (publicado) | "dev" (malha pronta, sem conteúdo).
+let situacaoEstadoAtual = "liberado";
+// Último estado publicado em que a pessoa esteve -- é pra onde o
+// "voltar" leva. Com mais de um publicado, volta pro que ela veio.
+let ultimoEstadoPublicado = { sigla: SIGLA_MAPA_EMBUTIDO, nome: "Rio de Janeiro" };
+
+/** Troca qual mapa está na tela. */
+function mostrarEstadoNoViewport(sigla, situacao = "liberado") {
   estadoAtual = sigla;
-  document.getElementById("mapa-rj").classList.toggle("oculto", sigla !== "rj");
-  document.getElementById("estado-viewport").classList.toggle("oculto", sigla === "rj");
+  situacaoEstadoAtual = situacao;
+  const ehOEmbutido = sigla === SIGLA_MAPA_EMBUTIDO;
+  document.getElementById("mapa-rj").classList.toggle("oculto", !ehOEmbutido);
+  document.getElementById("estado-viewport").classList.toggle("oculto", ehOEmbutido);
+  if (situacao === "liberado") {
+    ultimoEstadoPublicado = { sigla, nome: nomeDoEstadoAberto || ultimoEstadoPublicado.nome };
+  }
   aplicarLimitesDoEstado();
 }
 
-/** Volta pro mapa do RJ, o único estado publicado. */
+/** Volta pro último estado publicado em que a pessoa esteve. */
 function fecharMapaEstadual() {
   nomeDoEstadoAberto = "";
   esconderPopupDevEstadual();
   document.getElementById("estado-toast").classList.add("oculto");
   document.getElementById("estado-baixar").classList.add("oculto");
-  mostrarEstadoNoViewport("rj");
+  mostrarEstadoNoViewport(ultimoEstadoPublicado.sigla, "liberado");
 }
 
 /** Estamos num estado que ainda não foi publicado? */
 function emEstadoLimitado() {
-  return estadoAtual !== "rj";
+  return situacaoEstadoAtual !== "liberado";
+}
+
+/** Sigla em maiúsculas do estado na tela -- "RJ", "MG", "SP". */
+function siglaDoEstadoAtual() {
+  return String(estadoAtual || "").toUpperCase();
 }
 
 /* ---- A que estado uma coisa pertence ----
@@ -12079,12 +12228,16 @@ function avisarConteudoEmDesenvolvimento(container, oQue) {
       <h3>${escaparHtml(oQue)} de ${escaparHtml(nome)}</h3>
       <p>Ainda estamos montando esta parte. Enquanto isso, dá pra explorar
          o mapa de ${escaparHtml(nome)} à vontade.</p>
-      <button type="button" class="conteudo-em-dev-btn">Voltar para o Rio de Janeiro</button>
+      <button type="button" class="conteudo-em-dev-btn">← Voltar para ${escaparHtml(
+        ultimoEstadoPublicado.sigla.toUpperCase()
+      )}</button>
     </div>`;
   container.querySelector(".conteudo-em-dev-btn").addEventListener("click", () => {
-    // Fecha a folha/modal que estiver por cima antes de trocar o mapa,
-    // senão a pessoa volta pro RJ sem ver que voltou.
-    document.querySelectorAll("[id^=modal-]:not(.oculto)").forEach((m) => m.classList.add("oculto"));
+    /* Fecha o painel que estiver por cima antes de trocar o mapa, senão
+       a pessoa volta e não vê que voltou. Usa a lista OVERLAYS_APP e não
+       um seletor "[id^=modal-]": a Biblioteca se chama
+       "biblioteca-selos", não casava, e ficava aberta por cima. */
+    fecharTodosOsModais();
     fecharMapaEstadual();
   });
 }
@@ -12124,11 +12277,12 @@ function aplicarLimitesDoEstado() {
   if (limitado && modoClimaLigado) alternarModoClima();
   atualizarContadorDeModos();
 
-  // A aba "Estadual" do ranking leva o nome do estado da vez.
+  /* A aba do ranking leva a SIGLA do estado da vez. Vale pro publicado
+     também: ele nunca foi "o Estadual", é o RJ -- chamar de "Estadual"
+     só fazia sentido enquanto havia um estado só. E sigla, não nome
+     inteiro: "Rio Grande do Sul" não cabe numa aba ao lado de duas. */
   const abaEstadual = document.getElementById("btn-ranking-estadual");
-  if (abaEstadual) {
-    abaEstadual.textContent = limitado ? nomeDoEstadoAberto : "Estadual";
-  }
+  if (abaEstadual) abaEstadual.textContent = siglaDoEstadoAtual();
 
   /* Recarrega o que estiver ABERTO na hora da troca. Sem isto, trocar de
      estado com a Comunidade aberta deixava na tela o feed do estado
@@ -12141,6 +12295,9 @@ function aplicarLimitesDoEstado() {
   }
   if (!document.getElementById("modal-rotas")?.classList.contains("oculto")) {
     abrirRotas();
+  }
+  if (!document.getElementById("biblioteca-selos")?.classList.contains("oculto")) {
+    abrirBibliotecaSelos();
   }
 }
 
@@ -12457,7 +12614,15 @@ function inicializarPanZoomEstadual() {
     if (!svg) return;
     svg.style.transform = `translate(${deslocX}px, ${deslocY}px) scale(${escala})`;
     // Afastado -> mesorregiões coloridas; aproximado -> municípios.
-    svg.classList.toggle("modo-regioes", escala < LIMIAR_REGIOES);
+    /* Modo regiões só faz sentido se o estado TIVER regiões. Ele apaga
+       as bordas dos municípios e mostra o contorno das mesorregiões no
+       lugar; num estado sem elas -- o DF, cujas divisões são as Regiões
+       Administrativas e não têm agrupamento acima -- o mapa afastado
+       virava uma mancha cinza sem divisa nenhuma. */
+    svg.classList.toggle(
+      "modo-regioes",
+      escala < LIMIAR_REGIOES && !!svg.querySelector(".contornos-regioes")
+    );
     // Nomes dos municípios só bem no zoom.
     svg.classList.toggle("mostrar-rotulos", escala >= LIMIAR_ROTULOS);
 

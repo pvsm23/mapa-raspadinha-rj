@@ -1,5 +1,16 @@
 [
   {
+    "versao": "0.26.08.18.95",
+    "itens": [
+      "O Brasil inteiro entrou no mapa: os 26 estados e o Distrito Federal agora dá pra explorar município por município, no mesmo nível de detalhe do Rio.",
+      "No Distrito Federal aparecem as 33 Regiões Administrativas, já que ele tem um município só.",
+      "Cada mapa é baixado quando você quiser, um estado de cada vez, e depois abre sem internet — nenhum deles pesa no tamanho do aplicativo.",
+      "A tela do Mapa do Brasil foi refeita: o país inteiro cabe na tela sem arrastar, e agora tem uma lista de estados embaixo, com alvos grandes de tocar.",
+      "Configurações, a leitura sobre os municípios e a Loja deixaram de exigir login — só raspar selo e comprar é que pedem conta.",
+      "Correção: o aviso de estado em desenvolvimento ficava escondido atrás da barra do app."
+    ]
+  },
+  {
     "versao": "0.26.08.17.94",
     "itens": [
       "Conquistas, Rotas, Loja e Comunidade agora são de cada estado: você vê o conteúdo do mapa que estiver aberto, e nos estados novos aparece o aviso de que essa parte ainda está sendo montada.",
