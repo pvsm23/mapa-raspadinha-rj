@@ -1,5 +1,12 @@
 [
   {
+    "versao": "0.26.08.18.98",
+    "itens": [
+      "Os mapas dos estados que você já baixou agora se atualizam sozinhos quando saem melhorias — antes era preciso apagar e baixar de novo à mão pra ver as novidades.",
+      "Só o mapa que mudou é rebaixado, e sem internet o app continua usando o que já está guardado no aparelho."
+    ]
+  },
+  {
     "versao": "0.26.08.18.97",
     "itens": [
       "Correção: os primeiros nomes a aparecer no mapa eram os de nome curto, e não os dos municípios grandes — Ubá vinha antes de Patos de Minas.",

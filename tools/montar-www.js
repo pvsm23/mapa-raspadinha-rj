@@ -89,6 +89,35 @@ fs.writeFileSync(
 );
 console.log(`manifesto offline: ${arquivosOffline.length} arquivos`);
 
+/* ---- Impressão digital de cada mapa estadual ----
+   O CACHE_OFFLINE nunca é limpo, de propósito: é o que impede a pessoa
+   de perder o download a cada deploy. Só que isso também CONGELA o mapa
+   antigo pra sempre -- quando um SVG muda (foi o caso dos rótulos na
+   0.26.08.18.97), quem já tinha baixado continuava vendo o velho, e o
+   único jeito era apagar e baixar de novo à mão. Ninguém deveria
+   precisar saber disso.
+
+   Aqui sai um hash curto por estado. O app compara com o que ele
+   guardou ao baixar e, se mudou, rebaixa AQUELE mapa sozinho -- só o
+   que mudou, e não os 17 MB todos a cada atualização do app.
+   Ver verificarAtualizacaoDoMapa em js/script.js. */
+const versoesDosMapas = {};
+for (const arq of fs.readdirSync(path.join(RAIZ, "assets", "svg"))) {
+  const m = arq.match(/^([a-z]{2})-municipios\.svg$/i);
+  if (!m || /^(rj|br)$/i.test(m[1])) continue; // o do RJ vai dentro do APK
+  const conteudo = fs.readFileSync(path.join(RAIZ, "assets", "svg", arq));
+  versoesDosMapas[m[1].toLowerCase()] = require("crypto")
+    .createHash("sha1")
+    .update(conteudo)
+    .digest("hex")
+    .slice(0, 10);
+}
+fs.writeFileSync(
+  path.join(RAIZ, "data", "mapas-estaduais.json"),
+  JSON.stringify({ versoes: versoesDosMapas }, null, 0) + "\n"
+);
+console.log(`impressao digital de ${Object.keys(versoesDosMapas).length} mapas estaduais`);
+
 /* ---- O que NÃO vai pro APK ----
  *
  * Os mapas dos estados "em desenvolvimento" (SP, MG) são grandes: em

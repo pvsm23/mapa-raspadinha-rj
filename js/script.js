@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.18.97";
+const VERSAO_APP = "0.26.08.18.98";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.18.97";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.18.98", itens: ["Os mapas dos estados que você já baixou agora se atualizam sozinhos quando saem melhorias — antes era preciso apagar e baixar de novo à mão pra ver as novidades.", "Só o mapa que mudou é rebaixado, e sem internet o app continua usando o que já está guardado no aparelho."] },
   { versao: "0.26.08.18.97", itens: ["Correção: os primeiros nomes a aparecer no mapa eram os de nome curto, e não os dos municípios grandes — Ubá vinha antes de Patos de Minas.", "Agora quem aparece primeiro é sempre o município maior, mesmo que o nome dele seja comprido.", "E os nomes não aparecem mais enquanto o mapa está mostrando as regiões, quando as divisas de município nem estão na tela."] },
   { versao: "0.26.08.18.96", itens: ["Nos estados grandes, o nome dos municípios enormes agora aparece bem antes e bem maior — antes ficava minúsculo e só surgia com muito zoom, e você tinha que procurar o nome dentro do próprio município.", "Cada município passou a mostrar o nome no zoom em que ele cabe ali dentro, em vez de todos aparecerem de uma vez.", "Os nomes vão entrando aos poucos conforme você aproxima, deixando o mapa mais limpo de longe."] },
   { versao: "0.26.08.18.95", itens: ["O Brasil inteiro entrou no mapa: os 26 estados e o Distrito Federal agora dá pra explorar município por município, no mesmo nível de detalhe do Rio.", "No Distrito Federal aparecem as 33 Regiões Administrativas, já que ele tem um município só.", "Cada mapa é baixado quando você quiser, um estado de cada vez, e depois abre sem internet — nenhum deles pesa no tamanho do aplicativo.", "A tela do Mapa do Brasil foi refeita: o país inteiro cabe na tela sem arrastar, e agora tem uma lista de estados embaixo, com alvos grandes de tocar.", "Configurações, a leitura sobre os municípios e a Loja deixaram de exigir login — só raspar selo e comprar é que pedem conta.", "Correção: o aviso de estado em desenvolvimento ficava escondido atrás da barra do app."] },
@@ -11913,11 +11914,29 @@ function urlDoMapaEstadual(sigla) {
  * É a mesma armadilha do changelog, que o URL_VERSOES_PUBLICADAS já
  * resolvia: conteúdo que mora no site precisa ser pedido AO SITE.
  */
-function origemDoMapaEstadual(sigla) {
+function origemDoMapaEstadual(sigla, versao) {
   const relativo = urlDoMapaEstadual(sigla);
-  return ehAppNativo() ? `${SITE_PUBLICADO}/${relativo}` : relativo;
+  const base = ehAppNativo() ? `${SITE_PUBLICADO}/${relativo}` : relativo;
+  /* O ?v= existe pra FURAR O SERVICE WORKER, e não pro servidor.
+     O sw.js trata .svg como imagem e responde com caches.match, que
+     varre TODOS os caches -- inclusive o CACHE_OFFLINE, onde está
+     justamente a cópia velha que a gente quer trocar. Sem o parâmetro,
+     rebaixar um mapa desatualizado devolvia a mesma cópia velha, e o
+     app "atualizava" pra ele mesmo. Com a URL diferente o match falha e
+     a requisição vai pra rede de verdade; a gravação continua sendo
+     feita na chave limpa, sem o parâmetro. */
+  return versao ? `${base}?v=${encodeURIComponent(versao)}` : base;
 }
 
+
+/** Versão publicada de um mapa, ou "" se não der pra saber (sem rede). */
+async function versaoPublicadaDoMapa(sigla) {
+  try {
+    return (await versoesPublicadas())[sigla] || "";
+  } catch {
+    return "";
+  }
+}
 /** Já está guardado no aparelho? (CacheStorage do pacote offline) */
 async function mapaEstadualJaBaixado(sigla) {
   if (svgMapaEstadoCache[sigla]) return true;
@@ -11956,8 +11975,12 @@ function baixarMapaDoEstado(sigla, aoProgredir) {
   if (mapasBaixando[sigla]) return mapasBaixando[sigla];
 
   const tarefa = (async () => {
-    const resposta = await fetch(origemDoMapaEstadual(sigla));
-    if (!resposta.ok) throw new Error(`HTTP ${resposta.status} em ${origemDoMapaEstadual(sigla)}`);
+    // A versão publicada entra como ?v= pra a busca não ser respondida
+    // pelo cache com a cópia velha (ver origemDoMapaEstadual).
+    const versao = await versaoPublicadaDoMapa(sigla);
+    const origem = origemDoMapaEstadual(sigla, versao);
+    const resposta = await fetch(origem);
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status} em ${origem}`);
 
     const total = Number(resposta.headers.get("Content-Length")) || 0;
     const leitor = resposta.body && resposta.body.getReader ? resposta.body.getReader() : null;
@@ -11995,6 +12018,11 @@ function baixarMapaDoEstado(sigla, aoProgredir) {
          Não é motivo pra falhar -- a pessoa pediu pra VER o mapa. */
       console.warn(`Mapa de ${sigla} não pôde ser guardado no aparelho:`, erro);
     }
+    /* Anota a versão AQUI, e não em cada chamador: baixam mapa o
+       painel do estado, a tela de Configurações e o download automático
+       do estado onde a pessoa está. Fora daqui, um deles ficaria sem
+       anotar e o mapa dele nunca perceberia que ficou velho. */
+    await registrarVersaoBaixada(sigla);
     if (aoProgredir) aoProgredir(1);
     return svg;
   })();
@@ -12004,9 +12032,105 @@ function baixarMapaDoEstado(sigla, aoProgredir) {
   return tarefa;
 }
 
+
+/* ============================================================
+   Mapa guardado que ficou velho
+
+   O CACHE_OFFLINE nunca é limpo -- é isso que impede a pessoa de perder
+   o download a cada deploy. O preço é que um mapa baixado fica CONGELADO
+   ali: quando o SVG muda (aconteceu com os rótulos na 0.26.08.18.97),
+   quem já tinha baixado continuava vendo o velho, e o único jeito era
+   apagar e baixar de novo em Configurações. O Paulo descobriu isso na
+   mão -- e ninguém deveria precisar saber desse truque.
+
+   Agora cada mapa carrega uma impressão digital (data/mapas-estaduais.json,
+   gerada em tools/montar-www.js). O app guarda a do que baixou e, ao
+   abrir o estado, confere em segundo plano. Mudou? rebaixa AQUELE mapa
+   sozinho -- só o que mudou, não os 17 MB todos.
+   ============================================================ */
+
+const CHAVE_VERSAO_MAPA = "desbrava_mapa_versao_";
+
+/** Impressão digital do mapa que está guardado neste aparelho. */
+function versaoGuardadaDoMapa(sigla) {
+  try {
+    return localStorage.getItem(CHAVE_VERSAO_MAPA + sigla) || "";
+  } catch {
+    return "";
+  }
+}
+
+function guardarVersaoDoMapa(sigla, versao) {
+  try {
+    if (versao) localStorage.setItem(CHAVE_VERSAO_MAPA + sigla, versao);
+  } catch {
+    /* modo privado: sem memória de versão, só não detecta atualização */
+  }
+}
+
+/* Uma busca por sessão: o arquivo é minúsculo, mas não precisa de uma
+   ida à rede a cada estado aberto. */
+let versoesPublicadasDosMapas = null;
+async function versoesPublicadas() {
+  if (versoesPublicadasDosMapas) return versoesPublicadasDosMapas;
+  /* Do SITE, não da cópia local: dentro do APK a cópia empacotada é a
+     da hora do build, e comparar com ela faria o app rebaixar o mesmo
+     mapa pra sempre toda vez que o site estivesse mais novo. */
+  const url = ehAppNativo()
+    ? `${SITE_PUBLICADO}/data/mapas-estaduais.json`
+    : "data/mapas-estaduais.json";
+  const resposta = await fetch(url, { cache: "no-store" });
+  if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+  versoesPublicadasDosMapas = (await resposta.json()).versoes || {};
+  return versoesPublicadasDosMapas;
+}
+
+/**
+ * Confere se o mapa guardado é o mais novo e, se não for, rebaixa.
+ *
+ * Roda em SEGUNDO PLANO, depois de o mapa velho já estar na tela: é
+ * melhor mostrar o desatualizado na hora e trocar depois do que segurar
+ * a pessoa esperando. Sem rede, não faz nada -- o mapa guardado
+ * continua valendo, que é o ponto de ele existir.
+ */
+async function verificarAtualizacaoDoMapa(sigla) {
+  try {
+    const publicada = (await versoesPublicadas())[sigla];
+    if (!publicada || publicada === versaoGuardadaDoMapa(sigla)) return;
+
+    console.log(`Mapa de ${sigla.toUpperCase()} desatualizado, rebaixando...`);
+    delete svgMapaEstadoCache[sigla];
+    await baixarMapaDoEstado(sigla); // ele já anota a versão nova
+
+    // Só redesenha se a pessoa AINDA estiver nesse estado -- ela pode
+    // ter trocado de mapa no meio do download.
+    if (estadoAtual === sigla) await desenharMapaEstadual(sigla);
+    mostrarAvisoEstadual(`Mapa de ${nomeDoEstadoAberto} atualizado.`);
+  } catch (erro) {
+    // Sem rede ou site fora: segue com o que está guardado.
+    console.warn(`Não deu para conferir a versão do mapa de ${sigla}:`, erro);
+  }
+}
+
+
+/** Anota qual versão do mapa acabou de ser guardada neste aparelho. */
+async function registrarVersaoBaixada(sigla) {
+  try {
+    guardarVersaoDoMapa(sigla, (await versoesPublicadas())[sigla]);
+  } catch {
+    /* Sem o manifesto o app fica sem saber a versão do que baixou. A
+       próxima abertura com rede resolve: como não há versão guardada,
+       ela vai diferir da publicada e o mapa é rebaixado uma vez. */
+  }
+}
 /** Apaga o mapa guardado (Configurações → Mapas dos estados). */
 async function apagarMapaDoEstado(sigla) {
   delete svgMapaEstadoCache[sigla];
+  try {
+    localStorage.removeItem(CHAVE_VERSAO_MAPA + sigla);
+  } catch {
+    /* sem localStorage: nada a esquecer */
+  }
   try {
     const cache = await caches.open(CACHE_OFFLINE);
     await cache.delete(urlDoMapaEstadual(sigla));
@@ -12063,7 +12187,7 @@ async function desenharMapaEstadual(sigla) {
       const guardado = await cache.match(urlDoMapaEstadual(sigla));
       svgMapaEstadoCache[sigla] = guardado
         ? await guardado.text()
-        : await (await fetch(origemDoMapaEstadual(sigla))).text();
+        : await (await fetch(origemDoMapaEstadual(sigla, await versaoPublicadaDoMapa(sigla)))).text();
     } catch (erro) {
       console.error(`Falha ao carregar o mapa de ${sigla}:`, erro);
       viewport.innerHTML =
@@ -12108,6 +12232,8 @@ async function abrirMapaEstadoEmDesenvolvimento(sigla, nomeDoEstado) {
   if (await mapaEstadualJaBaixado(s)) {
     painel.classList.add("oculto");
     await desenharMapaEstadual(s);
+    // Em segundo plano: o mapa guardado pode ter ficado velho.
+    verificarAtualizacaoDoMapa(s);
     return;
   }
 
@@ -12544,6 +12670,16 @@ function esconderPopupDevEstadual() {
 
 /* Aviso flutuante ao tocar num município do mapa estadual (some sozinho). */
 let timerToastEstadual = null;
+/** Aviso flutuante do mapa estadual, com o texto que vier. */
+function mostrarAvisoEstadual(texto) {
+  const toast = document.getElementById("estado-toast");
+  toast.textContent = texto;
+  toast.classList.remove("oculto");
+  clearTimeout(timerToastEstadual);
+  timerToastEstadual = setTimeout(() => toast.classList.add("oculto"), 2600);
+}
+
+/** O aviso de tocar num município (some sozinho). */
 function mostrarToastEstadual(nome) {
   const toast = document.getElementById("estado-toast");
   toast.textContent = `${nome} — em desenvolvimento. Em breve dá pra raspar!`;
