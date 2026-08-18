@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.18.96",
+    "itens": [
+      "Nos estados grandes, o nome dos municípios enormes agora aparece bem antes e bem maior — antes ficava minúsculo e só surgia com muito zoom, e você tinha que procurar o nome dentro do próprio município.",
+      "Cada município passou a mostrar o nome no zoom em que ele cabe ali dentro, em vez de todos aparecerem de uma vez.",
+      "Os nomes vão entrando aos poucos conforme você aproxima, deixando o mapa mais limpo de longe."
+    ]
+  },
+  {
     "versao": "0.26.08.18.95",
     "itens": [
       "O Brasil inteiro entrou no mapa: os 26 estados e o Distrito Federal agora dá pra explorar município por município, no mesmo nível de detalhe do Rio.",

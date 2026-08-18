@@ -146,6 +146,51 @@ function douglasPeucker(pontos, eps) {
   return pontos.filter((_, i) => manter[i]);
 }
 
+/* ---- Tamanho e momento de aparecer, decididos POR MUNICÍPIO ----
+ *
+ * O Paulo reclamou do Altamira: município gigante, nome minúsculo que
+ * só surge com muito zoom -- então você fica procurando o nome dentro
+ * do próprio território. Medi os 5.584 e eram DUAS falhas somadas:
+ *
+ *   - a fonte tinha teto fixo em 4, então o maior município do Brasil
+ *     recebia a mesma letra de um município médio;
+ *   - o momento de aparecer era único (zoom 7) pra todos, e 86,8%
+ *     deles já CABERIAM antes disso. Altamira cabe desde o zoom 0,45 --
+ *     ficava escondido por 15x mais zoom do que precisava.
+ *
+ * Agora cada um responde a mesma pergunta: "a partir de que zoom meu
+ * nome cabe dentro de mim?". A conta é direta -- a letra tem tamanho
+ * fixo NA TELA (ver o CSS), e a largura do município na tela cresce com
+ * o zoom, então existe um zoom em que o nome passa a caber:
+ *
+ *     largura do texto = nº de letras x LARGURA_LETRA x base x MULT_CSS
+ *     zoom que cabe    = largura do texto / largura do município
+ *
+ * O resultado vira `data-nivel`, e o CSS revela cada nível na sua faixa
+ * (ver ZOOM_ROTULO_ESTADUAL em js/script.js). O critério se autolimita:
+ * um nome só aparece quando cabe DENTRO do território, então vizinhos
+ * não disputam o mesmo espaço.
+ */
+const LARGURA_LETRA = 0.55; // fração do tamanho da fonte, por caractere
+const MULT_CSS = 7; // o multiplicador de #estado-viewport svg .rotulo-municipio
+const FONTE_MIN = 2.4;
+const FONTE_MAX = 9; // teto novo: 4 achatava os gigantes no mesmo tamanho
+/* Faixas de zoom em que cada nível é revelado. Tem que bater com o
+   ZOOM_ROTULO_ESTADUAL do js/script.js. */
+const FAIXAS_ROTULO = [1.5, 3, 6, 12, 22];
+
+function estiloDoRotulo(nome, largura) {
+  // Arredonda ANTES de decidir o nível: é este valor que vai pro arquivo,
+  // e calcular com o número cheio fazia o nome ser revelado um triz antes
+  // de caber.
+  const fonte = Number(Math.max(FONTE_MIN, Math.min(FONTE_MAX, largura / 11)).toFixed(1));
+  const larguraTexto = nome.length * LARGURA_LETRA * fonte * MULT_CSS;
+  const zoomQueCabe = largura > 0 ? larguraTexto / largura : Infinity;
+  let nivel = FAIXAS_ROTULO.findIndex((z) => zoomQueCabe <= z);
+  if (nivel === -1) nivel = FAIXAS_ROTULO.length - 1; // nome que nunca cabe: último
+  return { fonte, nivel };
+}
+
 function poligonosDaFeature(feature) {
   if (feature.geometry.type === "Polygon") return [feature.geometry.coordinates];
   if (feature.geometry.type === "MultiPolygon") return feature.geometry.coordinates;
@@ -447,7 +492,7 @@ function posicaoDoRotulo(feature) {
   let maiorArea = -Infinity;
   let melhorAneis = null;
 
-  for (const poligono of poligonosDaFeature(feature)) {
+  for (const poligono of poligonosUteisDaFeature(feature)) {
     const aneis = poligono.map((anel) => anel.map(projetar));
     const area = Math.abs(areaDoAnel(aneis[0]));
     if (area > maiorArea) {
@@ -474,9 +519,23 @@ function areaDoAnel(anel) {
   return soma / 2;
 }
 
+/**
+ * Anéis de uma feature DESCONTANDO as ilhas oceânicas distantes.
+ *
+ * Existe porque o rótulo era calculado sobre a geometria COMPLETA: a
+ * largura de Vitória (ES) saía com mais de mil unidades por causa de
+ * Trindade, que nem é desenhada. O nome ganhava a fonte máxima e o
+ * nível 0 -- aparecia na visão geral, num município que na tela tem 53
+ * unidades. Medir o que é desenhado é o certo.
+ */
+function poligonosUteisDaFeature(feature) {
+  return poligonosDaFeature(feature)
+    .map((poligono) => poligono.filter((anel) => !aneisDistantes.has(anel)))
+    .filter((poligono) => poligono.length);
+}
 function centroDoBoundingBox(feature) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const poligono of poligonosDaFeature(feature)) {
+  for (const poligono of poligonosUteisDaFeature(feature)) {
     for (const anel of poligono) {
       for (const ponto of anel) {
         const [x, y] = projetar(ponto);
@@ -586,20 +645,14 @@ const rotulos = featuresOrdenadas
     const codigoIbge = feature.properties.id;
     const nome = feature.properties.name;
     const { x, y, largura } = posicaoDoRotulo(feature);
-    // Fonte PROPORCIONAL ao tamanho do município: em áreas concentradas
-    // (região metropolitana) os municípios são minúsculos, então a letra
-    // fica bem pequena e não embola com a vizinha. Piso baixo (1.2) só pra
-    // não sumir de vez -- quem quiser ler dá mais zoom (a letra cresce
-    // junto com o mapa). Antes o piso era 3.5, gigante pros pequenos.
-    const fonte = Math.max(1.2, Math.min(4, largura / 11));
-    /* Vai em `--rotulo-base`, e NÃO em font-size, igual ao RJ: o CSS
-       divide essa base pelo `--zoom` pra a letra ficar do mesmo tamanho
-       NA TELA em qualquer aproximação. Como atributo font-size o nome
-       era ampliado junto com o mapa e, no zoom fundo, "Abaeté" ocupava
-       meia tela. O font-size continua escrito como reserva, pro caso do
-       SVG ser aberto fora do app (o CSS ganha dele por especificidade). */
+    /* Tamanho E momento de aparecer saem daqui, por município -- ver
+       estiloDoRotulo lá em cima. O `--rotulo-base` vai no style (e não
+       em font-size) porque o CSS divide pelo `--zoom` pra a letra ficar
+       do mesmo tamanho NA TELA em qualquer aproximação. O font-size
+       continua como reserva, pro caso do SVG ser aberto fora do app. */
+    const { fonte, nivel } = estiloDoRotulo(nome, largura);
     return (
-      `  <text class="rotulo-municipio" x="${x}" y="${y}" ` +
+      `  <text class="rotulo-municipio" data-nivel="${nivel}" x="${x}" y="${y}" ` +
       `style="--rotulo-base:${fonte.toFixed(1)}" font-size="${fonte.toFixed(1)}" ` +
       `pointer-events="none">` +
       `${escaparAtributo(nome)}</text>`

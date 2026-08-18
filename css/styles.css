@@ -1044,15 +1044,26 @@ body.estado-limitado #topo-prog-preench {
    os dois só existem no modo afastado (zoom < 2.4), onde crescer com o
    mapa não incomoda -- e é assim que já estavam bons. */
 #estado-viewport svg .rotulo-municipio {
-  font-size: calc(clamp(2.4, var(--rotulo-base, 2.5), 4) * 7px / var(--zoom, 1));
+  font-size: calc(clamp(2.4, var(--rotulo-base, 2.5), 9) * 7px / var(--zoom, 1));
   stroke-width: calc(0.6px * 7 / var(--zoom, 1));
 }
 
-/* Os nomes dos municípios (.rotulo-municipio) já vêm com display:none e
-   só aparecem quando o SVG ganha .mostrar-rotulos -- e no SP isso só
-   acontece bem no zoom (ver LIMIAR_ROTULOS em js/script.js), pra ter
-   poucos nomes na tela por vez. */
-#estado-viewport svg.mostrar-rotulos .rotulo-municipio {
+/* ---- Cada nome aparece no zoom em que ELE cabe ----
+   O nível vem do gerador (ver estiloDoRotulo em
+   tools/geojson-municipios-to-svg.js): 0 é quem cabe já na visão geral,
+   4 é quem só cabe bem de perto. Antes todos surgiam juntos no zoom 7,
+   e 86,8% deles já caberiam antes disso -- Altamira, que cabe desde o
+   zoom 0,45, ficava escondido por 15x mais zoom do que precisava.
+   O nome fica escondido até o <svg> ganhar a classe do seu nível. */
+#estado-viewport svg .rotulo-municipio {
+  display: none;
+}
+
+#estado-viewport svg.rot-n0 .rotulo-municipio[data-nivel="0"],
+#estado-viewport svg.rot-n1 .rotulo-municipio[data-nivel="1"],
+#estado-viewport svg.rot-n2 .rotulo-municipio[data-nivel="2"],
+#estado-viewport svg.rot-n3 .rotulo-municipio[data-nivel="3"],
+#estado-viewport svg.rot-n4 .rotulo-municipio[data-nivel="4"] {
   display: block;
 }
 
