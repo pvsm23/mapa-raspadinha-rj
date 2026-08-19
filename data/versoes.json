@@ -1,5 +1,15 @@
 [
   {
+    "versao": "0.26.08.19.108",
+    "itens": [
+      "A lista do Roteiro virou um trajeto desenhado: cada parada tem seu ponto na linha, e a viagem começa em \"onde você está\".",
+      "Trocar a ordem das paradas agora é arrastar pela alça, no lugar das setinhas de texto.",
+      "Escolher município no Roteiro abre a busca do app, e os lugares viraram cartões que acendem em verde ao serem escolhidos.",
+      "O botão \"Calcular viagem\" fica preso no rodapé: não precisa mais rolar até o fim pra achar ele.",
+      "O atalho \"+ Roteiro\" saiu da ficha dos pontos turísticos — a viagem se monta dentro do Motoclube."
+    ]
+  },
+  {
     "versao": "0.26.08.19.107",
     "itens": [
       "Correção: o cartão do seu grupo aparecia dentro dos Pontos de Apoio; agora ele fica só na tela inicial do Motoclube.",

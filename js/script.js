@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.107";
+const VERSAO_APP = "0.26.08.19.108";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.19.107";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.108", itens: ["A lista do Roteiro virou um trajeto desenhado: cada parada tem seu ponto na linha, e a viagem começa em \"onde você está\".", "Trocar a ordem das paradas agora é arrastar pela alça, no lugar das setinhas de texto.", "Escolher município no Roteiro abre a busca do app, e os lugares viraram cartões que acendem em verde ao serem escolhidos.", "O botão \"Calcular viagem\" fica preso no rodapé: não precisa mais rolar até o fim pra achar ele.", "O atalho \"+ Roteiro\" saiu da ficha dos pontos turísticos — a viagem se monta dentro do Motoclube."] },
   { versao: "0.26.08.19.107", itens: ["Correção: o cartão do seu grupo aparecia dentro dos Pontos de Apoio; agora ele fica só na tela inicial do Motoclube.", "Quando os Pontos de Apoio não carregam, o app diz o motivo (sem internet, sem permissão) e oferece tentar de novo."] },
   { versao: "0.26.08.19.106", itens: ["O cartão do seu grupo agora aparece logo ao abrir o Motoclube, e não mais escondido dentro dos Pontos de Apoio.", "Pontos de Apoio ganhou busca e filtros por marca em botões, no lugar da lista suspensa do sistema.", "Ao indicar um ponto, escolher as marcas atendidas virou tocar nas pílulas — sem caixinhas de seleção."] },
   { versao: "0.26.08.19.105", itens: ["Os formulários de moto foram refeitos: um campo por linha, campos altos e fáceis de tocar, e o de consumo deixou de aparecer com a cara branca do navegador.", "O botão de salvar ficou verde e ocupa a largura toda; o de excluir foi para o fim, separado por uma linha."] },
@@ -7283,7 +7284,6 @@ function abrirPontoTuristico(municipioId, indice) {
   document.getElementById("ponto-corpo").scrollTop = 0;
   document.getElementById("modal-ponto").classList.remove("oculto");
 
-  atualizarBotaoRoteiroDoPonto(municipioId, indice, ponto);
   montarComentariosDoPonto(ponto, municipioId);
 }
 
@@ -11137,9 +11137,14 @@ function avisoRoteiroEmTestes(estimativaGrosseira) {
    e não têm ligação com o roteiro.
 
    Aqui a pessoa escolhe os pontos que QUER visitar, de qualquer
-   município, na ordem que quiser. Duas portas de entrada:
-     - o botão "+ Roteiro" no ponto, enquanto explora o mapa;
-     - a própria tela de Roteiros, escolhendo município e marcando.
+   município, na ordem que quiser. Duas portas de entrada, as duas
+   DENTRO do Motoclube -- é lá que o roteiro vive:
+     - "Escolher no mapa", tocando nos lugares na ordem da viagem;
+     - o seletor da própria tela, por município.
+
+   O chip "+ Roteiro" na folha do ponto SAIU: montar viagem no meio da
+   exploração do mapa misturava duas coisas diferentes, e deixava um
+   controle de recurso pago solto numa tela que todo mundo abre.
 
    O rascunho vive no localStorage e não no Firestore: é decisão de
    viagem, muda o tempo todo, e ninguém precisa que isso sincronize
@@ -11192,30 +11197,6 @@ function alternarPontoNoRoteiro(municipioId, indice) {
   else lista.push(chave);
   gravarRoteiro(lista);
   return i < 0;
-}
-
-/* ---- Botão "+ Roteiro" na folha do ponto ----
-   Só pra membro, e só pra ponto COM coordenada: sem lat/lon não há como
-   navegar até ele, e oferecer o botão criaria uma promessa que a tela
-   de Roteiros não consegue cumprir. */
-function atualizarBotaoRoteiroDoPonto(municipioId, indice, ponto) {
-  const botao = document.getElementById("btn-ponto-roteiro");
-  if (!botao) return;
-
-  const temCoordenada = typeof ponto?.lat === "number" && typeof ponto?.lon === "number";
-  const podeUsar = souMembroMotoclube() && temCoordenada;
-  botao.classList.toggle("oculto", !podeUsar);
-  if (!podeUsar) return;
-
-  const dentro = estaNoRoteiro(municipioId, indice);
-  botao.classList.toggle("chip-acao-ativo", dentro);
-  botao.querySelector(".rotulo-roteiro").textContent = dentro ? "No roteiro" : "+ Roteiro";
-  botao.onclick = () => {
-    const agoraDentro = alternarPontoNoRoteiro(municipioId, indice);
-    botao.classList.toggle("chip-acao-ativo", agoraDentro);
-    botao.querySelector(".rotulo-roteiro").textContent = agoraDentro ? "No roteiro" : "+ Roteiro";
-    mostrarToastOndeEstou(agoraDentro ? "Ponto adicionado ao roteiro." : "Ponto removido do roteiro.");
-  };
 }
 
 /* ---- Montar o roteiro NO MAPA ----
@@ -11320,7 +11301,49 @@ function configurarModoMapaRoteiro() {
   document.getElementById("btn-modo-roteiro-confirmar")?.addEventListener("click", confirmarModoMapaRoteiro);
 }
 
-/* ---- A tela de Roteiros ---- */
+/* ---- A tela de Roteiros ----
+
+   Redesenho: a lista de paradas virou TRAJETO (nó com trilho ligando
+   uma à seguinte), os controles de texto ("↑ ↓ ✕") viraram alça de
+   arrasto e lixeira em SVG, o <select> nativo de município virou a
+   mesma folha de busca que o resto do app já usa, e o checkbox virou
+   cartão acionável.
+
+   Os ícones são SVG embutido: o app não carrega biblioteca de ícones, e
+   seta/xis em caractere de texto herdam a fonte do sistema -- mudam de
+   forma, de peso e de alinhamento vertical de um aparelho pro outro.
+   ============================================================ */
+
+const ICONE_ALCA =
+  '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+  '<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>' +
+  '<circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>' +
+  '<circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+
+const ICONE_LIXEIRA =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>' +
+  '<path d="M10 11v6M14 11v6"/></svg>';
+
+const ICONE_CHECK =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M20 6L9 17l-5-5"/></svg>';
+
+const ICONE_PIN_MAPA =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+
+const ICONE_SETA_LISTA =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+/* Município aberto no seletor. Vive FORA do DOM porque a tela inteira é
+   redesenhada a cada ponto marcado -- guardar o estado no elemento faria
+   a pessoa voltar à escolha do município depois de cada toque. */
+let municipioDoSeletor = "";
 
 function renderizarRoteiros() {
   const alvo = document.getElementById("roteiro-conteudo");
@@ -11332,80 +11355,223 @@ function renderizarRoteiros() {
   const intro = document.createElement("p");
   intro.className = "roteiro-intro";
   intro.textContent = pontos.length
-    ? "Sua viagem, na ordem em que você escolheu."
-    : "Escolha os pontos que quer visitar — pelo mapa, no botão “+ Roteiro” de cada lugar, ou aqui embaixo.";
+    ? "Sua viagem, na ordem em que você escolheu. Arraste pela alça pra trocar a ordem."
+    : "Monte a viagem escolhendo os lugares direto no mapa ou pela lista aqui embaixo.";
   alvo.appendChild(intro);
 
   const noMapa = document.createElement("button");
   noMapa.type = "button";
-  noMapa.className = "roteiro-btn-mapa";
-  noMapa.textContent = "📍 Escolher no mapa";
+  noMapa.className = "rt-btn-mapa" + (pontos.length ? "" : " rt-btn-mapa-convite");
+  noMapa.innerHTML =
+    ICONE_PIN_MAPA +
+    "<span><strong>Escolher no mapa</strong>" +
+    "<small>Toque nos lugares na ordem em que quer visitar</small></span>";
   noMapa.addEventListener("click", entrarNoModoMapaRoteiro);
   alvo.appendChild(noMapa);
 
-  if (pontos.length) {
-    alvo.appendChild(listaDoRoteiro(pontos));
-    alvo.appendChild(botaoCalcular(pontos));
-  }
-
+  if (pontos.length) alvo.appendChild(linhaDoRoteiro(pontos));
   alvo.appendChild(seletorDePontos());
+
+  // Por último no DOM de propósito: é assim que a barra continua presa
+  // no rodapé enquanto a pessoa rola o seletor inteiro.
+  alvo.appendChild(barraCalcular(pontos));
 }
 
-/** Os pontos escolhidos, com reordenar e remover. */
-function listaDoRoteiro(pontos) {
+/** Redesenha compensando a rolagem.
+
+    Marcar um ponto faz a viagem crescer ACIMA dos cartões: sem
+    compensar, a lista anda pra baixo do dedo e o toque seguinte cai no
+    lugar errado. */
+function redesenharRoteiroSemPular() {
+  const view = document.getElementById("motoclube-view");
+  const antes = document.querySelector(".rt-bloco")?.offsetHeight || 0;
+  renderizarRoteiros();
+  const depois = document.querySelector(".rt-bloco")?.offsetHeight || 0;
+  if (view) view.scrollTop += depois - antes;
+}
+
+/** A viagem desenhada como trajeto: nó, trilho e a próxima parada.
+
+    O primeiro nó é VOCÊ, não a primeira parada. É de onde o cálculo
+    parte de verdade (ver calcularRoteiro), e uma lista que começa no
+    destino escondia justamente o trecho de casa até lá -- foi ele que,
+    no teste, fez 223 km virarem 449. */
+function linhaDoRoteiro(pontos) {
+  const bloco = document.createElement("section");
+  bloco.className = "rt-bloco";
+
+  const cabecalho = document.createElement("div");
+  cabecalho.className = "rt-cabecalho";
+  const titulo = document.createElement("h4");
+  titulo.textContent = `Sua viagem · ${pontos.length} ${pontos.length === 1 ? "parada" : "paradas"}`;
+  const limpar = document.createElement("button");
+  limpar.type = "button";
+  limpar.className = "rt-limpar";
+  limpar.textContent = "Limpar";
+  limpar.addEventListener("click", () => {
+    if (!confirm("Tirar todos os pontos do roteiro?")) return;
+    gravarRoteiro([]);
+    renderizarRoteiros();
+  });
+  cabecalho.append(titulo, limpar);
+  bloco.appendChild(cabecalho);
+
   const lista = document.createElement("ol");
-  lista.className = "roteiro-pontos";
+  lista.className = "rt-linha";
+  lista.appendChild(
+    paradaDaOrigem("Onde você está", "a viagem começa daqui, se o GPS estiver ligado")
+  );
 
   pontos.forEach((p, i) => {
     const item = document.createElement("li");
-    item.className = "roteiro-ponto";
+    item.className = "rt-parada rt-parada-movel";
+    item.dataset.chave = p.chave;
+
+    const no = document.createElement("span");
+    no.className = "rt-no";
+    no.textContent = String(i + 1);
 
     const texto = document.createElement("div");
-    texto.className = "roteiro-ponto-texto";
+    texto.className = "rt-texto";
     const nome = document.createElement("strong");
     nome.textContent = p.nome;
     const cidade = document.createElement("span");
     cidade.textContent = p.municipio;
     texto.append(nome, cidade);
 
-    const acoes = document.createElement("div");
-    acoes.className = "roteiro-ponto-acoes";
-
-    // A ORDEM é a da viagem, então mexer nela é essencial -- sem isso a
-    // pessoa teria que apagar tudo e recomeçar pra trocar dois lugares.
-    const subir = document.createElement("button");
-    subir.type = "button";
-    subir.className = "roteiro-mover";
-    subir.textContent = "↑";
-    subir.setAttribute("aria-label", `Subir ${p.nome}`);
-    subir.disabled = i === 0;
-    subir.addEventListener("click", () => moverNoRoteiro(i, -1));
-
-    const descer = document.createElement("button");
-    descer.type = "button";
-    descer.className = "roteiro-mover";
-    descer.textContent = "↓";
-    descer.setAttribute("aria-label", `Descer ${p.nome}`);
-    descer.disabled = i === pontos.length - 1;
-    descer.addEventListener("click", () => moverNoRoteiro(i, 1));
-
     const tirar = document.createElement("button");
     tirar.type = "button";
-    tirar.className = "roteiro-tirar";
-    tirar.textContent = "✕";
+    tirar.className = "rt-acao rt-tirar";
+    tirar.innerHTML = ICONE_LIXEIRA;
     tirar.setAttribute("aria-label", `Tirar ${p.nome} do roteiro`);
     tirar.addEventListener("click", () => {
-      const lista2 = roteiroSalvo().filter((c) => c !== p.chave);
-      gravarRoteiro(lista2);
-      renderizarRoteiros();
+      gravarRoteiro(roteiroSalvo().filter((c) => c !== p.chave));
+      redesenharRoteiroSemPular();
     });
 
-    acoes.append(subir, descer, tirar);
-    item.append(texto, acoes);
+    /* A alça é o ÚNICO lugar por onde o arrasto começa: assim o dedo
+       continua rolando a tela em qualquer outro ponto do item, e não
+       precisa de toque longo pra desambiguar o gesto.
+
+       As setas do teclado funcionam nela também -- quem não consegue
+       arrastar não fica sem reordenar, e isso não custa nenhum pixel
+       de tela. */
+    const alca = document.createElement("button");
+    alca.type = "button";
+    alca.className = "rt-acao rt-alca";
+    alca.innerHTML = ICONE_ALCA;
+    alca.dataset.indice = String(i);
+    alca.setAttribute(
+      "aria-label",
+      `Reordenar ${p.nome}: arraste, ou use as setas para cima e para baixo`
+    );
+    alca.addEventListener("keydown", (evento) => {
+      if (evento.key !== "ArrowUp" && evento.key !== "ArrowDown") return;
+      evento.preventDefault();
+      moverNoRoteiro(i, evento.key === "ArrowUp" ? -1 : 1);
+    });
+
+    item.append(no, texto, tirar, alca);
     lista.appendChild(item);
   });
 
-  return lista;
+  marcarChegada(lista);
+  ligarArrastoDoRoteiro(lista);
+  bloco.appendChild(lista);
+  return bloco;
+}
+
+/** O nó de partida: vazado, sem número e sem ações -- não é parada, é
+    de onde se sai. */
+function paradaDaOrigem(titulo, detalhe) {
+  const item = document.createElement("li");
+  item.className = "rt-parada rt-parada-origem";
+  const no = document.createElement("span");
+  no.className = "rt-no rt-no-origem";
+  const texto = document.createElement("div");
+  texto.className = "rt-texto";
+  const nome = document.createElement("strong");
+  nome.textContent = titulo;
+  const sub = document.createElement("span");
+  sub.textContent = detalhe;
+  texto.append(nome, sub);
+  item.append(no, texto);
+  return item;
+}
+
+/** Anel no último nó: dá pra ver onde a viagem termina sem ler a lista. */
+function marcarChegada(lista) {
+  const itens = [...lista.querySelectorAll(".rt-parada:not(.rt-parada-origem)")];
+  itens.forEach((li, i) => li.classList.toggle("rt-parada-fim", i === itens.length - 1));
+}
+
+/* Arrasto por Pointer Events: cobre dedo, mouse e caneta com o mesmo
+   código, e o setPointerCapture mantém o item seguindo o dedo mesmo
+   quando ele escapa de cima do elemento. O drag-and-drop nativo do HTML5
+   não serve aqui -- em toque ele simplesmente não dispara. */
+function ligarArrastoDoRoteiro(lista) {
+  lista.querySelectorAll(".rt-alca").forEach((alca) => {
+    alca.addEventListener("pointerdown", (evento) => {
+      const item = alca.closest(".rt-parada-movel");
+      if (!item || evento.button > 0) return;
+      evento.preventDefault();
+
+      let referenciaY = evento.clientY;
+      alca.setPointerCapture?.(evento.pointerId);
+      item.classList.add("rt-arrastando");
+      lista.classList.add("rt-linha-arrastando");
+
+      const mover = (ev) => {
+        item.style.transform = `translateY(${ev.clientY - referenciaY}px)`;
+
+        const vizinho = vizinhoSobODedo(lista, item, ev.clientY);
+        if (!vizinho) return;
+        lista.insertBefore(item, vizinho.antes ? vizinho.alvo : vizinho.alvo.nextSibling);
+        /* Depois da troca o item já está fisicamente sob o dedo: zerar a
+           referência aqui evita que ele ande o dobro da distância. */
+        referenciaY = ev.clientY;
+        item.style.transform = "";
+        renumerarLinha(lista);
+      };
+
+      const soltar = () => {
+        alca.removeEventListener("pointermove", mover);
+        alca.removeEventListener("pointerup", soltar);
+        alca.removeEventListener("pointercancel", soltar);
+        item.style.transform = "";
+        item.classList.remove("rt-arrastando");
+        lista.classList.remove("rt-linha-arrastando");
+        gravarRoteiro([...lista.querySelectorAll(".rt-parada-movel")].map((li) => li.dataset.chave));
+        renderizarRoteiros();
+      };
+
+      alca.addEventListener("pointermove", mover);
+      alca.addEventListener("pointerup", soltar);
+      alca.addEventListener("pointercancel", soltar);
+    });
+  });
+}
+
+/** Item cuja metade o dedo cruzou, e de que lado entrar. */
+function vizinhoSobODedo(lista, item, y) {
+  for (const alvo of lista.querySelectorAll(".rt-parada-movel")) {
+    if (alvo === item) continue;
+    const caixa = alvo.getBoundingClientRect();
+    if (y < caixa.top || y > caixa.bottom) continue;
+    return { alvo, antes: y < caixa.top + caixa.height / 2 };
+  }
+  return null;
+}
+
+/** Os números SÃO a ordem da viagem: se não acompanharem o arrasto, a
+    tela mostra uma ordem e o cálculo usa outra. */
+function renumerarLinha(lista) {
+  const itens = [...lista.querySelectorAll(".rt-parada-movel")];
+  itens.forEach((li, i) => {
+    const no = li.querySelector(".rt-no");
+    if (no) no.textContent = String(i + 1);
+  });
+  marcarChegada(lista);
 }
 
 function moverNoRoteiro(indice, delta) {
@@ -11415,102 +11581,124 @@ function moverNoRoteiro(indice, delta) {
   [lista[indice], lista[destino]] = [lista[destino], lista[indice]];
   gravarRoteiro(lista);
   renderizarRoteiros();
+  /* Redesenhar joga o foco fora da alça, e sem devolvê-lo a segunda
+     seta do teclado não teria onde cair -- reordenar por teclado
+     pararia no primeiro passo. */
+  document.querySelector(`.rt-alca[data-indice="${destino}"]`)?.focus();
 }
 
-function botaoCalcular(pontos) {
-  const caixa = document.createElement("div");
-  caixa.className = "roteiro-acoes";
+/** Barra fixa no rodapé: com 20 paradas, rolar até o fim só pra achar o
+    botão é trabalho que a tela pode poupar. */
+function barraCalcular(pontos) {
+  const barra = document.createElement("div");
+  barra.className = "rt-barra";
 
   if (pontos.length < 2) {
-    caixa.appendChild(
-      dicaRoteiro("Escolha pelo menos dois pontos pra calcular distância, tempo e combustível.")
-    );
-    return caixa;
+    const dica = document.createElement("p");
+    dica.className = "rt-barra-dica";
+    dica.textContent = pontos.length
+      ? "Falta mais um ponto pra calcular distância, tempo e combustível."
+      : "Escolha pelo menos dois pontos pra calcular a viagem.";
+    barra.appendChild(dica);
+    return barra;
   }
 
   const botao = document.createElement("button");
   botao.type = "button";
-  botao.className = "sheet-btn-primario";
-  botao.textContent = `Calcular viagem (${pontos.length} paradas)`;
+  botao.className = "rt-calcular";
+  botao.innerHTML = `<strong>Calcular viagem</strong><small>${pontos.length} paradas</small>`;
   botao.addEventListener("click", () => calcularRoteiro(pontos));
-  caixa.appendChild(botao);
-
-  const limpar = document.createElement("button");
-  limpar.type = "button";
-  limpar.className = "roteiro-voltar";
-  limpar.textContent = "Limpar roteiro";
-  limpar.addEventListener("click", () => {
-    if (!confirm("Tirar todos os pontos do roteiro?")) return;
-    gravarRoteiro([]);
-    renderizarRoteiros();
-  });
-  caixa.appendChild(limpar);
-
-  return caixa;
+  barra.appendChild(botao);
+  return barra;
 }
 
-/** Seletor pra montar do zero: escolhe o município, marca os pontos. */
+/** Seletor pra montar do zero: escolhe o município, marca os lugares. */
 function seletorDePontos() {
-  const caixa = document.createElement("div");
-  caixa.className = "roteiro-seletor";
+  const caixa = document.createElement("section");
+  caixa.className = "rt-seletor";
 
   const titulo = document.createElement("h4");
   titulo.textContent = "Adicionar pontos";
   caixa.appendChild(titulo);
 
-  const select = document.createElement("select");
-  select.id = "select-roteiro-municipio";
-  const vazio = document.createElement("option");
-  vazio.value = "";
-  vazio.textContent = "Escolha um município…";
-  select.appendChild(vazio);
+  const escolhido = destinosPorMunicipio[municipioDoSeletor];
 
-  // Só municípios que TÊM ponto com coordenada: oferecer os outros
-  // levaria a uma lista vazia depois do clique.
-  Object.entries(destinosPorMunicipio)
-    .filter(([id]) => pontosNavegaveisDoMunicipio(id).length)
-    .sort((a, b) => a[1].nome.localeCompare(b[1].nome, "pt-BR"))
-    .forEach(([id, m]) => {
-      const op = document.createElement("option");
-      op.value = id;
-      op.textContent = m.nome;
-      select.appendChild(op);
-    });
-
-  const lista = document.createElement("div");
-  lista.className = "roteiro-opcoes";
-
-  select.addEventListener("change", () => {
-    lista.innerHTML = "";
-    const municipioId = select.value;
-    if (!municipioId) return;
-    pontosNavegaveisDoMunicipio(municipioId).forEach(({ ponto, indice }) => {
-      const linha = document.createElement("label");
-      linha.className = "roteiro-opcao";
-      const check = document.createElement("input");
-      check.type = "checkbox";
-      check.checked = estaNoRoteiro(municipioId, indice);
-      check.addEventListener("change", () => {
-        alternarPontoNoRoteiro(municipioId, indice);
-        const guardado = select.value;
+  /* Gatilho no lugar do <select>: 85 municípios num seletor nativo
+     viram a roda do sistema operacional -- fora do tema, e longa demais
+     pra achar um nome. O toque abre a MESMA folha de busca que o resto
+     do app já usa; um segundo componente de busca só pra esta tela
+     seria markup, CSS e bug em dobro. */
+  const gatilho = document.createElement("button");
+  gatilho.type = "button";
+  gatilho.className = "rt-gatilho";
+  gatilho.innerHTML =
+    ICONE_PIN_MAPA +
+    `<span>${escaparHtml(escolhido ? escolhido.nome : "Escolher município")}</span>` +
+    ICONE_SETA_LISTA;
+  gatilho.addEventListener("click", () => {
+    abrirEscolherMunicipio({
+      selecionado: municipioDoSeletor || null,
+      // Só municípios que TÊM ponto navegável: oferecer os outros
+      // levaria a uma lista vazia depois do clique.
+      filtro: (id) => pontosNavegaveisDoMunicipio(id).length > 0,
+      aoEscolher: (id) => {
+        municipioDoSeletor = id || "";
         renderizarRoteiros();
-        // Redesenhar zera o seletor; devolve o município pra pessoa
-        // seguir marcando sem ter que escolher de novo a cada ponto.
-        const novo = document.getElementById("select-roteiro-municipio");
-        if (novo) {
-          novo.value = guardado;
-          novo.dispatchEvent(new Event("change"));
-        }
-      });
-      const nome = document.createElement("span");
-      nome.textContent = ponto.nome;
-      linha.append(check, nome);
-      lista.appendChild(linha);
+      },
     });
   });
+  caixa.appendChild(gatilho);
 
-  caixa.append(select, lista);
+  if (escolhido) caixa.appendChild(cartoesDePontos(municipioDoSeletor));
+  else
+    caixa.appendChild(
+      dicaRoteiro("Escolha um município pra ver os lugares que dá pra incluir na viagem.")
+    );
+
   return caixa;
+}
+
+/** Cartão acionável no lugar do checkbox.
+
+    O quadradinho nativo tem ~13 px de alvo e vem com a cara do sistema.
+    O input continua no DOM, só invisível: é ele que dá o estado ao
+    leitor de tela e o foco pelo teclado -- sumir com ele trocaria
+    acessibilidade por aparência. */
+function cartoesDePontos(municipioId) {
+  const grade = document.createElement("div");
+  grade.className = "rt-cartoes";
+
+  pontosNavegaveisDoMunicipio(municipioId).forEach(({ ponto, indice }) => {
+    const cartao = document.createElement("label");
+    cartao.className = "rt-cartao";
+
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.className = "rt-cartao-check";
+    check.checked = estaNoRoteiro(municipioId, indice);
+    cartao.classList.toggle("rt-cartao-ativo", check.checked);
+
+    const nome = document.createElement("span");
+    nome.className = "rt-cartao-nome";
+    nome.textContent = ponto.nome;
+
+    const marca = document.createElement("span");
+    marca.className = "rt-cartao-marca";
+    marca.innerHTML = ICONE_CHECK;
+
+    check.addEventListener("change", () => {
+      alternarPontoNoRoteiro(municipioId, indice);
+      // Pinta na hora: o redesenho vem logo em seguida, mas o retorno
+      // do toque não pode esperar por ele.
+      cartao.classList.toggle("rt-cartao-ativo", check.checked);
+      redesenharRoteiroSemPular();
+    });
+
+    cartao.append(check, nome, marca);
+    grade.appendChild(cartao);
+  });
+
+  return grade;
 }
 
 /** Pontos de um município que dá pra navegar (têm lat/lon). */
@@ -11675,21 +11863,29 @@ async function calcularRoteiro(pontos) {
   }
   alvo.appendChild(acoes);
 
+  /* O mesmo trajeto desenhado do planejador, agora só de leitura. O nó
+     vazado é de onde a viagem parte: você, quando o GPS respondeu. */
   const lista = document.createElement("ol");
-  lista.className = "roteiro-pontos";
-  // A origem não vira item da lista: ela é de onde se sai, não parada.
+  lista.className = "rt-linha";
+  if (origem) lista.appendChild(paradaDaOrigem("Sua posição atual", "de onde a conta parte"));
+
+  let ordem = 0;
   trajeto.forEach((p, i) => {
     if (p.origem) return;
+    ordem += 1;
     const item = document.createElement("li");
-    item.className = "roteiro-ponto";
+    item.className = "rt-parada";
+    const no = document.createElement("span");
+    no.className = "rt-no";
+    no.textContent = String(ordem);
     const texto = document.createElement("div");
-    texto.className = "roteiro-ponto-texto";
+    texto.className = "rt-texto";
     const nome = document.createElement("strong");
     nome.textContent = p.nome;
     const cidade = document.createElement("span");
     cidade.textContent = p.municipio;
     texto.append(nome, cidade);
-    item.appendChild(texto);
+    item.append(no, texto);
 
     if (semEstrada.has(i)) {
       const aviso = document.createElement("span");
@@ -11707,6 +11903,7 @@ async function calcularRoteiro(pontos) {
     }
     lista.appendChild(item);
   });
+  marcarChegada(lista);
   alvo.appendChild(lista);
 }
 
@@ -15357,8 +15554,15 @@ function normalizarBusca(texto) {
     .trim();
 }
 
-function abrirEscolherMunicipio({ selecionado = null, permitirNenhum = false, aoEscolher }) {
-  escolherMunicipioContexto = { selecionado, permitirNenhum, aoEscolher };
+/**
+ * @param filtro  opcional: (id) => boolean. Quem chama decide o que faz
+ *                sentido oferecer -- o Roteiro, por exemplo, só pode
+ *                mostrar município com ponto que dê pra navegar, senão
+ *                o clique leva a uma lista vazia.
+ */
+function abrirEscolherMunicipio({ selecionado = null, permitirNenhum = false, filtro = null, aoEscolher }) {
+  escolherMunicipioContexto = { selecionado, permitirNenhum, filtro, aoEscolher };
+  escolherPontoContexto = null;
   const busca = document.getElementById("input-busca-municipio");
   busca.value = "";
   document.getElementById("escolher-municipio-titulo").textContent = "Escolher município";
@@ -15468,6 +15672,7 @@ function renderizarListaEscolherMunicipio(termo) {
 
   const alvo = normalizarBusca(termo || "");
   const opcoes = Object.entries(idParaNomeMunicipio)
+    .filter(([id]) => !ctx.filtro || ctx.filtro(id))
     .filter(([, nome]) => !alvo || normalizarBusca(nome).includes(alvo))
     .sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
 

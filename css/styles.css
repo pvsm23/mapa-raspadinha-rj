@@ -7748,40 +7748,6 @@ body.modo-rota-ativo #toast-onde-estou {
   text-decoration: none;
 }
 
-.roteiro-pontos {
-  list-style: decimal;
-  margin: 0;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.roteiro-ponto {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  color: var(--fraco);
-}
-
-.roteiro-ponto-texto {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.roteiro-ponto-texto strong {
-  font-size: 0.86rem;
-  color: var(--txt);
-}
-
-.roteiro-ponto-texto span {
-  font-size: 0.74rem;
-  color: var(--fraco);
-}
-
 .roteiro-btn-waze {
   flex: 0 0 auto;
   padding: 6px 10px;
@@ -8104,88 +8070,6 @@ body.em-motoclube #barra-topo {
 }
 
 
-/* Chip "+ Roteiro" quando o ponto JÁ está na viagem: o mesmo verde de
-   "estado ativo" do resto do app (município visitado, aba ativa). */
-.chip-acao-ativo {
-  border-color: var(--verde) !important;
-  color: var(--verde) !important;
-}
-
-/* ---- Roteiro: lista montada pela pessoa ---- */
-.roteiro-ponto-acoes {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-/* A ORDEM da lista é a ordem da viagem, então mover é essencial --
-   sem isso, trocar dois lugares exigiria apagar tudo e recomeçar. */
-.roteiro-mover,
-.roteiro-tirar {
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: transparent !important;
-  color: var(--fraco);
-  font-size: 0.85rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.roteiro-mover:disabled {
-  opacity: 0.25;
-  cursor: default;
-}
-
-.roteiro-tirar {
-  color: var(--erro, #f0616d);
-}
-
-/* ---- Seletor pra montar do zero ---- */
-.roteiro-seletor {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--linha);
-}
-
-.roteiro-seletor h4 {
-  margin: 0 0 10px;
-  font-size: 0.88rem;
-  color: var(--txt);
-}
-
-.roteiro-seletor select {
-  width: 100%;
-}
-
-.roteiro-opcoes {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 10px;
-}
-
-.roteiro-opcao {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 4px;
-  font-size: 0.84rem;
-  color: var(--txt);
-  cursor: pointer;
-  /* 40px de alvo: marcar ponto é ação de dedo, numa lista longa. */
-  min-height: 40px;
-}
-
-.roteiro-opcao input {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-}
-
-
 /* =========================================================
    MODO "ESCOLHER NO MAPA" (Roteiro)
    A UI toda some: escolher a dedo pede o mapa inteiro livre, e barra,
@@ -8294,22 +8178,6 @@ svg#mapa-rj .ponto-numero-roteiro {
   transform: translate(2.2px, -2.2px) scale(calc(3.4 * 3.5 / var(--zoom, 3.5)));
   pointer-events: none;
 }
-
-/* Botão que entra no modo, na tela de Roteiros. */
-.roteiro-btn-mapa {
-  display: block;
-  width: 100%;
-  margin-bottom: 14px;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--surf2) !important;
-  border: 1px solid var(--verde);
-  color: var(--verde);
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 
 /* =========================================================
    GARAGEM — lista, painel de instrumentos e edição
@@ -9055,6 +8923,424 @@ svg#mapa-rj .ponto-numero-roteiro {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+
+/* =========================================================
+   ROTEIRO — planejador de viagem
+
+   A lista de paradas virou TRAJETO: nó com trilho ligando um ao
+   seguinte. Os controles de texto ("↑ ↓ ✕") viraram alça de arrasto e
+   lixeira em SVG, o <select> nativo virou a folha de busca que o resto
+   do app já usa, e o checkbox virou cartão acionável.
+
+   Duas coisas do briefing NÃO foram seguidas, de propósito:
+
+   1. Nada de #1a1a1a cravado. O app tem tema claro desde a v0.11.16 --
+      hex fixo aqui vira bloco preto no meio da tela branca. Tudo sai
+      das variáveis.
+   2. Sem pulso infinito no botão do mapa. Animação que nunca para ao
+      lado de uma lista que se lê é ruído, e numa tela de viagem custa
+      bateria. O convite pisca 3 vezes e para -- e só com o roteiro
+      vazio, que é quando ele é de fato o próximo passo.
+   ========================================================= */
+
+/* ---- Porta de entrada: escolher no mapa ---- */
+.rt-btn-mapa {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(43, 213, 118, 0.14), rgba(43, 213, 118, 0.05)) !important;
+  border: 1px solid rgba(43, 213, 118, 0.4);
+  color: var(--verde);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rt-btn-mapa svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.rt-btn-mapa span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rt-btn-mapa strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.rt-btn-mapa small {
+  font-size: 0.72rem;
+  color: var(--fraco);
+}
+
+@keyframes rt-convite {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(43, 213, 118, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(43, 213, 118, 0.16); }
+}
+
+/* 3 repetições e para: ver a nota do cabeçalho. */
+.rt-btn-mapa-convite {
+  animation: rt-convite 1.8s ease-in-out 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rt-btn-mapa-convite { animation: none; }
+}
+
+/* ---- A viagem como trajeto ---- */
+.rt-bloco {
+  margin-bottom: 20px;
+}
+
+.rt-cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.rt-cabecalho h4 {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--txt);
+}
+
+.rt-limpar {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent !important;
+  color: var(--fraco);
+  font-family: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.rt-linha {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rt-parada {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+}
+
+/* O trilho: sai do nó e desce até o próximo. É ele que transforma uma
+   lista numerada em TRAJETO -- sem a linha, são só itens empilhados. */
+.rt-parada::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  bottom: -9px;
+  width: 2px;
+  /* Verde, e não var(--linha): a linha de divisão do app é fraca de
+     propósito (rgba .1) e some contra o fundo. Aqui ela não é
+     separador, é o traçado da viagem -- precisa ser lida como tal. O
+     verde é igual nos dois temas, como toda cor de estado. */
+  background: rgba(43, 213, 118, 0.38);
+}
+
+.rt-parada:last-child::before {
+  display: none;
+}
+
+.rt-no {
+  grid-column: 1;
+  position: relative;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Partida VAZADA e chegada com anel: dá pra ver de relance onde a
+   viagem começa e onde termina, sem ler a lista. */
+.rt-no-origem {
+  background: transparent;
+  border: 2px dashed var(--fraco);
+}
+
+.rt-parada-fim .rt-no {
+  box-shadow: 0 0 0 3px rgba(43, 213, 118, 0.2);
+}
+
+.rt-parada-origem .rt-texto strong {
+  color: var(--fraco);
+  font-weight: 600;
+}
+
+.rt-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rt-texto strong {
+  font-size: 0.86rem;
+  color: var(--txt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rt-texto span {
+  font-size: 0.72rem;
+  color: var(--fraco);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rt-acao {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent !important;
+  color: var(--fraco);
+  cursor: pointer;
+}
+
+.rt-acao svg {
+  width: 17px;
+  height: 17px;
+}
+
+.rt-tirar:active {
+  color: var(--erro, #f0616d);
+}
+
+/* touch-action: none é o que impede a tela de rolar enquanto o dedo
+   arrasta a alça. Sem isso o navegador leva o gesto embora e o item
+   fica parado. Fica SÓ na alça: no resto do item, rolar é o certo. */
+.rt-alca {
+  cursor: grab;
+  touch-action: none;
+}
+
+.rt-alca:active {
+  cursor: grabbing;
+}
+
+.rt-arrastando {
+  z-index: 3;
+  border-radius: 12px;
+  background: var(--surf2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.rt-arrastando::before {
+  display: none;
+}
+
+.rt-linha-arrastando {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---- Seletor: município + cartões ---- */
+.rt-seletor {
+  padding-top: 16px;
+  border-top: 1px solid var(--linha);
+}
+
+.rt-seletor h4 {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  color: var(--txt);
+}
+
+.rt-gatilho {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rt-gatilho svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--fraco);
+}
+
+.rt-gatilho span {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rt-cartoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Cartão acionável no lugar do checkbox. O input segue no DOM, só
+   invisível -- é ele que dá estado ao leitor de tela e foco pelo
+   teclado. 1px em vez de display:none porque elemento com display:none
+   sai da ordem de foco. */
+.rt-cartao {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.rt-cartao-check {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rt-cartao-nome {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rt-cartao-marca {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--linha);
+  color: transparent;
+  transform: scale(0.8);
+  transition: transform 0.16s ease, background-color 0.16s ease, color 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.rt-cartao-marca svg {
+  width: 13px;
+  height: 13px;
+}
+
+.rt-cartao-ativo {
+  border-color: var(--verde);
+  background: rgba(43, 213, 118, 0.1);
+}
+
+.rt-cartao-ativo .rt-cartao-marca {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: var(--verde-tinta);
+  transform: scale(1);
+}
+
+.rt-cartao:focus-within {
+  border-color: var(--verde);
+  box-shadow: 0 0 0 3px rgba(43, 213, 118, 0.16);
+}
+
+/* ---- Barra de cálculo, presa no rodapé ----
+   Com 20 paradas, rolar até o fim só pra achar o botão é trabalho que a
+   tela pode poupar. O degradê existe pra o conteúdo passar POR BAIXO
+   sem encostar no botão. A margem negativa sangra até a borda do painel
+   (#motoclube-corpo tem 16px de padding). */
+.rt-barra {
+  position: sticky;
+  /* bottom: 0, e não a altura da barra de navegação: o retângulo do
+     sticky já é o scrollport MENOS o padding do container, e o
+     #motoclube-view reserva ali os 78px + safe-area da navegação.
+     Somar de novo subia o botão 78px acima do lugar (medido). */
+  bottom: 0;
+  z-index: 5;
+  margin: 18px -16px 0;
+  padding: 20px 16px 6px;
+  background: linear-gradient(to top, var(--bg) 62%, transparent);
+}
+
+.rt-calcular {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 54px;
+  border: none;
+  border-radius: 14px;
+  background: var(--verde) !important;
+  color: var(--verde-tinta) !important;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(43, 213, 118, 0.22);
+}
+
+.rt-calcular strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.rt-calcular small {
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+
+.rt-barra-dica {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px dashed var(--linha);
+  color: var(--fraco);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 
