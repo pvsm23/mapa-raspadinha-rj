@@ -2963,149 +2963,6 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
    dela de novo no formulário/painel logo abaixo. Setas só aparecem
    com 2+ motos cadastradas (ver renderizarSeletorGaragem). ---- */
 
-/* Lista de motos da Garagem: TODAS visíveis de uma vez. Substituiu o
-   card seletor (uma moto + setas), que escondia o resto da garagem
-   atrás de um clique -- com no máximo 3 motos, o card economizava
-   espaço que não precisava ser economizado. */
-.garagem-lista {
-  list-style: none;
-  margin: 0 0 14px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.garagem-lista.oculto {
-  display: none;
-}
-
-.garagem-moto {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--surf2);
-  border: 1px solid var(--linha);
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.garagem-moto:active {
-  transform: scale(0.98);
-}
-
-/* A selecionada ganha o contorno verde -- mesma cor de "estado ativo"
-   usada no resto do app (aba ativa, município visitado). */
-.garagem-moto-selecionada {
-  border-color: var(--verde);
-  background: var(--surf);
-}
-
-/* Distintivo da marca: iniciais sobre gradiente estável por marca, do
-   mesmo jeito que o avatar de pessoa. Ver iniciaisMarca em
-   js/script.js pra por que não são as logos oficiais. */
-.garagem-moto-marca {
-  flex: 0 0 auto;
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-
-.garagem-moto-texto {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* O MODELO é o nome que a pessoa usa pra reconhecer a moto ("XRE 300"),
-   então ele é o texto forte; a marca fica no distintivo e no subtítulo. */
-.garagem-moto-modelo {
-  font-size: 0.95rem;
-  color: var(--txt);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.garagem-moto-sub {
-  font-size: 0.78rem;
-  color: var(--fraco);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.garagem-moto-ativa {
-  flex: 0 0 auto;
-  font-size: 0.95rem;
-  line-height: 1;
-}
-
-.garagem-vazio {
-  color: var(--fraco);
-  font-size: 0.85rem;
-  text-align: center;
-  padding: 10px 0;
-}
-
-.garagem-vazio.oculto {
-  display: none;
-}
-
-#garagem-editar-form.oculto,
-#garagem-stats-conteudo.oculto {
-  display: none;
-}
-
-/* ---- Dashboard de telemetria (aba Estatísticas): odômetro como
-   herói, viagens/última viagem num grid 2 colunas abaixo. ---- */
-
-#garagem-stats-grade {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.garagem-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  background: var(--bg);
-  border-radius: 10px;
-  padding: 14px 6px;
-  text-align: center;
-}
-
-.garagem-stat-icone {
-  font-size: 1.1rem;
-  margin-bottom: 2px;
-}
-
-.garagem-stat strong {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--txt);
-}
-
-.garagem-stat small {
-  color: var(--fraco);
-  font-size: 0.7rem;
-}
-
 /* ============================================================
    LOJA DESBRAVA -- painel de admin
    ============================================================ */
@@ -8329,119 +8186,6 @@ body.em-motoclube #barra-topo {
 }
 
 
-/* ---- Garagem: lista → detalhe ----
-   Eram 3 abas (Nova/Editar/Estatísticas), que obrigavam a escolher a
-   ABA antes da MOTO. Agora abre na lista, o "+" cadastra e tocar numa
-   moto leva aos números e às ações dela. */
-#garagem-topo {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-#garagem-topo.oculto,
-#garagem-detalhe.oculto,
-#garagem-form.oculto {
-  display: none;
-}
-
-#garagem-topo #garagem-aviso-privacidade {
-  flex: 1 1 auto;
-  margin: 0;
-  font-size: 0.74rem;
-  line-height: 1.45;
-  color: var(--fraco);
-}
-
-/* O "+" no canto: alvo de 44px, o mínimo confortável pra dedo. */
-#btn-garagem-nova {
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: var(--verde) !important;
-  color: var(--verde-tinta, #08130c);
-  font-size: 1.6rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-#btn-garagem-nova:active {
-  transform: scale(0.94);
-}
-
-.garagem-moto-seta {
-  flex: 0 0 auto;
-  color: var(--fraco);
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.garagem-voltar {
-  background: transparent !important;
-  border: none;
-  padding: 0 0 12px;
-  color: var(--fraco);
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-#garagem-detalhe-nome {
-  margin: 0 0 2px;
-  font-size: 1.15rem;
-  color: var(--txt);
-}
-
-#garagem-detalhe-sub {
-  margin: 0 0 16px;
-  font-size: 0.8rem;
-  color: var(--fraco);
-}
-
-#garagem-stats-ultima-linha {
-  margin: 10px 0 0;
-  font-size: 0.78rem;
-  color: var(--fraco);
-}
-
-/* Ações empilhadas, com a destrutiva por último e sem contorno --
-   não deve competir com Editar nem ser alcançada por engano. */
-#garagem-detalhe-acoes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-#garagem-detalhe-acoes button {
-  width: 100%;
-}
-
-#btn-definir-moto-ativa.oculto {
-  display: none;
-}
-
-#btn-excluir-moto {
-  background: transparent !important;
-  border: none;
-  color: var(--erro, #f0616d);
-}
-
-#garagem-form-titulo {
-  margin: 0 0 14px;
-  font-size: 1.05rem;
-  color: var(--txt);
-}
-
-#garagem-vazio.oculto,
-#garagem-lista.oculto,
-#garagem-limite-aviso.oculto {
-  display: none;
-}
-
-
 /* =========================================================
    MODO "ESCOLHER NO MAPA" (Roteiro)
    A UI toda some: escolher a dedo pede o mapa inteiro livre, e barra,
@@ -8564,6 +8308,386 @@ svg#mapa-rj .ponto-numero-roteiro {
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+
+/* =========================================================
+   GARAGEM — lista, painel de instrumentos e edição
+
+   As cores saem das VARIÁVEIS, não de hex fixo: o app tem tema claro
+   desde a v0.11.16, e um #1a1a1a cravado aqui viraria um bloco preto
+   no meio da tela branca.
+   ========================================================= */
+#garagem-aviso-privacidade {
+  margin: 0 0 14px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+.garagem-lista {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.garagem-lista.oculto {
+  display: none;
+}
+
+/* ---- Card da moto: slot de garagem ---- */
+.garagem-moto {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.garagem-moto:active {
+  transform: scale(0.985);
+}
+
+/* O slot: quadrado escuro com o contorno na cor da MARCA. O ícone é
+   igual pra todas -- é a cor que diferencia, do mesmo jeito que o
+   avatar de pessoa faz (corAvatar). Iniciais em texto ("RO", "HO")
+   pareciam lista de contatos, e a moto virava sigla. */
+.garagem-moto-slot {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1.5px solid var(--linha);
+  color: var(--fraco);
+}
+
+.garagem-moto-slot svg {
+  width: 26px;
+  height: 26px;
+}
+
+.garagem-moto-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.garagem-moto-modelo {
+  font-size: 1rem;
+  color: var(--txt);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.garagem-moto-sub {
+  font-size: 0.76rem;
+  letter-spacing: 0.3px;
+  color: var(--fraco);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.garagem-moto-ativa {
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.garagem-moto-seta {
+  flex: 0 0 auto;
+  color: var(--fraco);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* ---- Vaga livre: o "+" virou card, na mesma métrica dos outros ---- */
+.garagem-vaga {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 14px;
+  border-radius: 16px;
+  background: transparent !important;
+  border: 1.5px dashed var(--linha);
+  color: var(--fraco);
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.garagem-vaga:hover,
+.garagem-vaga:focus-visible {
+  border-color: var(--verde);
+  color: var(--verde);
+}
+
+.garagem-vaga-mais {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.garagem-vazio {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--fraco);
+}
+
+.garagem-vazio.oculto,
+#garagem-detalhe.oculto,
+#garagem-form.oculto {
+  display: none;
+}
+
+/* ---- Detalhe: cabeçalho ---- */
+#garagem-detalhe-topo,
+#garagem-form-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+#btn-garagem-voltar-lista,
+#btn-garagem-cancelar-form,
+#btn-editar-moto {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent !important;
+  color: var(--fraco);
+  cursor: pointer;
+}
+
+#btn-garagem-voltar-lista,
+#btn-garagem-cancelar-form {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-left: -8px;
+}
+
+#btn-editar-moto svg {
+  width: 19px;
+  height: 19px;
+}
+
+#btn-editar-moto:hover,
+#btn-editar-moto:focus-visible {
+  color: var(--txt);
+}
+
+#garagem-detalhe-ident {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#garagem-detalhe-nome {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: var(--txt);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#garagem-detalhe-sub {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--fraco);
+}
+
+#garagem-detalhe-ativa {
+  display: inline-block;
+  margin: 8px 0 16px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 185, 49, 0.4);
+  color: var(--ouro, #e8b931);
+  font-size: 0.68rem;
+}
+
+#garagem-detalhe-ativa.oculto {
+  display: none;
+}
+
+/* ---- Painel de instrumentos ---- */
+#garagem-instrumentos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.garagem-instrumento {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+}
+
+/* O odômetro é o número herói: ocupa a linha inteira. */
+.garagem-instrumento-largo {
+  grid-column: 1 / -1;
+  align-items: baseline;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 18px;
+}
+
+.garagem-instrumento-largo small {
+  flex: 1 0 100%;
+}
+
+.garagem-instrumento small {
+  font-size: 0.68rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--fraco);
+}
+
+/* Números tabulares: em painel de instrumento, dígito que "dança" ao
+   atualizar parece defeito. */
+.garagem-instrumento strong {
+  font-size: 1.5rem;
+  line-height: 1.1;
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.garagem-instrumento-largo strong {
+  font-size: 2.3rem;
+  color: var(--verde);
+}
+
+.garagem-unidade {
+  font-size: 0.95rem;
+  color: var(--fraco);
+}
+
+.garagem-instrumento-nota {
+  font-size: 0.64rem;
+  color: var(--fraco);
+}
+
+/* ---- Manutenção ---- */
+#garagem-manutencao {
+  margin-bottom: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--linha);
+}
+
+#garagem-manutencao h4 {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--fraco);
+}
+
+#garagem-manutencao-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#garagem-manutencao-lista:empty {
+  display: none;
+}
+
+.garagem-manutencao-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.84rem;
+  color: var(--txt);
+}
+
+.garagem-manutencao-marca {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--verde);
+  flex: 0 0 auto;
+}
+
+.garagem-manutencao-quando {
+  margin-left: auto;
+  font-size: 0.74rem;
+  color: var(--fraco);
+}
+
+#garagem-manutencao-vazio {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--fraco);
+}
+
+#garagem-manutencao-vazio.oculto {
+  display: none;
+}
+
+/* ---- Ações ---- */
+#btn-definir-moto-ativa {
+  width: 100%;
+}
+
+#btn-definir-moto-ativa.oculto {
+  display: none;
+}
+
+#garagem-form-titulo {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--txt);
+}
+
+/* Excluir vive no FORMULÁRIO, longe do detalhe: um passo a mais entre
+   a pessoa e a ação sem volta. Ghost vermelho pra não competir com
+   Salvar. */
+#btn-excluir-moto {
+  width: 100%;
+  margin-top: 10px;
+  background: transparent !important;
+  border: none;
+  color: var(--erro, #f0616d);
+}
+
+#btn-excluir-moto.oculto {
+  display: none;
 }
 
 

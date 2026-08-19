@@ -1158,56 +1158,65 @@
       <!-- Painéis: abrem no lugar do grid quando um card é tocado. A
            seta do header volta pro grid antes de voltar pro mapa. -->
       <div id="mc-painel-garagem" class="mc-painel oculto">
-        <!-- Lista → detalhe. Eram 3 abas (Nova/Editar/Estatísticas) que
-             obrigavam a escolher a aba ANTES de escolher a moto -- ao
-             contrário de como se pensa. Agora abre na lista, e as ações
-             e números vivem dentro da moto escolhida. -->
-        <div id="garagem-topo">
-          <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo das suas motos nunca aparecem no seu perfil público.</p>
-          <button type="button" id="btn-garagem-nova" aria-label="Cadastrar nova moto" title="Nova moto">+</button>
-        </div>
+        <!-- Lista → detalhe → edição. Eram 3 abas (Nova/Editar/
+             Estatísticas), que obrigavam a escolher a ABA antes da MOTO
+             -- ao contrário de como se pensa. -->
+        <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo das suas motos nunca aparecem no seu perfil público.</p>
 
-        <p id="garagem-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto. Toque no + pra começar.</p>
         <ul id="garagem-lista" class="garagem-lista oculto"></ul>
-        <p id="garagem-limite-aviso" class="oculto">Você já tem 3 motos cadastradas (o máximo por enquanto). Exclua uma pra cadastrar outra.</p>
+        <p id="garagem-vazio" class="garagem-vazio oculto"></p>
 
-        <!-- Detalhe da moto: números primeiro, ações depois. -->
+        <!-- Detalhe: painel de instrumentos. -->
         <div id="garagem-detalhe" class="oculto">
-          <button type="button" id="btn-garagem-voltar-lista" class="garagem-voltar">← Minhas motos</button>
-          <h3 id="garagem-detalhe-nome"></h3>
-          <p id="garagem-detalhe-sub"></p>
-
-          <div id="garagem-odometro">
-            <strong id="garagem-odometro-valor">0 km</strong>
-            <span>Odômetro (Modo Viagem)</span>
+          <div id="garagem-detalhe-topo">
+            <button type="button" id="btn-garagem-voltar-lista" aria-label="Voltar para minhas motos">‹</button>
+            <div id="garagem-detalhe-ident">
+              <h3 id="garagem-detalhe-nome"></h3>
+              <p id="garagem-detalhe-sub"></p>
+            </div>
+            <button type="button" id="btn-editar-moto" aria-label="Editar moto" title="Editar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
           </div>
-          <div id="garagem-stats-grade">
-            <div class="garagem-stat">
-              <span class="garagem-stat-icone">🗺️</span>
+
+          <span id="garagem-detalhe-ativa" class="oculto">⭐ Recebe a quilometragem do Modo Viagem</span>
+
+          <div id="garagem-instrumentos">
+            <div class="garagem-instrumento garagem-instrumento-largo">
+              <small>Odômetro · Modo Viagem</small>
+              <strong id="garagem-odometro-valor">0</strong>
+              <span class="garagem-unidade">km</span>
+            </div>
+            <div class="garagem-instrumento">
+              <small>Viagens</small>
               <strong id="garagem-stats-viagens">0</strong>
-              <small>Viagens registradas</small>
             </div>
-            <div class="garagem-stat">
-              <span class="garagem-stat-icone">⛽</span>
-              <strong id="garagem-stats-consumo">—</strong>
+            <div class="garagem-instrumento">
               <small>Consumo</small>
+              <strong id="garagem-stats-consumo">—</strong>
+              <span class="garagem-instrumento-nota" id="garagem-consumo-origem"></span>
             </div>
           </div>
-          <p id="garagem-stats-ultima-linha">Última viagem: <span id="garagem-stats-ultima">—</span></p>
 
-          <div id="garagem-detalhe-acoes">
-            <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
-            <button type="button" id="btn-editar-moto">Editar</button>
-            <button type="button" id="btn-excluir-moto">Excluir moto</button>
-          </div>
+          <!-- Manutenção: bloco REAL, alimentado pelo que a pessoa
+               registrar. Não traz exemplos fictícios de propósito -- ver
+               o comentário em renderizarManutencao (js/script.js). -->
+          <section id="garagem-manutencao">
+            <h4>Manutenção</h4>
+            <ul id="garagem-manutencao-lista"></ul>
+            <p id="garagem-manutencao-vazio">Nada registrado ainda. O registro de manutenção (óleo, corrente, pneus) entra numa próxima atualização.</p>
+          </section>
+
+          <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
         </div>
 
-        <!-- Formulário único: serve pra criar e pra editar (ver
-             abrirFormMoto em js/script.js). Eram dois formulários
-             idênticos, com ids duplicados só pra mudar o botão do fim. -->
+        <!-- Edição/criação. O excluir mora AQUI, longe do detalhe, pra
+             não ser alcançado por engano. -->
         <div id="garagem-form" class="oculto">
-          <button type="button" id="btn-garagem-cancelar-form" class="garagem-voltar">← Cancelar</button>
-          <h3 id="garagem-form-titulo">Nova moto</h3>
+          <div id="garagem-form-topo">
+            <button type="button" id="btn-garagem-cancelar-form" aria-label="Cancelar">‹</button>
+            <h3 id="garagem-form-titulo">Nova moto</h3>
+          </div>
           <label for="select-garagem-marca">Marca</label>
           <select id="select-garagem-marca"></select>
           <label for="input-garagem-modelo">Modelo</label>
@@ -1216,11 +1225,13 @@
           <input type="text" id="input-garagem-apelido" maxlength="40" placeholder="Ex: A Fera">
           <label for="input-garagem-consumo">Consumo (km/l, opcional)</label>
           <input type="number" id="input-garagem-consumo" min="0" step="0.1" placeholder="Ex: 32">
-          <small class="garagem-ajuda">Usado nos Roteiros pra estimar quanto você gasta de combustível. Se deixar em branco, o app estima pela cilindrada do modelo.</small>
+          <small class="garagem-ajuda">Usado nos Roteiros pra estimar o combustível. Em branco, o app estima pela cilindrada do modelo.</small>
           <p id="garagem-form-erro" class="oculto"></p>
           <button type="button" id="btn-salvar-moto">Cadastrar moto</button>
+          <button type="button" id="btn-excluir-moto" class="oculto">Excluir esta moto</button>
         </div>
       </div>
+
 
       <div id="mc-painel-apoio" class="mc-painel oculto">
 

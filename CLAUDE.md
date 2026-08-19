@@ -117,7 +117,36 @@ mão no `appsscript.json` — o Apps Script só adivinha escopo pelo código,
 e como lá só aparece `UrlFetchApp` ele deixa o Firestore de fora e a
 chamada falha com `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
 
-## Última funcionalidade (v0.26.08.18.100 a v0.26.08.19.103)
+## Última funcionalidade (v0.26.08.18.100 a v0.26.08.19.104)
+
+**Garagem: painel de instrumentos** (v0.26.08.19.104). A lista parecia
+agenda de contatos e o detalhe estava cru.
+- **As iniciais em texto saíram**: cada moto virou um SLOT (ícone
+  vetorial de moto, fundo escuro, contorno na cor da marca). A cor por
+  marca FICOU -- é ela que deixa reconhecer de relance; com slots
+  idênticos, três motos viram três linhas iguais.
+- O "+" solto virou card pontilhado de **"Vaga livre"** no fim da lista,
+  dizendo quantas cabem ainda. O limite de 3 deixa de ser aviso de erro
+  depois do fato.
+- **Editar virou ícone** (lápis, canto superior direito) e o **Excluir
+  saiu do detalhe** pro formulário de edição -- um passo a mais entre a
+  pessoa e a ação sem volta. Só aparece editando, nunca ao cadastrar.
+- Instrumentos em grid: odômetro em largura total (verde, 36,8px,
+  `tabular-nums` -- dígito que "dança" ao atualizar parece defeito),
+  Viagens e Consumo em 50/50 abaixo.
+- O consumo **diz de onde veio** ("informado por você" / "estimado
+  (160 cc)"). Sem isso, uma faixa larga pareceria imprecisão do app em
+  vez de estimativa honesta na falta do número real.
+
+**Duas recusas deliberadas no briefing de UI**, pra não repetir depois:
+1. **Nada de `#1a1a1a`/`#333` cravado.** O app tem tema claro desde a
+   v0.11.16; hex fixo vira bloco preto na tela branca. Tudo sai das
+   variáveis.
+2. **Sem itens de exemplo na Manutenção.** Escrever "Troca de óleo: OK"
+   numa moto que o app nunca viu é afirmar que a manutenção está em dia,
+   e alguém pode acreditar -- manutenção de moto é onde isso machuca. O
+   bloco existe ligado a `moto.manutencoes` e, sem registro, diz que
+   não há nada. Enfeite de tela não vale o risco.
 
 **Roteiro: monta no mapa e parte de onde você está** (v0.26.08.19.103).
 

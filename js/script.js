@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.103";
+const VERSAO_APP = "0.26.08.19.104";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.19.103";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.104", itens: ["A Garagem ficou com cara de painel: cada moto tem seu espaço, e o odômetro, as viagens e o consumo aparecem em destaque.", "O botão de editar virou um ícone discreto no canto, e o de excluir saiu da tela principal pra dentro da edição.", "Cadastrar moto agora é um espaço de \"vaga livre\" na própria lista, mostrando quantas ainda cabem."] },
   { versao: "0.26.08.19.103", itens: ["Agora dá pra montar o roteiro direto no mapa: toque nos lugares na ordem que quer visitar, e o resto da tela sai da frente.", "A viagem passa a começar de onde você está, e não do primeiro ponto — o trecho de casa até lá entra na conta.", "A Garagem abre na lista das suas motos, com o + no canto pra cadastrar; tocar numa moto mostra os números dela e os botões de editar e excluir.", "Correção: motos apareciam duplicadas e voltavam depois de excluídas."] },
   { versao: "0.26.08.19.102", itens: ["O Motoclube agora é uma tela inteira, com seus recursos em cartões: Modo Viagem, Mapas Offline, Pontos de Apoio, Garagem e Roteiros.", "Roteiros mudou: agora você monta a viagem escolhendo os pontos que quer visitar, pelo botão \"+ Roteiro\" em cada lugar ou pela própria tela.", "Dá pra reordenar as paradas e ver a quilometragem, o tempo e o combustível da viagem toda.", "As indicações do Motoclube viraram \"Pontos de Apoio\", e a Garagem saiu do Menu — agora ela é um cartão dentro do Motoclube."] },
   { versao: "0.26.08.19.101", itens: ["O Motoclube virou uma tela só: Garagem, Lojas e Roteiros agora são abas do mesmo lugar.", "Roteiros (Motoclube): escolha uma rota e veja a quilometragem, o tempo estimado e quanto vai de combustível — e abra a navegação no Google Maps ou no Waze.", "O consumo é estimado pela cilindrada da sua moto, sem você precisar preencher nada; se souber o consumo real, informe na Garagem que ele passa a valer.", "A Garagem agora mostra todas as suas motos de uma vez, com o modelo em destaque, em vez de uma por vez."] },
@@ -1906,23 +1907,6 @@ function fecharModalPendentes() {
 let garagemMotos = [];
 let garagemMotoAtivaId = null;
 let garagemMotosCarregadas = false;
-/**
- * Distintivo da marca: as iniciais dela sobre um gradiente estável,
- * mesma técnica do avatar de pessoa (corAvatar) -- a mesma marca cai
- * sempre na mesma cor, então a pessoa reconhece a moto pela cor antes
- * de ler o texto.
- *
- * NÃO são as logos oficiais de propósito: logo de fabricante é marca
- * registrada, e empacotar as artes num app publicado na Play Store é
- * risco jurídico real por um ganho estético. Havendo arte autorizada,
- * é trocar o conteúdo deste elemento por um <img>.
- */
-function iniciaisMarca(marca) {
-  const limpo = String(marca || "?").replace(/[^A-Za-zÀ-ÿ ]/g, " ").trim();
-  const partes = limpo.split(/s+/).filter(Boolean);
-  if (partes.length >= 2) return (partes[0][0] + partes[1][0]).toUpperCase();
-  return limpo.slice(0, 2).toUpperCase() || "?";
-}
 
 function configurarGaragem() {
   // A Garagem saiu do Menu: virou card do painel do Motoclube, que é
@@ -1941,7 +1925,6 @@ function configurarGaragem() {
     });
   });
 
-  document.getElementById("btn-garagem-nova")?.addEventListener("click", () => abrirFormMoto(null));
   document.getElementById("btn-garagem-voltar-lista")?.addEventListener("click", () => mostrarTelaGaragem("lista"));
   document.getElementById("btn-garagem-cancelar-form")?.addEventListener("click", () => mostrarTelaGaragem("lista"));
   document.getElementById("btn-editar-moto")?.addEventListener("click", () => abrirFormMoto(garagemMotoEmEdicao));
@@ -1988,22 +1971,31 @@ let garagemMotoEmEdicao = null;
 function mostrarTelaGaragem(tela) {
   garagemTela = tela;
   const naLista = tela === "lista";
-  document.getElementById("garagem-topo")?.classList.toggle("oculto", !naLista);
-  document.getElementById("garagem-lista")?.classList.toggle("oculto", !naLista || !garagemMotos.length);
+  document.getElementById("garagem-aviso-privacidade")?.classList.toggle("oculto", !naLista);
+  document.getElementById("garagem-lista")?.classList.toggle("oculto", !naLista);
   document.getElementById("garagem-vazio")?.classList.toggle("oculto", !naLista || garagemMotos.length > 0);
-  document.getElementById("garagem-limite-aviso")?.classList.toggle(
-    "oculto",
-    !naLista || garagemMotos.length < LIMITE_MOTOS_GARAGEM_UI
-  );
   document.getElementById("garagem-detalhe")?.classList.toggle("oculto", tela !== "detalhe");
   document.getElementById("garagem-form")?.classList.toggle("oculto", tela !== "form");
 }
 
 const LIMITE_MOTOS_GARAGEM_UI = 3;
 
-/** Desenha a lista completa de motos. Tocar numa abre o detalhe. */
+const ICONE_MOTO_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/>' +
+  '<path d="M15 6a1 1 0 0 0 0 2h1.5l2.5 4"/><path d="M9 17.5h6.3L14 10H7l-1.5 4.5"/><path d="M9 6h4l1 3"/></svg>';
+
+/**
+ * Lista de motos. Cada uma é um "slot de garagem": quadrado escuro com
+ * o contorno na cor da MARCA e o mesmo ícone de moto pra todas.
+ *
+ * As iniciais em texto ("HO", "RO") saíram: pareciam lista de contatos,
+ * e a moto virava sigla. A cor por marca ficou -- é ela que deixa
+ * reconhecer de relance, do mesmo jeito que o avatar de pessoa faz.
+ */
 function renderizarListaGaragem() {
   const lista = document.getElementById("garagem-lista");
+  const vazio = document.getElementById("garagem-vazio");
   if (!lista) return;
   lista.innerHTML = "";
 
@@ -2011,11 +2003,13 @@ function renderizarListaGaragem() {
     const item = document.createElement("li");
     item.className = "garagem-moto";
 
-    const distintivo = document.createElement("span");
-    distintivo.className = "garagem-moto-marca";
-    distintivo.style.background = corAvatar(moto.marca);
-    distintivo.textContent = iniciaisMarca(moto.marca);
-    distintivo.setAttribute("aria-hidden", "true");
+    const slot = document.createElement("span");
+    slot.className = "garagem-moto-slot";
+    // A cor da marca entra como CONTORNO, não como fundo: fundo colorido
+    // atrás de um ícone de traço fino come o desenho.
+    slot.style.borderColor = corDaMarca(moto.marca);
+    slot.style.color = corDaMarca(moto.marca);
+    slot.innerHTML = ICONE_MOTO_SVG;
 
     const texto = document.createElement("span");
     texto.className = "garagem-moto-texto";
@@ -2027,7 +2021,7 @@ function renderizarListaGaragem() {
     sub.textContent = moto.apelido ? `${moto.marca} · ${moto.apelido}` : moto.marca;
     texto.append(modelo, sub);
 
-    item.append(distintivo, texto);
+    item.append(slot, texto);
 
     if (moto.id === garagemMotoAtivaId) {
       const ativa = document.createElement("span");
@@ -2047,10 +2041,47 @@ function renderizarListaGaragem() {
     lista.appendChild(item);
   });
 
+  /* "Vaga livre" no fim da lista, no lugar do "+" solto no canto: o
+     card mostra QUANTAS vagas sobram, então o limite de 3 deixa de ser
+     um aviso de erro depois do fato. Cheia, o card some. */
+  if (garagemMotos.length < LIMITE_MOTOS_GARAGEM_UI) {
+    const vaga = document.createElement("li");
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "garagem-vaga";
+    const mais = document.createElement("span");
+    mais.className = "garagem-vaga-mais";
+    mais.textContent = "+";
+    const rotulo = document.createElement("span");
+    const restam = LIMITE_MOTOS_GARAGEM_UI - garagemMotos.length;
+    rotulo.textContent = garagemMotos.length
+      ? `Vaga livre — cabem mais ${restam}`
+      : "Cadastrar minha primeira moto";
+    botao.append(mais, rotulo);
+    botao.addEventListener("click", () => abrirFormMoto(null));
+    vaga.appendChild(botao);
+    lista.appendChild(vaga);
+  }
+
+  lista.classList.remove("oculto");
+  if (vazio) {
+    vazio.textContent = garagemMotos.length
+      ? ""
+      : "Sua garagem está vazia. A moto cadastrada aqui é a que o app usa pra estimar o combustível dos Roteiros.";
+    vazio.classList.toggle("oculto", garagemMotos.length > 0);
+  }
+
   mostrarTelaGaragem("lista");
 }
 
-/** Detalhe: números da moto e as ações sobre ela. */
+/** Cor estável por marca -- a mesma marca cai sempre no mesmo tom. */
+function corDaMarca(marca) {
+  let h = 0;
+  for (const c of String(marca || "")) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `hsl(${h} 62% 52%)`;
+}
+
+/** Painel de instrumentos da moto escolhida. */
 function abrirDetalheMoto(motoId) {
   const moto = garagemMotos.find((m) => m.id === motoId);
   if (!moto) return;
@@ -2060,29 +2091,66 @@ function abrirDetalheMoto(motoId) {
   document.getElementById("garagem-detalhe-sub").textContent = moto.apelido
     ? `${moto.marca} · ${moto.apelido}`
     : moto.marca;
+  document.getElementById("garagem-detalhe-ativa")?.classList.toggle("oculto", motoId !== garagemMotoAtivaId);
 
   document.getElementById("garagem-odometro-valor").textContent =
-    `${Math.round(moto.odometroKm || 0).toLocaleString("pt-BR")} km`;
+    Math.round(moto.odometroKm || 0).toLocaleString("pt-BR");
   document.getElementById("garagem-stats-viagens").textContent = moto.viagens || 0;
-  document.getElementById("garagem-stats-ultima").textContent = moto.ultimaViagemEm
-    ? formatarDataCurta(moto.ultimaViagemEm)
-    : "—";
 
-  /* O consumo aparece aqui porque é o número que alimenta o Roteiro --
-     e quando não foi informado, mostrar a faixa deduzida explica de
-     onde vem a estimativa em vez de deixar um traço mudo. */
+  /* O consumo diz de ONDE veio: informado pela pessoa ou deduzido da
+     cilindrada. Sem isso, uma faixa larga pareceria imprecisão do app
+     em vez do que é -- estimativa honesta na falta do número real. */
   const informado = Number(moto.consumoKmL);
   const faixa = faixaConsumoDaMoto(moto);
-  document.getElementById("garagem-stats-consumo").textContent = informado > 0
-    ? `${informado} km/l`
-    : faixa
-      ? `${faixa.min}–${faixa.max} km/l`
-      : "—";
+  const alvoConsumo = document.getElementById("garagem-stats-consumo");
+  const origem = document.getElementById("garagem-consumo-origem");
+  if (informado > 0) {
+    alvoConsumo.textContent = `${informado}`;
+    origem.textContent = "km/l · informado por você";
+  } else if (faixa) {
+    alvoConsumo.textContent = `${faixa.min}–${faixa.max}`;
+    origem.textContent = `km/l · estimado (${faixa.cc} cc)`;
+  } else {
+    alvoConsumo.textContent = "—";
+    origem.textContent = "informe no editar";
+  }
 
-  // Definir como ativa não faz sentido na que já é.
+  renderizarManutencao(moto);
   document.getElementById("btn-definir-moto-ativa")?.classList.toggle("oculto", motoId === garagemMotoAtivaId);
-
   mostrarTelaGaragem("detalhe");
+}
+
+/**
+ * Manutenção da moto.
+ *
+ * NÃO existem itens de exemplo aqui de propósito. Escrever "Troca de
+ * óleo: OK" numa moto que o app nunca viu é dizer à pessoa que a
+ * manutenção dela está em dia -- e alguém pode acreditar. Enfeite de
+ * tela não vale um risco desses. Enquanto não houver registro de
+ * verdade, o bloco diz que não há nada e que o recurso vem depois.
+ */
+function renderizarManutencao(moto) {
+  const lista = document.getElementById("garagem-manutencao-lista");
+  const vazio = document.getElementById("garagem-manutencao-vazio");
+  if (!lista) return;
+  lista.innerHTML = "";
+
+  const registros = Array.isArray(moto.manutencoes) ? moto.manutencoes : [];
+  registros.forEach((r) => {
+    const item = document.createElement("li");
+    item.className = "garagem-manutencao-item";
+    const marca = document.createElement("span");
+    marca.className = "garagem-manutencao-marca";
+    const nome = document.createElement("span");
+    nome.textContent = r.tipo;
+    const quando = document.createElement("span");
+    quando.className = "garagem-manutencao-quando";
+    quando.textContent = r.quando;
+    item.append(marca, nome, quando);
+    lista.appendChild(item);
+  });
+
+  vazio?.classList.toggle("oculto", registros.length > 0);
 }
 
 /** Formulário: `motoId` nulo cria, preenchido edita. */
@@ -2097,6 +2165,9 @@ function abrirFormMoto(motoId) {
   document.getElementById("input-garagem-apelido").value = moto?.apelido || "";
   document.getElementById("input-garagem-consumo").value = moto?.consumoKmL || "";
   document.getElementById("garagem-form-erro").classList.add("oculto");
+  // Excluir só existe editando: no cadastro não há o que excluir, e o
+  // botão ali seria um alvo vermelho sem função.
+  document.getElementById("btn-excluir-moto")?.classList.toggle("oculto", !moto);
 
   mostrarTelaGaragem("form");
 }
@@ -2135,7 +2206,6 @@ async function excluirMotoAtual() {
     await window.raspadinhaAuth.excluirMoto(garagemMotoEmEdicao);
     garagemMotoEmEdicao = null;
     await carregarMotosGaragem();
-    mostrarTelaGaragem("lista");
   } catch (e) {
     alert(e?.message || "Não foi possível excluir agora.");
   }

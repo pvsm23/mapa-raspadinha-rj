@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.19.104",
+    "itens": [
+      "A Garagem ficou com cara de painel: cada moto tem seu espaço, e o odômetro, as viagens e o consumo aparecem em destaque.",
+      "O botão de editar virou um ícone discreto no canto, e o de excluir saiu da tela principal pra dentro da edição.",
+      "Cadastrar moto agora é um espaço de \"vaga livre\" na própria lista, mostrando quantas ainda cabem."
+    ]
+  },
+  {
     "versao": "0.26.08.19.103",
     "itens": [
       "Agora dá pra montar o roteiro direto no mapa: toque nos lugares na ordem que quer visitar, e o resto da tela sai da frente.",
