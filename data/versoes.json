@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.18.100",
+    "itens": [
+      "O Desbrava agora tem endereço próprio: desbravaapp.com.br — o link antigo continua funcionando e leva pro novo.",
+      "Dá pra apagar o próprio comentário em posts e sugestões: a permissão já existia, faltava o botão.",
+      "Comentário de outra pessoa também pode ser denunciado agora, fechando as quatro áreas onde qualquer um publica."
+    ]
+  },
+  {
     "versao": "0.26.08.18.99",
     "itens": [
       "Agora dá pra denunciar post, sugestão e comentário que estiverem fora do lugar — antes não havia como avisar ninguém.",

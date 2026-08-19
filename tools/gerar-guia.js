@@ -16,7 +16,7 @@ const destinos = JSON.parse(fs.readFileSync(path.join(RAIZ, "data/destinos.json"
 const curiosidades = JSON.parse(fs.readFileSync(path.join(RAIZ, "data/curiosidades.json"), "utf8"));
 const regioes = JSON.parse(fs.readFileSync(path.join(RAIZ, "data/regioes.json"), "utf8"));
 
-const BASE = "https://pvsm23.github.io/mapa-raspadinha-rj";
+const BASE = "https://desbravaapp.com.br";
 const CLIENT = "ca-pub-7585588467751471";
 
 const esc = (s) =>

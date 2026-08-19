@@ -252,6 +252,7 @@ window.raspadinhaAuth = {
   curtirPost: async () => {},
   comentarPost: async () => {},
   listarComentarios: async () => [],
+  excluirComentario: async () => {},
   excluirPost: async () => {},
   buscarFotoPost: async () => null,
   buscarPost: async () => null,
@@ -263,6 +264,7 @@ window.raspadinhaAuth = {
   curtirSugestao: async () => {},
   comentarSugestao: async () => {},
   listarComentariosSugestao: async () => [],
+  excluirComentarioSugestao: async () => {},
   excluirSugestao: async () => {},
   // ---- Indicação de selo ----
   indicarSelo: async () => {
@@ -1800,7 +1802,10 @@ if (CONFIGURADO) {
     const textoLimpo = (texto || "").trim().slice(0, 500);
     if (!textoLimpo) return;
 
-    await addDoc(collection(db, "posts", postId, "comentarios"), {
+    // Devolve o id: a tela monta o comentário recém-enviado na hora,
+    // e sem o id ele nasceria sem o botão de apagar -- só ganharia um
+    // ao reabrir o painel, o que parece defeito.
+    const novo = await addDoc(collection(db, "posts", postId, "comentarios"), {
       autorUid: usuario.uid,
       autorApelido: window.raspadinhaAuth.apelido || "?",
       texto: textoLimpo,
@@ -1814,12 +1819,29 @@ if (CONFIGURADO) {
         texto: textoLimpo.slice(0, 120),
       });
     }
+    return novo.id;
   };
 
   window.raspadinhaAuth.listarComentarios = async (postId) => {
     const consulta = query(collection(db, "posts", postId, "comentarios"), orderBy("criadoEm", "asc"));
     const resultado = await getDocs(consulta);
     return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  /**
+   * Só o autor apaga o próprio comentário -- a regra do Firestore
+   * confere o uid (o autor do POST não manda no comentário dos
+   * outros; pra isso existe a denúncia).
+   *
+   * O decremento é "melhor esforço" pelo mesmo motivo do
+   * excluirComentarioSugestao: contador errado incomoda menos que
+   * comentário que volta na tela.
+   */
+  window.raspadinhaAuth.excluirComentario = async (postId, comentarioId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    await deleteDoc(doc(db, "posts", postId, "comentarios", comentarioId));
+    await updateDoc(doc(db, "posts", postId), { numComentarios: increment(-1) }).catch(() => {});
   };
 
   /**
@@ -2333,13 +2355,15 @@ if (CONFIGURADO) {
     if (!textoLimpo) return;
 
     const itemRef = doc(db, "sugestoesComunidade", municipioId, "itens", itemId);
-    await addDoc(collection(itemRef, "comentarios"), {
+    // Devolve o id pelo mesmo motivo do comentarPost.
+    const novo = await addDoc(collection(itemRef, "comentarios"), {
       autorUid: usuario.uid,
       autorApelido: window.raspadinhaAuth.apelido || "?",
       texto: textoLimpo,
       criadoEm: serverTimestamp(),
     });
     await updateDoc(itemRef, { numComentarios: increment(1) });
+    return novo.id;
   };
 
   window.raspadinhaAuth.listarComentariosSugestao = async (municipioId, itemId) => {
@@ -2349,6 +2373,24 @@ if (CONFIGURADO) {
     );
     const resultado = await getDocs(consulta);
     return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  };
+
+  /**
+   * Só o autor apaga o próprio comentário -- a regra do Firestore
+   * confere o uid (o autor da SUGESTÃO não manda no comentário dos
+   * outros; pra isso existe a denúncia).
+   *
+   * O decremento é "melhor esforço": se ele falhar, o contador fica um
+   * a mais do que a lista mostra -- feio, mas melhor que abortar uma
+   * exclusão que o Firestore já aceitou e deixar o comentário
+   * ressuscitando na tela.
+   */
+  window.raspadinhaAuth.excluirComentarioSugestao = async (municipioId, itemId, comentarioId) => {
+    const usuario = auth.currentUser;
+    if (!usuario) throw new Error("Faça login primeiro.");
+    const itemRef = doc(db, "sugestoesComunidade", municipioId, "itens", itemId);
+    await deleteDoc(doc(itemRef, "comentarios", comentarioId));
+    await updateDoc(itemRef, { numComentarios: increment(-1) }).catch(() => {});
   };
 
   /* ---------- Comentários nos pontos turísticos ----------

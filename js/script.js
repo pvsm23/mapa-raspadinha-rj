@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.18.99";
+const VERSAO_APP = "0.26.08.18.100";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.18.99";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.18.100", itens: ["O Desbrava agora tem endereço próprio: desbravaapp.com.br — o link antigo continua funcionando e leva pro novo.", "Dá pra apagar o próprio comentário em posts e sugestões: a permissão já existia, faltava o botão.", "Comentário de outra pessoa também pode ser denunciado agora, fechando as quatro áreas onde qualquer um publica."] },
   { versao: "0.26.08.18.99", itens: ["Agora dá pra denunciar post, sugestão e comentário que estiverem fora do lugar — antes não havia como avisar ninguém.", "Quem recebe três denúncias confirmadas tem a conta banida e o conteúdo retirado do ar.", "Quem for banido tem 90 dias para recorrer: o conteúdo fica guardado e volta inteiro se o recurso for aceito.", "Em municípios sem arte própria, quem já confirmou presença por GPS pode indicar uma foto para virar o selo do lugar."] },
   { versao: "0.26.08.18.98", itens: ["Os mapas dos estados que você já baixou agora se atualizam sozinhos quando saem melhorias — antes era preciso apagar e baixar de novo à mão pra ver as novidades.", "Só o mapa que mudou é rebaixado, e sem internet o app continua usando o que já está guardado no aparelho."] },
   { versao: "0.26.08.18.97", itens: ["Correção: os primeiros nomes a aparecer no mapa eram os de nome curto, e não os dos municípios grandes — Ubá vinha antes de Patos de Minas.", "Agora quem aparece primeiro é sempre o município maior, mesmo que o nome dele seja comprido.", "E os nomes não aparecem mais enquanto o mapa está mostrando as regiões, quando as divisas de município nem estão na tela."] },
@@ -482,7 +483,14 @@ const CHAVE_VERSAO_VISTA = "desbrava_versao_vista";
  * app velho não tem como conhecer as novidades das versões novas. Este
  * arquivo é a cópia publicada na web, gerada por
  * tools/gerar-versoes-json.js. Só o caso B precisa dele. */
-const SITE_PUBLICADO = "https://pvsm23.github.io/mapa-raspadinha-rj";
+/* Domínio próprio desde 18/08/2026. O endereço antigo
+   (pvsm23.github.io/mapa-raspadinha-rj) continua funcionando: ao
+   receber um domínio customizado, o GitHub Pages passa a REDIRECIONAR
+   o .github.io pra cá. Isso importa porque o SITE_PUBLICADO vai
+   DENTRO do APK -- quem tem uma versão antiga instalada segue
+   apontando pro endereço velho, e é o redirecionamento que mantém o
+   download de mapa estadual funcionando pra essa gente. */
+const SITE_PUBLICADO = "https://desbravaapp.com.br";
 const URL_VERSOES_PUBLICADAS = `${SITE_PUBLICADO}/data/versoes.json`;
 
 /** Entradas do histórico mais novas que `versao`, da mais recente pra trás. */
@@ -13492,6 +13500,86 @@ async function aoCurtirPost(post, card) {
   }
 }
 
+/* ---- Ações de um comentário (post e sugestão) ----
+   As duas telas montam a mesma `.comentario-linha`, então o botão vive
+   aqui em vez de duplicado nos dois lugares. Regra: autor apaga o
+   próprio, quem não é autor denuncia, e quem não está logado não vê
+   nada -- ler não exige conta desde a 0.26.08.18.99.
+
+   `c.id` pode faltar no comentário recém-enviado se o backend não
+   devolver o id; nesse caso o botão de apagar não entra (apagar sem id
+   apagaria o documento errado, ou nenhum). */
+function adicionarAcaoDoComentario(linha, c, { apagar, aoApagar, denuncia }) {
+  const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
+  if (!meuUid || !c.autorUid) return;
+
+  const botao = document.createElement("button");
+  botao.type = "button";
+
+  if (c.autorUid === meuUid) {
+    if (!c.id) return;
+    botao.className = "comentario-acao comentario-apagar";
+    botao.setAttribute("aria-label", "Apagar meu comentário");
+    botao.title = "Apagar";
+    botao.textContent = "✕";
+    botao.addEventListener("click", async () => {
+      if (!confirm("Apagar esse comentário?")) return;
+      botao.disabled = true;
+      try {
+        await apagar();
+        linha.remove();
+        aoApagar?.();
+      } catch (erro) {
+        botao.disabled = false;
+        console.error("Falha ao apagar comentário:", erro);
+        alert(erro?.message || "Não deu para apagar agora.");
+      }
+    });
+  } else {
+    botao.className = "comentario-acao comentario-denunciar";
+    botao.setAttribute("aria-label", "Denunciar comentário");
+    botao.title = "Denunciar";
+    botao.textContent = "🚩";
+    botao.addEventListener("click", () => abrirDenuncia(denuncia));
+  }
+
+  /* insertBefore, não appendChild: o botão é `float: right`, e um float
+     encontrado DEPOIS do texto desce pra última linha -- num comentário
+     de duas linhas ele ia parar lá embaixo, desalinhado dos vizinhos de
+     uma linha só. No começo do fluxo ele fica sempre no topo à direita,
+     com o texto contornando. */
+  linha.insertBefore(botao, linha.firstChild);
+}
+
+/**
+ * Mantém o contador em sincronia ao apagar um comentário.
+ *
+ * Precisa mexer nos DOIS lados: o objeto `post` (de onde enviarComentario
+ * tira o número pra somar) e o span. Só o span faria o próximo envio
+ * reescrever o valor velho, ressuscitando o comentário apagado na conta.
+ */
+function atualizarContadorComentarios(post, card, delta) {
+  if (post) post.numComentarios = Math.max(0, (post.numComentarios || 0) + delta);
+  const alvo = card?.querySelector(".post-card-num-comentarios");
+  if (alvo) alvo.textContent = post ? post.numComentarios : Math.max(0, (Number(alvo.textContent) || 0) + delta);
+}
+
+/**
+ * Mesma coisa pro detalhe da sugestão, onde o card fica NUMA OUTRA
+ * TELA (o grid atrás do modal) -- por isso ele é procurado pelo id em
+ * vez de recebido: quem apaga está no detalhe, não no card.
+ */
+function atualizarContadorSugestao(sugestaoId, delta) {
+  if (sugestaoDetalheAtual?.id === sugestaoId) {
+    sugestaoDetalheAtual.numComentarios = Math.max(0, (sugestaoDetalheAtual.numComentarios || 0) + delta);
+  }
+  const card = document.querySelector(`.sugestao-card[data-item-id="${sugestaoId}"]`);
+  const contador = card?.querySelector(".sugestao-card-num-comentarios");
+  if (contador) {
+    contador.textContent = Math.max(0, (Number(contador.textContent) || 0) + delta);
+  }
+}
+
 async function aoAbrirComentarios(post, card) {
   const painel = card.querySelector(".post-card-comentarios");
   const abrindo = painel.classList.contains("oculto");
@@ -13507,6 +13595,21 @@ async function aoAbrirComentarios(post, card) {
       const linha = document.createElement("p");
       linha.className = "comentario-linha";
       linha.innerHTML = `<b>${escaparHtml(c.autorApelido)}:</b> ${escaparHtml(c.texto)}`;
+      /* Autor apaga o próprio; os demais denunciam. Mesma dupla do
+         comentário de ponto turístico -- aqui não existia nenhuma das
+         duas: a regra do Firestore já deixava o autor apagar, mas não
+         havia botão, e quem visse conteúdo impróprio não tinha saída. */
+      adicionarAcaoDoComentario(linha, c, {
+        apagar: () => window.raspadinhaAuth.excluirComentario(post.id, c.id),
+        aoApagar: () => atualizarContadorComentarios(post, card, -1),
+        denuncia: {
+          tipo: "comentario-post",
+          referencia: `posts/${post.id}/comentarios/${c.id}`,
+          resumo: c.texto,
+          autor: c.autorApelido,
+          autorUid: c.autorUid,
+        },
+      });
       lista.appendChild(linha);
     });
   } catch (erro) {
@@ -13521,11 +13624,10 @@ async function enviarComentario(post, card, input) {
 
   input.disabled = true;
   try {
-    await window.raspadinhaAuth.comentarPost(post.id, texto, post.autorUid);
+    const novoId = await window.raspadinhaAuth.comentarPost(post.id, texto, post.autorUid);
     input.value = "";
 
-    post.numComentarios = (post.numComentarios || 0) + 1;
-    card.querySelector(".post-card-num-comentarios").textContent = post.numComentarios;
+    atualizarContadorComentarios(post, card, 1);
 
     const lista = card.querySelector(".post-card-lista-comentarios");
     if (lista.children.length === 1 && lista.children[0].tagName === "P" && !lista.children[0].className) {
@@ -13534,6 +13636,17 @@ async function enviarComentario(post, card, input) {
     const linha = document.createElement("p");
     linha.className = "comentario-linha";
     linha.innerHTML = `<b>${escaparHtml(window.raspadinhaAuth.apelido)}:</b> ${escaparHtml(texto)}`;
+    // O comentário que acabou de sair também ganha o ✕, senão só
+    // apareceria ao reabrir o painel -- e some da tela sem botão nenhum
+    // parece que apagar não existe.
+    adicionarAcaoDoComentario(
+      linha,
+      { id: novoId, autorUid: window.raspadinhaAuth.usuarioAtual?.uid },
+      {
+        apagar: () => window.raspadinhaAuth.excluirComentario(post.id, novoId),
+        aoApagar: () => atualizarContadorComentarios(post, card, -1),
+      }
+    );
     lista.appendChild(linha);
   } catch (erro) {
     alert(erro?.message || "Não foi possível enviar o comentário.");
@@ -14582,10 +14695,24 @@ async function carregarComentariosDetalheSugestao() {
       sugestaoDetalheAtual.id
     );
     lista.innerHTML = comentarios.length ? "" : "<p class='municipio-opcao-vazio'>Nenhum comentário ainda.</p>";
+    const municipio = municipioAtualSugestoes;
+    const sugestaoId = sugestaoDetalheAtual.id;
     comentarios.forEach((c) => {
       const linha = document.createElement("p");
       linha.className = "comentario-linha";
       linha.innerHTML = `<b>${escaparHtml(c.autorApelido)}:</b> ${escaparHtml(c.texto)}`;
+      // Mesma dupla do comentário de post (ver adicionarAcaoDoComentario).
+      adicionarAcaoDoComentario(linha, c, {
+        apagar: () => window.raspadinhaAuth.excluirComentarioSugestao(municipio, sugestaoId, c.id),
+        aoApagar: () => atualizarContadorSugestao(sugestaoId, -1),
+        denuncia: {
+          tipo: "comentario-sugestao",
+          referencia: `sugestoesComunidade/${municipio}/itens/${sugestaoId}/comentarios/${c.id}`,
+          resumo: c.texto,
+          autor: c.autorApelido,
+          autorUid: c.autorUid,
+        },
+      });
       lista.appendChild(linha);
     });
   } catch (erro) {
@@ -14601,20 +14728,26 @@ async function enviarComentarioDetalheSugestao() {
 
   input.disabled = true;
   try {
-    await window.raspadinhaAuth.comentarSugestao(municipioAtualSugestoes, sugestaoDetalheAtual.id, texto);
+    const municipio = municipioAtualSugestoes;
+    const sugestaoId = sugestaoDetalheAtual.id;
+    const novoId = await window.raspadinhaAuth.comentarSugestao(municipio, sugestaoId, texto);
     input.value = "";
-    sugestaoDetalheAtual.numComentarios = (sugestaoDetalheAtual.numComentarios || 0) + 1;
-
-    // Mantém o contador do card lá atrás em dia, sem recarregar o grid.
-    const card = document.querySelector(`.sugestao-card[data-item-id="${sugestaoDetalheAtual.id}"]`);
-    const contador = card?.querySelector(".sugestao-card-num-comentarios");
-    if (contador) contador.textContent = sugestaoDetalheAtual.numComentarios;
+    atualizarContadorSugestao(sugestaoId, 1);
 
     const lista = document.getElementById("sugestao-detalhe-comentarios");
     if (lista.querySelector(".municipio-opcao-vazio")) lista.innerHTML = "";
     const linha = document.createElement("p");
     linha.className = "comentario-linha";
     linha.innerHTML = `<b>${escaparHtml(window.raspadinhaAuth.apelido)}:</b> ${escaparHtml(texto)}`;
+    // Ganha o ✕ na hora, pelo mesmo motivo do comentário de post.
+    adicionarAcaoDoComentario(
+      linha,
+      { id: novoId, autorUid: window.raspadinhaAuth.usuarioAtual?.uid },
+      {
+        apagar: () => window.raspadinhaAuth.excluirComentarioSugestao(municipio, sugestaoId, novoId),
+        aoApagar: () => atualizarContadorSugestao(sugestaoId, -1),
+      }
+    );
     lista.appendChild(linha);
   } catch (erro) {
     alert(erro?.message || "Não foi possível enviar o comentário.");

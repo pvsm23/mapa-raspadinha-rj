@@ -1850,6 +1850,38 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
   color: var(--txt);
 }
 
+/* Ações do comentário (✕ do autor, 🚩 dos demais): discretas,
+   encostadas à direita da linha, ganhando presença só no hover/foco.
+   Nenhuma das duas pode competir com ler o comentário -- mesma lógica
+   do ponto turístico. */
+.comentario-acao {
+  float: right;
+  background: transparent;
+  border: none;
+  /* O botão vem ANTES do texto no DOM (ver adicionarAcaoDoComentario),
+     então a margem que afasta do texto é a da esquerda. */
+  margin-left: 8px;
+  padding: 0;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+.comentario-acao:hover,
+.comentario-acao:focus-visible {
+  opacity: 0.95;
+}
+.comentario-acao:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+/* O ✕ é texto, não emoji: sem cor própria ele sairia com a cor do
+   parágrafo e pareceria parte do comentário. */
+.comentario-apagar {
+  color: var(--fraco);
+}
+
 .post-card-novo-comentario {
   display: flex;
   gap: 6px;
