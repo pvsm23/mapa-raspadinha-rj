@@ -1,5 +1,13 @@
 [
   {
+    "versao": "0.26.08.19.106",
+    "itens": [
+      "O cartão do seu grupo agora aparece logo ao abrir o Motoclube, e não mais escondido dentro dos Pontos de Apoio.",
+      "Pontos de Apoio ganhou busca e filtros por marca em botões, no lugar da lista suspensa do sistema.",
+      "Ao indicar um ponto, escolher as marcas atendidas virou tocar nas pílulas — sem caixinhas de seleção."
+    ]
+  },
+  {
     "versao": "0.26.08.19.105",
     "itens": [
       "Os formulários de moto foram refeitos: um campo por linha, campos altos e fáceis de tocar, e o de consumo deixou de aparecer com a cara branca do navegador.",

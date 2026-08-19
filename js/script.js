@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.105";
+const VERSAO_APP = "0.26.08.19.106";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.19.105";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.106", itens: ["O cartão do seu grupo agora aparece logo ao abrir o Motoclube, e não mais escondido dentro dos Pontos de Apoio.", "Pontos de Apoio ganhou busca e filtros por marca em botões, no lugar da lista suspensa do sistema.", "Ao indicar um ponto, escolher as marcas atendidas virou tocar nas pílulas — sem caixinhas de seleção."] },
   { versao: "0.26.08.19.105", itens: ["Os formulários de moto foram refeitos: um campo por linha, campos altos e fáceis de tocar, e o de consumo deixou de aparecer com a cara branca do navegador.", "O botão de salvar ficou verde e ocupa a largura toda; o de excluir foi para o fim, separado por uma linha."] },
   { versao: "0.26.08.19.104", itens: ["A Garagem ficou com cara de painel: cada moto tem seu espaço, e o odômetro, as viagens e o consumo aparecem em destaque.", "O botão de editar virou um ícone discreto no canto, e o de excluir saiu da tela principal pra dentro da edição.", "Cadastrar moto agora é um espaço de \"vaga livre\" na própria lista, mostrando quantas ainda cabem."] },
   { versao: "0.26.08.19.103", itens: ["Agora dá pra montar o roteiro direto no mapa: toque nos lugares na ordem que quer visitar, e o resto da tela sai da frente.", "A viagem passa a começar de onde você está, e não do primeiro ponto — o trecho de casa até lá entra na conta.", "A Garagem abre na lista das suas motos, com o + no canto pra cadastrar; tocar numa moto mostra os números dela e os botões de editar e excluir.", "Correção: motos apareciam duplicadas e voltavam depois de excluídas."] },
@@ -10487,6 +10488,28 @@ function popularFormulariosMotoclubeSeNecessario() {
     selectCategoria.appendChild(opt);
   });
 
+  /* Pílulas de filtro no lugar do <select>. Escrevem no input escondido
+     que renderizarListaMotoclube já lê, então a lógica de filtro não
+     mudou -- só a forma de escolher. */
+  const filtros = document.getElementById("apoio-filtros");
+  const campoMarca = document.getElementById("select-motoclube-marca");
+  if (filtros && !filtros.children.length) {
+    ["", ...MARCAS_MOTOCLUBE].forEach((marca) => {
+      const pilula = document.createElement("button");
+      pilula.type = "button";
+      pilula.className = "apoio-pilula" + (marca === "" ? " apoio-pilula-ativa" : "");
+      pilula.textContent = marca || "Todas";
+      pilula.dataset.marca = marca;
+      pilula.addEventListener("click", () => {
+        filtros.querySelectorAll(".apoio-pilula").forEach((p) => p.classList.remove("apoio-pilula-ativa"));
+        pilula.classList.add("apoio-pilula-ativa");
+        campoMarca.value = marca;
+        renderizarListaMotoclube();
+      });
+      filtros.appendChild(pilula);
+    });
+  }
+
   const marcasForm = document.getElementById("motoclube-form-marcas");
   MARCAS_MOTOCLUBE.forEach((marca) => {
     const chip = document.createElement("label");
@@ -10494,6 +10517,9 @@ function popularFormulariosMotoclubeSeNecessario() {
     const check = document.createElement("input");
     check.type = "checkbox";
     check.value = marca;
+    /* A classe acompanha o :checked pra funcionar também em navegador
+       sem :has() -- o CSS traz as duas formas. */
+    check.addEventListener("change", () => chip.classList.toggle("chip-marcado", check.checked));
     chip.append(check, document.createTextNode(marca));
     marcasForm.appendChild(chip);
   });
@@ -11886,7 +11912,10 @@ function abrirFormMotoclube() {
   popularFormulariosMotoclubeSeNecessario();
   document.getElementById("input-motoclube-nome").value = "";
   document.getElementById("select-motoclube-categoria").selectedIndex = 0;
-  document.querySelectorAll("#motoclube-form-marcas input").forEach((c) => (c.checked = false));
+  document.querySelectorAll("#motoclube-form-marcas input").forEach((c) => {
+    c.checked = false;
+    c.closest(".motoclube-marca-chip")?.classList.remove("chip-marcado");
+  });
   document.getElementById("input-motoclube-modelos").value = "";
   document.getElementById("input-motoclube-descricao").value = "";
   document.getElementById("input-motoclube-linkmaps").value = "";

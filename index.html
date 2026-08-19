@@ -1092,6 +1092,10 @@
     </header>
 
     <div id="motoclube-corpo">
+      <!-- Carteirinha do grupo: saiu de "Pontos de Apoio", onde competia
+           com o guia de servicos. Identidade de membro e do painel.
+           Preenchida por renderizarMeuGrupo em js/script.js. -->
+      <div id="motoclube-meu-grupo"></div>
       <!-- Pitch de venda: só pra quem não assina. Fica ANTES dos cards
            pra explicar o cadeado que a pessoa vai ver logo abaixo. -->
       <div id="motoclube-pitch" class="oculto">
@@ -1261,17 +1265,16 @@
 
       <div id="mc-painel-apoio" class="mc-painel oculto">
 
-        <!-- Grupo do usuário: um por município, com brasão próprio.
-        Preenchido por renderizarMeuGrupo em js/script.js. -->
-        <div id="motoclube-meu-grupo"></div>
-        <button type="button" id="btn-motoclube-adicionar" class="btn-link-amigo">+ Adicionar loja ou dica</button>
+        <button type="button" id="btn-motoclube-adicionar" class="btn-link-amigo">+ Indicar Ponto de Apoio</button>
 
-        <div id="motoclube-filtros">
-        <select id="select-motoclube-marca">
-        <option value="">Todas as marcas</option>
-        </select>
-        <input type="text" id="input-motoclube-modelo" placeholder="Filtrar por modelo (ex: CG 160)">
+        <div id="apoio-busca">
+          <input type="text" id="input-motoclube-modelo" placeholder="Buscar por nome ou modelo atendido" autocomplete="off">
         </div>
+        <!-- Pilulas no lugar do <select>: 16 marcas nao cabem empilhadas, e
+             o select nativo abre a lista do sistema, fora do tema. O campo
+             escondido mantem o id que renderizarListaMotoclube ja le. -->
+        <input type="hidden" id="select-motoclube-marca" value="">
+        <div id="apoio-filtros"></div>
 
         <div id="motoclube-lista"></div>
       </div>
@@ -1299,6 +1302,7 @@
       <input type="text" id="input-motoclube-nome" maxlength="80" placeholder="Nome da loja/oficina/dica">
       <select id="select-motoclube-categoria"></select>
       <p class="motoclube-form-label">Marcas atendidas</p>
+      <p class="motoclube-form-legenda">Marcas atendidas</p>
       <div id="motoclube-form-marcas"></div>
       <input type="text" id="input-motoclube-modelos" maxlength="150" placeholder="Modelos atendidos (opcional, ex: CG 160, Fazer 250...)">
       <textarea id="input-motoclube-descricao" rows="3" maxlength="500" placeholder="Descrição (opcional)"></textarea>

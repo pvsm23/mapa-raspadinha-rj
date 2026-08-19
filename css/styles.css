@@ -8842,6 +8842,222 @@ svg#mapa-rj .ponto-numero-roteiro {
 
 
 /* =========================================================
+   CARTEIRINHA DO GRUPO — no painel do Motoclube
+
+   Saiu de dentro de "Pontos de Apoio": ali ela competia com o guia de
+   serviços, que é outra coisa. Identidade de membro pertence ao painel.
+   ========================================================= */
+#motoclube-meu-grupo:empty {
+  display: none;
+}
+
+#motoclube-meu-grupo {
+  margin-bottom: 16px;
+}
+
+/* =========================================================
+   PONTOS DE APOIO — diretório
+   ========================================================= */
+#apoio-busca {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+#apoio-busca input {
+  width: 100%;
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.9rem;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#apoio-busca input:focus {
+  border-color: var(--verde) !important;
+  box-shadow: 0 0 0 3px rgba(43, 213, 118, 0.18) !important;
+  outline: none;
+}
+
+/* Faixa de pílulas rolável: 16 marcas não cabem empilhadas, e um
+   <select> nativo devolve a lista do sistema operacional -- fora do
+   tema e fora do ritmo do resto do app. */
+#apoio-filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#apoio-filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.apoio-pilula {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha);
+  color: var(--fraco);
+  font-family: inherit;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.apoio-pilula-ativa {
+  background: var(--verde) !important;
+  border-color: var(--verde);
+  color: var(--verde-tinta, #08130c) !important;
+  font-weight: 600;
+}
+
+#btn-motoclube-adicionar {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: transparent !important;
+  border: 1px solid var(--verde);
+  color: var(--verde) !important;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#motoclube-lista:empty::after {
+  content: "Nenhum ponto de apoio por aqui ainda. Conhece uma oficina, loja ou parada boa? Indique — quem roda depois agradece.";
+  display: block;
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--fraco);
+}
+
+/* =========================================================
+   MODAL "INDICAR PONTO DE APOIO"
+   ========================================================= */
+#motoclube-form-conteudo label:not(.motoclube-marca-chip):not(#motoclube-form-label-foto) {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+#motoclube-form-conteudo input[type="text"],
+#motoclube-form-conteudo textarea,
+#motoclube-form-conteudo select {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha) !important;
+  color: var(--txt) !important;
+  font-family: inherit;
+  font-size: 0.92rem;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#motoclube-form-conteudo textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+#motoclube-form-conteudo input:focus,
+#motoclube-form-conteudo textarea:focus,
+#motoclube-form-conteudo select:focus {
+  border-color: var(--verde) !important;
+  box-shadow: 0 0 0 3px rgba(43, 213, 118, 0.18) !important;
+  outline: none;
+}
+
+.motoclube-form-legenda {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+#motoclube-form-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* O quadradinho nativo some: quem diz se está marcado é a PÍLULA
+   inteira ficando verde. Um checkbox de 13px dentro de uma pílula é
+   alvo pequeno demais e ainda traz a cara do sistema operacional. */
+.motoclube-marca-chip input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.motoclube-marca-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  color: var(--fraco);
+  font-size: 0.8rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.motoclube-marca-chip:has(input:checked) {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: var(--verde-tinta, #08130c);
+  font-weight: 600;
+}
+
+/* Reserva pra navegador sem :has() -- a classe é posta pelo JS. */
+.motoclube-marca-chip.chip-marcado {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: var(--verde-tinta, #08130c);
+  font-weight: 600;
+}
+
+#btn-salvar-motoclube {
+  width: 100%;
+  min-height: 52px;
+  border: none;
+  border-radius: 14px;
+  background: var(--verde) !important;
+  color: var(--verde-tinta, #08130c) !important;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+/* =========================================================
    CAMADA UI MODERNA
    Aplicada por cima do resto pra dar o acabamento aprovado:
    superfícies planas com cantos suaves, uma cor de destaque
@@ -10225,22 +10441,6 @@ select:focus {
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 12px;
-}
-
-.motoclube-marca-chip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--bg);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  padding: 5px 10px;
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-
-.motoclube-marca-chip input {
-  margin: 0;
 }
 
 #motoclube-form-label-foto {
