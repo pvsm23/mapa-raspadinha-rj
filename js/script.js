@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.18.100";
+const VERSAO_APP = "0.26.08.19.101";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.18.100";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.101", itens: ["O Motoclube virou uma tela só: Garagem, Lojas e Roteiros agora são abas do mesmo lugar.", "Roteiros (Motoclube): escolha uma rota e veja a quilometragem, o tempo estimado e quanto vai de combustível — e abra a navegação no Google Maps ou no Waze.", "O consumo é estimado pela cilindrada da sua moto, sem você precisar preencher nada; se souber o consumo real, informe na Garagem que ele passa a valer.", "A Garagem agora mostra todas as suas motos de uma vez, com o modelo em destaque, em vez de uma por vez."] },
   { versao: "0.26.08.18.100", itens: ["O Desbrava agora tem endereço próprio: desbravaapp.com.br — o link antigo continua funcionando e leva pro novo.", "Dá pra apagar o próprio comentário em posts e sugestões: a permissão já existia, faltava o botão.", "Comentário de outra pessoa também pode ser denunciado agora, fechando as quatro áreas onde qualquer um publica."] },
   { versao: "0.26.08.18.99", itens: ["Agora dá pra denunciar post, sugestão e comentário que estiverem fora do lugar — antes não havia como avisar ninguém.", "Quem recebe três denúncias confirmadas tem a conta banida e o conteúdo retirado do ar.", "Quem for banido tem 90 dias para recorrer: o conteúdo fica guardado e volta inteiro se o recurso for aceito.", "Em municípios sem arte própria, quem já confirmou presença por GPS pode indicar uma foto para virar o selo do lugar."] },
   { versao: "0.26.08.18.98", itens: ["Os mapas dos estados que você já baixou agora se atualizam sozinhos quando saem melhorias — antes era preciso apagar e baixar de novo à mão pra ver as novidades.", "Só o mapa que mudou é rebaixado, e sem internet o app continua usando o que já está guardado no aparelho."] },
@@ -1235,6 +1236,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---- Motoclube Desbrava ----
   document.getElementById("btn-abrir-motoclube").addEventListener("click", () => exigirLogin(abrirMotoclube));
   document.getElementById("btn-fechar-motoclube").addEventListener("click", fecharMotoclube);
+  document.querySelectorAll("#motoclube-abas .social-aba").forEach((botao) => {
+    botao.addEventListener("click", () => mudarAbaMotoclube(botao.dataset.aba));
+  });
   document.getElementById("modal-motoclube").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-motoclube") fecharMotoclube();
   });
@@ -1916,11 +1920,9 @@ function configurarGaragem() {
   const itemMenu = document.getElementById("menu-abrir-garagem");
   itemMenu?.classList.remove("oculto");
 
+  // A Garagem deixou de ter modal proprio: virou a primeira aba do
+  // Motoclube. O item de menu continua existindo e leva direto pra la.
   document.getElementById("btn-abrir-garagem")?.addEventListener("click", () => exigirLogin(abrirGaragem));
-  document.getElementById("btn-fechar-garagem")?.addEventListener("click", fecharGaragem);
-  document.getElementById("modal-garagem")?.addEventListener("click", (e) => {
-    if (e.target.id === "modal-garagem") fecharGaragem();
-  });
 
   document.querySelectorAll("#garagem-abas .garagem-aba").forEach((botao) => {
     botao.addEventListener("click", () => mudarAbaGaragem(botao.dataset.aba));
@@ -1942,24 +1944,17 @@ function configurarGaragem() {
   document.getElementById("btn-definir-moto-ativa")?.addEventListener("click", definirMotoAtivaAtual);
   document.getElementById("btn-excluir-moto")?.addEventListener("click", excluirMotoAtual);
 
-  document.getElementById("btn-garagem-seletor-editar-anterior")?.addEventListener("click", () => navegarSeletorGaragem("editar", -1));
-  document.getElementById("btn-garagem-seletor-editar-proxima")?.addEventListener("click", () => navegarSeletorGaragem("editar", 1));
-  document.getElementById("btn-garagem-seletor-stats-anterior")?.addEventListener("click", () => navegarSeletorGaragem("stats", -1));
-  document.getElementById("btn-garagem-seletor-stats-proxima")?.addEventListener("click", () => navegarSeletorGaragem("stats", 1));
 }
 
 /* A Garagem ABRE pra qualquer um: quem não assina vê a tela e entende
    o que ganha. O paywall entra em criarMotoForm, na hora de cadastrar
    a primeira moto. */
 async function abrirGaragem() {
-  garagemMotosCarregadas = false;
-  document.getElementById("modal-garagem")?.classList.remove("oculto");
-  mudarAbaGaragem("criar");
-  await carregarMotosGaragem();
+  await abrirMotoclube("garagem");
 }
 
 function fecharGaragem() {
-  document.getElementById("modal-garagem")?.classList.add("oculto");
+  fecharMotoclube();
 }
 
 function mudarAbaGaragem(aba) {
@@ -2004,47 +1999,91 @@ function renderizarAbasGaragem() {
 }
 
 /**
- * Atualiza o "Card Seletor" (moto atual + estrela dourada se for a
- * ativa + setas pra trocar) de uma das abas -- `prefixo` é "editar" ou
- * "stats", casando com os ids `garagem-seletor-<prefixo>*` no HTML.
- * As setas só aparecem com 2+ motos: com 1 só (ou nenhuma) não faz
- * sentido escolher.
+ * Distintivo da marca: as iniciais dela sobre um gradiente estável,
+ * mesma técnica do avatar de pessoa (corAvatar) -- a mesma marca cai
+ * sempre na mesma cor, então a pessoa reconhece a moto pela cor antes
+ * de ler o texto.
+ *
+ * NÃO são as logos oficiais de propósito: logo de fabricante é marca
+ * registrada, e empacotar as artes da Honda/Yamaha/BMW dentro de um
+ * app publicado na Play Store é risco jurídico real por um ganho
+ * estético. Se um dia houver arte autorizada, é só trocar o conteúdo
+ * deste elemento por um <img>.
  */
-function renderizarSeletorGaragem(prefixo, motoId) {
-  const seletor = document.getElementById(`garagem-seletor-${prefixo}`);
-  if (!seletor) return;
-  const moto = garagemMotos.find((m) => m.id === motoId);
-
-  if (!moto) {
-    seletor.classList.add("oculto");
-    return;
-  }
-  seletor.classList.remove("oculto");
-  document.getElementById(`garagem-seletor-${prefixo}-nome`).textContent =
-    `${moto.apelido ? `${moto.apelido} — ` : ""}${moto.marca} ${moto.modelo}`;
-  document
-    .getElementById(`garagem-seletor-${prefixo}-tag`)
-    ?.classList.toggle("oculto", moto.id !== garagemMotoAtivaId);
-
-  const temVarias = garagemMotos.length > 1;
-  document.getElementById(`btn-garagem-seletor-${prefixo}-anterior`)?.classList.toggle("oculto", !temVarias);
-  document.getElementById(`btn-garagem-seletor-${prefixo}-proxima`)?.classList.toggle("oculto", !temVarias);
+function iniciaisMarca(marca) {
+  const limpo = String(marca || "?").replace(/[^A-Za-zÀ-ÿ ]/g, " ").trim();
+  const partes = limpo.split(/\s+/).filter(Boolean);
+  if (partes.length >= 2) return (partes[0][0] + partes[1][0]).toUpperCase();
+  return limpo.slice(0, 2).toUpperCase() || "?";
 }
 
-/** Avança/volta (delta = 1/-1) a moto exibida no seletor de uma aba. */
-function navegarSeletorGaragem(prefixo, delta) {
-  if (garagemMotos.length < 2) return;
-  const selecionadaId = prefixo === "editar" ? garagemMotoSelecionadaEditar : garagemMotoSelecionadaStats;
-  const atual = garagemMotos.findIndex((m) => m.id === selecionadaId);
-  if (atual === -1) return;
-  const proximoId = garagemMotos[(atual + delta + garagemMotos.length) % garagemMotos.length].id;
-  if (prefixo === "editar") selecionarMotoEditar(proximoId);
-  else selecionarMotoStats(proximoId);
+/**
+ * Desenha a lista COMPLETA de motos de uma aba da Garagem -- `prefixo`
+ * é "editar" ou "stats", casando com `garagem-lista-<prefixo>` no HTML.
+ *
+ * Substituiu o "card seletor", que mostrava uma moto por vez e obrigava
+ * a clicar nas setas pra descobrir o que mais havia na garagem: com até
+ * 3 motos, esconder duas pra economizar espaço custava mais do que
+ * rendia.
+ */
+function renderizarListaGaragem(prefixo, motoSelecionadaId) {
+  const lista = document.getElementById(`garagem-lista-${prefixo}`);
+  if (!lista) return;
+  lista.innerHTML = "";
+
+  if (!garagemMotos.length) {
+    lista.classList.add("oculto");
+    return;
+  }
+  lista.classList.remove("oculto");
+
+  garagemMotos.forEach((moto) => {
+    const item = document.createElement("li");
+    item.className = "garagem-moto";
+    if (moto.id === motoSelecionadaId) item.classList.add("garagem-moto-selecionada");
+
+    const distintivo = document.createElement("span");
+    distintivo.className = "garagem-moto-marca";
+    distintivo.style.background = corAvatar(moto.marca);
+    distintivo.textContent = iniciaisMarca(moto.marca);
+    distintivo.setAttribute("aria-hidden", "true");
+
+    const texto = document.createElement("span");
+    texto.className = "garagem-moto-texto";
+
+    const modelo = document.createElement("strong");
+    modelo.className = "garagem-moto-modelo";
+    modelo.textContent = moto.modelo || moto.marca;
+
+    const sub = document.createElement("span");
+    sub.className = "garagem-moto-sub";
+    // O apelido, quando existe, é como a pessoa chama a moto -- vale
+    // mais que repetir a marca, que já está no distintivo ao lado.
+    sub.textContent = moto.apelido ? `${moto.marca} · ${moto.apelido}` : moto.marca;
+
+    texto.append(modelo, sub);
+    item.append(distintivo, texto);
+
+    if (moto.id === garagemMotoAtivaId) {
+      const ativa = document.createElement("span");
+      ativa.className = "garagem-moto-ativa";
+      ativa.title = "Recebe a quilometragem do Modo Viagem";
+      ativa.textContent = "⭐";
+      item.appendChild(ativa);
+    }
+
+    item.addEventListener("click", () => {
+      if (prefixo === "editar") selecionarMotoEditar(moto.id);
+      else selecionarMotoStats(moto.id);
+    });
+
+    lista.appendChild(item);
+  });
 }
 
 function selecionarMotoEditar(motoId) {
   garagemMotoSelecionadaEditar = motoId;
-  renderizarSeletorGaragem("editar", motoId);
+  renderizarListaGaragem("editar", motoId);
   const moto = garagemMotos.find((m) => m.id === motoId);
   const form = document.getElementById("garagem-editar-form");
   if (!moto) {
@@ -2055,13 +2094,14 @@ function selecionarMotoEditar(motoId) {
   document.getElementById("select-garagem-marca-editar").value = moto.marca;
   document.getElementById("input-garagem-modelo-editar").value = moto.modelo || "";
   document.getElementById("input-garagem-apelido-editar").value = moto.apelido || "";
+  document.getElementById("input-garagem-consumo-editar").value = moto.consumoKmL || "";
   document.getElementById("garagem-editar-erro")?.classList.add("oculto");
   document.getElementById("btn-definir-moto-ativa")?.classList.toggle("oculto", motoId === garagemMotoAtivaId);
 }
 
 function selecionarMotoStats(motoId) {
   garagemMotoSelecionadaStats = motoId;
-  renderizarSeletorGaragem("stats", motoId);
+  renderizarListaGaragem("stats", motoId);
   const moto = garagemMotos.find((m) => m.id === motoId);
   const conteudo = document.getElementById("garagem-stats-conteudo");
   if (!moto) {
@@ -2104,6 +2144,7 @@ async function criarMotoForm() {
       marca: document.getElementById("select-garagem-marca-criar").value,
       modelo: document.getElementById("input-garagem-modelo-criar").value,
       apelido: document.getElementById("input-garagem-apelido-criar").value,
+    consumoKmL: document.getElementById("input-garagem-consumo-criar").value,
     });
     document.getElementById("input-garagem-modelo-criar").value = "";
     document.getElementById("input-garagem-apelido-criar").value = "";
@@ -2130,6 +2171,7 @@ async function salvarEdicaoMotoAtual() {
       marca: document.getElementById("select-garagem-marca-editar").value,
       modelo: document.getElementById("input-garagem-modelo-editar").value,
       apelido: document.getElementById("input-garagem-apelido-editar").value,
+    consumoKmL: document.getElementById("input-garagem-consumo-editar").value,
     });
     await carregarMotosGaragem();
   } catch (erro) {
@@ -10740,7 +10782,15 @@ async function aoSairDoGrupo() {
  * conhece o produto. Agora a pessoa entra, vê o conteúdo e os grupos, e
  * o paywall aparece na hora em que ela quer PARTICIPAR: entrar num
  * grupo ou cadastrar uma moto na Garagem. */
-async function abrirMotoclube() {
+/**
+ * Abre o Motoclube numa aba (`garagem` por padrao). As tres telas do
+ * motociclista viraram abas daqui: a Garagem nao tem mais modal
+ * proprio, e a moto cadastrada nela alimenta o combustivel dos Roteiros.
+ *
+ * As lojas so sao buscadas quando a aba delas aparece -- abrir na
+ * Garagem nao deve custar uma leitura do Firestore que ninguem pediu.
+ */
+async function abrirMotoclube(aba = "garagem") {
   popularFormulariosMotoclubeSeNecessario();
   renderizarMeuGrupo();
   // Quem já estava num grupo antes de a numeração existir ganha o
@@ -10750,7 +10800,33 @@ async function abrirMotoclube() {
     if (novo) renderizarMeuGrupo();
   });
   document.getElementById("modal-motoclube").classList.remove("oculto");
+  await mudarAbaMotoclube(aba);
+}
+
+/** Troca a aba do Motoclube e carrega o que aquela aba precisa. */
+async function mudarAbaMotoclube(aba) {
+  document.querySelectorAll("#motoclube-abas .social-aba").forEach((b) => {
+    b.classList.toggle("social-aba-ativa", b.dataset.aba === aba);
+  });
+  ["garagem", "lojas", "roteiros"].forEach((nome) => {
+    document.getElementById(`motoclube-painel-${nome}`)?.classList.toggle("oculto", nome !== aba);
+  });
+
+  if (aba === "garagem") {
+    garagemMotosCarregadas = false;
+    mudarAbaGaragem("criar");
+    await carregarMotosGaragem();
+  } else if (aba === "lojas") {
+    await carregarLojasMotoclube();
+  } else if (aba === "roteiros") {
+    renderizarRoteiros();
+  }
+}
+
+/** Busca e desenha as lojas/dicas -- so quando a aba delas e aberta. */
+async function carregarLojasMotoclube() {
   const lista = document.getElementById("motoclube-lista");
+  if (!lista) return;
   lista.innerHTML = '<div class="spinner spinner-grande"></div>';
   try {
     itensMotoclubeCache = await window.raspadinhaAuth.buscarItensMotoclube();
@@ -10760,6 +10836,457 @@ async function abrirMotoclube() {
     lista.innerHTML = "<p>Não foi possível carregar o Motoclube agora.</p>";
   }
 }
+
+/* ============================================================
+   Roteiros (Motoclube, PAGO)
+
+   Mostra COMO ir, não só onde: pega os pontos turísticos de uma rota,
+   calcula distância, tempo e custo de combustível a partir da moto
+   cadastrada na Garagem, e abre a navegação no Google Maps ou no Waze.
+
+   Chama-se "Roteiro" e não "Rota" de propósito: "Rotas" já são as 24
+   coleções temáticas com selo (data/rotas.json, guia/rota-*.html). Em
+   português, roteiro é o itinerário planejado de uma viagem -- é a
+   palavra certa, e evita duas coisas diferentes com o mesmo nome.
+   ============================================================ */
+
+/* O OSRM público é servidor de DEMONSTRAÇÃO: sem contrato, sem SLA,
+   pode sair do ar ou limitar uso. É por isso que todo número daqui sai
+   rotulado como estimativa e existe o caminho de fallback offline. */
+const OSRM_BASE = "https://router.project-osrm.org/route/v1/driving/";
+
+/* Acima disto, o OSRM teve que arrastar o ponto até uma estrada longe
+   demais -- sinal de lugar sem acesso rodoviário (ilha, trilha). Manter
+   um ponto desses infla o trajeto com um desvio que não existe: no
+   teste, Vila do Abraão (Ilha Grande) foi deslocada 9,8 km. */
+const LIMITE_DESVIO_KM = 2;
+
+/* Sinuosidade média de estrada brasileira sobre a linha reta. Só entra
+   quando o OSRM não responde, e o número sai marcado como grosseiro. */
+const FATOR_ESTRADA = 1.3;
+
+const GOOGLE_MAPS_MAX_PARADAS = 9;
+
+let roteiroRotaAberta = null;
+
+/** Pontos com coordenada de um município, na ordem em que estão no JSON. */
+function pontosComCoordenada(municipioId) {
+  const mun = destinosPorMunicipio[municipioId];
+  if (!mun || !Array.isArray(mun.destinos)) return [];
+  return mun.destinos.filter((p) => typeof p.lat === "number" && typeof p.lon === "number");
+}
+
+/** Todos os pontos de uma rota, e quantos ficaram de fora por não ter GPS. */
+function pontosDaRota(rotaId) {
+  const rota = rotasInfo[rotaId];
+  if (!rota) return { pontos: [], semCoordenada: 0 };
+  let total = 0;
+  const pontos = [];
+  for (const municipioId of rota.municipios || []) {
+    const mun = destinosPorMunicipio[municipioId];
+    total += (mun?.destinos || []).length;
+    for (const p of pontosComCoordenada(municipioId)) {
+      pontos.push({ ...p, municipioId, municipio: nomeDoMunicipio(municipioId) });
+    }
+  }
+  return { pontos, semCoordenada: total - pontos.length };
+}
+
+/**
+ * Distância e tempo de estrada pelo OSRM. Devolve também o quanto cada
+ * ponto foi arrastado até a estrada mais próxima (`desvios`), que é
+ * como a gente descobre lugar sem acesso rodoviário.
+ */
+async function medirTrajetoOsrm(pontos) {
+  const coords = pontos.map((p) => `${p.lon},${p.lat}`).join(";");
+  const resposta = await fetch(`${OSRM_BASE}${coords}?overview=false`);
+  if (!resposta.ok) throw new Error(`OSRM HTTP ${resposta.status}`);
+  const dados = await resposta.json();
+  if (dados.code !== "Ok" || !dados.routes?.length) throw new Error(`OSRM: ${dados.code}`);
+  return {
+    km: dados.routes[0].distance / 1000,
+    minutos: dados.routes[0].duration / 60,
+    desvios: (dados.waypoints || []).map((w) => (w.distance || 0) / 1000),
+    real: true,
+  };
+}
+
+/**
+ * Plano B quando o OSRM não responde: soma das linhas retas entre os
+ * pontos, esticada pelo fator de sinuosidade. É grosseiro e a tela diz
+ * isso -- número aproximado apresentado como exato é pior que número
+ * nenhum.
+ */
+function medirTrajetoEmLinhaReta(pontos) {
+  let km = 0;
+  for (let i = 1; i < pontos.length; i++) {
+    km += distanciaEmKm(pontos[i - 1].lat, pontos[i - 1].lon, pontos[i].lat, pontos[i].lon);
+  }
+  km *= FATOR_ESTRADA;
+  return { km, minutos: (km / 55) * 60, desvios: [], real: false };
+}
+
+/** Link do Google Maps com paradas (o limite público é 9). */
+function urlGoogleMaps(pontos) {
+  const coord = (p) => `${p.lat},${p.lon}`;
+  const origem = pontos[0];
+  const destino = pontos[pontos.length - 1];
+  const paradas = pontos.slice(1, -1).map(coord).join("|");
+  const base = `https://www.google.com/maps/dir/?api=1&origin=${coord(origem)}&destination=${coord(destino)}&travelmode=driving`;
+  return paradas ? `${base}&waypoints=${encodeURIComponent(paradas)}` : base;
+}
+
+/** Waze só aceita UM destino -- por isso é "ir até este ponto", não a rota. */
+function urlWaze(ponto) {
+  return `https://waze.com/ul?ll=${ponto.lat},${ponto.lon}&navigate=yes`;
+}
+
+/** Quebra em trechos de no máximo 9 paradas, pra rota longa caber no Maps. */
+function trechosDoRoteiro(pontos) {
+  const porTrecho = GOOGLE_MAPS_MAX_PARADAS + 1;
+  if (pontos.length <= porTrecho) return [pontos];
+  const trechos = [];
+  for (let i = 0; i < pontos.length - 1; i += porTrecho - 1) {
+    trechos.push(pontos.slice(i, i + porTrecho));
+  }
+  return trechos;
+}
+
+/* ---- Consumo estimado pela cilindrada ----
+
+   O consumo sai do NOME DO MODELO que a pessoa já digita: quase toda
+   moto vendida no Brasil traz a cilindrada ali (CG 160, Factor 150,
+   XRE 300, Hunter 350). Isso evita um campo novo e uma tabela de
+   centenas de modelos que seria impossível manter -- e impossível de
+   preencher sem inventar número.
+
+   Faixa, nunca número único: a MESMA moto varia mais de 30% entre
+   cidade, estrada e serra, com carga e pilotagem. "8,6 L" seria uma
+   precisão que o dado não tem. O consumo digitado à mão sempre vence
+   isto -- quem sabe o próprio gasto não precisa de estimativa. */
+
+/* Faixas de km/l por classe de cilindrada, uso misto. São largas de
+   propósito: estreitar sem medição real seria fingir exatidão. */
+const FAIXAS_CONSUMO = [
+  { ate: 124, min: 40, max: 55 },
+  { ate: 149, min: 38, max: 48 },
+  { ate: 199, min: 32, max: 45 },
+  { ate: 299, min: 28, max: 38 },
+  { ate: 449, min: 24, max: 32 },
+  { ate: 699, min: 18, max: 26 },
+  { ate: 999, min: 15, max: 22 },
+  { ate: Infinity, min: 12, max: 18 },
+];
+
+/* Nenhuma moto de rua tem menos de 50cc nem mais de 1800cc por aqui.
+   O teto também serve pra descartar ANO no nome ("CG 160 2023"): 2023
+   cai fora da faixa e é ignorado. */
+const CC_MIN = 50;
+const CC_MAX = 1800;
+
+/**
+ * Cilindrada a partir do nome do modelo, ou null quando não dá pra
+ * saber com segurança.
+ *
+ * O caso perigoso é o número abreviado: "R15" é 150cc, não 15cc, e
+ * "R25" é 250. Por isso um número entre 10 e 49 é lido como dezena de
+ * cilindrada (×10) -- mas só quando não houver nenhum número já
+ * plausível no nome.
+ *
+ * Nome com número de UM dígito só (MT-03, R3, MT-07, XJ6) fica em
+ * BRANCO de propósito: "03" pode ser 300 e "01" pode ser 1000, e
+ * chutar errado aqui vira litro errado na conta de quem vai viajar.
+ */
+function cilindradaDoModelo(modelo) {
+  const numeros = String(modelo || "").match(/\d+/g);
+  if (!numeros) return null;
+
+  for (const bruto of numeros) {
+    const n = Number(bruto);
+    if (n >= CC_MIN && n <= CC_MAX) return n;
+  }
+  // Nenhum número plausível: tenta o abreviado (R15 -> 150).
+  for (const bruto of numeros) {
+    const n = Number(bruto);
+    if (n >= 10 && n <= 49) return n * 10;
+  }
+  return null;
+}
+
+/** Faixa de km/l da classe da moto, ou null se a cilindrada é desconhecida. */
+function faixaConsumoDaMoto(moto) {
+  const cc = cilindradaDoModelo(moto?.modelo);
+  if (!cc) return null;
+  const faixa = FAIXAS_CONSUMO.find((f) => cc <= f.ate);
+  return faixa ? { cc, min: faixa.min, max: faixa.max } : null;
+}
+
+/**
+ * Litros estimados. Devolve `{ min, max }` -- quando a pessoa informou
+ * o consumo real, os dois são iguais e a tela mostra um valor só.
+ *
+ * O custo em reais saiu de propósito: preço de combustível varia por
+ * estado, bandeira e semana, e não existe fonte grátis e confiável no
+ * Brasil pra manter isso honesto. Litro cada um converte com o preço
+ * do posto onde abastece.
+ */
+function litrosEstimados(km, moto) {
+  const informado = Number(moto?.consumoKmL);
+  if (informado > 0) return { min: km / informado, max: km / informado, exato: true };
+
+  const faixa = faixaConsumoDaMoto(moto);
+  if (!faixa) return null;
+  // Mais km/l = menos litros: o consumo máximo dá o piso de litros.
+  return { min: km / faixa.max, max: km / faixa.min, exato: false, cc: faixa.cc };
+}
+
+/** "≈ 7 a 9 L" ou "≈ 8.6 L" quando o consumo foi informado. */
+function textoLitros(litros) {
+  if (!litros) return "—";
+  if (litros.exato) return `≈ ${litros.min.toFixed(1)} L`;
+  return `≈ ${Math.round(litros.min)} a ${Math.round(litros.max)} L`;
+}
+
+function formatarDuracao(minutos) {
+  const h = Math.floor(minutos / 60);
+  const m = Math.round(minutos % 60);
+  return h ? `${h}h${String(m).padStart(2, "0")}` : `${m} min`;
+}
+
+/** Aviso de fase de testes: fica ACIMA dos números, sempre visível. */
+function avisoRoteiroEmTestes(estimativaGrosseira) {
+  const cx = document.createElement("p");
+  cx.className = "roteiro-aviso";
+  cx.textContent = estimativaGrosseira
+    ? "⚠️ Sem conexão com o serviço de rotas: os números abaixo são conta em LINHA RETA, não distância de estrada. Use só como ordem de grandeza."
+    : "⚠️ Roteiros em fase de testes. Distâncias, tempos e consumo são estimativas e podem conter erros. Confira o trajeto no seu app de GPS antes de sair — não dependa só daqui na estrada.";
+  return cx;
+}
+
+/** Tela inicial da aba: paywall pra quem não assina, ou a lista de rotas. */
+function renderizarRoteiros() {
+  const alvo = document.getElementById("roteiro-conteudo");
+  if (!alvo) return;
+  alvo.innerHTML = "";
+
+  if (!souMembroMotoclube()) {
+    const chamada = document.createElement("div");
+    chamada.className = "roteiro-paywall";
+    chamada.innerHTML =
+      "<p><strong>Roteiros é do Motoclube.</strong></p>" +
+      "<p>Monte a viagem de uma rota inteira: quilometragem, tempo estimado e quanto vai gastar de combustível com a sua moto — e abra a navegação direto no Google Maps ou no Waze.</p>";
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "sheet-btn-primario";
+    botao.textContent = "Conhecer o Motoclube";
+    botao.addEventListener("click", abrirPaywallMotoclube);
+    chamada.appendChild(botao);
+    alvo.appendChild(chamada);
+    return;
+  }
+
+  const intro = document.createElement("p");
+  intro.className = "roteiro-intro";
+  intro.textContent = "Escolha uma rota pra montar o roteiro de viagem.";
+  alvo.appendChild(intro);
+
+  const lista = document.createElement("ul");
+  lista.className = "roteiro-rotas";
+  Object.entries(rotasInfo).forEach(([id, rota]) => {
+    const item = document.createElement("li");
+    item.className = "roteiro-rota";
+    const nome = document.createElement("strong");
+    nome.textContent = rota.nome;
+    const sub = document.createElement("span");
+    const qtd = (rota.municipios || []).length;
+    sub.textContent = `${qtd} ${qtd === 1 ? "município" : "municípios"}`;
+    item.append(nome, sub);
+    item.addEventListener("click", () => montarRoteiro(id));
+    lista.appendChild(item);
+  });
+  alvo.appendChild(lista);
+}
+
+/** Monta e desenha o roteiro de uma rota. */
+async function montarRoteiro(rotaId) {
+  const alvo = document.getElementById("roteiro-conteudo");
+  const rota = rotasInfo[rotaId];
+  if (!alvo || !rota) return;
+  roteiroRotaAberta = rotaId;
+
+  alvo.innerHTML = '<div class="spinner spinner-grande"></div>';
+  const { pontos, semCoordenada } = pontosDaRota(rotaId);
+
+  alvo.innerHTML = "";
+  const voltar = document.createElement("button");
+  voltar.type = "button";
+  voltar.className = "roteiro-voltar";
+  voltar.textContent = "← Voltar";
+  voltar.addEventListener("click", renderizarRoteiros);
+  alvo.appendChild(voltar);
+
+  const titulo = document.createElement("h3");
+  titulo.className = "roteiro-titulo";
+  titulo.textContent = rota.nome;
+  alvo.appendChild(titulo);
+
+  if (pontos.length < 2) {
+    const vazio = document.createElement("p");
+    vazio.className = "roteiro-vazio";
+    vazio.textContent =
+      "Esta rota ainda não tem pontos com localização suficiente pra montar um trajeto. Estamos completando as coordenadas aos poucos.";
+    alvo.appendChild(vazio);
+    return;
+  }
+
+  let medida;
+  try {
+    medida = await medirTrajetoOsrm(pontos);
+  } catch (erro) {
+    console.error("OSRM indisponível, caindo na linha reta:", erro);
+    medida = medirTrajetoEmLinhaReta(pontos);
+  }
+
+  // Ponto que o OSRM teve que arrastar pra longe não tem acesso por
+  // estrada -- fica na lista, marcado, mas fora da navegação.
+  const semEstrada = new Set();
+  medida.desvios.forEach((km, i) => {
+    if (km > LIMITE_DESVIO_KM) semEstrada.add(i);
+  });
+  const navegaveis = pontos.filter((_, i) => !semEstrada.has(i));
+
+  /* Ponto sem acesso por estrada precisa sair da MEDIÇÃO, não só da
+     navegação: o OSRM já tinha somado o desvio inventado até a estrada
+     mais próxima, e esse km entraria no combustível como se fosse real.
+     Só remede se ainda sobrar trajeto -- e se a remedição falhar, fica
+     o número de antes, que erra pra mais e nunca pra menos. */
+  if (semEstrada.size && navegaveis.length >= 2) {
+    try {
+      medida = await medirTrajetoOsrm(navegaveis);
+    } catch (erro) {
+      console.error("Falha ao remedir sem os pontos isolados:", erro);
+    }
+  }
+
+  alvo.appendChild(avisoRoteiroEmTestes(!medida.real));
+
+  // --- números
+  const moto = garagemMotos.find((m) => m.id === garagemMotoAtivaId) || garagemMotos[0];
+  const litros = litrosEstimados(medida.km, moto);
+
+  const grade = document.createElement("div");
+  grade.className = "roteiro-numeros";
+  const cartao = (valor, rotulo) => {
+    const c = document.createElement("div");
+    c.className = "roteiro-numero";
+    const v = document.createElement("strong");
+    v.textContent = valor;
+    const r = document.createElement("small");
+    r.textContent = rotulo;
+    c.append(v, r);
+    return c;
+  };
+  grade.appendChild(cartao(`~${Math.round(medida.km)} km`, "distância estimada"));
+  grade.appendChild(cartao(`≈ ${formatarDuracao(medida.minutos)}`, "tempo estimado"));
+  grade.appendChild(cartao(textoLitros(litros), "combustível estimado"));
+  alvo.appendChild(grade);
+
+  // --- o que falta pra conta ficar completa
+  /* Três situações diferentes, três recados diferentes -- pedir o
+     consumo de quem já tem estimativa boa pela cilindrada seria pedir
+     trabalho à toa, e ficar calado com quem não tem nenhuma esconde o
+     motivo do traço no lugar do número. */
+  if (!moto) {
+    alvo.appendChild(dicaRoteiro("Cadastre uma moto na aba Garagem pra estimar o combustível."));
+  } else if (Number(moto.consumoKmL) > 0) {
+    alvo.appendChild(
+      dicaRoteiro(`Calculado com o consumo que você informou: ${moto.consumoKmL} km/l.`)
+    );
+  } else if (litros) {
+    alvo.appendChild(
+      dicaRoteiro(
+        `Faixa estimada pela cilindrada (${litros.cc} cc). Consumo real muda bastante com pilotagem, carga e serra — ` +
+          `informe o seu na aba Garagem pra fechar a conta.`
+      )
+    );
+  } else {
+    alvo.appendChild(
+      dicaRoteiro(
+        `Não deu pra deduzir a cilindrada de "${moto.modelo || "sua moto"}", então o combustível fica em branco. ` +
+          `Informe o consumo (km/l) na aba Garagem.`
+      )
+    );
+  }
+
+  if (semCoordenada > 0) {
+    alvo.appendChild(
+      dicaRoteiro(
+        `${pontos.length} de ${pontos.length + semCoordenada} pontos desta rota têm localização. Os outros aparecem no app, mas ainda não entram na navegação.`
+      )
+    );
+  }
+
+  // --- navegação
+  const trechos = trechosDoRoteiro(navegaveis);
+  const acoes = document.createElement("div");
+  acoes.className = "roteiro-acoes";
+  trechos.forEach((trecho, i) => {
+    const link = document.createElement("a");
+    link.className = "roteiro-btn-maps";
+    link.href = urlGoogleMaps(trecho);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = trechos.length > 1 ? `Abrir trecho ${i + 1} no Google Maps` : "Abrir no Google Maps";
+    acoes.appendChild(link);
+  });
+  if (trechos.length > 1) {
+    acoes.appendChild(
+      dicaRoteiro("O Google Maps aceita no máximo 9 paradas por link, então a rota foi dividida em trechos.")
+    );
+  }
+  alvo.appendChild(acoes);
+
+  // --- pontos
+  const lista = document.createElement("ol");
+  lista.className = "roteiro-pontos";
+  pontos.forEach((p, i) => {
+    const item = document.createElement("li");
+    item.className = "roteiro-ponto";
+    const texto = document.createElement("div");
+    texto.className = "roteiro-ponto-texto";
+    const nome = document.createElement("strong");
+    nome.textContent = p.nome;
+    const cidade = document.createElement("span");
+    cidade.textContent = p.municipio;
+    texto.append(nome, cidade);
+    item.appendChild(texto);
+
+    if (semEstrada.has(i)) {
+      const aviso = document.createElement("span");
+      aviso.className = "roteiro-ponto-sem-estrada";
+      aviso.textContent = "sem acesso por estrada";
+      item.appendChild(aviso);
+    } else {
+      const waze = document.createElement("a");
+      waze.className = "roteiro-btn-waze";
+      waze.href = urlWaze(p);
+      waze.target = "_blank";
+      waze.rel = "noopener noreferrer";
+      waze.textContent = "Waze";
+      item.appendChild(waze);
+    }
+    lista.appendChild(item);
+  });
+  alvo.appendChild(lista);
+}
+
+function dicaRoteiro(texto) {
+  const p = document.createElement("p");
+  p.className = "roteiro-dica";
+  p.textContent = texto;
+  return p;
+}
+
 
 function fecharMotoclube() {
   document.getElementById("modal-motoclube").classList.add("oculto");

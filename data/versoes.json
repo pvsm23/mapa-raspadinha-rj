@@ -1,5 +1,14 @@
 [
   {
+    "versao": "0.26.08.19.101",
+    "itens": [
+      "O Motoclube virou uma tela só: Garagem, Lojas e Roteiros agora são abas do mesmo lugar.",
+      "Roteiros (Motoclube): escolha uma rota e veja a quilometragem, o tempo estimado e quanto vai de combustível — e abra a navegação no Google Maps ou no Waze.",
+      "O consumo é estimado pela cilindrada da sua moto, sem você precisar preencher nada; se souber o consumo real, informe na Garagem que ele passa a valer.",
+      "A Garagem agora mostra todas as suas motos de uma vez, com o modelo em destaque, em vez de uma por vez."
+    ]
+  },
+  {
     "versao": "0.26.08.18.100",
     "itens": [
       "O Desbrava agora tem endereço próprio: desbravaapp.com.br — o link antigo continua funcionando e leva pro novo.",

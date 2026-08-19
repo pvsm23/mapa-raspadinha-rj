@@ -713,102 +713,6 @@
        estritamente privados (ver regra no README) -- nunca aparecem
        em perfil público, ranking ou comunidade. -->
   <button id="btn-abrir-garagem" class="oculto" aria-label="Abrir garagem"></button>
-  <div id="modal-garagem" class="oculto">
-    <div id="garagem-conteudo">
-      <button id="btn-fechar-garagem" aria-label="Fechar">✕</button>
-      <h2>🏠 Garagem Virtual</h2>
-      <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo das suas motos nunca aparecem no seu perfil público.</p>
-
-      <!-- Segmented control (estilo iOS): só a aba ativa recebe
-           destaque, sem parecer 3 botões soltos. Mesmos ids/data-aba
-           de sempre -- ver mudarAbaGaragem em js/script.js. -->
-      <div id="garagem-abas">
-        <button type="button" class="garagem-aba garagem-aba-ativa" id="btn-garagem-aba-criar" data-aba="criar">Nova</button>
-        <button type="button" class="garagem-aba" id="btn-garagem-aba-editar" data-aba="editar">Editar</button>
-        <button type="button" class="garagem-aba" id="btn-garagem-aba-stats" data-aba="stats">Estatísticas</button>
-      </div>
-
-      <!-- Aba "Criar nova" -->
-      <div id="garagem-painel-criar" class="garagem-painel">
-        <label for="select-garagem-marca-criar">Marca</label>
-        <select id="select-garagem-marca-criar"></select>
-        <label for="input-garagem-modelo-criar">Modelo</label>
-        <input type="text" id="input-garagem-modelo-criar" maxlength="60" placeholder="Ex: Hunter 350">
-        <label for="input-garagem-apelido-criar">Apelido (opcional)</label>
-        <input type="text" id="input-garagem-apelido-criar" maxlength="40" placeholder="Ex: A Fera">
-        <p id="garagem-criar-erro" class="oculto"></p>
-        <button type="button" id="btn-criar-moto">Cadastrar moto</button>
-        <p id="garagem-limite-aviso" class="oculto">Você já tem 3 motos cadastradas (o máximo por enquanto). Exclua uma na aba Editar pra cadastrar outra.</p>
-      </div>
-
-      <!-- Aba "Editar" -->
-      <div id="garagem-painel-editar" class="garagem-painel oculto">
-        <p id="garagem-editar-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
-
-        <!-- Card seletor: mostra só a moto atual (com a estrela
-             dourada se for a ativa); as setas só aparecem com 2+
-             motos cadastradas -- substitui a lista inteira empilhada
-             (ver renderizarSeletorGaragem em js/script.js). -->
-        <div id="garagem-seletor-editar" class="garagem-seletor oculto">
-          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-editar-anterior" aria-label="Moto anterior">‹</button>
-          <div class="garagem-seletor-info">
-            <span class="garagem-seletor-nome" id="garagem-seletor-editar-nome"></span>
-            <span class="garagem-seletor-ativa-tag oculto" id="garagem-seletor-editar-tag">⭐ Ativa</span>
-          </div>
-          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-editar-proxima" aria-label="Próxima moto">›</button>
-        </div>
-
-        <div id="garagem-editar-form" class="oculto">
-          <label for="select-garagem-marca-editar">Marca</label>
-          <select id="select-garagem-marca-editar"></select>
-          <label for="input-garagem-modelo-editar">Modelo</label>
-          <input type="text" id="input-garagem-modelo-editar" maxlength="60">
-          <label for="input-garagem-apelido-editar">Apelido (opcional)</label>
-          <input type="text" id="input-garagem-apelido-editar" maxlength="40">
-          <p id="garagem-editar-erro" class="oculto"></p>
-          <button type="button" id="btn-salvar-edicao-moto">Salvar alterações</button>
-          <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
-          <button type="button" id="btn-excluir-moto">Excluir moto</button>
-        </div>
-      </div>
-
-      <!-- Aba "Estatísticas" -->
-      <div id="garagem-painel-stats" class="garagem-painel oculto">
-        <p id="garagem-stats-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
-
-        <div id="garagem-seletor-stats" class="garagem-seletor oculto">
-          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-stats-anterior" aria-label="Moto anterior">‹</button>
-          <div class="garagem-seletor-info">
-            <span class="garagem-seletor-nome" id="garagem-seletor-stats-nome"></span>
-            <span class="garagem-seletor-ativa-tag oculto" id="garagem-seletor-stats-tag">⭐ Ativa</span>
-          </div>
-          <button type="button" class="garagem-seletor-seta" id="btn-garagem-seletor-stats-proxima" aria-label="Próxima moto">›</button>
-        </div>
-
-        <!-- Dashboard de telemetria: odômetro como herói (número
-             grande e verde), viagens/última viagem num grid 2 col
-             abaixo. -->
-        <div id="garagem-stats-conteudo" class="oculto">
-          <div id="garagem-odometro">
-            <strong id="garagem-odometro-valor">0 km</strong>
-            <span>Odômetro (Modo Viagem)</span>
-          </div>
-          <div id="garagem-stats-grade">
-            <div class="garagem-stat">
-              <span class="garagem-stat-icone">🗺️</span>
-              <strong id="garagem-stats-viagens">0</strong>
-              <small>Viagens registradas</small>
-            </div>
-            <div class="garagem-stat">
-              <span class="garagem-stat-icone">📅</span>
-              <strong id="garagem-stats-ultima">—</strong>
-              <small>Última viagem</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Loja Desbrava: vitrine gamificada. Produto "ativo" mas com
        municípios da regraDesbloqueio ainda não raspados aparece em
@@ -1155,35 +1059,137 @@
        por enquanto -- código já preparado pro plano pago futuro (ver
        souMembroMotoclube em js/script.js), mas ninguém é bloqueado
        hoje. Ver abrirMotoclube em js/script.js. -->
+  <!-- Motoclube: guarda-chuva do motociclista. Garagem, lojas e
+       roteiros eram três telas separadas que não conversavam -- a
+       moto cadastrada não servia pra nada além do odômetro. As abas
+       usam .social-aba, o mesmo padrão do Ranking/Biblioteca/Rotas. -->
   <div id="modal-motoclube" class="oculto">
     <div id="motoclube-conteudo">
       <button id="btn-fechar-motoclube" aria-label="Fechar">✕</button>
       <h2>🏍️ Motoclube Desbrava</h2>
 
-      <!-- Grupo do usuário: um por município, com brasão próprio.
-           Preenchido por renderizarMeuGrupo em js/script.js. -->
-      <div id="motoclube-meu-grupo"></div>
+      <div id="motoclube-abas">
+        <button type="button" class="social-aba social-aba-ativa" id="btn-motoclube-aba-garagem" data-aba="garagem">Garagem</button>
+        <button type="button" class="social-aba" id="btn-motoclube-aba-lojas" data-aba="lojas">Lojas</button>
+        <button type="button" class="social-aba" id="btn-motoclube-aba-roteiros" data-aba="roteiros">Roteiros</button>
+      </div>
 
-      <!-- Brasão em tamanho grande, aberto ao tocar no do card. -->
-      <div id="modal-brasao" class="oculto">
-        <div id="brasao-conteudo">
-          <button type="button" id="btn-fechar-brasao" aria-label="Fechar">✕</button>
-          <img id="brasao-grande" alt="Brasão do grupo">
-          <p id="brasao-titulo"></p>
-          <button type="button" id="btn-compartilhar-brasao" class="sheet-btn-primario">Compartilhar</button>
+      <div id="motoclube-painel-garagem" class="motoclube-painel">
+        <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo das suas motos nunca aparecem no seu perfil público.</p>
+
+        <!-- Segmented control (estilo iOS): só a aba ativa recebe
+           destaque, sem parecer 3 botões soltos. Mesmos ids/data-aba
+           de sempre -- ver mudarAbaGaragem em js/script.js. -->
+        <div id="garagem-abas">
+        <button type="button" class="garagem-aba garagem-aba-ativa" id="btn-garagem-aba-criar" data-aba="criar">Nova</button>
+        <button type="button" class="garagem-aba" id="btn-garagem-aba-editar" data-aba="editar">Editar</button>
+        <button type="button" class="garagem-aba" id="btn-garagem-aba-stats" data-aba="stats">Estatísticas</button>
+        </div>
+
+        <!-- Aba "Criar nova" -->
+        <div id="garagem-painel-criar" class="garagem-painel">
+        <label for="select-garagem-marca-criar">Marca</label>
+        <select id="select-garagem-marca-criar"></select>
+        <label for="input-garagem-modelo-criar">Modelo</label>
+        <input type="text" id="input-garagem-modelo-criar" maxlength="60" placeholder="Ex: Hunter 350">
+        <label for="input-garagem-apelido-criar">Apelido (opcional)</label>
+        <input type="text" id="input-garagem-apelido-criar" maxlength="40" placeholder="Ex: A Fera">
+        <label for="input-garagem-consumo-criar">Consumo (km/l, opcional)</label>
+        <input type="number" id="input-garagem-consumo-criar" min="0" step="0.1" placeholder="Ex: 32">
+        <small class="garagem-ajuda">Usado nos Roteiros pra estimar quanto você gasta de combustível. Vale o seu consumo real, não o do catálogo.</small>
+        <p id="garagem-criar-erro" class="oculto"></p>
+        <button type="button" id="btn-criar-moto">Cadastrar moto</button>
+        <p id="garagem-limite-aviso" class="oculto">Você já tem 3 motos cadastradas (o máximo por enquanto). Exclua uma na aba Editar pra cadastrar outra.</p>
+        </div>
+
+        <!-- Aba "Editar" -->
+        <div id="garagem-painel-editar" class="garagem-painel oculto">
+        <p id="garagem-editar-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
+
+        <!-- Lista de motos: todas visíveis, distintivo da marca +
+             modelo, estrela na ativa (ver renderizarListaGaragem). -->
+        <ul id="garagem-lista-editar" class="garagem-lista oculto"></ul>
+
+        <div id="garagem-editar-form" class="oculto">
+          <label for="select-garagem-marca-editar">Marca</label>
+          <select id="select-garagem-marca-editar"></select>
+          <label for="input-garagem-modelo-editar">Modelo</label>
+          <input type="text" id="input-garagem-modelo-editar" maxlength="60">
+          <label for="input-garagem-apelido-editar">Apelido (opcional)</label>
+          <input type="text" id="input-garagem-apelido-editar" maxlength="40">
+          <label for="input-garagem-consumo-editar">Consumo (km/l, opcional)</label>
+          <input type="number" id="input-garagem-consumo-editar" min="0" step="0.1" placeholder="Ex: 32">
+          <small class="garagem-ajuda">Usado nos Roteiros pra estimar quanto você gasta de combustível. Vale o seu consumo real, não o do catálogo.</small>
+          <p id="garagem-editar-erro" class="oculto"></p>
+          <button type="button" id="btn-salvar-edicao-moto">Salvar alterações</button>
+          <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
+          <button type="button" id="btn-excluir-moto">Excluir moto</button>
+        </div>
+        </div>
+
+        <!-- Aba "Estatísticas" -->
+        <div id="garagem-painel-stats" class="garagem-painel oculto">
+        <p id="garagem-stats-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
+
+        <!-- Lista de motos: mostra TODAS de uma vez, com o distintivo
+             da marca e o modelo. Substituiu o card seletor de uma moto
+             só com setas, que escondia o resto da garagem
+             (ver renderizarListaGaragem em js/script.js). -->
+        <ul id="garagem-lista-stats" class="garagem-lista oculto"></ul>
+
+        <!-- Dashboard de telemetria: odômetro como herói (número
+             grande e verde), viagens/última viagem num grid 2 col
+             abaixo. -->
+        <div id="garagem-stats-conteudo" class="oculto">
+          <div id="garagem-odometro">
+            <strong id="garagem-odometro-valor">0 km</strong>
+            <span>Odômetro (Modo Viagem)</span>
+          </div>
+          <div id="garagem-stats-grade">
+            <div class="garagem-stat">
+              <span class="garagem-stat-icone">🗺️</span>
+              <strong id="garagem-stats-viagens">0</strong>
+              <small>Viagens registradas</small>
+            </div>
+            <div class="garagem-stat">
+              <span class="garagem-stat-icone">📅</span>
+              <strong id="garagem-stats-ultima">—</strong>
+              <small>Última viagem</small>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
 
-      <button type="button" id="btn-motoclube-adicionar" class="btn-link-amigo">+ Adicionar loja ou dica</button>
+      <div id="motoclube-painel-lojas" class="motoclube-painel oculto">
 
-      <div id="motoclube-filtros">
+        <!-- Grupo do usuário: um por município, com brasão próprio.
+           Preenchido por renderizarMeuGrupo em js/script.js. -->
+        <div id="motoclube-meu-grupo"></div>
+        <button type="button" id="btn-motoclube-adicionar" class="btn-link-amigo">+ Adicionar loja ou dica</button>
+
+        <div id="motoclube-filtros">
         <select id="select-motoclube-marca">
           <option value="">Todas as marcas</option>
         </select>
         <input type="text" id="input-motoclube-modelo" placeholder="Filtrar por modelo (ex: CG 160)">
+        </div>
+
+        <div id="motoclube-lista"></div>
       </div>
 
-      <div id="motoclube-lista"></div>
+      <div id="motoclube-painel-roteiros" class="motoclube-painel oculto">
+        <div id="roteiro-conteudo"></div>
+      </div>
+    </div>
+
+    <div id="modal-brasao" class="oculto">
+    <div id="brasao-conteudo">
+      <button type="button" id="btn-fechar-brasao" aria-label="Fechar">✕</button>
+      <img id="brasao-grande" alt="Brasão do grupo">
+      <p id="brasao-titulo"></p>
+      <button type="button" id="btn-compartilhar-brasao" class="sheet-btn-primario">Compartilhar</button>
+    </div>
     </div>
   </div>
 

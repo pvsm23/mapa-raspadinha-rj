@@ -1355,7 +1355,7 @@ if (CONFIGURADO) {
     return { motos, motoAtivaId: snapPai.data()?.motoAtivaId || motos[0]?.id || null };
   };
 
-  window.raspadinhaAuth.criarMoto = async ({ marca, modelo, apelido }) => {
+  window.raspadinhaAuth.criarMoto = async ({ marca, modelo, apelido, consumoKmL }) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     if (!marca || !modelo || !modelo.trim()) throw new Error("Preencha marca e modelo da moto.");
@@ -1370,6 +1370,10 @@ if (CONFIGURADO) {
       marca,
       modelo: modelo.trim().slice(0, 60),
       apelido: (apelido || "").trim().slice(0, 40),
+      // km por litro, usado pelo Roteiro (Motoclube) pra estimar gasto.
+      // Número do dono, não de catálogo -- consumo real varia demais com
+      // pilotagem e carga pra tabela de fabricante servir de base.
+      consumoKmL: Number(consumoKmL) > 0 ? Number(consumoKmL) : null,
       odometroKm: 0,
       criadoEm: serverTimestamp(),
       atualizadoEm: serverTimestamp(),
@@ -1382,7 +1386,7 @@ if (CONFIGURADO) {
     return novaRef.id;
   };
 
-  window.raspadinhaAuth.atualizarMoto = async (motoId, { marca, modelo, apelido }) => {
+  window.raspadinhaAuth.atualizarMoto = async (motoId, { marca, modelo, apelido, consumoKmL }) => {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     if (!marca || !modelo || !modelo.trim()) throw new Error("Preencha marca e modelo da moto.");
@@ -1390,6 +1394,10 @@ if (CONFIGURADO) {
       marca,
       modelo: modelo.trim().slice(0, 60),
       apelido: (apelido || "").trim().slice(0, 40),
+      // km por litro, usado pelo Roteiro (Motoclube) pra estimar gasto.
+      // Número do dono, não de catálogo -- consumo real varia demais com
+      // pilotagem e carga pra tabela de fabricante servir de base.
+      consumoKmL: Number(consumoKmL) > 0 ? Number(consumoKmL) : null,
       atualizadoEm: serverTimestamp(),
     });
   };

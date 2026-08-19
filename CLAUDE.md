@@ -117,7 +117,100 @@ mão no `appsscript.json` — o Apps Script só adivinha escopo pelo código,
 e como lá só aparece `UrlFetchApp` ele deixa o Firestore de fora e a
 chamada falha com `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
 
-## Última funcionalidade (v0.26.08.17.89 a v0.26.08.18.99)
+## Última funcionalidade (v0.26.08.18.100 e v0.26.08.19.101)
+
+**Roteiros do Motoclube** (v0.26.08.19.101): o app mostrava ONDE ir e
+não COMO ir — quem queria rodar uma rota abria o Maps na mão, ponto por
+ponto, sem ideia de quanto gastaria de combustível. E as três telas do
+motociclista eram modais separados que não conversavam: a moto da
+Garagem não servia pra nada além do odômetro.
+
+- **Motoclube virou guarda-chuva**, com abas `.social-aba` (o padrão do
+  Ranking/Biblioteca): **Garagem · Lojas · Roteiros**. O `#modal-garagem`
+  deixou de existir; quem abria ele cai na aba. As lojas só são buscadas
+  quando a aba delas abre — abrir na Garagem não deve custar uma leitura
+  do Firestore que ninguém pediu.
+- **Distância e tempo vêm do OSRM público** (`router.project-osrm.org`,
+  sem chave, CORS liberado). Sem rede, cai em haversine × 1.3 e o aviso
+  muda de texto pra dizer que ali é LINHA RETA.
+- **Waze não faz rota com paradas** — o esquema de URL leva a um destino
+  só. Por isso: Google Maps com as paradas (limite público de 9, e acima
+  disso quebra em trechos), Waze por ponto.
+- **Ponto sem acesso rodoviário sai da MEDIÇÃO, não só da navegação.**
+  O OSRM gruda o ponto na estrada mais próxima e devolve o quanto
+  arrastou (`waypoints[].distance`); acima de 2 km é ilha/trilha. Vila
+  do Abraão deslocava 9,8 km, e a Rota do Caminho do Ouro dava **405 km
+  em vez de 258** — 147 km fantasmas que viravam ~40% de combustível a
+  mais. Detectado, o trajeto é remedido sem esses pontos.
+- **Só 45% dos pontos turísticos têm lat/lon** (207 de 456). O roteiro
+  usa os localizáveis e DIZ quantos ficaram de fora. Não é limitação
+  temporária escondida: é o número na tela.
+- **Aviso de fase de testes fixo ACIMA dos números**, e todo valor sai
+  com "~" ou "≈". Estimativa de rota com cara de dado exato é o tipo de
+  coisa que faz alguém sair com combustível a menos.
+- Tudo atrás de `souMembroMotoclube()`. Não-membro vê o paywall, e
+  nenhum número ou link vaza.
+
+**Consumo pela cilindrada, sem tabela de modelos** (v0.26.08.19.101): a
+moto ganhou `consumoKmL` (campo opcional), mas o normal é o app deduzir.
+Quase toda moto vendida aqui traz a cilindrada NO NOME — o dado já está
+no campo Modelo, então não precisou de campo novo nem de uma tabela de
+centenas de modelos que seria impossível manter sem inventar número.
+- `cilindradaDoModelo` lê o nome; `FAIXAS_CONSUMO` dá km/l por classe.
+- **Armadilha do abreviado**: "R15" é 150cc, não 15. Número entre 10 e
+  49 vira dezena (×10), mas SÓ quando não houver nenhum número já
+  plausível no nome.
+- Faixa de 50 a 1800 cc descarta ANO ("CG 160 2023" → 160, não 2023).
+- **Um dígito só fica em BRANCO de propósito** (MT-03, R1, XJ6): "03"
+  pode ser 300 e "01" pode ser 1000, e chutar vira litro errado na conta
+  de quem vai viajar.
+- Sai **faixa**, nunca número único ("≈ 6 a 8 L") — a mesma moto varia
+  mais de 30% entre cidade, estrada e serra. Consumo informado à mão
+  vence a dedução e aí sim sai valor único.
+- **Preço de combustível não existe no app**, e é decisão, não falta:
+  varia por estado, bandeira e semana, e não há fonte grátis confiável
+  no Brasil. Litro cada um converte com o preço do posto dele.
+
+**Garagem virou lista** (v0.26.08.19.101): as até 3 motos aparecem todas
+de uma vez, com distintivo da marca (iniciais sobre gradiente estável,
+mesma técnica do `corAvatar`), **modelo em destaque** e estrela na ativa.
+Substituiu o "card seletor" de uma moto por vez com setas — com no
+máximo 3 motos, esconder duas economizava espaço que não precisava ser
+economizado. **Não são as logos oficiais de propósito**: logo de
+fabricante é marca registrada, e empacotar as artes num app da Play
+Store é risco jurídico por ganho estético.
+
+**"Rotas" x "Roteiros"**: as 24 rotas com selo MANTIVERAM o nome. Todas
+se chamam "Rota do…", têm página `guia/rota-*.html` com canonical e
+estão no `sitemap.xml` recém-publicado no domínio novo — renomear jogaria
+fora o indexamento que acabou de começar. A funcionalidade nova é
+*Roteiro*, que em português é o itinerário planejado de uma viagem.
+
+**Domínio próprio** (v0.26.08.18.100): o site saiu de
+`pvsm23.github.io/mapa-raspadinha-rj` e virou **desbravaapp.com.br**
+(GitHub Pages, 4 registros A + CNAME do www no registro.br, sem tocar
+em MX/SPF/DKIM/DMARC). O endereço antigo continua vivo por
+REDIRECIONAMENTO do Pages — e isso importa porque o `SITE_PUBLICADO` vai
+DENTRO do APK: quem tem versão antiga instalada segue apontando pro
+endereço velho, e é o redirecionamento que mantém o download de mapa
+estadual funcionando. `desbravaapp.com.br` foi adicionado aos domínios
+autorizados do Firebase Auth (sem isso o login quebraria) e o Netlify
+foi aposentado.
+
+**Apagar e denunciar comentário** (v0.26.08.18.100): faltavam as duas
+saídas no comentário, e pelo mesmo motivo — a regra do Firestore já
+permitia, mas não existia botão. Autor apaga o próprio (post e
+sugestão); os demais denunciam, fechando a quarta e última superfície
+pública sem denúncia. Três coisas entraram junto porque deixariam o
+recurso pela metade: o contador tinha DUAS fontes de verdade (o objeto
+`post` e o span) e o próximo envio reescrevia o número velho; o
+comentário recém-enviado nascia sem botão por não ter id (agora
+`comentarPost`/`comentarSugestao` devolvem o id); e o botão caía na
+última linha em comentário de duas linhas, porque `float` encontrado
+depois do texto desce (40px de queda contra 6px dos vizinhos) — passou a
+ser inserido antes do texto.
+
+## Anterior: Brasil inteiro e moderação (v0.26.08.17.89 a v0.26.08.18.99)
 
 **Moderação: denúncia, banimento e arquivo** (v0.26.08.18.99). Não
 existia NADA disso: busca por "denunciar/reportar/abuso" no app dava

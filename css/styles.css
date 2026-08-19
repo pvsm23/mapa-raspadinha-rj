@@ -2963,84 +2963,94 @@ svg#mapa-rj.modo-regioes .rotulo-regiao {
    dela de novo no formulário/painel logo abaixo. Setas só aparecem
    com 2+ motos cadastradas (ver renderizarSeletorGaragem). ---- */
 
-.garagem-seletor {
+/* Lista de motos da Garagem: TODAS visíveis de uma vez. Substituiu o
+   card seletor (uma moto + setas), que escondia o resto da garagem
+   atrás de um clique -- com no máximo 3 motos, o card economizava
+   espaço que não precisava ser economizado. */
+.garagem-lista {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  background: linear-gradient(135deg, #1B2027 0%, #12151A 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.garagem-seletor.oculto {
+.garagem-lista.oculto {
   display: none;
 }
 
-.garagem-seletor-seta {
-  flex: none;
-  width: 30px;
-  height: 30px;
+.garagem-moto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.garagem-moto:active {
+  transform: scale(0.98);
+}
+
+/* A selecionada ganha o contorno verde -- mesma cor de "estado ativo"
+   usada no resto do app (aba ativa, município visitado). */
+.garagem-moto-selecionada {
+  border-color: var(--verde);
+  background: var(--surf);
+}
+
+/* Distintivo da marca: iniciais sobre gradiente estável por marca, do
+   mesmo jeito que o avatar de pessoa. Ver iniciaisMarca em
+   js/script.js pra por que não são as logos oficiais. */
+.garagem-moto-marca {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: none;
-  border-radius: 8px;
-  color: var(--fraco);
-  font-size: 1.15rem;
-  line-height: 1;
-  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-.garagem-seletor-seta:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--txt);
-}
-
-.garagem-seletor-seta.oculto {
-  visibility: hidden;
-}
-
-/* #garagem-painel-editar button (mais específico, id+tag) senão
-   forçaria as setas a width:100%/margin-top como os botões do
-   formulário -- essa regra recupera o tamanho compacto delas. */
-#garagem-painel-editar .garagem-seletor-seta {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  margin-top: 0;
-}
-
-.garagem-seletor-info {
-  flex: 1;
+.garagem-moto-texto {
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 2px;
-  text-align: center;
 }
 
-.garagem-seletor-nome {
-  max-width: 100%;
-  font-size: 0.92rem;
-  font-weight: 700;
+/* O MODELO é o nome que a pessoa usa pra reconhecer a moto ("XRE 300"),
+   então ele é o texto forte; a marca fica no distintivo e no subtítulo. */
+.garagem-moto-modelo {
+  font-size: 0.95rem;
   color: var(--txt);
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.garagem-seletor-ativa-tag {
-  color: var(--ouro, #E9B949);
-  font-size: 0.7rem;
-  font-weight: 700;
+.garagem-moto-sub {
+  font-size: 0.78rem;
+  color: var(--fraco);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.garagem-seletor-ativa-tag.oculto {
-  display: none;
+.garagem-moto-ativa {
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .garagem-vazio {
@@ -7744,6 +7754,228 @@ body.modo-rota-ativo #toast-onde-estou {
   right: 6px;
   font-size: 0.9rem;
 }
+
+/* =========================================================
+   MOTOCLUBE: abas e Roteiros
+   As abas usam .social-aba (o padrão do app, já definido acima)
+   -- aqui só entra o container e os painéis.
+   ========================================================= */
+#motoclube-abas {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--linha);
+}
+
+.motoclube-painel.oculto {
+  display: none;
+}
+
+.garagem-ajuda {
+  display: block;
+  margin: -6px 0 10px;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--fraco);
+}
+
+/* Aviso de fase de testes: fica ACIMA dos números de propósito, com
+   fundo âmbar. Estimativa de rota apresentada com cara de dado exato é
+   o tipo de coisa que faz alguém sair de casa com combustível a menos. */
+.roteiro-aviso {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--txt);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.roteiro-intro {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--fraco);
+}
+
+.roteiro-rotas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roteiro-rota {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  cursor: pointer;
+}
+
+.roteiro-rota:active {
+  transform: scale(0.98);
+}
+
+.roteiro-rota strong {
+  font-size: 0.92rem;
+  color: var(--txt);
+}
+
+.roteiro-rota span {
+  font-size: 0.76rem;
+  color: var(--fraco);
+}
+
+.roteiro-voltar {
+  background: transparent;
+  border: none;
+  color: var(--fraco);
+  font-size: 0.82rem;
+  padding: 0 0 8px;
+  cursor: pointer;
+}
+
+.roteiro-titulo {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  color: var(--txt);
+}
+
+/* Grade 2x2 dos números — mesma ideia do dashboard da Garagem. */
+.roteiro-numeros {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.roteiro-numero {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+}
+
+.roteiro-numero strong {
+  font-size: 1.05rem;
+  color: var(--verde);
+}
+
+.roteiro-numero small {
+  font-size: 0.7rem;
+  color: var(--fraco);
+}
+
+.roteiro-dica {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+.roteiro-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.roteiro-btn-maps {
+  display: block;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--verde);
+  color: var(--verde-tinta);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.roteiro-pontos {
+  list-style: decimal;
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roteiro-ponto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fraco);
+}
+
+.roteiro-ponto-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.roteiro-ponto-texto strong {
+  font-size: 0.86rem;
+  color: var(--txt);
+}
+
+.roteiro-ponto-texto span {
+  font-size: 0.74rem;
+  color: var(--fraco);
+}
+
+.roteiro-btn-waze {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-size: 0.76rem;
+  text-decoration: none;
+}
+
+/* Ponto que o OSRM teve que arrastar pra longe: fica na lista pra a
+   pessoa saber que existe, mas sem link de navegação -- mandar alguém
+   de moto pra uma ilha seria pior que omitir. */
+.roteiro-ponto-sem-estrada {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  color: var(--fraco);
+  font-style: italic;
+}
+
+.roteiro-paywall {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+}
+
+.roteiro-paywall p {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--txt);
+}
+
+.roteiro-vazio {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--fraco);
+}
+
 
 /* =========================================================
    CAMADA UI MODERNA
