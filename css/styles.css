@@ -8847,7 +8847,8 @@ svg#mapa-rj .ponto-numero-roteiro {
    Saiu de dentro de "Pontos de Apoio": ali ela competia com o guia de
    serviços, que é outra coisa. Identidade de membro pertence ao painel.
    ========================================================= */
-#motoclube-meu-grupo:empty {
+#motoclube-meu-grupo:empty,
+#motoclube-meu-grupo.oculto {
   display: none;
 }
 

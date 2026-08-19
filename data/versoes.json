@@ -1,5 +1,12 @@
 [
   {
+    "versao": "0.26.08.19.107",
+    "itens": [
+      "Correção: o cartão do seu grupo aparecia dentro dos Pontos de Apoio; agora ele fica só na tela inicial do Motoclube.",
+      "Quando os Pontos de Apoio não carregam, o app diz o motivo (sem internet, sem permissão) e oferece tentar de novo."
+    ]
+  },
+  {
     "versao": "0.26.08.19.106",
     "itens": [
       "O cartão do seu grupo agora aparece logo ao abrir o Motoclube, e não mais escondido dentro dos Pontos de Apoio.",

@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.106";
+const VERSAO_APP = "0.26.08.19.107";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.19.106";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.107", itens: ["Correção: o cartão do seu grupo aparecia dentro dos Pontos de Apoio; agora ele fica só na tela inicial do Motoclube.", "Quando os Pontos de Apoio não carregam, o app diz o motivo (sem internet, sem permissão) e oferece tentar de novo."] },
   { versao: "0.26.08.19.106", itens: ["O cartão do seu grupo agora aparece logo ao abrir o Motoclube, e não mais escondido dentro dos Pontos de Apoio.", "Pontos de Apoio ganhou busca e filtros por marca em botões, no lugar da lista suspensa do sistema.", "Ao indicar um ponto, escolher as marcas atendidas virou tocar nas pílulas — sem caixinhas de seleção."] },
   { versao: "0.26.08.19.105", itens: ["Os formulários de moto foram refeitos: um campo por linha, campos altos e fáceis de tocar, e o de consumo deixou de aparecer com a cara branca do navegador.", "O botão de salvar ficou verde e ocupa a largura toda; o de excluir foi para o fim, separado por uma linha."] },
   { versao: "0.26.08.19.104", itens: ["A Garagem ficou com cara de painel: cada moto tem seu espaço, e o odômetro, as viagens e o consumo aparecem em destaque.", "O botão de editar virou um ícone discreto no canto, e o de excluir saiu da tela principal pra dentro da edição.", "Cadastrar moto agora é um espaço de \"vaga livre\" na própria lista, mostrando quantas ainda cabem."] },
@@ -10902,8 +10903,27 @@ async function carregarLojasMotoclube() {
     itensMotoclubeCache = await window.raspadinhaAuth.buscarItensMotoclube();
     renderizarListaMotoclube();
   } catch (erro) {
+    /* A mensagem antiga era "Não foi possível carregar o Motoclube
+       agora" pra qualquer falha -- e escondia a diferença entre estar
+       sem internet e o banco ter recusado a leitura, que pedem coisas
+       opostas de quem está lendo. O código do Firestore diz qual é. */
     console.error("Falha ao buscar itens do Motoclube:", erro);
-    lista.innerHTML = "<p>Não foi possível carregar o Motoclube agora.</p>";
+    lista.innerHTML = "";
+    const aviso = document.createElement("p");
+    aviso.id = "motoclube-lista-vazio";
+    aviso.textContent = !navigator.onLine
+      ? "Você está sem conexão. Os Pontos de Apoio precisam de internet pra carregar."
+      : erro?.code === "permission-denied"
+        ? "Sua conta não tem permissão pra ver os Pontos de Apoio. Se acabou de assinar, saia e entre de novo."
+        : "Não deu pra carregar os Pontos de Apoio agora. Puxe pra baixo e tente de novo.";
+    lista.appendChild(aviso);
+
+    const tentar = document.createElement("button");
+    tentar.type = "button";
+    tentar.className = "apoio-pilula";
+    tentar.textContent = "Tentar de novo";
+    tentar.addEventListener("click", carregarLojasMotoclube);
+    lista.appendChild(tentar);
   }
 }
 
@@ -11732,6 +11752,10 @@ function mostrarViewMotoclube(mostrar) {
 function voltarAoPainelMotoclube() {
   ferramentaMotoclubeAberta = null;
   document.getElementById("motoclube-cards")?.classList.remove("oculto");
+  // A carteirinha e da tela inicial: com uma ferramenta aberta ela
+  // reaparecia por cima do conteudo dela (era esse o "cartao dentro da
+  // area de apoio").
+  document.getElementById("motoclube-meu-grupo")?.classList.remove("oculto");
   document.getElementById("motoclube-pitch")?.classList.toggle("oculto", souMembroMotoclube());
   ["garagem", "apoio", "roteiros"].forEach((nome) => {
     document.getElementById(`mc-painel-${nome}`)?.classList.add("oculto");
@@ -11746,6 +11770,7 @@ async function abrirFerramentaMotoclube(nome) {
   }
   ferramentaMotoclubeAberta = nome;
   document.getElementById("motoclube-cards")?.classList.add("oculto");
+  document.getElementById("motoclube-meu-grupo")?.classList.add("oculto");
   document.getElementById("motoclube-pitch")?.classList.add("oculto");
   ["garagem", "apoio", "roteiros"].forEach((n) => {
     document.getElementById(`mc-painel-${n}`)?.classList.toggle("oculto", n !== nome);
