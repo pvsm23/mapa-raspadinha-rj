@@ -117,7 +117,55 @@ mão no `appsscript.json` — o Apps Script só adivinha escopo pelo código,
 e como lá só aparece `UrlFetchApp` ele deixa o Firestore de fora e a
 chamada falha com `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
 
-## Última funcionalidade (v0.26.08.18.100 e v0.26.08.19.101)
+## Última funcionalidade (v0.26.08.18.100 a v0.26.08.19.102)
+
+**Motoclube virou TELA, não modal** (v0.26.08.19.102): era um painel
+sobreposto ao mapa. Agora `#motoclube-view` é irmão do `#mapa-viewport`
+e os dois se revezam — entrar esconde o mapa de verdade. Os flutuantes
+(bússola, FAB do Modo Viagem, barra de progresso) somem via
+`body.em-motoclube`; a barra inferior fica, porque é por ela que se
+troca de tela.
+- **Duas saídas** porque a barra não tem mais botão "Mapa" (ele saiu
+  antes, o mapa é o fundo da tela): a seta do header e tocar em
+  "Motoclube" de novo. A seta volta ao grid se houver painel aberto,
+  e só então ao mapa.
+- **Grid de 5 cards**: Modo Viagem (com interruptor, em linha inteira
+  porque controle de ligar/desligar não divide largura), Mapas Offline,
+  **Pontos de Apoio**, Garagem e Roteiros. Tocar num card abre o painel
+  no lugar do grid.
+- **Hero em CSS puro** (faixas diagonais + brilho verde + fio dourado
+  na base): sem arquivo de imagem, sem peso no APK, e acompanha o tema.
+  Trocar por foto depois é mexer só no `#motoclube-hero`.
+- **Paywall é vitrine**: quem não assina vê a tela inteira, os 5 cards
+  legíveis mas apagados com cadeado, o selo vira "BLOQUEADA" e o convite
+  com o botão do Pix aparece acima. Esconder faria a pessoa não
+  descobrir o que está comprando.
+- A **Garagem saiu do Menu** — virou card. Ter dois caminhos pra mesma
+  tela só duplicava manutenção.
+
+**"Pontos de Apoio"** é o nome das indicações do Motoclube (era "lojas").
+É o termo que motociclista usa pra parada de confiança na estrada, e
+cobre o que a coleção tem de verdade: oficina, loja, restaurante, dica.
+
+**Roteiro reescrito: a viagem que a PESSOA monta** (v0.26.08.19.102). A
+primeira versão gerava o roteiro a partir de uma rota temática, e isso
+estava errado de conceito — Rotas (com selo) são coleções pra completar
+ao longo do tempo, não trajeto pra rodar num dia. **Não há ligação entre
+Rotas e Roteiros.**
+- Duas portas: o chip **"+ Roteiro"** na folha do ponto (vira "No
+  roteiro" em verde quando já está dentro) e o seletor da tela de
+  Roteiros — município + caixas de marcação.
+- O chip só aparece pra membro e **só em ponto com coordenada**: sem
+  lat/lon não há como navegar, e o botão viraria promessa não cumprida.
+- O seletor lista só os **85 municípios que têm ponto navegável**;
+  oferecer os outros levaria a uma lista vazia depois do clique.
+- **A ordem é a da viagem**, então cada ponto tem ↑ ↓ e ✕. Sem isso,
+  trocar dois lugares exigiria apagar tudo e recomeçar.
+- Rascunho no `localStorage` (`desbrava_roteiro`), como
+  `"<municipioId>:<indice>"`: é decisão de viagem, muda o tempo todo e
+  não precisa sincronizar entre aparelhos pra funcionar.
+- O cálculo (OSRM, detecção de ponto sem estrada, links, faixa de
+  combustível) foi reaproveitado inteiro — só a ENTRADA mudou.
 
 **Roteiros do Motoclube** (v0.26.08.19.101): o app mostrava ONDE ir e
 não COMO ir — quem queria rodar uma rota abria o Maps na mão, ponto por

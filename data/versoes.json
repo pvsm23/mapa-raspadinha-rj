@@ -1,5 +1,14 @@
 [
   {
+    "versao": "0.26.08.19.102",
+    "itens": [
+      "O Motoclube agora é uma tela inteira, com seus recursos em cartões: Modo Viagem, Mapas Offline, Pontos de Apoio, Garagem e Roteiros.",
+      "Roteiros mudou: agora você monta a viagem escolhendo os pontos que quer visitar, pelo botão \"+ Roteiro\" em cada lugar ou pela própria tela.",
+      "Dá pra reordenar as paradas e ver a quilometragem, o tempo e o combustível da viagem toda.",
+      "As indicações do Motoclube viraram \"Pontos de Apoio\", e a Garagem saiu do Menu — agora ela é um cartão dentro do Motoclube."
+    ]
+  },
+  {
     "versao": "0.26.08.19.101",
     "itens": [
       "O Motoclube virou uma tela só: Garagem, Lojas e Roteiros agora são abas do mesmo lugar.",

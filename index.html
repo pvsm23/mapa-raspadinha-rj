@@ -528,7 +528,6 @@
       <div class="menu-section">
         <h3 class="menu-section-titulo">Minha Jornada</h3>
         <div class="menu-section-grade">
-          <button type="button" class="menu-op oculto" id="menu-abrir-garagem" data-alvo="btn-abrir-garagem"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/></svg></span>Garagem</button>
           <button type="button" class="menu-op" data-alvo="btn-abrir-rotas"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span>Rotas</button>
           <button type="button" class="menu-op" data-alvo="btn-biblioteca"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Biblioteca</button>
           <button type="button" class="menu-op" data-alvo="btn-mapa-brasil"><span><svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 1-1h12l-2 5 2 5H6"/></svg></span>Mapa do Brasil</button>
@@ -821,6 +820,10 @@
         <!-- Entre a chamada curta e a historia longa: quem so quer ir
              ate la resolve na primeira tela, sem rolar o texto todo. -->
         <div id="ponto-acoes">
+          <button type="button" id="btn-ponto-roteiro" class="chip-acao oculto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span class="rotulo-roteiro">+ Roteiro</span>
+          </button>
           <button type="button" id="btn-ponto-maps" class="chip-acao">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             Rotas
@@ -1063,23 +1066,94 @@
        roteiros eram três telas separadas que não conversavam -- a
        moto cadastrada não servia pra nada além do odômetro. As abas
        usam .social-aba, o mesmo padrão do Ranking/Biblioteca/Rotas. -->
-  <div id="modal-motoclube" class="oculto">
-    <div id="motoclube-conteudo">
-      <button id="btn-fechar-motoclube" aria-label="Fechar">✕</button>
-      <h2>🏍️ Motoclube Desbrava</h2>
+  <!-- MOTOCLUBE: tela cheia, não modal.
+       Era um painel sobreposto ao mapa; virou uma VIEW irmã do
+       #mapa-viewport, e as duas se revezam (ver mostrarViewMotoclube em
+       js/script.js). Área paga, então a tela inteira também é a
+       vitrine: quem não assina VÊ o painel, com os cards trancados e o
+       convite no meio. -->
+  <section id="motoclube-view" class="oculto">
+    <header id="motoclube-hero">
+      <button type="button" id="btn-voltar-motoclube" aria-label="Voltar ao mapa">‹</button>
+      <div id="motoclube-hero-texto">
+        <span id="motoclube-hero-selo">ÁREA DE MEMBRO</span>
+        <h2>Motoclube Desbrava</h2>
+        <p id="motoclube-saudacao">Bem-vindo</p>
+      </div>
+    </header>
 
-      <div id="motoclube-abas">
-        <button type="button" class="social-aba social-aba-ativa" id="btn-motoclube-aba-garagem" data-aba="garagem">Garagem</button>
-        <button type="button" class="social-aba" id="btn-motoclube-aba-lojas" data-aba="lojas">Lojas</button>
-        <button type="button" class="social-aba" id="btn-motoclube-aba-roteiros" data-aba="roteiros">Roteiros</button>
+    <div id="motoclube-corpo">
+      <!-- Pitch de venda: só pra quem não assina. Fica ANTES dos cards
+           pra explicar o cadeado que a pessoa vai ver logo abaixo. -->
+      <div id="motoclube-pitch" class="oculto">
+        <h3>Libere o painel do motociclista</h3>
+        <p>Modo Viagem com verificação por GPS, mapas offline, sua garagem e roteiros de viagem com quilometragem e combustível calculados pela sua moto.</p>
+        <button type="button" id="btn-motoclube-assinar" class="sheet-btn-primario">Gerar Pix — R$ 9,90/mês</button>
+        <small>Sem fidelidade. O acesso abre assim que o pagamento cai.</small>
       </div>
 
-      <div id="motoclube-painel-garagem" class="motoclube-painel">
+      <div id="motoclube-cards">
+        <!-- Modo Viagem traz o interruptor no próprio card: é a única
+             ferramenta que se liga daqui em vez de abrir um painel. -->
+        <article class="mc-card" id="mc-card-viagem" data-ferramenta="viagem">
+          <div class="mc-card-topo">
+            <span class="mc-card-ico" aria-hidden="true">🛰️</span>
+            <span class="mc-card-cadeado oculto" aria-hidden="true">🔒</span>
+          </div>
+          <h3>Modo Viagem</h3>
+          <p>Confirma sua presença por GPS enquanto você roda.</p>
+          <label class="mc-toggle">
+            <input type="checkbox" id="check-modo-viagem">
+            <span class="mc-toggle-trilho"><span class="mc-toggle-bolinha"></span></span>
+            <span class="mc-toggle-rotulo" id="rotulo-modo-viagem">Desligado</span>
+          </label>
+        </article>
+
+        <article class="mc-card" id="mc-card-offline" data-ferramenta="offline">
+          <div class="mc-card-topo">
+            <span class="mc-card-ico" aria-hidden="true">📥</span>
+            <span class="mc-card-cadeado oculto" aria-hidden="true">🔒</span>
+          </div>
+          <h3>Mapas Offline</h3>
+          <p>Baixe selos e mapas pra usar sem internet.</p>
+        </article>
+
+        <article class="mc-card" id="mc-card-apoio" data-ferramenta="apoio">
+          <div class="mc-card-topo">
+            <span class="mc-card-ico" aria-hidden="true">🛠️</span>
+            <span class="mc-card-cadeado oculto" aria-hidden="true">🔒</span>
+          </div>
+          <h3>Pontos de Apoio</h3>
+          <p>Oficinas, lojas e paradas indicadas por quem roda.</p>
+        </article>
+
+        <article class="mc-card" id="mc-card-garagem" data-ferramenta="garagem">
+          <div class="mc-card-topo">
+            <span class="mc-card-ico" aria-hidden="true">🏍️</span>
+            <span class="mc-card-cadeado oculto" aria-hidden="true">🔒</span>
+          </div>
+          <h3>Garagem</h3>
+          <p>Suas motos, odômetro e consumo.</p>
+        </article>
+
+        <article class="mc-card" id="mc-card-roteiros" data-ferramenta="roteiros">
+          <div class="mc-card-topo">
+            <span class="mc-card-ico" aria-hidden="true">🗺️</span>
+            <span class="mc-card-cadeado oculto" aria-hidden="true">🔒</span>
+          </div>
+          <h3>Roteiros</h3>
+          <p>Monte a viagem e veja km, tempo e combustível.</p>
+        </article>
+      </div>
+
+      <!-- Painéis: abrem no lugar do grid quando um card é tocado. A
+           seta do header volta pro grid antes de voltar pro mapa. -->
+      <div id="mc-painel-garagem" class="mc-painel oculto">
         <p id="garagem-aviso-privacidade">🔒 Só você vê o que está aqui — marca e modelo das suas motos nunca aparecem no seu perfil público.</p>
 
         <!-- Segmented control (estilo iOS): só a aba ativa recebe
-           destaque, sem parecer 3 botões soltos. Mesmos ids/data-aba
-           de sempre -- ver mudarAbaGaragem em js/script.js. -->
+        destaque, sem parecer 3 botões soltos. Mesmos ids/data-aba
+        de sempre -- ver mudarAbaGaragem em js/script.js. -->
         <div id="garagem-abas">
         <button type="button" class="garagem-aba garagem-aba-ativa" id="btn-garagem-aba-criar" data-aba="criar">Nova</button>
         <button type="button" class="garagem-aba" id="btn-garagem-aba-editar" data-aba="editar">Editar</button>
@@ -1107,23 +1181,23 @@
         <p id="garagem-editar-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
 
         <!-- Lista de motos: todas visíveis, distintivo da marca +
-             modelo, estrela na ativa (ver renderizarListaGaragem). -->
+        modelo, estrela na ativa (ver renderizarListaGaragem). -->
         <ul id="garagem-lista-editar" class="garagem-lista oculto"></ul>
 
         <div id="garagem-editar-form" class="oculto">
-          <label for="select-garagem-marca-editar">Marca</label>
-          <select id="select-garagem-marca-editar"></select>
-          <label for="input-garagem-modelo-editar">Modelo</label>
-          <input type="text" id="input-garagem-modelo-editar" maxlength="60">
-          <label for="input-garagem-apelido-editar">Apelido (opcional)</label>
-          <input type="text" id="input-garagem-apelido-editar" maxlength="40">
-          <label for="input-garagem-consumo-editar">Consumo (km/l, opcional)</label>
-          <input type="number" id="input-garagem-consumo-editar" min="0" step="0.1" placeholder="Ex: 32">
-          <small class="garagem-ajuda">Usado nos Roteiros pra estimar quanto você gasta de combustível. Vale o seu consumo real, não o do catálogo.</small>
-          <p id="garagem-editar-erro" class="oculto"></p>
-          <button type="button" id="btn-salvar-edicao-moto">Salvar alterações</button>
-          <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
-          <button type="button" id="btn-excluir-moto">Excluir moto</button>
+        <label for="select-garagem-marca-editar">Marca</label>
+        <select id="select-garagem-marca-editar"></select>
+        <label for="input-garagem-modelo-editar">Modelo</label>
+        <input type="text" id="input-garagem-modelo-editar" maxlength="60">
+        <label for="input-garagem-apelido-editar">Apelido (opcional)</label>
+        <input type="text" id="input-garagem-apelido-editar" maxlength="40">
+        <label for="input-garagem-consumo-editar">Consumo (km/l, opcional)</label>
+        <input type="number" id="input-garagem-consumo-editar" min="0" step="0.1" placeholder="Ex: 32">
+        <small class="garagem-ajuda">Usado nos Roteiros pra estimar quanto você gasta de combustível. Vale o seu consumo real, não o do catálogo.</small>
+        <p id="garagem-editar-erro" class="oculto"></p>
+        <button type="button" id="btn-salvar-edicao-moto">Salvar alterações</button>
+        <button type="button" id="btn-definir-moto-ativa">⭐ Definir como ativa</button>
+        <button type="button" id="btn-excluir-moto">Excluir moto</button>
         </div>
         </div>
 
@@ -1132,56 +1206,56 @@
         <p id="garagem-stats-vazio" class="garagem-vazio oculto">Você ainda não cadastrou nenhuma moto.</p>
 
         <!-- Lista de motos: mostra TODAS de uma vez, com o distintivo
-             da marca e o modelo. Substituiu o card seletor de uma moto
-             só com setas, que escondia o resto da garagem
-             (ver renderizarListaGaragem em js/script.js). -->
+        da marca e o modelo. Substituiu o card seletor de uma moto
+        só com setas, que escondia o resto da garagem
+        (ver renderizarListaGaragem em js/script.js). -->
         <ul id="garagem-lista-stats" class="garagem-lista oculto"></ul>
 
         <!-- Dashboard de telemetria: odômetro como herói (número
-             grande e verde), viagens/última viagem num grid 2 col
-             abaixo. -->
+        grande e verde), viagens/última viagem num grid 2 col
+        abaixo. -->
         <div id="garagem-stats-conteudo" class="oculto">
-          <div id="garagem-odometro">
-            <strong id="garagem-odometro-valor">0 km</strong>
-            <span>Odômetro (Modo Viagem)</span>
-          </div>
-          <div id="garagem-stats-grade">
-            <div class="garagem-stat">
-              <span class="garagem-stat-icone">🗺️</span>
-              <strong id="garagem-stats-viagens">0</strong>
-              <small>Viagens registradas</small>
-            </div>
-            <div class="garagem-stat">
-              <span class="garagem-stat-icone">📅</span>
-              <strong id="garagem-stats-ultima">—</strong>
-              <small>Última viagem</small>
-            </div>
-          </div>
+        <div id="garagem-odometro">
+        <strong id="garagem-odometro-valor">0 km</strong>
+        <span>Odômetro (Modo Viagem)</span>
+        </div>
+        <div id="garagem-stats-grade">
+        <div class="garagem-stat">
+        <span class="garagem-stat-icone">🗺️</span>
+        <strong id="garagem-stats-viagens">0</strong>
+        <small>Viagens registradas</small>
+        </div>
+        <div class="garagem-stat">
+        <span class="garagem-stat-icone">📅</span>
+        <strong id="garagem-stats-ultima">—</strong>
+        <small>Última viagem</small>
+        </div>
+        </div>
         </div>
         </div>
       </div>
-
-      <div id="motoclube-painel-lojas" class="motoclube-painel oculto">
+      <div id="mc-painel-apoio" class="mc-painel oculto">
 
         <!-- Grupo do usuário: um por município, com brasão próprio.
-           Preenchido por renderizarMeuGrupo em js/script.js. -->
+        Preenchido por renderizarMeuGrupo em js/script.js. -->
         <div id="motoclube-meu-grupo"></div>
         <button type="button" id="btn-motoclube-adicionar" class="btn-link-amigo">+ Adicionar loja ou dica</button>
 
         <div id="motoclube-filtros">
         <select id="select-motoclube-marca">
-          <option value="">Todas as marcas</option>
+        <option value="">Todas as marcas</option>
         </select>
         <input type="text" id="input-motoclube-modelo" placeholder="Filtrar por modelo (ex: CG 160)">
         </div>
 
         <div id="motoclube-lista"></div>
       </div>
-
-      <div id="motoclube-painel-roteiros" class="motoclube-painel oculto">
+      <div id="mc-painel-roteiros" class="mc-painel oculto">
         <div id="roteiro-conteudo"></div>
       </div>
     </div>
+  </section>
+
 
     <div id="modal-brasao" class="oculto">
     <div id="brasao-conteudo">
@@ -1191,7 +1265,6 @@
       <button type="button" id="btn-compartilhar-brasao" class="sheet-btn-primario">Compartilhar</button>
     </div>
     </div>
-  </div>
 
   <!-- Adicionar loja/dica ao Motoclube. -->
   <div id="modal-motoclube-form" class="oculto">

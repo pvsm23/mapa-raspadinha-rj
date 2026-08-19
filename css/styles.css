@@ -7760,17 +7760,6 @@ body.modo-rota-ativo #toast-onde-estou {
    As abas usam .social-aba (o padrão do app, já definido acima)
    -- aqui só entra o container e os painéis.
    ========================================================= */
-#motoclube-abas {
-  display: flex;
-  gap: 4px;
-  margin: 0 0 14px;
-  border-bottom: 1px solid var(--linha);
-}
-
-.motoclube-painel.oculto {
-  display: none;
-}
-
 .garagem-ajuda {
   display: block;
   margin: -6px 0 10px;
@@ -7914,6 +7903,7 @@ body.modo-rota-ativo #toast-onde-estou {
 .roteiro-ponto {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   color: var(--fraco);
 }
@@ -7974,6 +7964,366 @@ body.modo-rota-ativo #toast-onde-estou {
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--fraco);
+}
+
+
+/* =========================================================
+   MOTOCLUBE — tela cheia (não é modal)
+   Irmã do #mapa-viewport: as duas se revezam. Entrar aqui esconde
+   o mapa de verdade, em vez de empilhar por cima dele.
+   ========================================================= */
+#motoclube-view {
+  position: fixed;
+  inset: 0;
+  z-index: 80; /* abaixo da barra inferior (90): ela continua navegável */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+  padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+}
+
+#motoclube-view.oculto {
+  display: none;
+}
+
+/* Enquanto o Motoclube está aberto, os flutuantes do mapa somem: eles
+   pertencem ao mapa, e sobre o painel viram lixo visual. A barra
+   inferior FICA -- é por ela que se troca de tela. */
+body.em-motoclube #btn-modo-viagem,
+body.em-motoclube #btn-bussola,
+body.em-motoclube #dica-mapa,
+body.em-motoclube #barra-progresso-topo {
+  display: none !important;
+}
+
+/* ---- Hero ----
+   A textura é gerada em CSS (faixas diagonais escuras, tipo asfalto/
+   carbono) em vez de imagem: não precisa de arquivo, não pesa no APK e
+   acompanha o tema. Trocar por uma foto depois é mexer só aqui. */
+#motoclube-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-height: 190px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 20px;
+  background-color: #0b0e12;
+  background-image:
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.028) 0 2px, transparent 2px 9px),
+    radial-gradient(120% 90% at 12% 0%, rgba(43, 213, 118, 0.22), transparent 62%),
+    linear-gradient(180deg, #12171d 0%, #0b0e12 100%);
+  border-bottom: 1px solid var(--linha);
+}
+
+/* Fio dourado na base: o detalhe que diz "área paga" sem escrever. */
+#motoclube-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ouro, #e8b931), transparent);
+  opacity: 0.75;
+}
+
+#btn-voltar-motoclube {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 10px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.42) !important;
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#motoclube-hero-texto {
+  min-width: 0;
+}
+
+#motoclube-hero-selo {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 185, 49, 0.5);
+  color: var(--ouro, #e8b931);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+}
+
+#motoclube-hero h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  color: #fff;
+}
+
+#motoclube-saudacao {
+  margin: 4px 0 0;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+#motoclube-corpo {
+  padding: 16px;
+}
+
+/* ---- Pitch (só pra quem não assina) ---- */
+#motoclube-pitch {
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, rgba(43, 213, 118, 0.12), rgba(43, 213, 118, 0.04));
+  border: 1px solid rgba(43, 213, 118, 0.28);
+  text-align: center;
+}
+
+#motoclube-pitch.oculto {
+  display: none;
+}
+
+#motoclube-pitch h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  color: var(--txt);
+}
+
+#motoclube-pitch p {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--fraco);
+}
+
+#motoclube-pitch small {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.7rem;
+  color: var(--fraco);
+}
+
+/* ---- Grid de ferramentas ---- */
+#motoclube-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+#motoclube-cards.oculto {
+  display: none;
+}
+
+.mc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.mc-card:active {
+  transform: scale(0.98);
+}
+
+/* O card do Modo Viagem ocupa a linha inteira: tem interruptor, e um
+   controle de ligar/desligar não deve dividir largura com um cartão de
+   navegação. */
+#mc-card-viagem {
+  grid-column: 1 / -1;
+}
+
+.mc-card-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mc-card-ico {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.mc-card-cadeado {
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.mc-card-cadeado.oculto {
+  display: none;
+}
+
+.mc-card h3 {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  color: var(--txt);
+}
+
+.mc-card p {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--fraco);
+}
+
+/* Bloqueado: apagado, mas LEGÍVEL. Esconder faria a pessoa não
+   descobrir o que está comprando -- a tela é a vitrine. */
+.mc-card-bloqueado {
+  opacity: 0.55;
+}
+
+/* ---- Interruptor do Modo Viagem ---- */
+.mc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.mc-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.mc-toggle-trilho {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--linha);
+  border: 1px solid var(--linha);
+  transition: background-color 0.18s ease;
+  flex: 0 0 auto;
+}
+
+.mc-toggle-bolinha {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fraco);
+  transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+.mc-toggle input:checked + .mc-toggle-trilho {
+  background: var(--verde);
+  border-color: var(--verde);
+}
+
+.mc-toggle input:checked + .mc-toggle-trilho .mc-toggle-bolinha {
+  transform: translateX(22px);
+  background: var(--verde-tinta, #08130c);
+}
+
+.mc-toggle input:disabled + .mc-toggle-trilho {
+  opacity: 0.5;
+}
+
+.mc-toggle-rotulo {
+  font-size: 0.8rem;
+  color: var(--fraco);
+}
+
+/* ---- Painéis das ferramentas ---- */
+.mc-painel.oculto {
+  display: none;
+}
+
+
+/* Chip "+ Roteiro" quando o ponto JÁ está na viagem: o mesmo verde de
+   "estado ativo" do resto do app (município visitado, aba ativa). */
+.chip-acao-ativo {
+  border-color: var(--verde) !important;
+  color: var(--verde) !important;
+}
+
+/* ---- Roteiro: lista montada pela pessoa ---- */
+.roteiro-ponto-acoes {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* A ORDEM da lista é a ordem da viagem, então mover é essencial --
+   sem isso, trocar dois lugares exigiria apagar tudo e recomeçar. */
+.roteiro-mover,
+.roteiro-tirar {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent !important;
+  color: var(--fraco);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.roteiro-mover:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.roteiro-tirar {
+  color: var(--erro, #f0616d);
+}
+
+/* ---- Seletor pra montar do zero ---- */
+.roteiro-seletor {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--linha);
+}
+
+.roteiro-seletor h4 {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: var(--txt);
+}
+
+.roteiro-seletor select {
+  width: 100%;
+}
+
+.roteiro-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+}
+
+.roteiro-opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  font-size: 0.84rem;
+  color: var(--txt);
+  cursor: pointer;
+  /* 40px de alvo: marcar ponto é ação de dedo, numa lista longa. */
+  min-height: 40px;
+}
+
+.roteiro-opcao input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
 }
 
 
