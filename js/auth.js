@@ -48,6 +48,7 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
+  deleteField,
   increment,
   collection,
   collectionGroup,
@@ -1337,7 +1338,23 @@ if (CONFIGURADO) {
       criadoEm: dadosAntigos.atualizadoEm || serverTimestamp(),
       atualizadoEm: serverTimestamp(),
     });
+    /* Apaga os campos antigos DEPOIS de copiar. Sem isto a migração
+       roda de novo a cada abertura da Garagem, porque a guarda lá em
+       cima só olha `marca` -- e o doc pai continuava com ela pra
+       sempre. O resultado era uma moto nova a cada visita, e a
+       impressão de que excluir não funcionava: a pessoa apagava, e a
+       migração recriava na abertura seguinte.
+
+       O odômetro não se perde: ele já foi copiado pra moto nova acima,
+       e é lá que somarOdometroGaragem escreve. */
     await setDoc(refPai, { motoAtivaId: novaMotoRef.id }, { merge: true });
+    await updateDoc(refPai, {
+      marca: deleteField(),
+      modelo: deleteField(),
+      apelido: deleteField(),
+      odometroKm: deleteField(),
+      atualizadoEm: deleteField(),
+    });
   }
 
   /** Lista as motos + qual delas está ativa. */

@@ -1,5 +1,14 @@
 [
   {
+    "versao": "0.26.08.19.103",
+    "itens": [
+      "Agora dá pra montar o roteiro direto no mapa: toque nos lugares na ordem que quer visitar, e o resto da tela sai da frente.",
+      "A viagem passa a começar de onde você está, e não do primeiro ponto — o trecho de casa até lá entra na conta.",
+      "A Garagem abre na lista das suas motos, com o + no canto pra cadastrar; tocar numa moto mostra os números dela e os botões de editar e excluir.",
+      "Correção: motos apareciam duplicadas e voltavam depois de excluídas."
+    ]
+  },
+  {
     "versao": "0.26.08.19.102",
     "itens": [
       "O Motoclube agora é uma tela inteira, com seus recursos em cartões: Modo Viagem, Mapas Offline, Pontos de Apoio, Garagem e Roteiros.",

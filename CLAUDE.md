@@ -117,7 +117,47 @@ mão no `appsscript.json` — o Apps Script só adivinha escopo pelo código,
 e como lá só aparece `UrlFetchApp` ele deixa o Firestore de fora e a
 chamada falha com `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
 
-## Última funcionalidade (v0.26.08.18.100 a v0.26.08.19.102)
+## Última funcionalidade (v0.26.08.18.100 a v0.26.08.19.103)
+
+**Roteiro: monta no mapa e parte de onde você está** (v0.26.08.19.103).
+
+- **A viagem começa na POSIÇÃO ATUAL**, não no primeiro ponto. Ninguém
+  nasce no destino, e sem isso o km ignorava o trecho de casa até lá: no
+  teste, 223 km viraram 449. GPS negado não bloqueia — parte do primeiro
+  ponto e a tela DIZ isso, em vez de entregar número menor calado.
+- **Modo "escolher no mapa"**: a UI toda some (`body.escolhendo-roteiro`
+  esconde barra inferior, `#barra-topo`, busca, modos e "onde estou"),
+  ficam só a seta no canto e a barra do contador. Os pontos aparecem em
+  QUALQUER zoom — a classe `.escolhendo` no SVG força isso, sem tocar em
+  `.mostrar-pontos`, que é do zoom: mexer nela exigiria um evento de zoom
+  pra devolver o controle, e sem ele os pontos ficariam acesos pra sempre.
+  Cada toque põe/tira, com número da ordem e anel verde.
+- Confirmar leva à lista editável (↑ ↓ ✕) e só então ao cálculo.
+- **Menos de 2 pontos navegáveis agora EXPLICA** em vez de mostrar
+  número. Antes o código mantinha a medida com o desvio fantasma: um
+  roteiro com a Ilha Grande exibia 357 km de estrada até uma ilha. Achado
+  comparando com/sem GPS — o valor com GPS estava MENOR, o que não fazia
+  sentido, e foi isso que denunciou.
+
+**Garagem: lista → detalhe** (v0.26.08.19.103). Eram 3 abas
+(Nova/Editar/Estatísticas), que obrigavam a escolher a ABA antes da MOTO
+-- ao contrário de como se pensa. Abre na lista, o **+ fica no canto
+superior direito**, e tocar numa moto mostra odômetro, viagens, consumo
+e as ações (Definir como ativa · Editar · Excluir). Moto sem consumo
+informado exibe a **faixa deduzida pela cilindrada**, explicando de onde
+vem a estimativa do Roteiro em vez de deixar um traço mudo.
+
+**BUG CORRIGIDO — motos duplicadas** (v0.26.08.19.103). Não era a
+exclusão: `migrarGaragemAntigaSeNecessario` (js/auth.js) checa se o doc
+pai ainda tem `marca` e, se tiver, cria uma moto na subcoleção nova --
+mas **nunca apagava os campos antigos**. A condição ficava verdadeira
+pra sempre e cada abertura da Garagem criava outra moto, o que dava os
+dois sintomas de uma vez: duplicadas aparecendo sozinhas e exclusão que
+"não funcionava" (a migração recriava na abertura seguinte). Agora a
+migração apaga os campos com `deleteField()` depois de copiar. O
+odômetro não se perde: já era copiado pra moto nova, e é lá que
+`somarOdometroGaragem` escreve. **Duplicadas já existentes não somem
+sozinhas** — precisam ser apagadas à mão uma vez.
 
 **Motoclube virou TELA, não modal** (v0.26.08.19.102): era um painel
 sobreposto ao mapa. Agora `#motoclube-view` é irmão do `#mapa-viewport`

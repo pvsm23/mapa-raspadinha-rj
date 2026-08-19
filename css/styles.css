@@ -7990,9 +7990,11 @@ body.modo-rota-ativo #toast-onde-estou {
    pertencem ao mapa, e sobre o painel viram lixo visual. A barra
    inferior FICA -- é por ela que se troca de tela. */
 body.em-motoclube #btn-modo-viagem,
-body.em-motoclube #btn-bussola,
+body.em-motoclube #btn-onde-estou,
+body.em-motoclube #btn-buscar-local,
+body.em-motoclube #btn-modos,
 body.em-motoclube #dica-mapa,
-body.em-motoclube #barra-progresso-topo {
+body.em-motoclube #barra-topo {
   display: none !important;
 }
 
@@ -8324,6 +8326,244 @@ body.em-motoclube #barra-progresso-topo {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
+}
+
+
+/* ---- Garagem: lista → detalhe ----
+   Eram 3 abas (Nova/Editar/Estatísticas), que obrigavam a escolher a
+   ABA antes da MOTO. Agora abre na lista, o "+" cadastra e tocar numa
+   moto leva aos números e às ações dela. */
+#garagem-topo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+#garagem-topo.oculto,
+#garagem-detalhe.oculto,
+#garagem-form.oculto {
+  display: none;
+}
+
+#garagem-topo #garagem-aviso-privacidade {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+/* O "+" no canto: alvo de 44px, o mínimo confortável pra dedo. */
+#btn-garagem-nova {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--verde) !important;
+  color: var(--verde-tinta, #08130c);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#btn-garagem-nova:active {
+  transform: scale(0.94);
+}
+
+.garagem-moto-seta {
+  flex: 0 0 auto;
+  color: var(--fraco);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.garagem-voltar {
+  background: transparent !important;
+  border: none;
+  padding: 0 0 12px;
+  color: var(--fraco);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+#garagem-detalhe-nome {
+  margin: 0 0 2px;
+  font-size: 1.15rem;
+  color: var(--txt);
+}
+
+#garagem-detalhe-sub {
+  margin: 0 0 16px;
+  font-size: 0.8rem;
+  color: var(--fraco);
+}
+
+#garagem-stats-ultima-linha {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  color: var(--fraco);
+}
+
+/* Ações empilhadas, com a destrutiva por último e sem contorno --
+   não deve competir com Editar nem ser alcançada por engano. */
+#garagem-detalhe-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+#garagem-detalhe-acoes button {
+  width: 100%;
+}
+
+#btn-definir-moto-ativa.oculto {
+  display: none;
+}
+
+#btn-excluir-moto {
+  background: transparent !important;
+  border: none;
+  color: var(--erro, #f0616d);
+}
+
+#garagem-form-titulo {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  color: var(--txt);
+}
+
+#garagem-vazio.oculto,
+#garagem-lista.oculto,
+#garagem-limite-aviso.oculto {
+  display: none;
+}
+
+
+/* =========================================================
+   MODO "ESCOLHER NO MAPA" (Roteiro)
+   A UI toda some: escolher a dedo pede o mapa inteiro livre, e barra,
+   topo e flutuantes só roubariam área e alvo de toque. Ficam só a seta
+   de voltar e a barra do contador.
+   ========================================================= */
+body.escolhendo-roteiro #nav-inferior,
+body.escolhendo-roteiro #barra-topo,
+body.escolhendo-roteiro #btn-modo-viagem,
+body.escolhendo-roteiro #btn-buscar-local,
+body.escolhendo-roteiro #btn-modos,
+body.escolhendo-roteiro #btn-onde-estou {
+  display: none !important;
+}
+
+body.escolhendo-roteiro #btn-modo-roteiro-voltar,
+body.escolhendo-roteiro #barra-modo-roteiro {
+  display: flex !important;
+}
+
+#btn-modo-roteiro-voltar {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  z-index: 95;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--vidro, rgba(15, 18, 22, 0.92)) !important;
+  backdrop-filter: blur(10px);
+  color: var(--txt);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#btn-modo-roteiro-voltar.oculto,
+#barra-modo-roteiro.oculto {
+  display: none;
+}
+
+#barra-modo-roteiro {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 95;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--vidro, rgba(15, 18, 22, 0.94));
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--linha);
+}
+
+#modo-roteiro-contador {
+  flex: 1 1 auto;
+  font-size: 0.84rem;
+  color: var(--txt);
+}
+
+#btn-modo-roteiro-confirmar {
+  flex: 0 0 auto;
+}
+
+#btn-modo-roteiro-confirmar:disabled {
+  opacity: 0.45;
+}
+
+/* Pontos visíveis em QUALQUER zoom aqui. Fora deste modo eles só
+   surgem a partir de ZOOM_DOS_PONTOS pra não poluir o mapa afastado --
+   mas quem escolhe precisa ver o que existe antes de aproximar. */
+svg#mapa-rj.escolhendo .ponto-turistico {
+  display: block;
+  opacity: 1;
+}
+
+/* Já escolhido: anel verde, pra distinguir de longe sem depender de ler
+   o número. */
+svg#mapa-rj .ponto-turistico.ponto-no-roteiro > .ponto-pino,
+svg#mapa-rj .ponto-turistico.ponto-no-roteiro > .ponto-arte {
+  filter: drop-shadow(0 0 1.2px var(--verde)) drop-shadow(0 0 2.4px var(--verde));
+}
+
+.ponto-numero-fundo {
+  fill: var(--verde);
+  stroke: var(--verde-tinta, #08130c);
+  stroke-width: 0.25;
+}
+
+.ponto-numero-texto {
+  fill: var(--verde-tinta, #08130c);
+  font-size: 1.15px;
+  font-weight: 700;
+}
+
+/* O número acompanha o zoom como o resto dos marcadores: raio 1 no
+   desenho e a escala desfaz o zoom (mesmo 3.5 de referência do mapa). */
+svg#mapa-rj .ponto-numero-roteiro {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: translate(2.2px, -2.2px) scale(calc(3.4 * 3.5 / var(--zoom, 3.5)));
+  pointer-events: none;
+}
+
+/* Botão que entra no modo, na tela de Roteiros. */
+.roteiro-btn-mapa {
+  display: block;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surf2) !important;
+  border: 1px solid var(--verde);
+  color: var(--verde);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 
