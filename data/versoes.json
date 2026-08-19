@@ -1,5 +1,12 @@
 [
   {
+    "versao": "0.26.08.19.105",
+    "itens": [
+      "Os formulários de moto foram refeitos: um campo por linha, campos altos e fáceis de tocar, e o de consumo deixou de aparecer com a cara branca do navegador.",
+      "O botão de salvar ficou verde e ocupa a largura toda; o de excluir foi para o fim, separado por uma linha."
+    ]
+  },
+  {
     "versao": "0.26.08.19.104",
     "itens": [
       "A Garagem ficou com cara de painel: cada moto tem seu espaço, e o odômetro, as viagens e o consumo aparecem em destaque.",

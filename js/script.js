@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.104";
+const VERSAO_APP = "0.26.08.19.105";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.19.104";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.105", itens: ["Os formulários de moto foram refeitos: um campo por linha, campos altos e fáceis de tocar, e o de consumo deixou de aparecer com a cara branca do navegador.", "O botão de salvar ficou verde e ocupa a largura toda; o de excluir foi para o fim, separado por uma linha."] },
   { versao: "0.26.08.19.104", itens: ["A Garagem ficou com cara de painel: cada moto tem seu espaço, e o odômetro, as viagens e o consumo aparecem em destaque.", "O botão de editar virou um ícone discreto no canto, e o de excluir saiu da tela principal pra dentro da edição.", "Cadastrar moto agora é um espaço de \"vaga livre\" na própria lista, mostrando quantas ainda cabem."] },
   { versao: "0.26.08.19.103", itens: ["Agora dá pra montar o roteiro direto no mapa: toque nos lugares na ordem que quer visitar, e o resto da tela sai da frente.", "A viagem passa a começar de onde você está, e não do primeiro ponto — o trecho de casa até lá entra na conta.", "A Garagem abre na lista das suas motos, com o + no canto pra cadastrar; tocar numa moto mostra os números dela e os botões de editar e excluir.", "Correção: motos apareciam duplicadas e voltavam depois de excluídas."] },
   { versao: "0.26.08.19.102", itens: ["O Motoclube agora é uma tela inteira, com seus recursos em cartões: Modo Viagem, Mapas Offline, Pontos de Apoio, Garagem e Roteiros.", "Roteiros mudou: agora você monta a viagem escolhendo os pontos que quer visitar, pelo botão \"+ Roteiro\" em cada lugar ou pela própria tela.", "Dá pra reordenar as paradas e ver a quilometragem, o tempo e o combustível da viagem toda.", "As indicações do Motoclube viraram \"Pontos de Apoio\", e a Garagem saiu do Menu — agora ela é um cartão dentro do Motoclube."] },
@@ -1928,7 +1929,13 @@ function configurarGaragem() {
   document.getElementById("btn-garagem-voltar-lista")?.addEventListener("click", () => mostrarTelaGaragem("lista"));
   document.getElementById("btn-garagem-cancelar-form")?.addEventListener("click", () => mostrarTelaGaragem("lista"));
   document.getElementById("btn-editar-moto")?.addEventListener("click", () => abrirFormMoto(garagemMotoEmEdicao));
-  document.getElementById("btn-salvar-moto")?.addEventListener("click", salvarMotoDoForm);
+  /* O <form> dá Enter pra salvar e o botão "concluir" do teclado no
+     celular -- mas o submit nativo recarregaria a página, então é
+     interceptado aqui. */
+  document.getElementById("garagem-form-campos")?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    salvarMotoDoForm();
+  });
   document.getElementById("btn-definir-moto-ativa")?.addEventListener("click", definirMotoAtivaAtual);
   document.getElementById("btn-excluir-moto")?.addEventListener("click", excluirMotoAtual);
 }

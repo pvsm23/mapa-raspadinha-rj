@@ -1217,19 +1217,45 @@
             <button type="button" id="btn-garagem-cancelar-form" aria-label="Cancelar">‹</button>
             <h3 id="garagem-form-titulo">Nova moto</h3>
           </div>
-          <label for="select-garagem-marca">Marca</label>
-          <select id="select-garagem-marca"></select>
-          <label for="input-garagem-modelo">Modelo</label>
-          <input type="text" id="input-garagem-modelo" maxlength="60" placeholder="Ex: Hunter 350">
-          <label for="input-garagem-apelido">Apelido (opcional)</label>
-          <input type="text" id="input-garagem-apelido" maxlength="40" placeholder="Ex: A Fera">
-          <label for="input-garagem-consumo">Consumo (km/l, opcional)</label>
-          <input type="number" id="input-garagem-consumo" min="0" step="0.1" placeholder="Ex: 32">
-          <small class="garagem-ajuda">Usado nos Roteiros pra estimar o combustível. Em branco, o app estima pela cilindrada do modelo.</small>
-          <p id="garagem-form-erro" class="oculto"></p>
-          <button type="button" id="btn-salvar-moto">Cadastrar moto</button>
+
+          <!-- <form> de verdade: dá o Enter pra salvar e o teclado de
+               "concluir" no celular. O submit é interceptado no JS (ver
+               configurarGaragem) -- sem isso a página recarregaria. -->
+          <form id="garagem-form-campos" novalidate>
+            <div class="form-group">
+              <label for="select-garagem-marca">Marca</label>
+              <select id="select-garagem-marca"></select>
+            </div>
+
+            <div class="form-group">
+              <label for="input-garagem-modelo">Modelo</label>
+              <input type="text" id="input-garagem-modelo" maxlength="60" placeholder="Ex: Hunter 350" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="input-garagem-apelido">Apelido <span class="form-opcional">opcional</span></label>
+              <input type="text" id="input-garagem-apelido" maxlength="40" placeholder="Ex: A Fera" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="input-garagem-consumo">Consumo <span class="form-opcional">opcional</span></label>
+              <!-- inputmode decimal: no celular abre o teclado numérico
+                   sem esconder a vírgula, que type=number faz em alguns
+                   aparelhos. -->
+              <input type="number" id="input-garagem-consumo" min="0" step="0.1" inputmode="decimal" placeholder="Ex: 32">
+              <small class="form-ajuda">Em km/l. Usado nos Roteiros pra estimar o combustível — em branco, o app estima pela cilindrada do modelo.</small>
+            </div>
+
+            <p id="garagem-form-erro" class="oculto"></p>
+
+            <button type="submit" id="btn-salvar-moto" class="form-btn-principal">Cadastrar moto</button>
+          </form>
+
+          <!-- Longe do salvar de propósito: ação sem volta não divide
+               vizinhança com a ação de todo dia. -->
           <button type="button" id="btn-excluir-moto" class="oculto">Excluir esta moto</button>
         </div>
+
       </div>
 
 

@@ -8675,15 +8675,165 @@ svg#mapa-rj .ponto-numero-roteiro {
   color: var(--txt);
 }
 
-/* Excluir vive no FORMULÁRIO, longe do detalhe: um passo a mais entre
-   a pessoa e a ação sem volta. Ghost vermelho pra não competir com
-   Salvar. */
+
+
+/* =========================================================
+   FORMULÁRIO DA GARAGEM (nova / editar moto)
+
+   Estava cru: Marca, Modelo e Apelido caíam na MESMA LINHA, o campo de
+   consumo aparecia com o branco nativo do browser (o CSS antigo pegava
+   input[type=text] e select, e deixava o type=number de fora) e o botão
+   era o cinza padrão. Alturas de 19px, contra os 48 de alvo de toque.
+
+   As cores saem das VARIÁVEIS: o app tem tema claro desde a v0.11.16, e
+   um #1a1a1a cravado viraria um bloco preto na tela branca.
+   ========================================================= */
+#garagem-form-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--txt);
+}
+
+.form-opcional {
+  margin-left: 4px;
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: var(--fraco);
+}
+
+/* O seletor cobre TODOS os tipos usados aqui -- inclusive number, que
+   é justamente o que estava escapando. */
+#garagem-form-campos input[type="text"],
+#garagem-form-campos input[type="number"],
+#garagem-form-campos select {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--surf2) !important;
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 0.95rem;
+  /* Tira a aparência nativa: era ela que dava a borda inset e o fundo
+     branco no campo numérico. */
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* A setinha do select some com appearance:none -- redesenhada aqui. */
+#garagem-form-campos select {
+  padding-right: 38px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--fraco) 50%),
+    linear-gradient(135deg, var(--fraco) 50%, transparent 50%);
+  background-position: calc(100% - 19px) 21px, calc(100% - 14px) 21px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+#garagem-form-campos input::placeholder {
+  color: var(--fraco);
+  opacity: 0.75;
+}
+
+/* Some com as setinhas do number: elas roubam largura e ninguém acerta
+   incremento de 0,1 no dedo. */
+#garagem-form-campos input[type="number"]::-webkit-outer-spin-button,
+#garagem-form-campos input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#garagem-form-campos input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* O !important aqui não é preguiça: a CAMADA UI MODERNA (fim deste
+   arquivo) força `box-shadow: none !important` em todo input, então o
+   halo do foco só existe vencendo aquela regra. A borda verde já vem
+   de lá -- repito aqui pra a regra não depender da ordem dos arquivos. */
+#garagem-form-campos input:focus,
+#garagem-form-campos select:focus {
+  border-color: var(--verde) !important;
+  box-shadow: 0 0 0 3px rgba(43, 213, 118, 0.18) !important;
+}
+
+.form-ajuda {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--fraco);
+}
+
+#garagem-form-erro {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(240, 97, 109, 0.12);
+  border: 1px solid rgba(240, 97, 109, 0.3);
+  color: var(--erro, #f0616d);
+  font-size: 0.8rem;
+}
+
+#garagem-form-erro.oculto {
+  display: none;
+}
+
+/* ---- Botão principal ---- */
+.form-btn-principal {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 14px;
+  background: var(--verde) !important;
+  color: var(--verde-tinta, #08130c) !important;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.form-btn-principal:active {
+  transform: scale(0.985);
+}
+
+.form-btn-principal:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---- Excluir: fantasma, longe de tudo ----
+   A margem grande não é estética: é a distância entre a ação de todo
+   dia (salvar) e a que não tem volta. */
 #btn-excluir-moto {
   width: 100%;
-  margin-top: 10px;
-  background: transparent !important;
+  min-height: 48px;
+  margin-top: 36px;
+  padding-top: 18px;
   border: none;
-  color: var(--erro, #f0616d);
+  border-top: 1px solid var(--linha);
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--erro, #f0616d) !important;
+  font-family: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
 }
 
 #btn-excluir-moto.oculto {
