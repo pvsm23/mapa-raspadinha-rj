@@ -1,5 +1,12 @@
 [
   {
+    "versao": "0.26.08.20.115",
+    "itens": [
+      "Correção: a janela de denunciar abria ATRÁS do post ou da sugestão, ficando inacessível.",
+      "Correção: tocar no nome de quem postou, com o post aberto em tela cheia, abria o perfil por trás dele."
+    ]
+  },
+  {
     "versao": "0.26.08.20.114",
     "itens": [
       "Correção: a foto nunca aparecia no card das Sugestões — o cartão era pra mostrar o lugar de fundo e vinha sempre cinza.",

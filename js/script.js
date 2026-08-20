@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.20.114";
+const VERSAO_APP = "0.26.08.20.115";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.20.114";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.20.115", itens: ["Correção: a janela de denunciar abria ATRÁS do post ou da sugestão, ficando inacessível.", "Correção: tocar no nome de quem postou, com o post aberto em tela cheia, abria o perfil por trás dele."] },
   { versao: "0.26.08.20.114", itens: ["Correção: a foto nunca aparecia no card das Sugestões — o cartão era pra mostrar o lugar de fundo e vinha sempre cinza.", "O ✕ vermelho saiu do rodapé do card: excluir e denunciar viraram ícones discretos no canto de cima, longe de curtir e comentar.", "Filtros de categoria, botão de sugerir e o card ficaram no mesmo acabamento da aba Desbravadores.", "No detalhe, \"Abrir no Maps\" virou botão de verdade e o campo de comentário ganhou o enviar embutido, no lugar do botão branco."] },
   { versao: "0.26.08.20.113", itens: ["Correção: segurar o post fazia a imagem crescer, mas arrastar não curtia nem compartilhava — e ao soltar o post ainda abria por cima do gesto.", "O post aberto virou um cartão sobre fundo borrado, e fecha tocando fora dele.", "Os botões do post perderam o fundo claro que destoava do tema; a localização virou texto com um pin, sem a pílula verde.", "Curtir, comentar e compartilhar ficam cinza e só acendem em verde quando ativos.", "A aba Comunidade passou a se chamar Desbravadores também na barra de baixo."] },
   { versao: "0.26.08.20.112", itens: ["No Modo Satélite, a partir de bastante zoom todos os municípios que aparecem na tela ficam na qualidade alta, e não só o do meio.", "E o que já carregou em alta não volta mais para a baixa quando você arrasta o mapa para o lado.", "A borda verde do Modo Satélite afinou: de longe ela tinha o triplo da espessura e cobria parte da foto.", "O Modo Satélite fica lembrado — se você deixar ligado, ele volta ligado na próxima vez que abrir o app.", "A Comunidade virou mosaico de duas colunas: cabe muito mais post na tela e as fotos não são mais cortadas.", "Tocar num post abre ele em tela cheia, com legenda, curtidas e comentários.", "Segurando o dedo num post, ele salta pro centro da tela — arraste para a direita para curtir ou para a esquerda para compartilhar.", "A Comunidade deixou de ser uma janela flutuante: agora ocupa a tela inteira, com cabeçalho fixo e as abas em formato de pílula."] },
@@ -14889,6 +14890,12 @@ function construirSlugsDeMunicipios() {
  * quanto pelo botão "@" no popup do município (com filtro).
  */
 function abrirPainelSocial(municipioId = null, { pontoId = null, rotuloPonto = "" } = {}) {
+  /* Sair do post aberto ao trocar de contexto. Sem isto, tocar no
+     município dentro do post reabria a Comunidade filtrada COM o post
+     ainda por cima -- e tocar no autor abria o perfil (z-index 100)
+     ATRÁS do post (120). Fechar aqui e no fechar resolve os dois de uma
+     vez, em vez de espalhar a limpeza por cada botão do card. */
+  fecharDetalheDoPost();
   filtroMunicipioSocialId = municipioId || null;
   filtroPontoSocialId = pontoId || null;
   const filtroEl = document.getElementById("social-filtro-municipio");
@@ -14909,6 +14916,7 @@ function abrirPainelSocial(municipioId = null, { pontoId = null, rotuloPonto = "
 }
 
 function fecharPainelSocial() {
+  fecharDetalheDoPost();
   document.getElementById("modal-social").classList.add("oculto");
   revogarBlobsDeFotosPosts();
 }

@@ -14267,7 +14267,15 @@ button:disabled:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 120;
+  /* ACIMA de tudo de onde ela pode ser aberta, e essa lista cresceu:
+     card do feed e da sugestão (100), post em tela cheia (120), folha
+     de detalhe da sugestão e comentários de ponto turístico (200).
+
+     Estava em 120 -- empatava com o post em tela cheia, e em empate
+     quem vem depois no HTML ganha, então a denúncia abria ATRÁS dele.
+     Abaixo das telas de viagem (220/230) e do apelido (250), que são
+     fluxos que não coexistem com denunciar. */
+  z-index: 240;
   padding: 16px;
 }
 
