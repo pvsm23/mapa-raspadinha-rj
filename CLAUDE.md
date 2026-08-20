@@ -117,7 +117,122 @@ mão no `appsscript.json` — o Apps Script só adivinha escopo pelo código,
 e como lá só aparece `UrlFetchApp` ele deixa o Firestore de fora e a
 chamada falha com `403 ACCESS_TOKEN_SCOPE_INSUFFICIENT`.
 
-## Última funcionalidade (v0.26.08.18.100 a v0.26.08.19.104)
+## Última funcionalidade (v0.26.08.19.109 e v0.26.08.19.110)
+
+**Modo Satélite** (v0.26.08.19.110). Município VERIFICADO deixa de ser
+mancha verde e passa a mostrar a foto real do lugar, recortada na
+própria forma. É recompensa: só entra quem confirmou presença por GPS.
+Entra em **Modos do mapa**, ligado à mão, no mesmo padrão do Clima (um
+`<li class="modo-item">` + registro no array `MODOS`).
+
+- **Nada de camada de tiles, e nada de arquivo no repositório.** Cada
+  município é UMA imagem pedida ao WMS público da EOX com a caixa dele
+  em graus, buscada na hora e guardada no `CACHE_OFFLINE` -- o mesmo
+  que nunca é limpo e já guarda os mapas estaduais. Depois da primeira
+  vez, abre sem rede. Sumiu o script gerador e os ~4 MB no Git que o
+  plano original previa.
+- **A projeção era o risco real, e o EPSG:4326 o mata.** O mapa é
+  equirretangular com correção de cos(latitude média), não Web
+  Mercator: tile comum erraria de **1,5 a 2,3 km** nas bordas norte e
+  sul do estado (calculado). Pedindo em `EPSG:4326`, que é linear em
+  lon/lat como a nossa projeção, a foto encaixada na caixa do município
+  alinha EXATO -- sem reprojetar nada.
+- **Duas resoluções medidas em METROS POR PIXEL, não em pixels**
+  (`SATELITE_CHAO_GERAL` 60, `SATELITE_CHAO_DETALHE` 15). Município não
+  tem tamanho fixo -- o Rio tem 71 km de largura e há município com 10;
+  fixar "512 e 2048" daria nitidez diferente em cada um. O detalhe vale
+  só pro município **no centro da tela** e acima do zoom 8: detalhar
+  todos faria quem tem 40 raspados baixar dezenas de MB de uma vez.
+  Teto de `SATELITE_LADO_MAX` 3072 px (no Rio ele pega, e a resolução
+  efetiva ali fica em ~23 m/px).
+- Medido: geral vai de **11 KB** (município pequeno) a **171 KB** (Rio);
+  o detalhe do Rio dá **1,6 MB**; leitura do cache, 0,4 ms. Com 4 fotos
+  na tela, o arrasto continua em **16,7 ms/quadro (60 fps)**.
+- **A cor do estado vai pra DIVISA, não some.** Tinta translúcida por
+  cima da foto foi descartada: metade do Rio é Floresta da Tijuca, e
+  verde sobre mata verde vira papa justamente onde se quer olhar. Com
+  foto cheia e divisa grossa colorida, verde/dourado/azul continuam
+  legíveis. De quebra, foto contra o cinza com foil é contraste MAIOR
+  que verde contra cinza -- o progresso fica mais legível com o modo
+  ligado, não menos.
+- **O preenchimento só cede depois que a foto está na tela** (classe
+  `.com-satelite`, posta pelo JS). Cedendo junto com o modo, imagem que
+  falha deixava um BURACO no mapa: contorno colorido em volta do fundo.
+- **Trava de concorrência** (`sateliteDesenhando`): a função espera rede
+  e o mapa dispara redesenho a cada movimento. Sem ela, quatro chamadas
+  simultâneas pediam a mesma imagem quatro vezes e uma podia revogar o
+  objectURL que a outra acabou de pendurar. Testado: 4 chamadas
+  paralelas = 4 idas à rede (uma por município), não 16.
+- O Service Worker **continua tratando só mesma origem**, de propósito
+  (ver v0.11.22). Quem busca e guarda é o app, com `mode: "cors"` --
+  a EOX manda cabeçalho de CORS, então a resposta não vem opaca e o
+  `cache.put` aceita.
+- **Licença CC BY 4.0 exige atribuição**, e ela fica no rodapé da folha
+  de Modos, não escondida nos termos. O placeholder "Satélite -- Em
+  breve" que existia ali foi removido.
+- Limite honesto: Sentinel-2 tem 10 m/px e a composição é de 2020. Dá
+  pra ver litoral, mancha urbana, mata e pista de aeroporto; **não** dá
+  pra ver casa nem rua.
+
+**O mapa ganhou textura, profundidade e pino novo** (v0.26.08.19.109).
+
+- **Textura de raspadinha**: `<pattern>` vetorial (não PNG em base64)
+  numa capa ÚNICA recortada na terra por `<clipPath>`, não no fill de
+  cada município -- fill é o que carrega o estado do jogo e o que anima
+  na transição de 0,35s, e não existe interpolação de pattern pra cor.
+  O recorte **acompanha o estado**: raspou, o `<use>` daquele município
+  sai e o foil é removido. A escala do grão vai no `<pattern>`, NUNCA
+  no `<rect>` (transform no retângulo encolhe a geometria dele: com
+  fator 3,5/zoom, no zoom 40 a capa cobriria 1/11 do mapa).
+- **Sem `drop-shadow`, e isso é medido, não preferência.** O filtro é
+  re-rasterizado a cada quadro porque o elemento é transformado a cada
+  quadro -- pôr no container em vez dos paths não muda nada. Com os 92
+  paths do RJ, em desktop: 16,7 ms sem filtro, **82,9 ms** com sombra
+  leve, **105,1 ms** com sombra dramática. A profundidade veio de
+  vinheta + grade no `#mapa-viewport`, que fica FORA do elemento
+  transformado e custa zero.
+- **O fundo do mapa ganhou variáveis** (`--mapa-fundo`,
+  `--mapa-fundo-fundo`, `--mapa-grid`) mas **segue escuro nos dois
+  temas**: as cores de estado foram calibradas contra fundo escuro, e
+  sobre branco o cinza fosco do "não raspado" perde a leitura. As
+  variáveis são o gancho pro dia em que houver um mapa claro.
+- **O pino voltou a ser gota, chapada** -- a versão "ponto com anel" foi
+  recusada. Contorno ESCURO (`--mapa-fundo`) e não branco, porque o
+  pino também pousa sobre município raspado e verde sobre verde some.
+  A espessura 0,3 saiu de comparação na tela: 0,13 sumia no verde, 0,45
+  virava moldura preta.
+- **Os 4 pontos com arte própria ganharam o mesmo contorno** via filtro
+  que dilata o ALFA da imagem (`stroke` não vale pra `<image>`). Raio
+  0,16 também por comparação: 0,32 fundia os braços do Cristo num
+  borrão. Custo medido com as 4 artes filtradas: 16,7 ms, o mesmo de
+  não ter filtro -- filtro em 4 elementos minúsculos não é o mesmo que
+  filtro no mapa inteiro.
+- **Bug corrigido, achado medindo**: o `.ponto-alvo` era o único filho
+  que escalava em torno do próprio centro, então seu deslocamento não
+  era compensado e crescia com o zoom -- 1,8 px no zoom 3,5 e **20,6 px
+  no zoom 40**, contra um alvo de 36,8 px. Em aproximação máxima, mais
+  da metade da área de toque estava fora do desenho.
+- **Armadilha de especificidade**: `svg#mapa-rj .ponto-turistico > *`
+  define `transform-box` pra todos os filhos e vence `.ponto-alvo`
+  sozinho. Correção de posicionamento em ponto turístico precisa de
+  seletor tão específico quanto aquele.
+
+**Roteiro: a lista virou trajeto** (v0.26.08.19.108). Nó com trilho
+ligando uma parada à seguinte, e o primeiro nó é **"Onde você está"** --
+é de lá que o cálculo parte de verdade. As "setinhas" viraram alça de
+arrasto (Pointer Events; o drag-and-drop do HTML5 não dispara em toque)
+com `touch-action: none` só na alça, e as setas do teclado seguem
+funcionando nela. O `<select>` de município virou a folha de busca que
+o app já tinha (que ganhou um parâmetro `filtro`), o checkbox virou
+cartão acionável, e o botão de calcular ficou preso no rodapé.
+- **O chip "+ Roteiro" SAIU da ficha do ponto turístico**: montar viagem
+  no meio da exploração do mapa misturava duas coisas, e deixava
+  controle de recurso pago solto numa tela que todo mundo abre.
+- `position: sticky` com `bottom`: o retângulo do sticky é o scrollport
+  MENOS o padding do container. Como o `#motoclube-view` já reserva os
+  78px da navegação, somar de novo subia o botão 78 px acima do lugar.
+
+## Anterior: Motoclube e Roteiros (v0.26.08.18.100 a v0.26.08.19.108)
 
 **Garagem: painel de instrumentos** (v0.26.08.19.104). A lista parecia
 agenda de contatos e o detalhe estava cru.

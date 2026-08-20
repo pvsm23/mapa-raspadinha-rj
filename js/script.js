@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.108";
+const VERSAO_APP = "0.26.08.19.110";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,8 @@ const VERSAO_APP = "0.26.08.19.108";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.110", itens: ["Novo Modo Satélite: os municípios que você verificou por GPS passam a mostrar a foto real do lugar, recortada na forma deles.", "A cor do estado vai para a divisa, então verde, dourado e azul continuam se lendo por cima da foto.", "A imagem chega em duas qualidades: uma leve para a visão geral e outra detalhada quando você aproxima.", "Depois de vista uma vez, a foto fica guardada e abre sem internet."] },
+  { versao: "0.26.08.19.109", itens: ["O mapa ganhou textura de raspadinha: município ainda não raspado tem o acabamento de foil, e raspar limpa a superfície.", "Fundo do mapa com grade cartográfica e vinheta, dando profundidade sem pesar.", "O pino dos pontos turísticos ficou chapado, e os pontos com desenho próprio ganharam o mesmo recorte escuro em volta.", "Correção: em aproximação máxima, a área de toque dos pontos turísticos ficava até 20 px acima do desenho."] },
   { versao: "0.26.08.19.108", itens: ["A lista do Roteiro virou um trajeto desenhado: cada parada tem seu ponto na linha, e a viagem começa em \"onde você está\".", "Trocar a ordem das paradas agora é arrastar pela alça, no lugar das setinhas de texto.", "Escolher município no Roteiro abre a busca do app, e os lugares viraram cartões que acendem em verde ao serem escolhidos.", "O botão \"Calcular viagem\" fica preso no rodapé: não precisa mais rolar até o fim pra achar ele.", "O atalho \"+ Roteiro\" saiu da ficha dos pontos turísticos — a viagem se monta dentro do Motoclube."] },
   { versao: "0.26.08.19.107", itens: ["Correção: o cartão do seu grupo aparecia dentro dos Pontos de Apoio; agora ele fica só na tela inicial do Motoclube.", "Quando os Pontos de Apoio não carregam, o app diz o motivo (sem internet, sem permissão) e oferece tentar de novo."] },
   { versao: "0.26.08.19.106", itens: ["O cartão do seu grupo agora aparece logo ao abrir o Motoclube, e não mais escondido dentro dos Pontos de Apoio.", "Pontos de Apoio ganhou busca e filtros por marca em botões, no lugar da lista suspensa do sistema.", "Ao indicar um ponto, escolher as marcas atendidas virou tocar nas pílulas — sem caixinhas de seleção."] },
@@ -5213,6 +5215,11 @@ function atualizarModoDeVisualizacao(escala, limiarMunicipios, limiarRotulos) {
     modoRegioes = novoModoRegioes;
     aplicarEstadoNoSVG();
   }
+
+  /* O município que merece a versão de detalhe é o do centro da tela, e
+     ele muda com o arrasto -- por isso o satélite é reavaliado aqui, e
+     não só ao ligar o modo. A função agrupa os pedidos sozinha. */
+  agendarCamadaSatelite();
 }
 
 /**
@@ -6216,6 +6223,13 @@ const MODOS = [
       if (deveLigar !== modoClimaLigado) alternarModoClima();
     },
   },
+  {
+    id: "switch-modo-satelite",
+    ligado: () => modoSateliteLigado,
+    alternar: (deveLigar) => {
+      if (deveLigar !== modoSateliteLigado) alternarModoSatelite();
+    },
+  },
 ];
 
 function configurarModos() {
@@ -6314,6 +6328,348 @@ function esconderPontosNoModoClima(esconder) {
  *  - RECALCULAR quais chips cabem envolve colisão e possivelmente ir na
  *    API; isso continua agrupado (debounce), senão travaria o arrasto.
  */
+/* ============================================================
+   MODO SATÉLITE
+
+   Município VERIFICADO deixa de ser mancha verde e passa a mostrar a
+   foto de satélite dele, recortada na própria forma. É recompensa: só
+   entra quem confirmou presença por GPS.
+
+   Três decisões que mandam no resto:
+
+   1. NADA de camada de tiles. Cada município é UMA imagem, pedida com
+      a caixa dele em graus. O WMS da EOX serve em EPSG:4326, que é
+      linear em longitude e latitude -- a mesma natureza da nossa
+      projeção equirretangular. Encaixada na caixa, a foto alinha
+      EXATO, sem reprojetar nada. Tile em Web Mercator erraria de 1,5 a
+      2,3 km nas bordas do estado (medido).
+
+   2. A cor do estado vai pra DIVISA, não some. Tinta verde por cima de
+      foto de mata vira papa justamente onde a pessoa quer olhar (metade
+      do Rio é Floresta da Tijuca). Com a foto cheia e a divisa colorida,
+      verde, dourado e azul continuam legíveis.
+
+   3. Duas resoluções medidas em METROS POR PIXEL, não em pixels.
+      Município não tem tamanho fixo: o Rio tem 71 km de largura e há
+      município com 10. Fixar "512 e 2048" daria nitidez diferente em
+      cada um. Fixando o chão, o arquivo sai do tamanho que o lugar
+      pede.
+
+   Nada disso vai pro repositório: a imagem é buscada na hora e guardada
+   no CACHE_OFFLINE, que nunca é limpo. Depois da primeira vez, funciona
+   sem rede.
+   ============================================================ */
+
+const SATELITE_WMS = "https://tiles.maps.eox.at/wms";
+const SATELITE_CAMADA = "s2cloudless-2020";
+
+/* Sentinel-2 nasce com 10 m/px. 60 dá a visão geral por poucos KB; 15
+   é quase o nativo e só entra quando a pessoa aproxima de verdade. */
+const SATELITE_CHAO_GERAL = 60;
+const SATELITE_CHAO_DETALHE = 15;
+const SATELITE_ZOOM_DETALHE = 8;
+
+/* Teto de segurança: sem ele, um município grande em 15 m/px pediria
+   uma imagem de vários milhares de pixels e megabytes. */
+const SATELITE_LADO_MAX = 3072;
+
+/* Quantas imagens buscar ao mesmo tempo.
+
+   Uma de cada vez parece seguro e não é: quem completou o estado tem 92
+   municípios, e uma requisição lenta trava TODAS as outras atrás dela --
+   medido, o mapa ficou 19 s parado em 14 fotos. Seis é o mesmo lote que
+   o download offline já usa. */
+const SATELITE_POR_VEZ = 6;
+
+/* Km por grau de latitude na faixa do Brasil. Não precisa de precisão
+   geodésica aqui -- serve só pra decidir quantos pixels pedir. */
+const KM_POR_GRAU = 110.9;
+
+let modoSateliteLigado = false;
+let sateliteAgendado = null;
+/* Trava: desenharCamadaSatelite espera rede, e o mapa dispara redesenho
+   a cada movimento. Sem isto, duas execuções se cruzariam -- pedindo a
+   mesma imagem duas vezes e podendo revogar um objectURL que a outra
+   acabou de pendurar na tela. */
+let sateliteDesenhando = false;
+let satelitePedidoNovo = false;
+/* municipioId -> { url, objeto } do que já está desenhado, pra não
+   rebuscar nem revogar à toa a cada movimento do mapa. */
+const sateliteDesenhado = new Map();
+let sateliteAvisouFalha = false;
+
+/** Caixa do município em graus, a partir da caixa dele no SVG. */
+function bboxGeoDoMunicipio(id) {
+  const svg = document.getElementById("mapa-rj");
+  const path = svg?.querySelector(`.municipio[data-municipio="${id}"]`);
+  if (!path) return null;
+
+  const minLon = parseFloat(svg.dataset.projLon);
+  const minLat = parseFloat(svg.dataset.projLat);
+  const cos = parseFloat(svg.dataset.projCos);
+  const escala = parseFloat(svg.dataset.projEscala);
+  const altura = parseFloat(svg.dataset.projAltura);
+  if ([minLon, minLat, cos, escala, altura].some(Number.isNaN)) return null;
+
+  const caixa = path.getBBox();
+  return {
+    caixa,
+    oeste: caixa.x / (cos * escala) + minLon,
+    leste: (caixa.x + caixa.width) / (cos * escala) + minLon,
+    norte: (altura - caixa.y) / escala + minLat,
+    sul: (altura - caixa.y - caixa.height) / escala + minLat,
+  };
+}
+
+/** Monta o endereço da imagem no tamanho que a resolução de chão pede. */
+function urlSatelite(bbox, metrosPorPixel) {
+  const latMedia = ((bbox.norte + bbox.sul) / 2) * (Math.PI / 180);
+  const larguraM = (bbox.leste - bbox.oeste) * KM_POR_GRAU * Math.cos(latMedia) * 1000;
+  const alturaM = (bbox.norte - bbox.sul) * KM_POR_GRAU * 1000;
+
+  const limitar = (n) => Math.max(64, Math.min(SATELITE_LADO_MAX, Math.round(n)));
+  const largura = limitar(larguraM / metrosPorPixel);
+  const alturaPx = limitar(alturaM / metrosPorPixel);
+
+  const p = new URLSearchParams({
+    service: "WMS",
+    version: "1.1.1",
+    request: "GetMap",
+    layers: SATELITE_CAMADA,
+    styles: "",
+    srs: "EPSG:4326",
+    bbox: `${bbox.oeste},${bbox.sul},${bbox.leste},${bbox.norte}`,
+    width: String(largura),
+    height: String(alturaPx),
+    format: "image/jpeg",
+  });
+  return `${SATELITE_WMS}?${p.toString()}`;
+}
+
+/**
+ * Devolve um endereço local pra imagem, guardando-a no CACHE_OFFLINE.
+ *
+ * O Service Worker NÃO entra aqui: ele só trata mesma origem, de
+ * propósito (resposta de imagem de outro domínio vinha opaca e derrubava
+ * o cache.put -- ver v0.11.22). Como a EOX manda cabeçalho de CORS, o
+ * fetch daqui devolve resposta legível e o cache aceita.
+ */
+async function imagemSateliteLocal(url) {
+  const cache = await caches.open(CACHE_OFFLINE);
+  let resposta = await cache.match(url);
+  if (!resposta) {
+    resposta = await fetch(url, { mode: "cors" });
+    if (!resposta.ok) throw new Error(`satélite HTTP ${resposta.status}`);
+    await cache.put(url, resposta.clone());
+  }
+  return URL.createObjectURL(await resposta.blob());
+}
+
+/** Recorte com a forma do município, criado uma vez por município. */
+function garantirRecorteSatelite(id) {
+  const svg = document.getElementById("mapa-rj");
+  const defs = svg?.querySelector("defs");
+  if (!defs) return null;
+  const idRecorte = `sat-recorte-${id}`;
+  if (!document.getElementById(idRecorte)) {
+    const NS = "http://www.w3.org/2000/svg";
+    const recorte = document.createElementNS(NS, "clipPath");
+    recorte.id = idRecorte;
+    const uso = document.createElementNS(NS, "use");
+    uso.setAttribute("href", `#mun-${id}`);
+    recorte.appendChild(uso);
+    defs.appendChild(recorte);
+  }
+  return idRecorte;
+}
+
+/** Qual município está sob o centro da tela (o que vale detalhar). */
+function municipioNoCentroDaTela() {
+  const viewport = document.getElementById("mapa-viewport");
+  if (!viewport) return null;
+  const caixa = viewport.getBoundingClientRect();
+  const alvo = document.elementFromPoint(
+    caixa.left + caixa.width / 2,
+    caixa.top + caixa.height / 2
+  );
+  return alvo?.classList?.contains("municipio") ? alvo.dataset.municipio : null;
+}
+
+function limparCamadaSatelite() {
+  const camada = document.getElementById("camada-satelite");
+  if (camada) camada.innerHTML = "";
+  document
+    .querySelectorAll("#mapa-rj .municipio.com-satelite")
+    .forEach((p) => p.classList.remove("com-satelite"));
+  sateliteDesenhado.forEach(({ objeto }) => URL.revokeObjectURL(objeto));
+  sateliteDesenhado.clear();
+}
+
+/**
+ * Desenha a foto de cada município verificado.
+ *
+ * Só um município por vez ganha a versão de detalhe: o do centro da
+ * tela. Detalhar todos faria alguém com 40 municípios raspados baixar
+ * dezenas de megabytes de uma vez.
+ */
+async function desenharCamadaSatelite() {
+  // Já tem uma passada rodando: marca que o cenário mudou e sai. Quem
+  // está rodando repete no fim.
+  if (sateliteDesenhando) {
+    satelitePedidoNovo = true;
+    return;
+  }
+  sateliteDesenhando = true;
+  try {
+    await desenharCamadaSateliteAgora();
+  } finally {
+    sateliteDesenhando = false;
+    if (satelitePedidoNovo) {
+      satelitePedidoNovo = false;
+      desenharCamadaSatelite();
+    }
+  }
+}
+
+async function desenharCamadaSateliteAgora() {
+  const svg = document.getElementById("mapa-rj");
+  const camada = document.getElementById("camada-satelite");
+  if (!svg || !camada) return;
+
+  // No mapa afastado o estado é mancha por região: 92 fotinhas ali não
+  // seriam legíveis, só peso.
+  if (!modoSateliteLigado || modoRegioes) {
+    limparCamadaSatelite();
+    return;
+  }
+
+  const zoom = parseFloat(svg.style.getPropertyValue("--zoom")) || 1;
+  const central = zoom >= SATELITE_ZOOM_DETALHE ? municipioNoCentroDaTela() : null;
+  const verificados = [...svg.querySelectorAll(".municipio.visitado")].map(
+    (p) => p.dataset.municipio
+  );
+  const vivos = new Set(verificados);
+
+  // Município que deixou de ser verificado (ou saiu da lista) sai daqui.
+  sateliteDesenhado.forEach(({ objeto }, id) => {
+    if (vivos.has(id)) return;
+    camada.querySelector(`.satelite-mun[data-municipio="${id}"]`)?.remove();
+    svg.querySelector(`.municipio[data-municipio="${id}"]`)?.classList.remove("com-satelite");
+    URL.revokeObjectURL(objeto);
+    sateliteDesenhado.delete(id);
+  });
+
+  /* Em LOTES, e os visíveis primeiro. Buscar um de cada vez fazia o
+     mapa de quem completou o estado ir aparecendo em conta-gotas, e uma
+     requisição lenta segurava a fila inteira. */
+  const fila = ordenarPorVisibilidade(verificados);
+  for (let i = 0; i < fila.length; i += SATELITE_POR_VEZ) {
+    if (!modoSateliteLigado) return;
+    await Promise.all(
+      fila.slice(i, i + SATELITE_POR_VEZ).map((id) => desenharUmSatelite(id, central, camada, svg))
+    );
+  }
+}
+
+/** Municípios que estão na tela vêm primeiro: é o que a pessoa olha. */
+function ordenarPorVisibilidade(ids) {
+  const viewport = document.getElementById("mapa-viewport")?.getBoundingClientRect();
+  if (!viewport) return ids;
+  const naTela = [];
+  const resto = [];
+  ids.forEach((id) => {
+    const path = document.querySelector(`#mapa-rj .municipio[data-municipio="${id}"]`);
+    const caixa = path?.getBoundingClientRect();
+    const visivel =
+      caixa &&
+      caixa.right > viewport.left &&
+      caixa.left < viewport.right &&
+      caixa.bottom > viewport.top &&
+      caixa.top < viewport.bottom;
+    (visivel ? naTela : resto).push(id);
+  });
+  return naTela.concat(resto);
+}
+
+/** Busca e desenha a foto de UM município. Falha dele não derruba os outros. */
+async function desenharUmSatelite(id, central, camada, svg) {
+  const bbox = bboxGeoDoMunicipio(id);
+  if (!bbox) return;
+
+  const chao = id === central ? SATELITE_CHAO_DETALHE : SATELITE_CHAO_GERAL;
+  const url = urlSatelite(bbox, chao);
+  const jaTem = sateliteDesenhado.get(id);
+  // Já está na tela nessa mesma resolução: nada a fazer.
+  if (jaTem && jaTem.url === url) return;
+
+  let objeto;
+  try {
+    objeto = await imagemSateliteLocal(url);
+  } catch (erro) {
+    console.warn("Satélite indisponível para", id, erro?.message);
+    if (!sateliteAvisouFalha) {
+      sateliteAvisouFalha = true;
+      mostrarToastOndeEstou("Sem conexão para buscar as imagens de satélite.");
+    }
+    return;
+  }
+
+  // O modo pode ter sido desligado enquanto a imagem vinha.
+  if (!modoSateliteLigado) {
+    URL.revokeObjectURL(objeto);
+    return;
+  }
+
+  const idRecorte = garantirRecorteSatelite(id);
+  const NS = "http://www.w3.org/2000/svg";
+  let grupo = camada.querySelector(`.satelite-mun[data-municipio="${id}"]`);
+  if (!grupo) {
+    grupo = document.createElementNS(NS, "g");
+    grupo.setAttribute("class", "satelite-mun");
+    grupo.dataset.municipio = id;
+    grupo.setAttribute("clip-path", `url(#${idRecorte})`);
+    camada.appendChild(grupo);
+  }
+
+  const imagem = grupo.querySelector("image") || document.createElementNS(NS, "image");
+  imagem.setAttribute("x", bbox.caixa.x);
+  imagem.setAttribute("y", bbox.caixa.y);
+  imagem.setAttribute("width", bbox.caixa.width);
+  imagem.setAttribute("height", bbox.caixa.height);
+  /* "none" de propósito: a caixa pedida e a caixa do desenho têm a mesma
+     proporção, e forçar o encaixe garante que os cantos caiam exatamente
+     onde devem, sem sobra de meio pixel. */
+  imagem.setAttribute("preserveAspectRatio", "none");
+  imagem.setAttribute("href", objeto);
+  if (!imagem.parentNode) grupo.appendChild(imagem);
+
+  if (jaTem) URL.revokeObjectURL(jaTem.objeto);
+  sateliteDesenhado.set(id, { url, objeto });
+  // Só agora o município pode abrir mão do preenchimento.
+  svg.querySelector(`.municipio[data-municipio="${id}"]`)?.classList.add("com-satelite");
+}
+
+/* O mapa se move a cada quadro; buscar imagem nesse ritmo seria
+   absurdo. Como no clima, o redesenho é agrupado. */
+function agendarCamadaSatelite() {
+  if (!modoSateliteLigado) return;
+  clearTimeout(sateliteAgendado);
+  sateliteAgendado = setTimeout(desenharCamadaSatelite, 220);
+}
+
+function alternarModoSatelite() {
+  modoSateliteLigado = !modoSateliteLigado;
+  const svg = document.getElementById("mapa-rj");
+  svg?.classList.toggle("modo-satelite", modoSateliteLigado);
+  sateliteAvisouFalha = false;
+
+  if (modoSateliteLigado) desenharCamadaSatelite();
+  else limparCamadaSatelite();
+
+  atualizarContadorDeModos();
+}
+
+
 function agendarRedesenhoDeClima() {
   if (!modoClimaLigado) return;
   reposicionarChipsDeClima();
@@ -12562,6 +12918,30 @@ function aplicarEstadoNoSVG() {
       // -- dá pra raspar sem precisar voltar (ver abrirModalRaspadinha).
       path.classList.toggle("presenca-pendente", !dados?.visitado && !!dados?.presencaConfirmadaEm);
     }
+  });
+  atualizarRecorteDoGrao();
+  agendarCamadaSatelite();
+}
+
+/**
+ * O grão de raspadinha cobre só o que AINDA NÃO foi raspado.
+ *
+ * Sem isto o foil continuava por cima do município já conquistado, e a
+ * metáfora se desfazia: raspar é justamente TIRAR a camada. Agora o
+ * verde, o azul e o dourado saem limpos, e o contraste entre raspado e
+ * não raspado deixa de ser só a cor.
+ *
+ * Mexe no <clipPath> em vez de pintar por município: continua sendo UMA
+ * capa, e isto roda só quando o estado muda -- nunca durante o arrasto.
+ * Filho de clipPath com display:none sai do recorte.
+ */
+function atualizarRecorteDoGrao() {
+  const recorte = document.getElementById("recorte-terra");
+  if (!recorte) return;
+  recorte.querySelectorAll("use[data-municipio]").forEach((uso) => {
+    const path = document.getElementById("mun-" + uso.dataset.municipio);
+    const raspado = !!path && (path.classList.contains("visitado") || path.classList.contains("nao-verificado"));
+    uso.style.display = raspado ? "none" : "";
   });
 }
 

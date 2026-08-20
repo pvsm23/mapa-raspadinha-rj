@@ -35,8 +35,25 @@ button {
   overflow: hidden;
   /* Mais escuro que os botões flutuantes (#171B21) de propósito: no
      neumorfismo os botões têm a cor do fundo, então precisam de um
-     fundo de mapa mais escuro pra "saltarem" com o relevo. */
-  background: #191c22;
+     fundo de mapa mais escuro pra "saltarem" com o relevo.
+
+     Por cima dele, duas camadas que dão profundidade DE GRAÇA: um grid
+     cartográfico e uma vinheta. Elas ficam no viewport, que NÃO é
+     transformado -- então não são redesenhadas a cada quadro do
+     arrasto, ao contrário de qualquer efeito posto no <svg>.
+
+     A vinheta vem primeiro na lista pra ficar por cima do grid,
+     apagando-o nas bordas em vez de deixá-lo cortado no meio. */
+  background-color: var(--mapa-fundo);
+  background-image:
+    radial-gradient(120% 85% at 50% 42%, transparent 0%, transparent 45%, var(--mapa-fundo-fundo) 100%),
+    linear-gradient(var(--mapa-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mapa-grid) 1px, transparent 1px);
+  /* A vinheta cobre a tela toda; o grid se repete a cada 88px. Ele fica
+     preso à TELA, não ao mapa: é papel de fundo, não graticulado
+     geográfico -- graticulado teria que acompanhar o arrasto, o que
+     custaria repintar o viewport inteiro a cada quadro. */
+  background-size: 100% 100%, 88px 88px, 88px 88px;
   touch-action: none;
   cursor: grab;
   z-index: 1;
@@ -242,6 +259,20 @@ svg#mapa-rj .ponto-turistico > .ponto-pino-miolo {
   transform-origin: 0 0;
 }
 
+/* A arte ganha o mesmo recorte escuro do pino, pra os dois lerem como
+   a mesma família de marcador. Vem de um filtro (ver #contorno-arte no
+   index.html) porque 'stroke' não existe pra <image>.
+
+   A cor sai daqui, e não do atributo flood-color, pra continuar
+   presa à variável do fundo do mapa. */
+.ponto-arte {
+  filter: url(#contorno-arte);
+}
+
+#contorno-arte feFlood {
+  flood-color: var(--mapa-fundo);
+}
+
 /* A arte não recebe evento: quem responde ao toque é o .ponto-alvo,
    por cima dela. Sem isto, acertar o Cristo exigiria mirar num braço
    de poucos pixels. */
@@ -299,6 +330,179 @@ svg#mapa-rj.modo-regioes #contornos-regioes,
   stroke: var(--bg, #0F1216);
   stroke-width: 1.4;
   stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* Crédito da licença das imagens, no rodapé da folha de Modos. */
+.modo-credito {
+  list-style: none;
+  padding: 12px 4px 2px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--fraco);
+}
+
+/* =========================================================
+   TEXTURA DE RASPADINHA (capa de grão)
+
+   Uma capa só, recortada na terra (ver <defs> no index.html).
+   ========================================================= */
+.capa-grao {
+  fill: url(#grao-raspadinha);
+  /* Não pode roubar o toque dos municípios que ela cobre. */
+  pointer-events: none;
+}
+
+/* O grão pertence à SUPERFÍCIE, não ao território: tem que ficar do mesmo
+   tamanho na tela em qualquer aproximação, igual aos nomes e às divisas.
+   Sem isto, no zoom 40 cada partícula viraria uma bolha de um dedo.
+
+   A escala vai no <pattern>, NUNCA no <rect>: 'transform' no retângulo
+   escala também a geometria dele, e como o fator é 3.5/zoom, no zoom 40
+   a capa encolheria pra 1/11 e descobriria quase todo o mapa.
+
+   'transform' funciona em <pattern> neste motor e aceita a variável
+   (verificado: com --zoom em 14 resolve pra matrix(0.25, ...)), então
+   isto sai sem uma linha de JS. */
+#grao-raspadinha {
+  transform: scale(calc(3.5 / var(--zoom, 3.5)));
+}
+
+/* No modo regiões o mapa vira mancha lisa, sem divisas: o grão ali só
+   sujaria a leitura de conjunto. */
+svg#mapa-rj.modo-regioes .capa-grao {
+  opacity: 0.35;
+}
+
+/* =========================================================
+   PONTO TURÍSTICO: a gota, cheia
+
+   A versão de "ponto com anel" foi recusada: a gota é o que se lê
+   como MARCADOR DE LUGAR sem ninguém explicar, e o anel virava alvo
+   de radar. Volta a gota, agora chapada -- sem o miolo branco e sem o
+   contorno branco de antes, que a deixavam com cara de adesivo.
+
+   NÃO se divide nada por --zoom aqui: a regra '.ponto-turistico > *'
+   JÁ aplica scale(7 * 3.5 / var(--zoom)) em todos os filhos. Dividir
+   de novo compensaria duas vezes e o pino sumiria justamente ao
+   aproximar.
+   ========================================================= */
+.ponto-pino {
+  fill: var(--verde);
+  /* Contorno ESCURO, e não branco: o branco recortava bem sobre o
+     cinza, mas o pino também pousa sobre município já raspado -- e
+     verde sobre verde some. O fio escuro separa dos quatro estados
+     (cinza, azul, verde, dourado) com o mesmo peso.
+
+     0,3 saiu de comparação na tela, não de palpite: com 0,13 o pino
+     sumia mesmo sobre o verde (a referência era um pino sólido, mas
+     num fundo escuro -- aqui ele pousa sobre quatro cores). 0,45 já
+     virava moldura preta. */
+  stroke: var(--mapa-fundo);
+  stroke-width: 0.3;
+  stroke-linejoin: round;
+}
+
+/* A gota da referência é cheia: o furo branco do meio sai. */
+.ponto-pino-miolo {
+  display: none;
+}
+
+/* O alvo de toque volta a ser SÓ alvo: invisível, sobre o bulbo, que
+   é onde o dedo mira.
+
+   O transform-box aqui conserta um desalinho REAL, medido: o alvo era
+   o único filho que escalava em torno do próprio centro, então o
+   deslocamento dele não era compensado e crescia com o zoom -- 1,8 px
+   no zoom 3,5, mas 20,6 px no zoom 40, contra um alvo de 36,8 px. Em
+   aproximação máxima, mais da metade da área de toque já estava fora
+   do desenho. Escalando a partir da origem, igual ao pino, ele fica
+   grudado no bulbo em qualquer aproximação. */
+/* O seletor precisa ser tão específico quanto o de
+   'svg#mapa-rj .ponto-turistico > *', que é quem define transform-box
+   pra todos os filhos -- com '.ponto-alvo' sozinho, o fill-box de lá
+   vencia e o conserto não valia nada (visto na medição). */
+svg#mapa-rj .ponto-turistico > .ponto-alvo {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+.ponto-alvo {
+  cy: -1.55;
+  r: 1.5;
+  fill: transparent;
+  stroke: none;
+}
+
+.ponto-turistico:active .ponto-pino {
+  fill: var(--verde-esc, #12351F);
+}
+
+/* =========================================================
+   PROFUNDIDADE: por que NÃO há drop-shadow aqui
+
+   A ideia de um drop-shadow no <svg> inteiro (em vez de nos 92 paths)
+   parece a escolha segura, e não é. O filtro precisa ser rasterizado de
+   novo a cada quadro justamente porque o elemento é transformado a cada
+   quadro. Medido neste projeto, com os 92 paths do RJ, em desktop:
+
+     sem filtro ........................ 16,7 ms/quadro   (60 fps)
+     drop-shadow(0 10px 18px) .......... 82,9 ms/quadro   (12 fps)
+     drop-shadow(0 24px 48px) ......... 105,1 ms/quadro   (9 fps)
+
+   Em Minas são 853 paths, e num WebView de celular. A profundidade
+   aqui vem da vinheta no #mapa-viewport, que custa zero por ficar fora
+   do elemento transformado.
+
+   Se um dia a sombra for mesmo necessária, o caminho é ligá-la só com o
+   mapa PARADO -- a classe .arrastando já existe no viewport:
+
+     #mapa-viewport:not(.arrastando) svg#mapa-rj {
+       filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.55));
+     }
+
+   Mesmo assim sobra o repinte de ~80 ms ao soltar o mapa, então isso
+   precisa ser sentido no aparelho antes de entrar.
+   ========================================================= */
+
+/* =========================================================
+   MODO SATÉLITE
+
+   Com o modo ligado, o município verificado cede o PREENCHIMENTO pra
+   foto e leva a cor do estado pra DIVISA.
+
+   Tinta por cima da foto foi descartada: metade do Rio é Floresta da
+   Tijuca, e verde translúcido sobre mata verde vira uma papa onde não
+   se lê nem a foto nem o estado. Na divisa, verde, dourado e azul
+   continuam dizendo a mesma coisa sem sujar a imagem.
+
+   Quem NÃO foi continua cinza com o grão de raspadinha -- foto contra
+   foil é um contraste mais forte que verde contra cinza, então o
+   progresso fica mais legível com o modo ligado, não menos.
+   ========================================================= */
+/* A divisa engrossa assim que o modo liga -- é ela que passa a
+   carregar a cor do estado. */
+svg#mapa-rj.modo-satelite .municipio.visitado {
+  stroke: var(--verde);
+  stroke-width: calc(var(--traco-base, 2) * 2.4 * 3.5px / var(--zoom, 3.5));
+}
+
+svg#mapa-rj.modo-satelite .municipio.visitado.brilhante {
+  stroke: var(--ouro);
+}
+
+/* Mas o preenchimento só cede depois que a FOTO ESTÁ NA TELA (a classe
+   é posta por desenharCamadaSatelite). Cedendo junto com o modo, um
+   município cuja imagem falhou virava um buraco no mapa: contorno
+   colorido em volta do fundo, sem nada dentro. */
+svg#mapa-rj.modo-satelite .municipio.com-satelite,
+svg#mapa-rj.modo-satelite .municipio.com-satelite:hover {
+  fill: transparent;
+}
+
+/* A foto não recebe toque: quem responde continua sendo o path do
+   município, embaixo dela. */
+#camada-satelite {
   pointer-events: none;
 }
 
@@ -9365,6 +9569,16 @@ svg#mapa-rj .ponto-numero-roteiro {
   --ouro: #E9B949;
   --erro: #F0616D;
   --raio: 14px;
+  /* ---- Fundo do mapa ----
+     O mapa é a única tela que NÃO acompanha o tema, e isso é decisão,
+     não esquecimento: as cores de estado (cinza/azul/verde/dourado)
+     foram calibradas contra fundo escuro, e sobre branco o cinza fosco
+     do "não raspado" perde o contraste que faz a raspadinha ler.
+     Ficam em variável pra o dia em que houver um mapa claro de
+     verdade: aí basta redefinir estas três no bloco do tema. */
+  --mapa-fundo: #191c22;
+  --mapa-fundo-fundo: #121419;
+  --mapa-grid: rgba(255, 255, 255, 0.055);
   /* Superfícies "de vidro" flutuantes por cima do mapa (topbar,
      botões redondos, dica) e o véu escurecido atrás de modais/menus. */
   --vidro: rgba(23, 27, 33, 0.9);
