@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.20.115";
+const VERSAO_APP = "0.26.08.20.116";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.20.115";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.20.116", itens: ["Os posts agora mostram a foto de perfil de quem postou — ou o selo, se a pessoa escolheu um selo como avatar.", "Posts publicados antes desta versão continuam com as iniciais.", "As fotos de perfil passaram a ser guardadas numa pasta própria, separada das fotos dos posts."] },
   { versao: "0.26.08.20.115", itens: ["Correção: a janela de denunciar abria ATRÁS do post ou da sugestão, ficando inacessível.", "Correção: tocar no nome de quem postou, com o post aberto em tela cheia, abria o perfil por trás dele."] },
   { versao: "0.26.08.20.114", itens: ["Correção: a foto nunca aparecia no card das Sugestões — o cartão era pra mostrar o lugar de fundo e vinha sempre cinza.", "O ✕ vermelho saiu do rodapé do card: excluir e denunciar viraram ícones discretos no canto de cima, longe de curtir e comentar.", "Filtros de categoria, botão de sugerir e o card ficaram no mesmo acabamento da aba Desbravadores.", "No detalhe, \"Abrir no Maps\" virou botão de verdade e o campo de comentário ganhou o enviar embutido, no lugar do botão branco."] },
   { versao: "0.26.08.20.113", itens: ["Correção: segurar o post fazia a imagem crescer, mas arrastar não curtia nem compartilhava — e ao soltar o post ainda abria por cima do gesto.", "O post aberto virou um cartão sobre fundo borrado, e fecha tocando fora dele.", "Os botões do post perderam o fundo claro que destoava do tema; a localização virou texto com um pin, sem a pílula verde.", "Curtir, comentar e compartilhar ficam cinza e só acendem em verde quando ativos.", "A aba Comunidade passou a se chamar Desbravadores também na barra de baixo."] },
@@ -15171,7 +15172,7 @@ function cardDeGrade(post) {
 
   const sobreposto = `
     <div class="feed-item-info">
-      <span class="feed-item-avatar" style="background:${corAvatar(post.autorApelido)}">${escaparHtml(iniciaisApelido(post.autorApelido))}</span>
+      <span class="feed-item-avatar"></span>
       <span class="feed-item-nome">${escaparHtml(post.autorApelido)}</span>
       ${
         post.autorGrupo
@@ -15206,6 +15207,12 @@ function cardDeGrade(post) {
     item.classList.add("feed-item-so-texto");
     item.innerHTML = `<p class="feed-item-texto">${escaparHtml(post.texto || "")}</p>${sobreposto}`;
   }
+
+  /* Foto de perfil de verdade, ou o SELO que a pessoa escolheu -- é o
+     mesmo aplicarAvatar do resto do app, então os três casos (foto,
+     selo, iniciais) saem daqui sem código próprio. Post antigo não tem
+     o campo e cai nas iniciais sozinho. */
+  aplicarAvatar(item.querySelector(".feed-item-avatar"), post.autorFotoPerfil, post.autorApelido);
 
   item.addEventListener("click", (e) => {
     // pointerType vazio/mouse = veio de mouse ou teclado. Toque já foi
@@ -15476,7 +15483,7 @@ function renderizarCardPost(post) {
 
   card.innerHTML = `
     <div class="post-topo">
-      <div class="post-avatar" style="background:${corAvatar(post.autorApelido)}">${escaparHtml(iniciaisApelido(post.autorApelido))}</div>
+      <div class="post-avatar"></div>
       <div class="post-ident">
         <span class="post-card-autor">${escaparHtml(post.autorApelido)}</span>
         ${
@@ -15508,6 +15515,8 @@ function renderizarCardPost(post) {
       </div>
     </div>
   `;
+
+  aplicarAvatar(card.querySelector(".post-avatar"), post.autorFotoPerfil, post.autorApelido);
 
   // Provisório: posts novos trazem "fotoUrl" pronta (Drive, ver
   // subirFotoPostParaDrive em js/auth.js) -- só posts antigos (se

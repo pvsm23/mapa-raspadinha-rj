@@ -161,7 +161,12 @@ function atualizarUsuarioNaPlanilha(dados) {
  * README.md.
  */
 function uploadFotoPost(dados) {
-  var pasta = obterPastaFotosPosts();
+  /* Duas pastas, escolhidas por um campo OPCIONAL: sem ele, tudo cai
+     na pasta de posts, que é como sempre foi. Isso é de propósito --
+     enquanto esta versão do script não for republicada, o app novo
+     continua funcionando contra o script antigo (que ignora o campo
+     que não conhece). */
+  var pasta = dados.destino === "perfil" ? obterPastaFotosPerfil() : obterPastaFotosPosts();
   var bytes = Utilities.base64Decode(dados.base64);
   var blob = Utilities.newBlob(bytes, dados.mimeType || "image/jpeg", dados.nomeArquivo || Date.now() + ".jpg");
   var arquivo = pasta.createFile(blob);
@@ -230,7 +235,30 @@ function excluirFotoPost(dados) {
 }
 
 function obterPastaFotosPosts() {
-  var nome = "Desbrava - Fotos de posts (provisório)";
+  return obterPastaPorNome("Desbrava - Fotos de posts (provisório)");
+}
+
+/**
+ * Pasta separada pras fotos de PERFIL.
+ *
+ * Elas viviam misturadas com as dos posts, e são coisas diferentes: a
+ * foto de post é conteúdo publicado uma vez, a de perfil é a cara da
+ * pessoa e costuma ser trocada. Separar deixa a limpeza e a auditoria
+ * possíveis -- dá pra olhar uma pasta sem varrer milhares de fotos de
+ * post no meio.
+ */
+function obterPastaFotosPerfil() {
+  return obterPastaPorNome("Desbrava - Fotos de perfil");
+}
+
+/**
+ * Acha a pasta pelo nome, ou cria na primeira vez.
+ *
+ * Por NOME e não por id fixo no código: id exige alguém criar a pasta
+ * à mão e colar o valor aqui, e um id errado só aparece quando a
+ * primeira foto falha. Assim o script se vira sozinho.
+ */
+function obterPastaPorNome(nome) {
   var pastas = DriveApp.getFoldersByName(nome);
   if (pastas.hasNext()) return pastas.next();
   return DriveApp.createFolder(nome);

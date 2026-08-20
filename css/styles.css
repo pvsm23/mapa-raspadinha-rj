@@ -14820,3 +14820,16 @@ button:disabled:active {
 @media (prefers-reduced-motion: reduce) {
   .chip-barra .chip { transition: none; }
 }
+
+/* O avatar do mosaico pode virar foto ou selo: o <span> vira moldura e
+   a imagem preenche. overflow: hidden porque o selo tem padding próprio
+   e a foto é recortada em círculo. */
+.feed-item-avatar {
+  overflow: hidden;
+  padding: 0;
+}
+
+.feed-item-avatar .avatar-img {
+  width: 100%;
+  height: 100%;
+}

@@ -1051,7 +1051,7 @@ if (CONFIGURADO) {
     const usuario = auth.currentUser;
     if (!usuario) throw new Error("Faça login primeiro.");
     const { fotoUrl } = await comTimeout(
-      subirFotoPostParaDrive(arquivoFoto, `perfil-${usuario.uid}-${Date.now()}.jpg`),
+      subirFotoPostParaDrive(arquivoFoto, `perfil-${usuario.uid}-${Date.now()}.jpg`, "perfil"),
       30000,
       "A conexão está lenta demais pra subir a foto. Verifique sua internet e tente de novo."
     );
@@ -1164,7 +1164,7 @@ if (CONFIGURADO) {
    * Storage). Migrar de volta é só trocar esta função pelo
    * uploadBytes de antes.
    */
-  async function subirFotoPostParaDrive(arquivoFoto, nomeArquivo) {
+  async function subirFotoPostParaDrive(arquivoFoto, nomeArquivo, destino) {
     if (!URL_PLANILHA_FEEDBACK || URL_PLANILHA_FEEDBACK.startsWith("SUBSTITUA")) {
       throw new Error("Upload de foto ainda não configurado (Apps Script).");
     }
@@ -1174,6 +1174,12 @@ if (CONFIGURADO) {
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         tipo: "upload-foto-post",
+        /* "perfil" manda a foto pra pasta separada no Drive. Sem o
+           campo, o Apps Script usa a pasta de posts -- que é o que
+           acontece enquanto a versão nova do script não for
+           republicada. Ver obterPastaFotosPerfil em
+           tools/apps-script-feedback.gs. */
+        destino: destino || "post",
         base64,
         mimeType: arquivoFoto.type || "image/jpeg",
         nomeArquivo,
@@ -1214,6 +1220,18 @@ if (CONFIGURADO) {
         // crachá ficar congelado no grupo da época -- o que até combina,
         // já que o post é daquele momento.
         autorGrupo: window.raspadinhaAuth.grupoMotoclube || null,
+        /* O avatar do autor entra no POST pelo mesmo motivo do grupo
+           acima: buscar o perfil de cada autor pra desenhar o feed
+           seriam 20 leituras por rolagem, e o projeto está no Spark.
+
+           Guarda o objeto inteiro ({tipo, url} ou {tipo, seloId,
+           dourado}), que é o formato que aplicarAvatar já entende --
+           assim foto enviada e SELO funcionam sem código novo.
+
+           Mesmo preço do crachá: fica congelado no avatar da época.
+           Post antigo, e post de quem ainda não escolheu avatar, caem
+           nas iniciais, que é o padrão de aplicarAvatar. */
+        autorFotoPerfil: window.raspadinhaAuth.fotoPerfil || null,
         texto: (texto || "").slice(0, 500),
         fotoUrl,
         fotoDriveId: fotoId,
