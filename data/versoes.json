@@ -1,5 +1,15 @@
 [
   {
+    "versao": "0.26.08.19.111",
+    "itens": [
+      "Correção: em vários lugares o app mostrava o código do IBGE no lugar do nome do município — inclusive no seu grupo do Motoclube.",
+      "Correção: o brilho verde dos pontos escolhidos continuava aceso depois de sair do modo de montar roteiro no mapa.",
+      "No Modo Satélite, a divisa verde agora aparece entre municípios verificados vizinhos, em vez de sumir sob as fotos.",
+      "Pedra do Cão Sentado, Pico das Agulhas Negras e Museu do Amanhã ganharam desenho próprio no mapa.",
+      "Pedra do Cão Sentado e Pico das Agulhas Negras agora têm localização: aparecem no mapa e podem entrar num roteiro."
+    ]
+  },
+  {
     "versao": "0.26.08.19.110",
     "itens": [
       "Novo Modo Satélite: os municípios que você verificou por GPS passam a mostrar a foto real do lugar, recortada na forma deles.",

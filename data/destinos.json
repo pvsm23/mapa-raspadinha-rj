@@ -1364,7 +1364,10 @@
         "id": "3302254-pico-das-agulhas-negras",
         "nome": "Pico das Agulhas Negras",
         "descricao": "O ponto culminante do estado do Rio de Janeiro, com formações rochosas pontiagudas e desafiadoras que representam o grande sonho de consumo dos montanhistas.",
-        "textoCompleto": "Com 2.791 metros, é o ponto mais alto do estado do Rio de Janeiro e o quinto do Brasil. A parte final exige escalada com uso das mãos por uma fenda na rocha, o que faz dele um objetivo clássico do montanhismo brasileiro. O nome vem da cor escura dos paredões de rocha nua que se erguem acima dos campos de altitude."
+        "textoCompleto": "Com 2.791 metros, é o ponto mais alto do estado do Rio de Janeiro e o quinto do Brasil. A parte final exige escalada com uso das mãos por uma fenda na rocha, o que faz dele um objetivo clássico do montanhismo brasileiro. O nome vem da cor escura dos paredões de rocha nua que se erguem acima dos campos de altitude.",
+        "lat": -22.37956297667588,
+        "lon": -44.6334824288334,
+        "icone": "3302254-agulhas-negras.png"
       },
       {
         "id": "3302254-penedo-pequena-finlandia",
@@ -2017,7 +2020,10 @@
         "id": "3303401-pedra-do-cao-sentado",
         "nome": "Pedra do Cão Sentado",
         "descricao": "Formação rochosa em forma de cão sentado, símbolo da cidade.",
-        "textoCompleto": "Uma formação rochosa cuja silhueta lembra, de perfil, um cão sentado — semelhança tão evidente que virou símbolo de Nova Friburgo. É alcançada por trilha e recompensa com vista da cidade encaixada entre montanhas."
+        "textoCompleto": "Uma formação rochosa cuja silhueta lembra, de perfil, um cão sentado — semelhança tão evidente que virou símbolo de Nova Friburgo. É alcançada por trilha e recompensa com vista da cidade encaixada entre montanhas.",
+        "lat": -22.214162915308233,
+        "lon": -42.49175881592617,
+        "icone": "3303401-cao-sentado.png"
       },
       {
         "id": "3303401-praca-getulio-vargas",
@@ -2844,7 +2850,8 @@
         "lat": -22.894068,
         "lon": -43.179404,
         "descricao": "Um impactante e inovador ícone de arquitetura neofuturista focado em ciências, sustentabilidade e no futuro do planeta, ancorado na revitalizada orla portuária.",
-        "textoCompleto": "Aberto em dezembro de 2015 na Praça Mauá, é a peça mais visível da requalificação da zona portuária do Rio. O prédio é do arquiteto espanhol Santiago Calatrava, e sua silhueta de espinhos brancos avançando sobre a Baía de Guanabara foi inspirada nas bromélias do Jardim Botânico. Não é um museu de acervo: é de ideias. A visita percorre perguntas sobre de onde viemos, onde estamos e para onde vamos, com cenários possíveis para as próximas décadas. O próprio edifício faz parte do discurso — as asas móveis acompanham o sol para captar energia, e a água da baía é usada na climatização antes de voltar filtrada."
+        "textoCompleto": "Aberto em dezembro de 2015 na Praça Mauá, é a peça mais visível da requalificação da zona portuária do Rio. O prédio é do arquiteto espanhol Santiago Calatrava, e sua silhueta de espinhos brancos avançando sobre a Baía de Guanabara foi inspirada nas bromélias do Jardim Botânico. Não é um museu de acervo: é de ideias. A visita percorre perguntas sobre de onde viemos, onde estamos e para onde vamos, com cenários possíveis para as próximas décadas. O próprio edifício faz parte do discurso — as asas móveis acompanham o sol para captar energia, e a água da baía é usada na climatização antes de voltar filtrada.",
+        "icone": "3304557-museu-do-amanha.png"
       }
     ]
   },

@@ -8357,8 +8357,11 @@ svg#mapa-rj.escolhendo .ponto-turistico {
 
 /* Já escolhido: anel verde, pra distinguir de longe sem depender de ler
    o número. */
-svg#mapa-rj .ponto-turistico.ponto-no-roteiro > .ponto-pino,
-svg#mapa-rj .ponto-turistico.ponto-no-roteiro > .ponto-arte {
+/* O brilho é um recurso do MODO de escolha, e o '.escolhendo' no
+   seletor garante isso: fora dele o mapa não acende ponto nenhum, mesmo
+   que a classe fique pra trás em algum caminho. */
+svg#mapa-rj.escolhendo .ponto-turistico.ponto-no-roteiro > .ponto-pino,
+svg#mapa-rj.escolhendo .ponto-turistico.ponto-no-roteiro > .ponto-arte {
   filter: drop-shadow(0 0 1.2px var(--verde)) drop-shadow(0 0 2.4px var(--verde));
 }
 

@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.110";
+const VERSAO_APP = "0.26.08.19.111";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.19.110";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.19.111", itens: ["Correção: em vários lugares o app mostrava o código do IBGE no lugar do nome do município — inclusive no seu grupo do Motoclube.", "Correção: o brilho verde dos pontos escolhidos continuava aceso depois de sair do modo de montar roteiro no mapa.", "No Modo Satélite, a divisa verde agora aparece entre municípios verificados vizinhos, em vez de sumir sob as fotos.", "Pedra do Cão Sentado, Pico das Agulhas Negras e Museu do Amanhã ganharam desenho próprio no mapa.", "Pedra do Cão Sentado e Pico das Agulhas Negras agora têm localização: aparecem no mapa e podem entrar num roteiro."] },
   { versao: "0.26.08.19.110", itens: ["Novo Modo Satélite: os municípios que você verificou por GPS passam a mostrar a foto real do lugar, recortada na forma deles.", "A cor do estado vai para a divisa, então verde, dourado e azul continuam se lendo por cima da foto.", "A imagem chega em duas qualidades: uma leve para a visão geral e outra detalhada quando você aproxima.", "Depois de vista uma vez, a foto fica guardada e abre sem internet."] },
   { versao: "0.26.08.19.109", itens: ["O mapa ganhou textura de raspadinha: município ainda não raspado tem o acabamento de foil, e raspar limpa a superfície.", "Fundo do mapa com grade cartográfica e vinheta, dando profundidade sem pesar.", "O pino dos pontos turísticos ficou chapado, e os pontos com desenho próprio ganharam o mesmo recorte escuro em volta.", "Correção: em aproximação máxima, a área de toque dos pontos turísticos ficava até 20 px acima do desenho."] },
   { versao: "0.26.08.19.108", itens: ["A lista do Roteiro virou um trajeto desenhado: cada parada tem seu ponto na linha, e a viagem começa em \"onde você está\".", "Trocar a ordem das paradas agora é arrastar pela alça, no lugar das setinhas de texto.", "Escolher município no Roteiro abre a busca do app, e os lugares viraram cartões que acendem em verde ao serem escolhidos.", "O botão \"Calcular viagem\" fica preso no rodapé: não precisa mais rolar até o fim pra achar ele.", "O atalho \"+ Roteiro\" saiu da ficha dos pontos turísticos — a viagem se monta dentro do Motoclube."] },
@@ -10959,7 +10960,12 @@ async function garantirNumeroDoMembro() {
 }
 
 function nomeDoMunicipio(id) {
-  return document.querySelector(`#mapa-rj [data-municipio="${id}"]`)?.dataset.nome || id;
+  /* '.municipio' no seletor não é enfeite: outros elementos do SVG
+     carregam data-municipio (o recorte do grão, a camada de satélite), e
+     sem a classe o querySelector podia devolver um deles -- que não tem
+     dataset.nome -- e o nome virava o código do IBGE na tela. */
+  const path = document.querySelector(`#mapa-rj .municipio[data-municipio="${id}"]`);
+  return path?.dataset.nome || idParaNomeMunicipio[id] || id;
 }
 
 function urlDoBrasao(id) {
@@ -11595,6 +11601,9 @@ function sairDoModoMapaRoteiro() {
   // Tirar a classe já devolve a visibilidade ao controle do zoom.
   document.getElementById("mapa-rj")?.classList.remove("escolhendo");
   document.querySelectorAll(".ponto-numero-roteiro").forEach((e) => e.remove());
+  document
+    .querySelectorAll("#mapa-rj .ponto-no-roteiro")
+    .forEach((e) => e.classList.remove("ponto-no-roteiro"));
 }
 
 /** Distintivo numerado sobre cada ponto que está no roteiro. */
@@ -12938,8 +12947,8 @@ function aplicarEstadoNoSVG() {
 function atualizarRecorteDoGrao() {
   const recorte = document.getElementById("recorte-terra");
   if (!recorte) return;
-  recorte.querySelectorAll("use[data-municipio]").forEach((uso) => {
-    const path = document.getElementById("mun-" + uso.dataset.municipio);
+  recorte.querySelectorAll("use[data-mun]").forEach((uso) => {
+    const path = document.getElementById("mun-" + uso.dataset.mun);
     const raspado = !!path && (path.classList.contains("visitado") || path.classList.contains("nao-verificado"));
     uso.style.display = raspado ? "none" : "";
   });
