@@ -1,5 +1,18 @@
 [
   {
+    "versao": "0.26.08.20.112",
+    "itens": [
+      "No Modo Satélite, a partir de bastante zoom todos os municípios que aparecem na tela ficam na qualidade alta, e não só o do meio.",
+      "E o que já carregou em alta não volta mais para a baixa quando você arrasta o mapa para o lado.",
+      "A borda verde do Modo Satélite afinou: de longe ela tinha o triplo da espessura e cobria parte da foto.",
+      "O Modo Satélite fica lembrado — se você deixar ligado, ele volta ligado na próxima vez que abrir o app.",
+      "A Comunidade virou mosaico de duas colunas: cabe muito mais post na tela e as fotos não são mais cortadas.",
+      "Tocar num post abre ele em tela cheia, com legenda, curtidas e comentários.",
+      "Segurando o dedo num post, ele salta pro centro da tela — arraste para a direita para curtir ou para a esquerda para compartilhar.",
+      "A Comunidade deixou de ser uma janela flutuante: agora ocupa a tela inteira, com cabeçalho fixo e as abas em formato de pílula."
+    ]
+  },
+  {
     "versao": "0.26.08.19.111",
     "itens": [
       "Correção: em vários lugares o app mostrava o código do IBGE no lugar do nome do município — inclusive no seu grupo do Motoclube.",

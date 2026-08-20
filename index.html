@@ -579,24 +579,38 @@
        abrirPainelSocial em js/script.js). -->
   <div id="modal-social" class="oculto">
     <div id="social-conteudo">
-      <button id="btn-fechar-social" aria-label="Fechar">✕</button>
-      <h2>Comunidade Desbrava</h2>
+      <!-- Cabeçalho preso no topo. A SETA ficou no lugar do "✕": a tela
+           agora é cheia, sem fundo pra tocar em volta, e a Comunidade é
+           aberta também a partir do mapa (filtrada por município ou por
+           ponto turístico). Sem ela, quem chegasse por esse caminho não
+           teria como voltar -- a barra de baixo abre o painel, mas não
+           o fechava. Mesmo par de saídas do Motoclube: a seta e tocar
+           de novo em "Comunidade". -->
+      <header id="social-topo">
+        <button id="btn-fechar-social" aria-label="Voltar ao mapa">‹</button>
+        <h2>Desbravadores</h2>
+      </header>
 
-      <!-- So aparece quando o painel foi aberto filtrado por um municipio -->
-      <div id="social-filtro-municipio" class="oculto">
-        <span id="social-filtro-municipio-nome"></span>
-        <button type="button" id="btn-limpar-filtro-municipio">Ver todos ✕</button>
+      <div id="social-barra">
+        <!-- So aparece quando o painel foi aberto filtrado por um municipio -->
+        <div id="social-filtro-municipio" class="oculto">
+          <span id="social-filtro-municipio-nome"></span>
+          <button type="button" id="btn-limpar-filtro-municipio">Ver todos ✕</button>
+        </div>
+
+        <div id="social-abas" role="tablist">
+          <button type="button" id="btn-social-global" class="social-aba social-aba-ativa" role="tab" aria-selected="true">Global</button>
+          <button type="button" id="btn-social-amigos" class="social-aba" role="tab" aria-selected="false">Amigos</button>
+        </div>
+
+        <!-- Atalho pras Sugestões da Comunidade (feed de lugares por
+             município). Some ao rolar pra baixo, pra a foto ganhar a
+             tela -- ver aoRolarFeedSocial em js/script.js. -->
+        <button type="button" id="btn-atalho-sugestoes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.5.4.8.9.9 1.5l.1.7h5.2l.1-.7c.1-.6.4-1.1.9-1.5A6 6 0 0 0 12 3z"/></svg>
+          Sugestões da Comunidade
+        </button>
       </div>
-
-      <div id="social-abas">
-        <button type="button" id="btn-social-global" class="social-aba social-aba-ativa">Global</button>
-        <button type="button" id="btn-social-amigos" class="social-aba">Amigos</button>
-      </div>
-
-      <!-- Atalho pras Sugestões da Comunidade (feed de lugares por
-           município) direto da rede social -- chip discreto, não
-           compete com o feed. -->
-      <button type="button" id="btn-atalho-sugestoes">💡 Sugestões de lugares</button>
 
       <!-- FAB (Floating Action Button) fixo no canto inferior direito
            do painel -- mesmo id/handler de sempre
@@ -1664,6 +1678,28 @@
         <div id="biblioteca-grade-rotas" class="biblioteca-grade biblioteca-grade-2"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Post em tela cheia. O corpo é preenchido por abrirDetalheDoPost
+       com o MESMO card do feed antigo (renderizarCardPost), pra
+       comentários, denúncia e excluir continuarem existindo num lugar
+       só. -->
+  <div id="modal-post-detalhe" class="oculto">
+    <div id="post-detalhe-topo">
+      <button type="button" id="btn-fechar-post-detalhe" aria-label="Voltar">‹</button>
+      <h3>Post</h3>
+    </div>
+    <div id="post-detalhe-corpo"></div>
+  </div>
+
+  <!-- Espiada: aparece ao segurar o dedo num post da grade. A camada é
+       decorativa (pointer-events: none no CSS) -- quem escuta o dedo é
+       o card lá embaixo, que capturou o ponteiro. -->
+  <div id="espiada" class="oculto" aria-hidden="true">
+    <div class="espiada-acao espiada-compartilhar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v13"/><path d="m7.5 7.5 4.5-4.5 4.5 4.5"/></svg></div>
+    <div id="espiada-palco"></div>
+    <div class="espiada-acao espiada-curtir"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.9-7.5-10A4.5 4.5 0 0 1 12 7.6 4.5 4.5 0 0 1 19.5 11c0 5.1-7.5 10-7.5 10z"/></svg></div>
+    <p class="espiada-dica">Arraste para curtir ou compartilhar</p>
   </div>
 
   <!-- Lightbox: clicar num selo de qualquer grade da biblioteca abre

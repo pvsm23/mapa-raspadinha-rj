@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.19.111";
+const VERSAO_APP = "0.26.08.20.112";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.19.111";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.20.112", itens: ["No Modo Satélite, a partir de bastante zoom todos os municípios que aparecem na tela ficam na qualidade alta, e não só o do meio.", "E o que já carregou em alta não volta mais para a baixa quando você arrasta o mapa para o lado.", "A borda verde do Modo Satélite afinou: de longe ela tinha o triplo da espessura e cobria parte da foto.", "O Modo Satélite fica lembrado — se você deixar ligado, ele volta ligado na próxima vez que abrir o app.", "A Comunidade virou mosaico de duas colunas: cabe muito mais post na tela e as fotos não são mais cortadas.", "Tocar num post abre ele em tela cheia, com legenda, curtidas e comentários.", "Segurando o dedo num post, ele salta pro centro da tela — arraste para a direita para curtir ou para a esquerda para compartilhar.", "A Comunidade deixou de ser uma janela flutuante: agora ocupa a tela inteira, com cabeçalho fixo e as abas em formato de pílula."] },
   { versao: "0.26.08.19.111", itens: ["Correção: em vários lugares o app mostrava o código do IBGE no lugar do nome do município — inclusive no seu grupo do Motoclube.", "Correção: o brilho verde dos pontos escolhidos continuava aceso depois de sair do modo de montar roteiro no mapa.", "No Modo Satélite, a divisa verde agora aparece entre municípios verificados vizinhos, em vez de sumir sob as fotos.", "Pedra do Cão Sentado, Pico das Agulhas Negras e Museu do Amanhã ganharam desenho próprio no mapa.", "Pedra do Cão Sentado e Pico das Agulhas Negras agora têm localização: aparecem no mapa e podem entrar num roteiro."] },
   { versao: "0.26.08.19.110", itens: ["Novo Modo Satélite: os municípios que você verificou por GPS passam a mostrar a foto real do lugar, recortada na forma deles.", "A cor do estado vai para a divisa, então verde, dourado e azul continuam se lendo por cima da foto.", "A imagem chega em duas qualidades: uma leve para a visão geral e outra detalhada quando você aproxima.", "Depois de vista uma vez, a foto fica guardada e abre sem internet."] },
   { versao: "0.26.08.19.109", itens: ["O mapa ganhou textura de raspadinha: município ainda não raspado tem o acabamento de foil, e raspar limpa a superfície.", "Fundo do mapa com grade cartográfica e vinheta, dando profundidade sem pesar.", "O pino dos pontos turísticos ficou chapado, e os pontos com desenho próprio ganharam o mesmo recorte escuro em volta.", "Correção: em aproximação máxima, a área de toque dos pontos turísticos ficava até 20 px acima do desenho."] },
@@ -1378,7 +1379,14 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarPanZoomEstadual();
 
   // ---- Comunidade Desbrava (rede social) ----
-  document.getElementById("btn-social").addEventListener("click", () => exigirLogin(() => abrirPainelSocial()));
+  /* Alterna, não só abre: com a tela cheia sem véu pra tocar em volta,
+     tocar de novo em "Comunidade" é a segunda saída -- o mesmo par que
+     o Motoclube usa (a seta e o próprio item da barra). */
+  document.getElementById("btn-social").addEventListener("click", () => {
+    const aberto = !document.getElementById("modal-social").classList.contains("oculto");
+    if (aberto) fecharPainelSocial();
+    else exigirLogin(() => abrirPainelSocial());
+  });
   document.getElementById("btn-fechar-social").addEventListener("click", fecharPainelSocial);
   document.getElementById("modal-social").addEventListener("click", (evento) => {
     if (evento.target.id === "modal-social") fecharPainelSocial();
@@ -1428,6 +1436,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("btn-publicar-post").addEventListener("click", publicarPost);
   document.getElementById("btn-social-carregar-mais").addEventListener("click", () => carregarFeedSocial(false));
+  document.getElementById("btn-fechar-post-detalhe")?.addEventListener("click", fecharDetalheDoPost);
+  document.getElementById("social-conteudo")?.addEventListener("scroll", aoRolarFeedSocial, { passive: true });
 
   // ---- Sugestões da Comunidade ----
   // ---- Denunciar conteúdo ----
@@ -6230,8 +6240,50 @@ const MODOS = [
     alternar: (deveLigar) => {
       if (deveLigar !== modoSateliteLigado) alternarModoSatelite();
     },
+    /* Volta ligado na próxima abertura do app. É por modo, e não pra
+       todos: o Clima busca a temperatura de 92 municípios ao ligar, e
+       ressuscitar isso sozinho a cada abertura gastaria dados de quem
+       só experimentou uma vez. O satélite não tem esse custo -- o que
+       já foi visto vem do cache, em 0,4 ms. */
+    lembrar: true,
   },
 ];
+
+/* Modos que voltam como a pessoa deixou. Uma chave por modo, e não uma
+   lista, pra um valor estragado não derrubar os outros. */
+const CHAVE_MODO = (id) => "desbrava_modo_" + id.replace("switch-modo-", "");
+
+function lembrarModo(id, ligado) {
+  try {
+    localStorage.setItem(CHAVE_MODO(id), ligado ? "1" : "0");
+  } catch {
+    /* Sem armazenamento (janela anônima, cota cheia): o modo só deixa
+       de ser lembrado, nada quebra. */
+  }
+}
+
+/**
+ * Religa os modos marcados com `lembrar` na abertura do app.
+ *
+ * Roda cedo, quando o progresso da pessoa ainda não chegou do
+ * Firestore -- e tudo bem: sem município verificado o satélite não
+ * desenha nada, e aplicarEstadoNoSVG chama agendarCamadaSatelite assim
+ * que o estado carrega. A foto aparece sozinha.
+ */
+function restaurarModosLembrados() {
+  MODOS.filter((m) => m.lembrar).forEach((m) => {
+    let guardado = null;
+    try {
+      guardado = localStorage.getItem(CHAVE_MODO(m.id));
+    } catch {
+      return;
+    }
+    if (guardado !== "1" || m.ligado()) return;
+    m.alternar(true);
+    const input = document.getElementById(m.id);
+    if (input) input.checked = true;
+  });
+}
 
 function configurarModos() {
   const abrir = () => {
@@ -6260,6 +6312,7 @@ function configurarModos() {
     });
   });
 
+  restaurarModosLembrados();
   atualizarContadorDeModos();
 }
 
@@ -6368,10 +6421,32 @@ const SATELITE_CAMADA = "s2cloudless-2020";
    é quase o nativo e só entra quando a pessoa aproxima de verdade. */
 const SATELITE_CHAO_GERAL = 60;
 const SATELITE_CHAO_DETALHE = 15;
+
+/* A partir daqui UM município ganha o detalhe: o do centro da tela. */
 const SATELITE_ZOOM_DETALHE = 8;
 
-/* Teto de segurança: sem ele, um município grande em 15 m/px pediria
-   uma imagem de vários milhares de pixels e megabytes. */
+/* E a partir daqui, TODOS os que estão à vista.
+
+   Parece caro e não é, porque as duas coisas andam juntas: quanto mais
+   perto, menos mapa cabe na tela. Medido no RJ -- no zoom 30 a tela
+   cobre 13,4 km e encosta em no máximo 7 municípios (na Baixada, que é
+   onde eles são menores e mais colados); no interior, 2.
+
+   E município pequeno tem imagem pequena. Medido em 15 m/px: Nilópolis
+   56 KB, São João de Meriti 88 KB, Belford Roxo 166 KB, Niterói 278 KB.
+   Sete deles somam menos que UMA foto do Rio. */
+const SATELITE_ZOOM_TUDO = 30;
+
+/* Teto de segurança. Só o Rio chega nele: com 71 km de largura, 15 m/px
+   pediriam 4.747 px. Todos os outros municípios do estado alcançam os
+   15 m/px cheios dentro deste limite.
+
+   Não sobe, e isso foi medido, não achismo: em 4096 px o servidor leva
+   19 s pra responder (contra 12 s em 3072) pra ganhar de 23 para 17
+   m/px, e acima disso ele recusa e devolve imagem de erro. O limite de
+   verdade é a fonte: Sentinel-2 nasce com 10 m/px, o que no Rio seriam
+   7.120 px -- que a EOX não serve. Não existe "resolução máxima" além
+   disso pra pedir. */
 const SATELITE_LADO_MAX = 3072;
 
 /* Quantas imagens buscar ao mesmo tempo.
@@ -6484,6 +6559,54 @@ function garantirRecorteSatelite(id) {
   return idRecorte;
 }
 
+/**
+ * Quem ganha a versão de detalhe agora.
+ *
+ * Abaixo de SATELITE_ZOOM_DETALHE, ninguém. Entre ele e
+ * SATELITE_ZOOM_TUDO, só o do centro da tela -- ali ainda cabe muito
+ * mapa e detalhar tudo faria baixar município que a pessoa nem está
+ * olhando. Acima, todos os que aparecem: a tela já cobre poucos
+ * quilômetros (ver a nota nas constantes).
+ */
+function municipiosParaDetalhar(ids, zoom) {
+  const alvo = new Set();
+  if (zoom < SATELITE_ZOOM_DETALHE) return alvo;
+
+  if (zoom < SATELITE_ZOOM_TUDO) {
+    const central = municipioNoCentroDaTela();
+    if (central) alvo.add(central);
+    return alvo;
+  }
+  idsNaTela(ids).forEach((id) => alvo.add(id));
+  return alvo;
+}
+
+/**
+ * Quais destes municípios aparecem na tela agora.
+ *
+ * getBoundingClientRect do path já vem com a transformação do mapa
+ * aplicada, então a conta é direta em pixels de tela. É a CAIXA, não o
+ * contorno: de vez em quando entra um município que só encosta o canto.
+ * Erra pro lado de incluir demais, que é o lado certo nos dois usos --
+ * ordem de busca e escolha da resolução.
+ */
+function idsNaTela(ids) {
+  const janela = document.getElementById("mapa-viewport")?.getBoundingClientRect();
+  if (!janela) return [];
+  return ids.filter((id) => {
+    const caixa = document
+      .querySelector(`#mapa-rj .municipio[data-municipio="${id}"]`)
+      ?.getBoundingClientRect();
+    return (
+      caixa &&
+      caixa.right > janela.left &&
+      caixa.left < janela.right &&
+      caixa.bottom > janela.top &&
+      caixa.top < janela.bottom
+    );
+  });
+}
+
 /** Qual município está sob o centro da tela (o que vale detalhar). */
 function municipioNoCentroDaTela() {
   const viewport = document.getElementById("mapa-viewport");
@@ -6545,10 +6668,10 @@ async function desenharCamadaSateliteAgora() {
   }
 
   const zoom = parseFloat(svg.style.getPropertyValue("--zoom")) || 1;
-  const central = zoom >= SATELITE_ZOOM_DETALHE ? municipioNoCentroDaTela() : null;
   const verificados = [...svg.querySelectorAll(".municipio.visitado")].map(
     (p) => p.dataset.municipio
   );
+  const detalhados = municipiosParaDetalhar(verificados, zoom);
   const vivos = new Set(verificados);
 
   // Município que deixou de ser verificado (ou saiu da lista) sai daqui.
@@ -6567,39 +6690,33 @@ async function desenharCamadaSateliteAgora() {
   for (let i = 0; i < fila.length; i += SATELITE_POR_VEZ) {
     if (!modoSateliteLigado) return;
     await Promise.all(
-      fila.slice(i, i + SATELITE_POR_VEZ).map((id) => desenharUmSatelite(id, central, camada, svg))
+      fila.slice(i, i + SATELITE_POR_VEZ).map((id) => desenharUmSatelite(id, detalhados, camada, svg))
     );
   }
 }
 
 /** Municípios que estão na tela vêm primeiro: é o que a pessoa olha. */
 function ordenarPorVisibilidade(ids) {
-  const viewport = document.getElementById("mapa-viewport")?.getBoundingClientRect();
-  if (!viewport) return ids;
-  const naTela = [];
-  const resto = [];
-  ids.forEach((id) => {
-    const path = document.querySelector(`#mapa-rj .municipio[data-municipio="${id}"]`);
-    const caixa = path?.getBoundingClientRect();
-    const visivel =
-      caixa &&
-      caixa.right > viewport.left &&
-      caixa.left < viewport.right &&
-      caixa.bottom > viewport.top &&
-      caixa.top < viewport.bottom;
-    (visivel ? naTela : resto).push(id);
-  });
-  return naTela.concat(resto);
+  const naTela = new Set(idsNaTela(ids));
+  return [...ids.filter((id) => naTela.has(id)), ...ids.filter((id) => !naTela.has(id))];
 }
 
 /** Busca e desenha a foto de UM município. Falha dele não derruba os outros. */
-async function desenharUmSatelite(id, central, camada, svg) {
+async function desenharUmSatelite(id, detalhados, camada, svg) {
   const bbox = bboxGeoDoMunicipio(id);
   if (!bbox) return;
 
-  const chao = id === central ? SATELITE_CHAO_DETALHE : SATELITE_CHAO_GERAL;
-  const url = urlSatelite(bbox, chao);
   const jaTem = sateliteDesenhado.get(id);
+  /* Uma vez em detalhe, fica em detalhe.
+
+     Rebaixar era desperdício puro, e era o que mais incomodava na
+     prática: bastava arrastar pro vizinho pra o município anterior
+     VOLTAR a ficar borrado, mesmo com a foto boa já guardada -- de onde
+     ela sai em 0,4 ms. Trocar por uma pior não economiza nada e desfaz
+     o que a pessoa acabou de esperar. */
+  const querDetalhe = detalhados.has(id) || !!jaTem?.detalhe;
+  const chao = querDetalhe ? SATELITE_CHAO_DETALHE : SATELITE_CHAO_GERAL;
+  const url = urlSatelite(bbox, chao);
   // Já está na tela nessa mesma resolução: nada a fazer.
   if (jaTem && jaTem.url === url) return;
 
@@ -6645,7 +6762,7 @@ async function desenharUmSatelite(id, central, camada, svg) {
   if (!imagem.parentNode) grupo.appendChild(imagem);
 
   if (jaTem) URL.revokeObjectURL(jaTem.objeto);
-  sateliteDesenhado.set(id, { url, objeto });
+  sateliteDesenhado.set(id, { url, objeto, detalhe: querDetalhe });
   // Só agora o município pode abrir mão do preenchimento.
   svg.querySelector(`.municipio[data-municipio="${id}"]`)?.classList.add("com-satelite");
 }
@@ -6660,6 +6777,7 @@ function agendarCamadaSatelite() {
 
 function alternarModoSatelite() {
   modoSateliteLigado = !modoSateliteLigado;
+  lembrarModo("switch-modo-satelite", modoSateliteLigado);
   const svg = document.getElementById("mapa-rj");
   svg?.classList.toggle("modo-satelite", modoSateliteLigado);
   sateliteAvisouFalha = false;
@@ -14862,7 +14980,7 @@ async function carregarFeedSocial(resetar) {
           ? `<p>Ainda não há posts de ${escaparHtml(nomeDoEstadoAberto)}. Seja o primeiro!</p>`
           : "<p>Nenhum post por aqui ainda. Seja o primeiro a postar!</p>";
     }
-    posts.forEach((post) => feedEl.appendChild(renderizarCardPost(post)));
+    if (posts.length) distribuirNoMosaico(feedEl, posts, resetar);
     btnMais.classList.toggle("oculto", feedSocialAcabou);
   } catch (erro) {
     console.error("Falha ao carregar feed social:", erro);
@@ -14942,6 +15060,347 @@ function tempoRelativo(ts) {
   if (s < 86400) return `${Math.floor(s / 3600)} h`;
   if (s < 604800) return `${Math.floor(s / 86400)} d`;
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+/* ============================================================
+   COMUNIDADE EM GRADE (mosaico de 2 colunas)
+
+   O feed era uma coluna só, com a foto ocupando quase a tela inteira:
+   três posts e a pessoa já tinha rolado a tela toda. Vira mosaico, e o
+   card passa a ser A FOTO -- nome, curtidas e o resto vão pra um
+   sobreposto discreto, e o conteúdo completo abre em tela cheia.
+
+   DUAS COLUNAS DE VERDADE, e não `column-count: 2`. A propriedade do
+   CSS preenche a primeira coluna inteira antes de começar a segunda:
+   num feed em ordem de tempo, isso jogaria TODOS os posts mais novos na
+   coluna da esquerda e os mais velhos na direita. Com dois contêineres
+   e cada post indo pro que estiver mais curto, a leitura continua indo
+   da esquerda pra direita, como a pessoa espera.
+   ============================================================ */
+
+/* Rolou pra baixo: o chip das Sugestões se recolhe e a foto ganha a
+   tela. Subiu: ele volta. A folga de 6px evita que tremidas do dedo
+   fiquem ligando e desligando o chip. */
+let ultimaRolagemSocial = 0;
+
+function aoRolarFeedSocial() {
+  const caixa = document.getElementById("social-conteudo");
+  const chip = document.getElementById("btn-atalho-sugestoes");
+  if (!caixa || !chip) return;
+  const agora = caixa.scrollTop;
+
+  /* Perto do topo ele SEMPRE volta, e essa checagem vem antes da folga
+     de propósito: com ela depois, um salto direto pro topo (trocar de
+     aba recarrega o feed e zera a rolagem de uma vez) caía na folga,
+     saía da função e deixava o chip escondido pra sempre. */
+  if (agora <= 48) {
+    chip.classList.remove("chip-escondido");
+    ultimaRolagemSocial = agora;
+    return;
+  }
+
+  // Folga contra tremida de dedo: sem ela o chip pisca ligando e
+  // desligando a cada pixel.
+  if (Math.abs(agora - ultimaRolagemSocial) < 6) return;
+  chip.classList.toggle("chip-escondido", agora > ultimaRolagemSocial);
+  ultimaRolagemSocial = agora;
+}
+
+/** Cria (ou reaproveita) as duas colunas dentro do feed. */
+function colunasDoFeed(feedEl, recriar) {
+  let colunas = [...feedEl.querySelectorAll(".feed-coluna")];
+  if (recriar || colunas.length !== 2) {
+    feedEl.innerHTML = "";
+    colunas = [0, 1].map(() => {
+      const c = document.createElement("div");
+      c.className = "feed-coluna";
+      feedEl.appendChild(c);
+      return c;
+    });
+  }
+  return colunas;
+}
+
+/**
+ * Espalha os posts nas duas colunas, cada um na mais curta do momento.
+ *
+ * Limite conhecido: a altura só é definitiva depois que a foto carrega,
+ * e o post não guarda as dimensões da imagem. Enquanto ela não vem, o
+ * card usa uma proporção provisória (ver .feed-item-carregando no CSS),
+ * então o equilíbrio das colunas é aproximado. Guardar largura e altura
+ * no post na hora de publicar resolveria isso de vez -- e de quebra
+ * acabaria com o pulo do layout quando a imagem chega.
+ */
+function distribuirNoMosaico(feedEl, posts, resetar) {
+  const colunas = colunasDoFeed(feedEl, resetar);
+  posts.forEach((post) => {
+    const menor = colunas[0].offsetHeight <= colunas[1].offsetHeight ? colunas[0] : colunas[1];
+    menor.appendChild(cardDeGrade(post));
+  });
+}
+
+/** O card do mosaico: a foto, e por cima dela o mínimo pra identificar. */
+function cardDeGrade(post) {
+  const item = document.createElement("article");
+  item.className = "feed-item";
+  item.dataset.postId = post.id;
+  item.tabIndex = 0;
+  item.setAttribute("role", "button");
+
+  const curtidas = (post.curtidoPor || []).length;
+  const temFoto = Boolean(post.fotoUrl || post.fotoStoragePath);
+  item.setAttribute(
+    "aria-label",
+    `Post de ${post.autorApelido}${post.texto ? ": " + post.texto.slice(0, 60) : ""}. ${curtidas} curtida(s). Toque para abrir.`
+  );
+
+  const sobreposto = `
+    <div class="feed-item-info">
+      <span class="feed-item-avatar" style="background:${corAvatar(post.autorApelido)}">${escaparHtml(iniciaisApelido(post.autorApelido))}</span>
+      <span class="feed-item-nome">${escaparHtml(post.autorApelido)}</span>
+      ${
+        post.autorGrupo
+          ? `<img class="feed-item-brasao" src="${escaparHtml(urlDoBrasao(post.autorGrupo))}" alt="">`
+          : ""
+      }
+      <span class="feed-item-curtidas">${ICONE_CORACAO}${curtidas}</span>
+    </div>`;
+
+  if (temFoto) {
+    item.classList.add("feed-item-carregando");
+    item.innerHTML = `<img class="feed-item-foto" alt="">${sobreposto}`;
+    const img = item.querySelector(".feed-item-foto");
+    /* A proporção provisória sai assim que a imagem chega -- é isso que
+       deixa o mosaico ter fotos em pé e deitadas sem cortar nenhuma. */
+    img.addEventListener("load", () => item.classList.remove("feed-item-carregando"), { once: true });
+    if (post.fotoUrl) aplicarFotoComFallback(img, post.fotoUrl);
+    else if (post.fotoStoragePath) {
+      // Mesmo caminho do card antigo: o blob entra na lista que
+      // revogarBlobsDeFotosPosts limpa ao recarregar o feed.
+      window.raspadinhaAuth.buscarFotoPost(post.fotoStoragePath).then((url) => {
+        if (!url) return;
+        aplicarFotoComFallback(img, url);
+        blobUrlsFotosPosts.push(url);
+      });
+    }
+  } else {
+    /* Post sem foto não vira buraco na grade: vira cartão de texto.
+       Hoje todos os caminhos de publicação exigem foto, mas o app já
+       tratava esse caso -- e post antigo, ou upload que falhou, não
+       pode sumir do feed. */
+    item.classList.add("feed-item-so-texto");
+    item.innerHTML = `<p class="feed-item-texto">${escaparHtml(post.texto || "")}</p>${sobreposto}`;
+  }
+
+  item.addEventListener("click", () => abrirDetalheDoPost(post));
+  item.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      abrirDetalheDoPost(post);
+    }
+  });
+  ligarGestoDeEspiar(item, post);
+  return item;
+}
+
+/* ---- Tela cheia do post ----
+
+   Reaproveita renderizarCardPost, a MESMA função do feed antigo e da
+   tela de post por link. Não é preguiça: ali dentro estão comentários,
+   menções, denúncia, excluir, filtro por município e compartilhar --
+   reescrever isso numa segunda tela seria duplicar comportamento que já
+   funciona e criar dois lugares pra corrigir cada bug. */
+function abrirDetalheDoPost(post) {
+  const modal = document.getElementById("modal-post-detalhe");
+  const corpo = document.getElementById("post-detalhe-corpo");
+  if (!modal || !corpo) return;
+  corpo.innerHTML = "";
+  corpo.appendChild(renderizarCardPost(post));
+  modal.classList.remove("oculto");
+  document.body.classList.add("com-post-aberto");
+}
+
+function fecharDetalheDoPost() {
+  const modal = document.getElementById("modal-post-detalhe");
+  if (!modal) return;
+  fecharComAnimacao(modal);
+  document.body.classList.remove("com-post-aberto");
+  // A foto do detalhe pode ser blob: soltar evita segurar memória.
+  document.getElementById("post-detalhe-corpo").innerHTML = "";
+}
+
+/* ============================================================
+   ESPIAR E AGIR (toque longo + arrasto)
+
+   Segurar o dedo levanta a foto pro centro da tela; arrastar pra
+   direita curte, pra esquerda compartilha; soltar dispara.
+
+   POR QUE POINTER EVENTS, e não touchstart/touchmove/touchend: é o
+   mesmo caminho que o arrasto do Roteiro já usa neste app, cobre dedo,
+   caneta e mouse com um código só, e o setPointerCapture mantém o gesto
+   preso ao elemento mesmo quando o dedo sai de cima dele. Com touch
+   events puros eu precisaria remontar essa parte à mão.
+
+   O toque longo é de 400 ms, e não 300: a grade ROLA, e 300 ms dispara
+   "espiada" no meio de uma rolagem lenta. Junto com o limite de
+   movimento abaixo, 400 ms foi o que separou os dois gestos sem
+   parecer lento.
+   ============================================================ */
+
+const ESPIAR_MS = 400;
+/* Quanto o dedo pode andar ANTES da espiada começar sem que ela seja
+   cancelada. Acima disso é rolagem, não intenção de segurar. */
+const ESPIAR_TOLERANCIA_PX = 10;
+/* Quanto arrastar, JÁ espiando, pra armar a ação. Metade da largura de
+   um polegar: perto demais dispara sem querer, longe demais cansa. */
+const ESPIAR_GATILHO_PX = 60;
+/* Onde o ícone chega ao tamanho cheio -- daí pra frente não cresce
+   mais, senão o dedo continua andando e nada muda na tela. */
+const ESPIAR_CURSO_PX = 130;
+
+let espiando = null;
+
+function ligarGestoDeEspiar(item, post) {
+  item.addEventListener("pointerdown", (evento) => {
+    // Só o toque/caneta principal. Botão direito e multitoque ficam de fora.
+    if (evento.button > 0 || espiando) return;
+
+    const inicio = { x: evento.clientX, y: evento.clientY };
+    let cancelado = false;
+
+    const relogio = setTimeout(() => {
+      if (cancelado) return;
+      abrirEspiada(item, post, evento.pointerId, inicio);
+    }, ESPIAR_MS);
+
+    /* Antes da espiada começar, qualquer movimento maior que a
+       tolerância quer dizer que a pessoa está ROLANDO a grade. */
+    const vigiar = (ev) => {
+      if (espiando) return;
+      const andou = Math.hypot(ev.clientX - inicio.x, ev.clientY - inicio.y);
+      if (andou > ESPIAR_TOLERANCIA_PX) desistir();
+    };
+    const desistir = () => {
+      cancelado = true;
+      clearTimeout(relogio);
+      item.removeEventListener("pointermove", vigiar);
+      item.removeEventListener("pointerup", desistir);
+      item.removeEventListener("pointercancel", desistir);
+    };
+
+    item.addEventListener("pointermove", vigiar);
+    item.addEventListener("pointerup", desistir);
+    item.addEventListener("pointercancel", desistir);
+  });
+}
+
+function abrirEspiada(item, post, pointerId, inicio) {
+  const camada = document.getElementById("espiada");
+  const palco = document.getElementById("espiada-palco");
+  if (!camada || !palco) return;
+
+  const original = item.querySelector(".feed-item-foto");
+  palco.innerHTML = original
+    ? `<img src="${escaparHtml(original.currentSrc || original.src)}" alt="">`
+    : `<p class="espiada-texto">${escaparHtml(post.texto || "")}</p>`;
+
+  camada.classList.remove("oculto");
+  // Um quadro depois, pra a transição do CSS ter de onde partir.
+  requestAnimationFrame(() => camada.classList.add("espiada-aberta"));
+  navigator.vibrate?.(12);
+
+  espiando = { post, item, acao: null, pointerId };
+
+  try {
+    item.setPointerCapture(pointerId);
+  } catch {
+    /* Sem captura o gesto ainda funciona enquanto o dedo estiver sobre
+       o item; não vale abortar por isso. */
+  }
+
+  /* MATEMÁTICA DO ARRASTO
+
+     Só o eixo X interessa: dx = onde o dedo está agora menos onde ele
+     pousou. O sinal diz a ação (direita = curtir, esquerda =
+     compartilhar) e o módulo diz a intensidade.
+
+     A intensidade vira uma fração de 0 a 1 dividindo pelo CURSO e
+     limitando o teto (Math.min). Essa fração move a foto e cresce o
+     ícone junto -- é ela que faz o gesto PARECER analógico, em vez de
+     um interruptor que só liga ao cruzar a linha.
+
+     A foto anda dx/3, e não dx: se acompanhasse o dedo inteiro, sairia
+     da tela antes de o gesto se completar. A fração de um terço mantém
+     o retorno visual sem perder o centro. */
+  const mover = (ev) => {
+    if (!espiando) return;
+    ev.preventDefault();
+    const dx = ev.clientX - inicio.x;
+    const intensidade = Math.min(1, Math.abs(dx) / ESPIAR_CURSO_PX);
+    const armado = Math.abs(dx) >= ESPIAR_GATILHO_PX;
+
+    espiando.acao = armado ? (dx > 0 ? "curtir" : "compartilhar") : null;
+
+    palco.style.transform = `translateX(${dx / 3}px) scale(${1 - intensidade * 0.06})`;
+    camada.dataset.acao = espiando.acao || "";
+    camada.style.setProperty("--forca", intensidade.toFixed(3));
+  };
+
+  const soltar = () => {
+    item.removeEventListener("pointermove", mover);
+    item.removeEventListener("pointerup", soltar);
+    item.removeEventListener("pointercancel", soltar);
+    const acao = espiando?.acao;
+    fecharEspiada();
+    if (acao === "curtir") curtirPeloGesto(post, item);
+    else if (acao === "compartilhar") compartilharPost(post.id);
+  };
+
+  // passive: false porque o pointermove PRECISA cancelar a rolagem
+  // enquanto a espiada está no ar.
+  item.addEventListener("pointermove", mover, { passive: false });
+  item.addEventListener("pointerup", soltar);
+  item.addEventListener("pointercancel", soltar);
+}
+
+function fecharEspiada() {
+  const camada = document.getElementById("espiada");
+  const palco = document.getElementById("espiada-palco");
+  if (!camada) return;
+  camada.classList.remove("espiada-aberta");
+  camada.dataset.acao = "";
+  camada.style.removeProperty("--forca");
+  if (palco) palco.style.transform = "";
+  // Espera a transição terminar pra esconder, senão o sumiço é seco.
+  setTimeout(() => {
+    camada.classList.add("oculto");
+    if (palco) palco.innerHTML = "";
+  }, 180);
+  espiando = null;
+}
+
+/** Curtir pelo gesto: mesma função do botão, e o número no card segue. */
+async function curtirPeloGesto(post, item) {
+  const meuUid = window.raspadinhaAuth.usuarioAtual?.uid;
+  if (!meuUid) {
+    exigirLogin(() => {});
+    return;
+  }
+  const jaCurtiu = (post.curtidoPor || []).includes(meuUid);
+  if (jaCurtiu) {
+    mostrarToastOndeEstou("Você já curtiu esse post.");
+    return;
+  }
+  try {
+    await window.raspadinhaAuth.curtirPost(post.id, true, post.autorUid);
+    post.curtidoPor = [...(post.curtidoPor || []), meuUid];
+    const contador = item.querySelector(".feed-item-curtidas");
+    if (contador) contador.innerHTML = `${ICONE_CORACAO}${post.curtidoPor.length}`;
+    navigator.vibrate?.(18);
+  } catch (erro) {
+    console.error("Falha ao curtir pelo gesto:", erro);
+    mostrarToastOndeEstou("Não deu pra curtir agora.");
+  }
 }
 
 function renderizarCardPost(post) {
