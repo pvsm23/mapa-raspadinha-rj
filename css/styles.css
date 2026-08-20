@@ -9767,26 +9767,41 @@ svg#mapa-rj .ponto-numero-roteiro {
   position: fixed;
   inset: 0;
   z-index: 120;
-  background: var(--bg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 #modal-post-detalhe.oculto {
   display: none;
 }
 
+/* O card. max-height em vez de altura fixa: post curto fica compacto,
+   post com muitos comentários rola por dentro sem esticar a tela. */
+#post-detalhe-caixa {
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surf);
+  border: 1px solid var(--linha);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
 #post-detalhe-topo {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 12px 14px;
-  background: var(--vidro);
-  backdrop-filter: blur(12px);
+  padding: 12px 8px 12px 16px;
   border-bottom: 1px solid var(--linha);
 }
 
@@ -9810,6 +9825,9 @@ svg#mapa-rj .ponto-numero-roteiro {
 }
 
 #post-detalhe-corpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 14px;
 }
 
@@ -10115,7 +10133,12 @@ a {
 .post-card,
 .sugestao-card,
 .conquista-item {
-  background: var(--surf) !important;
+  /* background-COLOR, e nunca o atalho: o atalho zera background-image
+     junto, e com !important ele vencia até o estilo inline. Era isso
+     que apagava a FOTO do card de sugestão, que é desenhado justamente
+     como cartão de guia de viagem (ver o véu em .sugestao-card::before
+     e o background-size: cover mais acima). */
+  background-color: var(--surf) !important;
   border: 1px solid var(--linha) !important;
   border-radius: 20px !important;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5) !important;
@@ -10601,7 +10624,7 @@ select:focus {
    cantos arredondados) -- reaproveita a especificidade (ID + classe)
    pra vencer a regra genérica de "cartão" (background/border/shadow)
    herdada de [id$="-conteudo"], .post-card. */
-#social-feed .post-card {
+.post-card {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -10609,14 +10632,14 @@ select:focus {
   border-bottom: 1px solid #1A1E24 !important;
   padding-bottom: 6px;
 }
-#social-feed .post-card:last-child {
+.post-card:last-child {
   border-bottom: none !important;
 }
 
 /* O município do post vira texto cinza discreto embaixo do nome, não
    mais um chip colorido -- some sobrescreve a regra global de "chip
    verde" (.post-card-municipio, .sugestao-card-categoria etc). */
-#social-feed .post-card-municipio {
+.post-card .post-card-municipio {
   background: none !important;
   color: var(--fraco) !important;
   border-radius: 0 !important;
@@ -14439,4 +14462,353 @@ button:disabled:active {
   border-radius: 8px !important;
   width: auto !important;
   margin: 0 !important;
+}
+
+
+/* =========================================================
+   CARD DO POST ABERTO
+
+   Estas regras vêm DEPOIS da CAMADA UI MODERNA de propósito: ela força
+   `background: var(--surf2) !important` em todo <button>, e o "⋯", o
+   município e as ações do post SÃO botões. No tema claro esse --surf2
+   é quase branco -- era ele que deixava os botões com cara de recorte
+   colado no card.
+
+   Antes isso era resolvido por regras presas a #social-feed. Quando o
+   card saiu do feed pro modal, elas pararam de valer e o visual antigo
+   voltou. Agora o alvo é o CARD, então vale onde ele estiver.
+   ========================================================= */
+
+/* ---- Cabeçalho: avatar, nome e data numa linha só ---- */
+.post-card .post-topo {
+  align-items: center;
+  gap: 10px;
+}
+
+.post-card .post-avatar {
+  flex: 0 0 auto;
+}
+
+.post-card .post-ident {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.post-card .post-card-autor {
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.post-card .post-tempo {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: var(--fraco);
+}
+
+/* O "⋯" perde o retângulo: só o ícone. */
+.post-card .post-card-opcoes {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--fraco) !important;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Município vira texto com pin, não pílula verde preenchida. */
+.post-card .post-card-municipio {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--fraco) !important;
+  font-size: 0.74rem !important;
+  font-weight: 400 !important;
+  cursor: pointer;
+}
+
+/* ---- Rodapé de ações ---- */
+.post-card .post-card-acoes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 10px 0 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--linha);
+}
+
+.post-card .post-card-acoes button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* 44px de alvo: é botão de dedo. */
+  min-height: 44px;
+  padding: 0 12px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--fraco) !important;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.post-card .post-card-acoes svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* O ícone segue a COR DO BOTÃO: cinza parado, verde curtido. A classe
+   .ico-social cravava stroke verde sempre, o que deixava o estado
+   "curtido" dependendo só do preenchimento do coração -- diferença
+   fraca demais. O escopo é o card de propósito: .ico-social também é
+   usada nas Sugestões, e mexer nela solta mudaria aquela tela. */
+.post-card .post-card-acoes .ico-social path,
+.post-card .post-card-acoes .ico-social polyline,
+.post-card .post-card-acoes .ico-social line {
+  stroke: currentColor;
+}
+
+/* O halo branco existe pra o ícone se destacar sobre foto; dentro do
+   card ele só suja o traço. */
+.post-card .post-card-acoes .ico-social {
+  filter: none;
+}
+
+/* Compartilhar encosta à direita: as duas ações de leitura (curtir e
+   comentar) ficam juntas, e a de saída fica separada. */
+.post-card .post-card-compartilhar {
+  margin-left: auto;
+}
+
+.post-card .post-card-curtir.curtido {
+  color: var(--verde) !important;
+}
+
+.post-card .post-card-curtir.curtido svg {
+  fill: var(--verde);
+}
+
+/* =========================================================
+   SUGESTÕES DA COMUNIDADE — mesmo acabamento da aba Desbravadores
+
+   Estas regras vêm DEPOIS da CAMADA UI MODERNA de propósito: ela força
+   `background: var(--surf2) !important` em todo <button>, e chip,
+   lixeira e enviar SÃO botões.
+
+   O briefing pedia `#1a1a1a` no campo de comentário. Não entra: o app
+   tem tema claro desde a v0.11.16, e hex fixo vira um bloco preto na
+   tela branca. Tudo sai das variáveis.
+   ========================================================= */
+
+/* ---- Chips de categoria ---- */
+.chip-barra .chip {
+  flex: 0 0 auto;
+  padding: 8px 14px !important;
+  border-radius: 999px !important;
+  background: var(--surf) !important;
+  border: 1px solid var(--linha) !important;
+  box-shadow: none !important;
+  color: var(--fraco) !important;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.chip-barra .chip-ativo {
+  background: var(--surf2) !important;
+  border-color: var(--verde) !important;
+  color: var(--txt) !important;
+  font-weight: 600;
+}
+
+/* ---- Botão de sugerir ---- */
+#btn-abrir-nova-sugestao {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  min-height: 48px;
+  padding: 0 16px !important;
+  border: none !important;
+  border-radius: 12px !important;
+  background: var(--verde) !important;
+  box-shadow: none !important;
+  /* Tinta escura sobre o verde: é a mesma dupla usada em todo botão
+     primário do app, e garante contraste nos dois temas. */
+  color: var(--verde-tinta) !important;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---- Card ---- */
+/* Canto superior direito: onde moram as ações SEM VOLTA. Saíram do
+   rodapé porque ali dividiam espaço de toque com curtir e comentar --
+   e um "✕" vermelho ao lado do coração convida ao acidente. */
+.sugestao-card-topo {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+}
+
+.sugestao-card-topo button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 9px !important;
+  /* Véu escuro fixo, não var(): o card tem FOTO de fundo, e superfície
+     clara sobre foto clara faz o ícone sumir. */
+  background: rgba(10, 13, 17, 0.45) !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  cursor: pointer;
+}
+
+.sugestao-card-topo svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sugestao-card-topo .sugestao-card-excluir:active {
+  color: var(--erro, #f0616d) !important;
+}
+
+/* ---- Rodapé: só curtir e comentar, com alvo de dedo ---- */
+.sugestao-card-rodape {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sugestao-card-rodape button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+/* ---- Detalhe: "Abrir no Maps" vira pílula ---- */
+#sugestao-detalhe-maps {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 16px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--surf2);
+  border: 1px solid var(--linha);
+  color: var(--txt);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#sugestao-detalhe-maps svg {
+  width: 17px;
+  height: 17px;
+  color: var(--verde);
+}
+
+#sugestao-detalhe-maps.oculto {
+  display: none;
+}
+
+/* ---- Campo de comentário: o enviar mora DENTRO dele ---- */
+#sugestao-detalhe-novo-comentario {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+}
+
+#sugestao-detalhe-novo-comentario input {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  /* Espaço à direita pro botão que flutua por cima. */
+  padding: 0 52px 0 16px;
+  border-radius: 999px !important;
+  background: var(--surf2) !important;
+  /* Contorno inteiro no lugar do risco embaixo do campo "material". */
+  border: 1px solid var(--linha) !important;
+  box-shadow: none !important;
+  color: var(--txt) !important;
+  font-family: inherit;
+  font-size: 0.9rem;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+#sugestao-detalhe-novo-comentario input::placeholder {
+  color: var(--fraco);
+}
+
+#sugestao-detalhe-novo-comentario input:focus {
+  border-color: var(--verde) !important;
+}
+
+#btn-enviar-comentario-sugestao {
+  position: absolute;
+  right: 5px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: var(--verde) !important;
+  box-shadow: none !important;
+  color: var(--verde-tinta) !important;
+  cursor: pointer;
+}
+
+#btn-enviar-comentario-sugestao svg {
+  width: 18px;
+  height: 18px;
+  /* O avião aponta pra frente; o -1px tira a impressão de desalinho
+     que a diagonal dele cria dentro de um círculo. */
+  margin-left: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip-barra .chip { transition: none; }
 }

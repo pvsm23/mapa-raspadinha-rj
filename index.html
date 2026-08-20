@@ -694,7 +694,7 @@
       <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-3-5z"/><path d="M3 7h18"/><path d="M16 11a4 4 0 0 1-8 0"/></svg></span><span class="nav-txt">Loja</span>
     </button>
     <button type="button" data-nav="alvo" data-alvo="btn-social">
-      <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-txt">Comunidade</span>
+      <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-txt">Desbravadores</span>
     </button>
     <button type="button" data-nav="alvo" data-alvo="btn-abrir-conquistas">
       <span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span><span class="nav-txt">Conquistas</span>
@@ -1685,11 +1685,13 @@
        comentários, denúncia e excluir continuarem existindo num lugar
        só. -->
   <div id="modal-post-detalhe" class="oculto">
-    <div id="post-detalhe-topo">
-      <button type="button" id="btn-fechar-post-detalhe" aria-label="Voltar">‹</button>
-      <h3>Post</h3>
+    <div id="post-detalhe-caixa" role="dialog" aria-modal="true" aria-label="Post">
+      <div id="post-detalhe-topo">
+        <h3>Post</h3>
+        <button type="button" id="btn-fechar-post-detalhe" aria-label="Fechar">✕</button>
+      </div>
+      <div id="post-detalhe-corpo"></div>
     </div>
-    <div id="post-detalhe-corpo"></div>
   </div>
 
   <!-- Espiada: aparece ao segurar o dedo num post da grade. A camada é
@@ -2593,11 +2595,16 @@
       <div class="sheet-corpo">
         <img id="sugestao-detalhe-foto" class="oculto" alt="">
         <p id="sugestao-detalhe-descricao"></p>
-        <a id="sugestao-detalhe-maps" class="oculto" target="_blank" rel="noopener">📍 Abrir no Maps</a>
+        <a id="sugestao-detalhe-maps" class="oculto" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Abrir no Maps
+        </a>
         <div id="sugestao-detalhe-comentarios"></div>
         <div id="sugestao-detalhe-novo-comentario">
-          <input type="text" id="input-comentario-sugestao" class="campo-material" placeholder="Escreva um comentário..." maxlength="500">
-          <button type="button" id="btn-enviar-comentario-sugestao">Enviar</button>
+          <input type="text" id="input-comentario-sugestao" placeholder="Escreva um comentário..." maxlength="500">
+          <button type="button" id="btn-enviar-comentario-sugestao" aria-label="Publicar comentário">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z"/></svg>
+          </button>
         </div>
       </div>
     </div>

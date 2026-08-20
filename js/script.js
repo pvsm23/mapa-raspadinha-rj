@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.20.112";
+const VERSAO_APP = "0.26.08.20.114";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,8 @@ const VERSAO_APP = "0.26.08.20.112";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.20.114", itens: ["Correção: a foto nunca aparecia no card das Sugestões — o cartão era pra mostrar o lugar de fundo e vinha sempre cinza.", "O ✕ vermelho saiu do rodapé do card: excluir e denunciar viraram ícones discretos no canto de cima, longe de curtir e comentar.", "Filtros de categoria, botão de sugerir e o card ficaram no mesmo acabamento da aba Desbravadores.", "No detalhe, \"Abrir no Maps\" virou botão de verdade e o campo de comentário ganhou o enviar embutido, no lugar do botão branco."] },
+  { versao: "0.26.08.20.113", itens: ["Correção: segurar o post fazia a imagem crescer, mas arrastar não curtia nem compartilhava — e ao soltar o post ainda abria por cima do gesto.", "O post aberto virou um cartão sobre fundo borrado, e fecha tocando fora dele.", "Os botões do post perderam o fundo claro que destoava do tema; a localização virou texto com um pin, sem a pílula verde.", "Curtir, comentar e compartilhar ficam cinza e só acendem em verde quando ativos.", "A aba Comunidade passou a se chamar Desbravadores também na barra de baixo."] },
   { versao: "0.26.08.20.112", itens: ["No Modo Satélite, a partir de bastante zoom todos os municípios que aparecem na tela ficam na qualidade alta, e não só o do meio.", "E o que já carregou em alta não volta mais para a baixa quando você arrasta o mapa para o lado.", "A borda verde do Modo Satélite afinou: de longe ela tinha o triplo da espessura e cobria parte da foto.", "O Modo Satélite fica lembrado — se você deixar ligado, ele volta ligado na próxima vez que abrir o app.", "A Comunidade virou mosaico de duas colunas: cabe muito mais post na tela e as fotos não são mais cortadas.", "Tocar num post abre ele em tela cheia, com legenda, curtidas e comentários.", "Segurando o dedo num post, ele salta pro centro da tela — arraste para a direita para curtir ou para a esquerda para compartilhar.", "A Comunidade deixou de ser uma janela flutuante: agora ocupa a tela inteira, com cabeçalho fixo e as abas em formato de pílula."] },
   { versao: "0.26.08.19.111", itens: ["Correção: em vários lugares o app mostrava o código do IBGE no lugar do nome do município — inclusive no seu grupo do Motoclube.", "Correção: o brilho verde dos pontos escolhidos continuava aceso depois de sair do modo de montar roteiro no mapa.", "No Modo Satélite, a divisa verde agora aparece entre municípios verificados vizinhos, em vez de sumir sob as fotos.", "Pedra do Cão Sentado, Pico das Agulhas Negras e Museu do Amanhã ganharam desenho próprio no mapa.", "Pedra do Cão Sentado e Pico das Agulhas Negras agora têm localização: aparecem no mapa e podem entrar num roteiro."] },
   { versao: "0.26.08.19.110", itens: ["Novo Modo Satélite: os municípios que você verificou por GPS passam a mostrar a foto real do lugar, recortada na forma deles.", "A cor do estado vai para a divisa, então verde, dourado e azul continuam se lendo por cima da foto.", "A imagem chega em duas qualidades: uma leve para a visão geral e outra detalhada quando você aproxima.", "Depois de vista uma vez, a foto fica guardada e abre sem internet."] },
@@ -1437,6 +1439,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-publicar-post").addEventListener("click", publicarPost);
   document.getElementById("btn-social-carregar-mais").addEventListener("click", () => carregarFeedSocial(false));
   document.getElementById("btn-fechar-post-detalhe")?.addEventListener("click", fecharDetalheDoPost);
+  /* Tocar FORA do card fecha. O teste é no alvo do evento: se for a
+     própria camada, o dedo caiu no fundo, não no conteúdo. */
+  document.getElementById("modal-post-detalhe")?.addEventListener("click", (e) => {
+    if (e.target.id === "modal-post-detalhe") fecharDetalheDoPost();
+  });
   document.getElementById("social-conteudo")?.addEventListener("scroll", aoRolarFeedSocial, { passive: true });
 
   // ---- Sugestões da Comunidade ----
@@ -15192,7 +15199,11 @@ function cardDeGrade(post) {
     item.innerHTML = `<p class="feed-item-texto">${escaparHtml(post.texto || "")}</p>${sobreposto}`;
   }
 
-  item.addEventListener("click", () => abrirDetalheDoPost(post));
+  item.addEventListener("click", (e) => {
+    // pointerType vazio/mouse = veio de mouse ou teclado. Toque já foi
+    // resolvido no touchend.
+    if (e.detail === 0 || !("ontouchstart" in window)) abrirDetalheDoPost(post);
+  });
   item.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -15232,69 +15243,131 @@ function fecharDetalheDoPost() {
 /* ============================================================
    ESPIAR E AGIR (toque longo + arrasto)
 
-   Segurar o dedo levanta a foto pro centro da tela; arrastar pra
-   direita curte, pra esquerda compartilha; soltar dispara.
+   Segurar levanta a foto pro centro; arrastar pra direita curte, pra
+   esquerda compartilha; soltar dispara. Toque rápido abre o post.
 
-   POR QUE POINTER EVENTS, e não touchstart/touchmove/touchend: é o
-   mesmo caminho que o arrasto do Roteiro já usa neste app, cobre dedo,
-   caneta e mouse com um código só, e o setPointerCapture mantém o gesto
-   preso ao elemento mesmo quando o dedo sai de cima dele. Com touch
-   events puros eu precisaria remontar essa parte à mão.
+   TOUCH EVENTS, e não Pointer Events -- a primeira versão usava
+   pointer e o arrasto não chegava. O motivo: durante a espiada o dedo
+   fica sobre a camada da espiada, e o pointermove passa a ser entregue
+   a quem estiver embaixo do dedo, não ao card onde o gesto começou. O
+   setPointerCapture deveria resolver, mas ele falha calado quando o
+   navegador já considerou o gesto dele.
 
-   O toque longo é de 400 ms, e não 300: a grade ROLA, e 300 ms dispara
-   "espiada" no meio de uma rolagem lenta. Junto com o limite de
-   movimento abaixo, 400 ms foi o que separou os dois gestos sem
-   parecer lento.
+   touchmove NÃO tem esse problema: uma vez que o touchstart aconteceu
+   num elemento, TODOS os eventos daquele toque vão pra ele até o dedo
+   sair, esteja o dedo onde estiver. É captura implícita, de graça.
    ============================================================ */
 
-const ESPIAR_MS = 400;
-/* Quanto o dedo pode andar ANTES da espiada começar sem que ela seja
-   cancelada. Acima disso é rolagem, não intenção de segurar. */
+/* 250 ms separa tap de "segurar". Curto o bastante pra não parecer
+   travado, e a rolagem fica protegida pela tolerância de movimento
+   abaixo, não pelo relógio. */
+const ESPIAR_MS = 250;
+/* Andou mais que isso ANTES da espiada: é rolagem, cancela. */
 const ESPIAR_TOLERANCIA_PX = 10;
-/* Quanto arrastar, JÁ espiando, pra armar a ação. Metade da largura de
-   um polegar: perto demais dispara sem querer, longe demais cansa. */
+/* Arrasto, JÁ espiando, que arma a ação. */
 const ESPIAR_GATILHO_PX = 60;
-/* Onde o ícone chega ao tamanho cheio -- daí pra frente não cresce
-   mais, senão o dedo continua andando e nada muda na tela. */
+/* Onde o ícone chega ao tamanho cheio. */
 const ESPIAR_CURSO_PX = 130;
 
-let espiando = null;
+let espiada = null;
 
 function ligarGestoDeEspiar(item, post) {
-  item.addEventListener("pointerdown", (evento) => {
-    // Só o toque/caneta principal. Botão direito e multitoque ficam de fora.
-    if (evento.button > 0 || espiando) return;
+  let relogio = null;
+  let inicio = null;
+  let espiandoAqui = false;
 
-    const inicio = { x: evento.clientX, y: evento.clientY };
-    let cancelado = false;
+  const cancelarRelogio = () => {
+    clearTimeout(relogio);
+    relogio = null;
+  };
 
-    const relogio = setTimeout(() => {
-      if (cancelado) return;
-      abrirEspiada(item, post, evento.pointerId, inicio);
-    }, ESPIAR_MS);
+  const encerrarTudo = () => {
+    cancelarRelogio();
+    inicio = null;
+    espiandoAqui = false;
+  };
 
-    /* Antes da espiada começar, qualquer movimento maior que a
-       tolerância quer dizer que a pessoa está ROLANDO a grade. */
-    const vigiar = (ev) => {
-      if (espiando) return;
-      const andou = Math.hypot(ev.clientX - inicio.x, ev.clientY - inicio.y);
-      if (andou > ESPIAR_TOLERANCIA_PX) desistir();
-    };
-    const desistir = () => {
-      cancelado = true;
-      clearTimeout(relogio);
-      item.removeEventListener("pointermove", vigiar);
-      item.removeEventListener("pointerup", desistir);
-      item.removeEventListener("pointercancel", desistir);
-    };
+  item.addEventListener(
+    "touchstart",
+    (e) => {
+      // Dois dedos é pinça do navegador, não gesto nosso.
+      if (e.touches.length !== 1) {
+        encerrarTudo();
+        return;
+      }
+      const t = e.touches[0];
+      inicio = { x: t.clientX, y: t.clientY };
+      espiandoAqui = false;
+      cancelarRelogio();
+      relogio = setTimeout(() => {
+        espiandoAqui = true;
+        abrirEspiada(item, post);
+      }, ESPIAR_MS);
+    },
+    { passive: true }
+  );
 
-    item.addEventListener("pointermove", vigiar);
-    item.addEventListener("pointerup", desistir);
-    item.addEventListener("pointercancel", desistir);
-  });
+  /* passive: false porque, JÁ espiando, este handler precisa cancelar a
+     rolagem. O navegador só respeita preventDefault se o ouvinte for
+     não-passivo desde o registro -- declarar depois não adianta. */
+  item.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!inicio || !e.touches.length) return;
+      const t = e.touches[0];
+      const dx = t.clientX - inicio.x;
+      const dy = t.clientY - inicio.y;
+
+      if (!espiandoAqui) {
+        // Ainda esperando os 250 ms: qualquer arrasto é ROLAGEM.
+        if (Math.hypot(dx, dy) > ESPIAR_TOLERANCIA_PX) encerrarTudo();
+        return;
+      }
+
+      // Espiando: o dedo é nosso, a tela não rola.
+      e.preventDefault();
+      moverEspiada(dx);
+    },
+    { passive: false }
+  );
+
+  item.addEventListener(
+    "touchend",
+    (e) => {
+      if (!inicio) return;
+      cancelarRelogio();
+
+      /* preventDefault aqui é o que impede o CLIQUE SINTÉTICO que o
+         navegador dispara depois do toque. Sem ele, o toque longo
+         terminava abrindo o post por cima do gesto -- era o conflito
+         entre tap e hold. */
+      e.preventDefault();
+
+      if (espiandoAqui) {
+        const acao = espiada?.acao;
+        fecharEspiada();
+        if (acao === "curtir") curtirPeloGesto(post, item);
+        else if (acao === "compartilhar") compartilharPost(post.id);
+      } else {
+        // Soltou antes dos 250 ms: é tap.
+        abrirDetalheDoPost(post);
+      }
+      encerrarTudo();
+    },
+    { passive: false }
+  );
+
+  item.addEventListener(
+    "touchcancel",
+    () => {
+      if (espiandoAqui) fecharEspiada();
+      encerrarTudo();
+    },
+    { passive: true }
+  );
 }
 
-function abrirEspiada(item, post, pointerId, inicio) {
+function abrirEspiada(item, post) {
   const camada = document.getElementById("espiada");
   const palco = document.getElementById("espiada-palco");
   if (!camada || !palco) return;
@@ -15308,75 +15381,48 @@ function abrirEspiada(item, post, pointerId, inicio) {
   // Um quadro depois, pra a transição do CSS ter de onde partir.
   requestAnimationFrame(() => camada.classList.add("espiada-aberta"));
   navigator.vibrate?.(12);
+  espiada = { acao: null };
+}
 
-  espiando = { post, item, acao: null, pointerId };
+/* MATEMÁTICA DO ARRASTO
 
-  try {
-    item.setPointerCapture(pointerId);
-  } catch {
-    /* Sem captura o gesto ainda funciona enquanto o dedo estiver sobre
-       o item; não vale abortar por isso. */
-  }
+   Só o eixo X interessa: dx é onde o dedo está agora menos onde ele
+   pousou. O SINAL diz a ação (direita curte, esquerda compartilha) e o
+   MÓDULO diz a intensidade.
 
-  /* MATEMÁTICA DO ARRASTO
+   A intensidade vira fração de 0 a 1 dividindo pelo CURSO e limitando o
+   teto. É ela que move a foto e cresce o ícone junto, fazendo o gesto
+   parecer analógico em vez de um interruptor que liga ao cruzar a linha.
 
-     Só o eixo X interessa: dx = onde o dedo está agora menos onde ele
-     pousou. O sinal diz a ação (direita = curtir, esquerda =
-     compartilhar) e o módulo diz a intensidade.
+   A foto anda dx/3, e não dx: acompanhando o dedo inteiro ela sairia da
+   tela antes de o gesto se completar. */
+function moverEspiada(dx) {
+  const camada = document.getElementById("espiada");
+  const palco = document.getElementById("espiada-palco");
+  if (!camada || !palco || !espiada) return;
 
-     A intensidade vira uma fração de 0 a 1 dividindo pelo CURSO e
-     limitando o teto (Math.min). Essa fração move a foto e cresce o
-     ícone junto -- é ela que faz o gesto PARECER analógico, em vez de
-     um interruptor que só liga ao cruzar a linha.
+  const intensidade = Math.min(1, Math.abs(dx) / ESPIAR_CURSO_PX);
+  const armado = Math.abs(dx) >= ESPIAR_GATILHO_PX;
+  espiada.acao = armado ? (dx > 0 ? "curtir" : "compartilhar") : null;
 
-     A foto anda dx/3, e não dx: se acompanhasse o dedo inteiro, sairia
-     da tela antes de o gesto se completar. A fração de um terço mantém
-     o retorno visual sem perder o centro. */
-  const mover = (ev) => {
-    if (!espiando) return;
-    ev.preventDefault();
-    const dx = ev.clientX - inicio.x;
-    const intensidade = Math.min(1, Math.abs(dx) / ESPIAR_CURSO_PX);
-    const armado = Math.abs(dx) >= ESPIAR_GATILHO_PX;
-
-    espiando.acao = armado ? (dx > 0 ? "curtir" : "compartilhar") : null;
-
-    palco.style.transform = `translateX(${dx / 3}px) scale(${1 - intensidade * 0.06})`;
-    camada.dataset.acao = espiando.acao || "";
-    camada.style.setProperty("--forca", intensidade.toFixed(3));
-  };
-
-  const soltar = () => {
-    item.removeEventListener("pointermove", mover);
-    item.removeEventListener("pointerup", soltar);
-    item.removeEventListener("pointercancel", soltar);
-    const acao = espiando?.acao;
-    fecharEspiada();
-    if (acao === "curtir") curtirPeloGesto(post, item);
-    else if (acao === "compartilhar") compartilharPost(post.id);
-  };
-
-  // passive: false porque o pointermove PRECISA cancelar a rolagem
-  // enquanto a espiada está no ar.
-  item.addEventListener("pointermove", mover, { passive: false });
-  item.addEventListener("pointerup", soltar);
-  item.addEventListener("pointercancel", soltar);
+  palco.style.transform = `translateX(${dx / 3}px) scale(${1 - intensidade * 0.06})`;
+  camada.dataset.acao = espiada.acao || "";
+  camada.style.setProperty("--forca", intensidade.toFixed(3));
 }
 
 function fecharEspiada() {
   const camada = document.getElementById("espiada");
   const palco = document.getElementById("espiada-palco");
+  espiada = null;
   if (!camada) return;
   camada.classList.remove("espiada-aberta");
   camada.dataset.acao = "";
   camada.style.removeProperty("--forca");
   if (palco) palco.style.transform = "";
-  // Espera a transição terminar pra esconder, senão o sumiço é seco.
   setTimeout(() => {
     camada.classList.add("oculto");
     if (palco) palco.innerHTML = "";
   }, 180);
-  espiando = null;
 }
 
 /** Curtir pelo gesto: mesma função do botão, e o número no card segue. */
@@ -16723,14 +16769,27 @@ function renderizarCardSugestao(sugestao) {
     card.classList.add("sugestao-card-sem-foto");
   }
 
+  const iconeLixeira =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
+  const iconeBandeira =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M5 21V4"/><path d="M5 5h11l-1.6 3.4L16 12H5"/></svg>';
+
   card.innerHTML = `
+    <div class="sugestao-card-topo">
+      ${souAutor
+        ? `<button type="button" class="sugestao-card-excluir" aria-label="Excluir sugestão" title="Excluir">${iconeLixeira}</button>`
+        : meuUid
+          ? `<button type="button" class="sugestao-card-denunciar" aria-label="Denunciar sugestão" title="Denunciar">${iconeBandeira}</button>`
+          : ""}
+    </div>
     <span class="sugestao-card-categoria">${escaparHtml(rotuloCurtoCategoria(labelCategoria))}</span>
     <h3 class="sugestao-card-titulo">${escaparHtml(sugestao.titulo)}</h3>
     <span class="sugestao-card-autor">${escaparHtml(nomeAutor)}</span>
     <div class="sugestao-card-rodape">
       <button type="button" class="sugestao-card-curtir${curtido ? " curtido" : ""}">${ICONE_CORACAO} <span class="sugestao-card-curtidas">${curtidoPor.length}</span></button>
       <button type="button" class="sugestao-card-comentar">${ICONE_COMENTAR} <span class="sugestao-card-num-comentarios">${sugestao.numComentarios || 0}</span></button>
-      ${souAutor ? '<button type="button" class="sugestao-card-excluir" aria-label="Excluir sugestão">✕</button>' : (meuUid ? '<button type="button" class="sugestao-card-denunciar" aria-label="Denunciar sugestão" title="Denunciar">🚩</button>' : "")}
     </div>
   `;
 
