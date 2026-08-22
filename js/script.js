@@ -35,7 +35,7 @@ const STORAGE_KEY_ROTAS = "scratchMapRJ_rotas_v1";
  * Os três lugares mudam JUNTOS: aqui, e `versionCode`/`versionName` em
  * android/app/build.gradle. É o versionName que vira a tag do release
  * no CI (ver .github/workflows/build-apk.yml). */
-const VERSAO_APP = "0.26.08.20.116";
+const VERSAO_APP = "0.26.08.22.117";
 
 // Histórico mostrado ao tocar na versão (Configurações → Sobre → "O que
 // mudou"). Só as 10 mais recentes aparecem. IMPORTANTE: descrições
@@ -43,6 +43,7 @@ const VERSAO_APP = "0.26.08.20.116";
 // de segurança, regras, limites etc. entram como "melhorias" ou
 // "correções", ver renderizarNovidades).
 const HISTORICO_VERSOES = [
+  { versao: "0.26.08.22.117", itens: ["Segurança: enviar, apagar e publicar fotos agora exige estar logado — antes o endereço do servidor de fotos, que é público, bastava pra qualquer um mexer nos arquivos.", "Segurança: o pagamento passou a confirmar quem está pedindo, em vez de acreditar no que o app manda.", "A política de privacidade passou a usar o e-mail do domínio no lugar do pessoal."] },
   { versao: "0.26.08.20.116", itens: ["Os posts agora mostram a foto de perfil de quem postou — ou o selo, se a pessoa escolheu um selo como avatar.", "Posts publicados antes desta versão continuam com as iniciais.", "As fotos de perfil passaram a ser guardadas numa pasta própria, separada das fotos dos posts."] },
   { versao: "0.26.08.20.115", itens: ["Correção: a janela de denunciar abria ATRÁS do post ou da sugestão, ficando inacessível.", "Correção: tocar no nome de quem postou, com o post aberto em tela cheia, abria o perfil por trás dele."] },
   { versao: "0.26.08.20.114", itens: ["Correção: a foto nunca aparecia no card das Sugestões — o cartão era pra mostrar o lugar de fundo e vinha sempre cinza.", "O ✕ vermelho saiu do rodapé do card: excluir e denunciar viraram ícones discretos no canto de cima, longe de curtir e comentar.", "Filtros de categoria, botão de sugerir e o card ficaram no mesmo acabamento da aba Desbravadores.", "No detalhe, \"Abrir no Maps\" virou botão de verdade e o campo de comentário ganhou o enviar embutido, no lugar do botão branco."] },
@@ -4276,6 +4277,17 @@ let cobrancaAtual = null;
  * provocar o preflight. Mesmo truque do enviarParaPlanilha em
  * js/auth.js.
  */
+/** ID token de quem está logado, ou null. Os Apps Script usam ele pra
+    saber QUEM está pedindo, em vez de acreditar num uid do corpo. */
+async function idTokenAtual() {
+  try {
+    return (await window.raspadinhaAuth?.usuarioAtual?.getIdToken?.()) || null;
+  } catch (erro) {
+    console.error("Falha ao obter o ID token:", erro);
+    return null;
+  }
+}
+
 async function solicitarPix({ tipo = "pro", valor, descricao, cpf, uid, nome }) {
   if (!URL_COBRANCA_PIX || URL_COBRANCA_PIX.startsWith("SUBSTITUA")) {
     throw new Error("O checkout ainda não foi configurado.");
@@ -4284,7 +4296,9 @@ async function solicitarPix({ tipo = "pro", valor, descricao, cpf, uid, nome }) 
   const resposta = await fetch(URL_COBRANCA_PIX, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ tipo, valor, descricao, cpf, uid, nome }),
+    // O uid continua indo por compatibilidade, mas quem manda do outro
+    // lado e o token (ver uidDoToken_ no Apps Script).
+    body: JSON.stringify({ tipo, valor, descricao, cpf, uid, nome, idToken: await idTokenAtual() }),
   });
 
   if (!resposta.ok) throw new Error("Não foi possível falar com o servidor de pagamento.");
@@ -4369,7 +4383,7 @@ async function verificarPagamentoAgora() {
     const resposta = await fetch(URL_COBRANCA_PIX, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ acao: "verificar", id, uid }),
+      body: JSON.stringify({ acao: "verificar", id, uid, idToken: await idTokenAtual() }),
     });
     // Devolve a resposta INTEIRA, não só um booleano. "Pago mas não
     // liberado" (Firestore recusou, projeto não configurado) precisa

@@ -46,7 +46,7 @@ const DESTINOS = path.join(RAIZ, "data", "destinos.json");
 const REGIOES = path.join(RAIZ, "data", "regioes.json");
 const LIMITES = path.join(RAIZ, "data", "rj-municipios.geojson");
 
-const AGENTE = "DesbravaApp/0.26 (app de turismo do RJ; contato eupaulovitorsm01@gmail.com)";
+const AGENTE = "DesbravaApp/0.26 (app de turismo do RJ; contato contato@desbravaapp.com.br)";
 const ESPERA_MS = 1100; // política do Nominatim: no máximo 1 por segundo
 
 /** Ponto dentro do polígono (raio par/ímpar), igual ao que o app usa. */

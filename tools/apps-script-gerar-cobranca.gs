@@ -129,6 +129,37 @@ function config_() {
 // ---------------------------------------------------------------
 // Entrada
 // ---------------------------------------------------------------
+/**
+ * Confirma o ID token do Firebase e devolve o uid dele (ou null).
+ *
+ * Usa o endpoint oficial do Google em vez de conferir a assinatura do
+ * JWT à mão: o Google é quem sabe se o token presta, se expirou e de
+ * quem ele é. A Web API Key fica nas Propriedades do script -- é
+ * pública por natureza (vai dentro do app), mas nada de valor fica
+ * cravado no arquivo.
+ */
+function uidDoToken_(token) {
+  if (!token) return null;
+  var chave = PropertiesService.getScriptProperties().getProperty("FIREBASE_WEB_API_KEY");
+  if (!chave) return null;
+  try {
+    var r = UrlFetchApp.fetch(
+      "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + encodeURIComponent(chave),
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({ idToken: token }),
+        muteHttpExceptions: true,
+      }
+    );
+    if (r.getResponseCode() !== 200) return null;
+    var corpo = JSON.parse(r.getContentText());
+    return (corpo && corpo.users && corpo.users[0] && corpo.users[0].localId) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function doPost(e) {
   try {
     var pedido = JSON.parse(e.postData.contents);
@@ -137,6 +168,11 @@ function doPost(e) {
     // acesso NÃO dependa do webhook conseguir chegar até aqui: quem
     // pagou pergunta por conta própria e é liberado na hora.
     if (pedido.acao === "verificar") {
+      /* Também exige token: sem isso dava pra perguntar pelo pagamento
+         de qualquer uid e descobrir quem assina o Motoclube. */
+      var quemPergunta = uidDoToken_(pedido.idToken);
+      if (!quemPergunta) return responder_({ ok: false, erro: "Faça login pra consultar." });
+      pedido.uid = quemPergunta;
       // try/catch próprio: um erro aqui NÃO pode cair no catch lá
       // embaixo e virar "Não foi possível gerar o Pix agora" -- ler
       // status e criar cobrança são coisas diferentes, e confundir as
@@ -164,12 +200,23 @@ function doPost(e) {
       });
     }
 
-    var uid = String(pedido.uid || "").trim();
+    /* O uid sai do TOKEN, e não do corpo do pedido.
+
+       Antes bastava mandar um uid qualquer: a URL deste script está no
+       app (e todo endereço que o app chama é visível no DevTools --
+       esconder do repositório não protege nada), então qualquer pessoa
+       criava cobrança em nome de quem quisesse, enchendo o Asaas de
+       cliente e cobrança que ninguém pediu.
+
+       Mesmo raciocínio do preço, que já era decidido aqui: o que dá
+       dinheiro ou identidade não pode chegar pronto do cliente. */
+    var dono = uidDoToken_(pedido.idToken);
+    if (!dono) return responder_({ ok: false, erro: "Faça login antes de assinar." });
+
+    var uid = dono;
     var cpf = soDigitos_(pedido.cpf);
     var nome = String(pedido.nome || "").trim() || "Desbravador";
     var tipo = pedido.tipo === "loja" ? "loja" : "pro";
-
-    if (!uid) return responder_({ ok: false, erro: "Faça login antes de assinar." });
     if (cpf.length !== 11 && cpf.length !== 14) {
       return responder_({ ok: false, erro: "CPF inválido." });
     }

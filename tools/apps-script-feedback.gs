@@ -58,15 +58,31 @@ function doPost(e) {
     );
   }
 
+  /* As três ações do Drive exigem QUEM ESTÁ CHAMANDO.
+
+     Antes não exigiam nada, e a URL deste script está no repositório
+     público: qualquer pessoa podia subir arquivo, mandar arquivo pra
+     lixeira ou TORNAR PÚBLICO qualquer arquivo do Drive -- o script
+     roda como o dono, então getFileById alcançava o Drive inteiro, não
+     só as fotos do app.
+
+     O feedback (bug/sugestão) continua aberto de propósito: ele só
+     acrescenta linha numa planilha, e é enviado por gente deslogada. */
   if (dados.tipo === "upload-foto-post") {
+    var quemSobe = exigirUsuario_(dados);
+    if (quemSobe.erro) return quemSobe.resposta;
     return uploadFotoPost(dados);
   }
 
   if (dados.tipo === "excluir-foto-post") {
+    var quemApaga = exigirUsuario_(dados);
+    if (quemApaga.erro) return quemApaga.resposta;
     return excluirFotoPost(dados);
   }
 
   if (dados.tipo === "acesso-foto-post") {
+    var quemMuda = exigirUsuario_(dados);
+    if (quemMuda.erro) return quemMuda.resposta;
     return definirAcessoFotoPost(dados);
   }
 
@@ -208,6 +224,11 @@ function uploadFotoPost(dados) {
  */
 function definirAcessoFotoPost(dados) {
   var arquivo = DriveApp.getFileById(dados.fotoId);
+  if (!arquivoEhDoApp_(arquivo)) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ ok: false, erro: "Esse arquivo não é do app." })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
   if (dados.publica) {
     arquivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   } else {
@@ -225,13 +246,86 @@ function definirAcessoFotoPost(dados) {
  */
 function excluirFotoPost(dados) {
   try {
-    if (dados.fotoId) DriveApp.getFileById(dados.fotoId).setTrashed(true);
+    if (dados.fotoId) {
+      var arquivo = DriveApp.getFileById(dados.fotoId);
+      if (arquivoEhDoApp_(arquivo)) arquivo.setTrashed(true);
+    }
   } catch (erro) {
     // Arquivo já pode não existir mais -- sem problema.
   }
   return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(
     ContentService.MimeType.JSON
   );
+}
+
+/**
+ * Confirma que quem chamou está logado no Desbrava.
+ *
+ * Valida o ID token do Firebase no endpoint oficial do Google, em vez
+ * de conferir a assinatura do JWT à mão: são 15 linhas contra
+ * criptografia em Apps Script, e é o Google quem diz se o token presta,
+ * se expirou e de quem ele é.
+ *
+ * A Web API Key do Firebase mora nas Propriedades do script. Ela é
+ * pública por natureza (vai no app), mas fica fora do código aqui pelo
+ * mesmo motivo de todo o resto: nada de valor cravado no arquivo.
+ *
+ * Devolve { erro: false, uid } ou { erro: true, resposta }.
+ */
+function exigirUsuario_(dados) {
+  var negar = function (motivo) {
+    return {
+      erro: true,
+      resposta: ContentService.createTextOutput(
+        JSON.stringify({ ok: false, erro: motivo })
+      ).setMimeType(ContentService.MimeType.JSON),
+    };
+  };
+
+  var token = dados && dados.idToken;
+  if (!token) return negar("Faça login no app pra enviar fotos.");
+
+  var chave = PropertiesService.getScriptProperties().getProperty("FIREBASE_WEB_API_KEY");
+  if (!chave) return negar("Servidor sem FIREBASE_WEB_API_KEY configurada.");
+
+  try {
+    var r = UrlFetchApp.fetch(
+      "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + encodeURIComponent(chave),
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({ idToken: token }),
+        muteHttpExceptions: true,
+      }
+    );
+    if (r.getResponseCode() !== 200) return negar("Sessão expirada. Entre de novo no app.");
+    var corpo = JSON.parse(r.getContentText());
+    var uid = corpo && corpo.users && corpo.users[0] && corpo.users[0].localId;
+    if (!uid) return negar("Sessão expirada. Entre de novo no app.");
+    return { erro: false, uid: uid };
+  } catch (e) {
+    return negar("Não deu pra confirmar seu login agora.");
+  }
+}
+
+/**
+ * O arquivo está dentro de uma das pastas do app?
+ *
+ * Esta é a trava que importa. Mesmo com login válido, sem ela um id de
+ * arquivo qualquer (e id vaza: todo arquivo já compartilhado tem o dele
+ * numa URL) deixaria apagar ou publicar QUALQUER coisa do Drive do
+ * dono, porque o script roda como ele.
+ */
+function arquivoEhDoApp_(arquivo) {
+  var permitidas = {};
+  permitidas[obterPastaFotosPosts().getId()] = true;
+  permitidas[obterPastaFotosPerfil().getId()] = true;
+
+  var pais = arquivo.getParents();
+  while (pais.hasNext()) {
+    if (permitidas[pais.next().getId()]) return true;
+  }
+  return false;
 }
 
 function obterPastaFotosPosts() {

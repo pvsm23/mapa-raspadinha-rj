@@ -472,13 +472,29 @@ if (CONFIGURADO) {
    * "Usuários" (ver tools/apps-script-feedback.gs pra cada `tipo`
    * aceito).
    */
-  function enviarParaPlanilha(dados) {
+  async function enviarParaPlanilha(dados) {
     if (!URL_PLANILHA_FEEDBACK || URL_PLANILHA_FEEDBACK.startsWith("SUBSTITUA")) return;
+
+    /* O ID token vai junto sempre que houver alguém logado, num lugar
+       só -- é o que as ações do Drive passaram a exigir do outro lado
+       (ver exigirUsuario_ em tools/apps-script-feedback.gs).
+
+       Não é obrigatório aqui: bug e sugestão continuam podendo ser
+       enviados por quem não fez login, e quem decide o que exige token
+       é o script, não o app. */
+    let corpo = dados;
+    try {
+      const usuario = auth.currentUser;
+      if (usuario) corpo = { ...dados, idToken: await usuario.getIdToken() };
+    } catch (erro) {
+      console.error("Falha ao obter o token pra planilha:", erro);
+    }
+
     fetch(URL_PLANILHA_FEEDBACK, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(dados),
+      body: JSON.stringify(corpo),
     }).catch((erro) => console.error("Falha ao enviar pra planilha:", erro));
   }
 
@@ -1168,12 +1184,19 @@ if (CONFIGURADO) {
     if (!URL_PLANILHA_FEEDBACK || URL_PLANILHA_FEEDBACK.startsWith("SUBSTITUA")) {
       throw new Error("Upload de foto ainda não configurado (Apps Script).");
     }
+    /* Sem login não há upload -- e agora o servidor também recusa
+       (ver exigirUsuario_ em tools/apps-script-feedback.gs). Falhar
+       aqui dá uma mensagem em português em vez de um erro de rede. */
+    const usuarioDaFoto = auth.currentUser;
+    if (!usuarioDaFoto) throw new Error("Faça login pra enviar fotos.");
+    const idTokenDaFoto = await usuarioDaFoto.getIdToken();
     const base64 = await blobParaBase64(arquivoFoto);
     const resposta = await fetch(URL_PLANILHA_FEEDBACK, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         tipo: "upload-foto-post",
+        idToken: idTokenDaFoto,
         /* "perfil" manda a foto pra pasta separada no Drive. Sem o
            campo, o Apps Script usa a pasta de posts -- que é o que
            acontece enquanto a versão nova do script não for
