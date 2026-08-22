@@ -96,6 +96,13 @@ apontando pro JBR do Android Studio. `tools/publicar-apk.ps1` publica o
 release à mão (usa o `gh`, instalado em `C:\Program Files\GitHub CLI`,
 fora do PATH).
 
+**Os Apps Script e as notas internas saíram deste repositório** (22/08/2026)
+e foram pro repositório PRIVADO `pvsm23/desbrava-interno`: os `.gs` em
+`apps-script/`, os documentos em `notas/`. O app e o site seguem aqui,
+públicos -- arquivo de release herda a visibilidade do repositório, então
+fechar este quebraria o link de download do APK. Ver
+`tools/LEIA-apps-script.md`.
+
 **Cinco projetos Apps Script**, cada um SEPARADO (o `doPost` roteia por
 `tipo` e eles brigariam entre si; e a URL do de feedback está no repo
 público, onde endpoint de pagamento não pode ficar). Nenhum segredo nos

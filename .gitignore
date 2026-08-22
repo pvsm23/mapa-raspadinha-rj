@@ -88,3 +88,14 @@ data/rr-municipios.geojson
 data/ro-municipios.geojson
 data/ac-municipios.geojson
 data/am-municipios.geojson
+
+# Saiu pro repositorio privado desbrava-interno (ver tools/LEIA-apps-script.md).
+# Fica gitignorado aqui pra uma copia local nao voltar pro repo publico sem querer.
+tools/*.gs
+PENDENCIAS.md
+BLAZE.md
+PLAY-STORE.md
+clima-open-meteo.md
+coordenadas-revisao.md
+pontos-a-excluir.md
+proxima-funcionalidade-comentarios-pt.md
